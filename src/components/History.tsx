@@ -1,10 +1,12 @@
 /**
  * Glass history card. Newest calculation at the bottom, next to the display;
- * tap a line to reuse its result, long-press to copy it.
+ * tap a line to reuse its result, long-press to copy it. Only the most recent
+ * rows are rendered, so the card stays light however long the history gets.
  */
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
+  LayoutChangeEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +16,9 @@ import {
 import { Grouping, closedExpressionText, formatCanonical } from '../engine';
 import type { TapeEntry } from '../state/calcReducer';
 import { fonts, usePalette } from '../theme/theme';
+
+/** Rows kept on screen; older calculations stay saved but are not drawn. */
+const VISIBLE_ROWS = 40;
 
 interface Props {
   entries: TapeEntry[];
@@ -37,86 +42,111 @@ const Row = memo(function Row({
   onCopy: (v: string) => void;
 }) {
   const p = usePalette();
+  // Rows that were already there never animate, so they skip the animated
+  // wrapper altogether (the choice is fixed when the row mounts).
+  const animated = useRef(animateIn).current;
   const enter = useRef(new Animated.Value(animateIn ? 0 : 1)).current;
+  const enterStyle = useMemo(
+    () => ({
+      opacity: enter,
+      transform: [
+        {
+          translateY: enter.interpolate({
+            inputRange: [0, 1],
+            outputRange: [18, 0],
+          }),
+        },
+      ],
+    }),
+    [enter],
+  );
 
   useEffect(() => {
-    if (!animateIn) {
+    if (!animated) {
       return;
     }
     Animated.spring(enter, {
       toValue: 1,
-      stiffness: 200,
-      damping: 20,
+      stiffness: 220,
+      damping: 22,
       mass: 1,
       useNativeDriver: true,
     }).start();
-  }, [animateIn, enter]);
+  }, [animated, enter]);
 
   const expression = closedExpressionText(entry.tokens, grouping);
   const result = formatCanonical(entry.result, grouping);
-  return (
-    <Animated.View
-      style={{
-        opacity: enter,
-        transform: [
-          {
-            translateY: enter.interpolate({
-              inputRange: [0, 1],
-              outputRange: [18, 0],
-            }),
-          },
-        ],
-      }}
+  const row = (
+    <Pressable
+      onPress={() => onUse(entry.result)}
+      onLongPress={() => onCopy(entry.result)}
+      accessibilityRole="button"
+      accessibilityLabel={`${expression} equals ${result}`}
+      accessibilityHint="Tap to use this result. Long press to copy it."
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { backgroundColor: p.segment },
+      ]}
     >
-      <Pressable
-        onPress={() => onUse(entry.result)}
-        onLongPress={() => onCopy(entry.result)}
-        accessibilityRole="button"
-        accessibilityLabel={`${expression} equals ${result}`}
-        accessibilityHint="Tap to use this result. Long press to copy it."
-        style={({ pressed }) => [
-          styles.row,
-          pressed && { backgroundColor: p.segment },
-        ]}
+      <Text
+        style={[styles.expr, { color: p.inkMuted }]}
+        maxFontSizeMultiplier={1.3}
       >
-        <Text
-          style={[styles.expr, { color: p.inkMuted }]}
-          maxFontSizeMultiplier={1.3}
-        >
-          {expression}
-        </Text>
-        <Text
-          style={[styles.result, { color: p.ink }]}
-          maxFontSizeMultiplier={1.3}
-        >
-          {result}
-        </Text>
-      </Pressable>
-    </Animated.View>
+        {expression}
+      </Text>
+      <Text
+        style={[styles.result, { color: p.ink }]}
+        maxFontSizeMultiplier={1.3}
+      >
+        {result}
+      </Text>
+    </Pressable>
+  );
+  return animated ? (
+    <Animated.View style={enterStyle}>{row}</Animated.View>
+  ) : (
+    row
   );
 });
 
-export function History({ entries, grouping, still, onUse, onCopy }: Props) {
+export const History = memo(function History({
+  entries,
+  grouping,
+  still,
+  onUse,
+  onCopy,
+}: Props) {
   const p = usePalette();
   const scroll = useRef<ScrollView>(null);
+  const viewport = useRef(0);
   // Rows present on first render appear without animation.
   const initial = useRef<Set<string> | null>(null);
   if (initial.current === null) {
     initial.current = new Set(entries.map(e => e.id));
   }
+  const visible =
+    entries.length > VISIBLE_ROWS ? entries.slice(-VISIBLE_ROWS) : entries;
+
+  // The newest calculation sits at the bottom, next to the display. A scroll
+  // view keeps its offset from the top when it gets shorter (the scientific
+  // keys opening), which would push the newest rows out of view, so it is
+  // pinned back to the end whenever its height changes.
+  const onViewport = (e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (h !== viewport.current) {
+      viewport.current = h;
+      scroll.current?.scrollToEnd({ animated: false });
+    }
+  };
 
   return (
     <View
       style={[
         styles.card,
-        {
-          backgroundColor: p.card,
-          borderColor: p.cardBorder,
-          backgroundImage: p.sheen,
-        },
+        { backgroundImage: p.card, borderColor: p.cardBorder },
       ]}
     >
-      {entries.length === 0 ? (
+      {visible.length === 0 ? (
         <View style={styles.empty}>
           <Text
             style={[styles.emptyTitle, { color: p.inkMuted }]}
@@ -134,13 +164,14 @@ export function History({ entries, grouping, still, onUse, onCopy }: Props) {
       ) : (
         <ScrollView
           ref={scroll}
+          onLayout={onViewport}
           onContentSizeChange={() =>
             scroll.current?.scrollToEnd({ animated: !still })
           }
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         >
-          {entries.map(entry => (
+          {visible.map(entry => (
             <Row
               key={entry.id}
               entry={entry}
@@ -154,7 +185,7 @@ export function History({ entries, grouping, still, onUse, onCopy }: Props) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

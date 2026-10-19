@@ -1,14 +1,19 @@
 /**
- * A frosted-glass key: translucent fill, top-light sheen, rim highlight and a
- * soft shadow. Pressing it squeezes the key on a spring and lights the glass
- * from the touch point; an active key (pending operator, 2nd) fills with
- * liquid. Every animation here runs on the native driver.
+ * A frosted-glass key: translucent fill with a top-light sheen and a rim.
+ * Pressing it squeezes the key and brightens the glass; an active key
+ * (pending operator, 2nd) fills with liquid.
+ *
+ * Built to stay smooth on low-end phones:
+ * - the fill and its sheen are one gradient layer, so each key paints once;
+ * - no blurred shadows (only "=" has a glow), and clipping only on keys that
+ *   can fill with liquid;
+ * - one animated value drives both the squeeze and the highlight, on the
+ *   native driver, so a tap costs the JS thread almost nothing.
  */
-import React, { memo, useRef } from 'react';
+import React, { memo, useMemo, useRef } from 'react';
 import {
   Animated,
   Easing,
-  GestureResponderEvent,
   Image,
   Pressable,
   StyleSheet,
@@ -20,23 +25,25 @@ import { Palette, fonts, usePalette } from '../theme/theme';
 import { LiquidFill } from './LiquidFill';
 
 const backspaceIcon = require('../../assets/icons/backspace.png');
-const pool = require('../../assets/liquid/pool.png');
+
+export const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** Shared so the props of a key stay identical between renders. */
+const SELECTED = { selected: true } as const;
 
 interface Look {
-  fill: string;
-  gradient: string;
+  image: string;
   text: string;
-  shadow: string;
   border: string;
+  glow: string;
 }
 
 function lookFor(kind: KeyKind, p: Palette): Look {
-  const glass = (fill: string, text: string): Look => ({
-    fill,
-    gradient: p.sheen,
+  const glass = (image: string, text: string): Look => ({
+    image,
     text,
-    shadow: p.keyShadow,
     border: p.glassBorder,
+    glow: p.pressGlow,
   });
   switch (kind) {
     case 'digit':
@@ -49,11 +56,10 @@ function lookFor(kind: KeyKind, p: Palette): Look {
       return glass(p.glassSci, p.ink);
     case 'eq':
       return {
-        fill: p.accent,
-        gradient: `${p.sheen}, ${p.liquidGradient}`,
+        image: `${p.sheen}, ${p.liquidGradient}`,
         text: p.accentInk,
-        shadow: p.eqShadow,
         border: 'rgba(255, 255, 255, 0.3)',
+        glow: 'rgba(255, 255, 255, 0.24)',
       };
   }
 }
@@ -124,93 +130,45 @@ export function KeyLabelView({ label, color, fontSize, kind }: LabelProps) {
   );
 }
 
-/** Spring "squeeze" plus a light that blooms from the touch point. */
-export function usePressMotion(width: number, height: number) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const glow = useRef(new Animated.Value(0)).current;
-  const bloom = useRef(new Animated.Value(0)).current;
-  const x = useRef(new Animated.Value(width / 2)).current;
-  const y = useRef(new Animated.Value(height / 2)).current;
+const PRESS_IN = Easing.out(Easing.quad);
+// Eases back past rest for a small rebound, like a drop of liquid settling.
+const RELEASE = Easing.out(Easing.back(1.7));
 
-  const pressIn = (e: GestureResponderEvent) => {
-    const { locationX, locationY } = e.nativeEvent;
-    x.setValue(Number.isFinite(locationX) ? locationX : width / 2);
-    y.setValue(Number.isFinite(locationY) ? locationY : height / 2);
-    bloom.setValue(0);
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: 0.92,
-        stiffness: 520,
-        damping: 28,
-        mass: 1,
-        useNativeDriver: true,
-      }),
-      Animated.timing(glow, {
+/**
+ * Press feedback: `press` runs 0 → 1 while the finger lands and back to 0 on
+ * release. The squeeze and the highlight are both derived from it, so each
+ * tap is one native animation per phase.
+ */
+export function usePressMotion(squeeze = 0.93) {
+  const press = useRef(new Animated.Value(0)).current;
+  return useMemo(() => {
+    const scale = press.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, squeeze],
+    });
+    const glow = press.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    });
+    const pressIn = () => {
+      Animated.timing(press, {
         toValue: 1,
         duration: 90,
-        easing: Easing.out(Easing.quad),
+        easing: PRESS_IN,
         useNativeDriver: true,
-      }),
-      Animated.timing(bloom, {
-        toValue: 1,
-        duration: 520,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const pressOut = () => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: 1,
-        stiffness: 280,
-        damping: 13,
-        mass: 1,
-        useNativeDriver: true,
-      }),
-      Animated.timing(glow, {
+      }).start();
+    };
+    const pressOut = () => {
+      Animated.timing(press, {
         toValue: 0,
-        duration: 420,
-        easing: Easing.out(Easing.quad),
+        duration: 320,
+        easing: RELEASE,
         useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const lightSize = Math.max(width, height) * 2.4;
-  const light = (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Animated.Image
-        source={pool}
-        fadeDuration={0}
-        style={{
-          position: 'absolute',
-          width: lightSize,
-          height: lightSize,
-          left: -lightSize / 2,
-          top: -lightSize / 2,
-          tintColor: '#FFFFFF',
-          opacity: glow.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 0.34],
-          }),
-          transform: [
-            { translateX: x },
-            { translateY: y },
-            {
-              scale: bloom.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.3, 1],
-              }),
-            },
-          ],
-        }}
-      />
-    </View>
-  );
-
-  return { scale, pressIn, pressOut, light };
+      }).start();
+    };
+    return { scale, glow, pressIn, pressOut };
+  }, [press, squeeze]);
 }
 
 interface Props {
@@ -223,6 +181,11 @@ interface Props {
   still?: boolean;
   onPress: (id: KeyId) => void;
   onLongPress?: (id: KeyId) => void;
+}
+
+/** Only these keys can be "active", so only they carry the liquid layer. */
+function canFill(spec: KeySpec): boolean {
+  return spec.kind === 'op' || spec.id === 'second' || spec.id === 'pow';
 }
 
 export const Key = memo(function Key({
@@ -238,71 +201,74 @@ export const Key = memo(function Key({
   const p = usePalette();
   const look = lookFor(spec.kind, p);
   const radius = Math.round(Math.min(width, height) / 2);
-  const motion = usePressMotion(width, height);
-  const fillable = spec.kind === 'op' || spec.kind === 'sci';
+  const motion = usePressMotion();
+  const fillable = canFill(spec);
+
+  const onPressIn = () => {
+    // Start the animation first: its native batch is flushed before the
+    // render that the key press triggers.
+    motion.pressIn();
+    onPress(spec.id);
+  };
 
   return (
-    <Animated.View
-      style={{
-        width,
-        height,
-        borderRadius: radius,
-        boxShadow: look.shadow,
-        transform: [{ scale: motion.scale }],
-      }}
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={spec.a11y}
+      accessibilityState={active ? SELECTED : undefined}
+      onPressIn={onPressIn}
+      onPressOut={motion.pressOut}
+      onLongPress={onLongPress ? () => onLongPress(spec.id) : undefined}
+      delayLongPress={450}
+      style={[
+        styles.glass,
+        fillable && styles.clip,
+        {
+          width,
+          height,
+          borderRadius: radius,
+          backgroundImage: look.image,
+          borderColor: look.border,
+          boxShadow: spec.kind === 'eq' ? p.eqShadow : undefined,
+          transform: [{ scale: motion.scale }],
+        },
+      ]}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={spec.a11y}
-        accessibilityState={active ? { selected: true } : undefined}
-        onPressIn={e => {
-          motion.pressIn(e);
-          onPress(spec.id);
-        }}
-        onPressOut={motion.pressOut}
-        onLongPress={onLongPress ? () => onLongPress(spec.id) : undefined}
-        delayLongPress={450}
-        style={[
-          styles.glass,
-          {
-            width,
-            height,
-            borderRadius: radius,
-            backgroundColor: look.fill,
-            backgroundImage: look.gradient,
-            borderColor: look.border,
-          },
-        ]}
-      >
-        {/* Children ignore touches so the touch point is relative to the key. */}
-        <View pointerEvents="none">
+      <KeyLabelView
+        label={spec.label}
+        color={look.text}
+        fontSize={fontSize}
+        kind={spec.kind}
+      />
+      {fillable ? (
+        <LiquidFill
+          active={active}
+          width={width}
+          height={height}
+          color={p.accent}
+          gradient={p.liquidColumn}
+          still={still}
+        >
           <KeyLabelView
             label={spec.label}
-            color={look.text}
+            color={p.accentInk}
             fontSize={fontSize}
             kind={spec.kind}
           />
-        </View>
-        {fillable ? (
-          <LiquidFill
-            active={active}
-            width={width}
-            height={height}
-            color={p.accent}
-            gradient={p.liquidColumn}
-            still={still}
-          >
-            <KeyLabelView
-              label={spec.label}
-              color={p.accentInk}
-              fontSize={fontSize}
-              kind={spec.kind}
-            />
-          </LiquidFill>
-        ) : null}
-        {motion.light}
-      </Pressable>
-    </Animated.View>
+        </LiquidFill>
+      ) : null}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            borderRadius: radius - 1,
+            backgroundColor: look.glow,
+            opacity: motion.glow,
+          },
+        ]}
+      />
+    </AnimatedPressable>
   );
 });
 
@@ -310,8 +276,10 @@ const styles = StyleSheet.create({
   glass: {
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
     borderWidth: 1,
+  },
+  clip: {
+    overflow: 'hidden',
   },
   label: {
     includeFontPadding: false,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -23,7 +23,7 @@ import {
 import { GlassButton } from './GlassButton';
 import { Segmented } from './Segmented';
 
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.1.0';
 
 interface Props {
   visible: boolean;
@@ -108,7 +108,7 @@ function Swatch({
   );
 }
 
-export function SettingsSheet({
+export const SettingsSheet = memo(function SettingsSheet({
   visible,
   settings,
   historyCount,
@@ -124,6 +124,14 @@ export function SettingsSheet({
   const [mounted, setMounted] = useState(visible);
   const [sheetHeight, setSheetHeight] = useState(700);
   const progress = useRef(new Animated.Value(0)).current;
+  const slide = useMemo(
+    () =>
+      progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [sheetHeight + 40, 0],
+      }),
+    [progress, sheetHeight],
+  );
 
   useEffect(() => {
     if (visible) {
@@ -144,6 +152,11 @@ export function SettingsSheet({
       }).start(({ finished }) => finished && setMounted(false));
     }
   }, [visible, still, progress]);
+
+  // Nothing to build while the sheet is closed (keeps key presses light).
+  if (!mounted && !visible) {
+    return null;
+  }
 
   return (
     <Modal
@@ -173,18 +186,10 @@ export function SettingsSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: p.sheet,
-              backgroundImage: p.sheen,
+              backgroundImage: p.sheetFill,
               borderColor: p.sheetBorder,
               paddingBottom: insets.bottom + 18,
-              transform: [
-                {
-                  translateY: progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [sheetHeight + 40, 0],
-                  }),
-                },
-              ],
+              transform: [{ translateY: slide }],
             },
           ]}
         >
@@ -331,7 +336,7 @@ export function SettingsSheet({
       </View>
     </Modal>
   );
-}
+});
 
 const styles = StyleSheet.create({
   root: {

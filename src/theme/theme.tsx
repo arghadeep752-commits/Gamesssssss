@@ -1,7 +1,7 @@
 /**
  * Liquid glass design tokens.
  *
- * Every screen sits on slowly drifting pools of colored light. Keys and
+ * Every screen sits on soft pools of colored light. Keys and
  * panels are frosted glass on top of them, and anything "active" (the
  * pending operator, the 2nd key, the f(x) switch) fills with liquid in the
  * theme's accent color.
@@ -126,19 +126,27 @@ export interface Palette {
   liquidGradient: string;
   /** Vertical gradient for rising liquid; starts exactly at `accent` so it meets the wave crest without a seam. */
   liquidColumn: string;
+  /**
+   * Glass fills. Each is a single gradient layer: the translucent tint with
+   * the top-light sheen already composited in, so a key paints once instead
+   * of twice (fill rate is what low-end GPUs run out of first).
+   */
   glassDigit: string;
   glassFn: string;
   glassOp: string;
   glassSci: string;
   glassBorder: string;
-  /** Top-light sheen layered over every glass surface. */
+  /** Top-light sheen, for surfaces that layer it over their own fill. */
   sheen: string;
-  keyShadow: string;
+  /** Overlay shown while a key is pressed. */
+  pressGlow: string;
   eqShadow: string;
-  ripple: string;
+  /** History card fill (single layer, like the glass fills). */
   card: string;
   cardBorder: string;
+  /** Opaque settings sheet color, and the same with the sheen baked in. */
   sheet: string;
+  sheetFill: string;
   sheetBorder: string;
   backdrop: string;
   segment: string;
@@ -176,11 +184,53 @@ export function mix(a: string, b: string, t: number): string {
   return `#${c.map(v => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
+/** Sheen as [position %, white alpha] stops, top to bottom. */
+type SheenStops = ReadonlyArray<readonly [number, number]>;
+
+const SHEEN_DARK: SheenStops = [
+  [0, 0.13],
+  [50, 0.02],
+  [100, 0.05],
+];
+const SHEEN_LIGHT: SheenStops = [
+  [0, 0.5],
+  [55, 0],
+  [100, 0],
+];
+
+const round3 = (v: number) => Math.round(v * 1000) / 1000;
+
+function sheenGradient(stops: SheenStops): string {
+  const parts = stops.map(([at, a]) => `rgba(255, 255, 255, ${a}) ${at}%`);
+  return `linear-gradient(180deg, ${parts.join(', ')})`;
+}
+
+/**
+ * One gradient equal to the white sheen painted over a fill of `color` at
+ * `fillAlpha` (source-over at every stop), so the pair costs a single layer.
+ */
+export function glassFill(
+  color: string,
+  fillAlpha: number,
+  stops: SheenStops,
+): string {
+  const rgb = hexToRgb(color);
+  const parts = stops.map(([at, sheen]) => {
+    const a = sheen + fillAlpha * (1 - sheen);
+    // Share of the fill color in the result; the rest is the white sheen.
+    const k = a === 0 ? 1 : (fillAlpha * (1 - sheen)) / a;
+    const [r, g, b] = rgb.map(c => Math.round(255 + (c - 255) * k));
+    return `rgba(${r}, ${g}, ${b}, ${round3(a)}) ${at}%`;
+  });
+  return `linear-gradient(180deg, ${parts.join(', ')})`;
+}
+
 export function buildPalette(id: ThemeId, scheme: Scheme): Palette {
   const s = THEMES[id][scheme];
   const liquidGradient = `linear-gradient(135deg, ${s.accent} 0%, ${s.accent2} 100%)`;
   const liquidColumn = `linear-gradient(180deg, ${s.accent} 0%, ${s.accent2} 100%)`;
   if (scheme === 'dark') {
+    const sheet = mix(s.base, '#26313B', 0.6);
     return {
       id,
       scheme,
@@ -196,20 +246,18 @@ export function buildPalette(id: ThemeId, scheme: Scheme): Palette {
       accentText: s.accent,
       liquidGradient,
       liquidColumn,
-      glassDigit: 'rgba(255, 255, 255, 0.075)',
-      glassFn: 'rgba(255, 255, 255, 0.17)',
-      glassOp: alpha(s.accent, 0.15),
-      glassSci: 'rgba(255, 255, 255, 0.055)',
+      glassDigit: glassFill('#FFFFFF', 0.075, SHEEN_DARK),
+      glassFn: glassFill('#FFFFFF', 0.17, SHEEN_DARK),
+      glassOp: glassFill(s.accent, 0.15, SHEEN_DARK),
+      glassSci: glassFill('#FFFFFF', 0.055, SHEEN_DARK),
       glassBorder: 'rgba(255, 255, 255, 0.13)',
-      sheen:
-        'linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%)',
-      keyShadow:
-        'inset 0px 1px 0px 0px rgba(255, 255, 255, 0.16), 0px 14px 26px -14px rgba(0, 0, 0, 0.7)',
-      eqShadow: `inset 0px 1px 0px 0px rgba(255, 255, 255, 0.45), 0px 14px 30px -12px ${alpha(s.accent2, 0.75)}`,
-      ripple: 'rgba(255, 255, 255, 0.16)',
-      card: 'rgba(255, 255, 255, 0.045)',
+      sheen: sheenGradient(SHEEN_DARK),
+      pressGlow: 'rgba(255, 255, 255, 0.14)',
+      eqShadow: `0px 12px 26px -12px ${alpha(s.accent2, 0.7)}`,
+      card: glassFill('#FFFFFF', 0.045, SHEEN_DARK),
       cardBorder: 'rgba(255, 255, 255, 0.09)',
-      sheet: mix(s.base, '#26313B', 0.6),
+      sheet,
+      sheetFill: glassFill(sheet, 1, SHEEN_DARK),
       sheetBorder: 'rgba(255, 255, 255, 0.10)',
       backdrop: 'rgba(0, 0, 0, 0.5)',
       segment: 'rgba(255, 255, 255, 0.06)',
@@ -220,6 +268,7 @@ export function buildPalette(id: ThemeId, scheme: Scheme): Palette {
       danger: '#FF8A80',
     };
   }
+  const sheet = mix(s.base, '#FFFFFF', 0.72);
   return {
     id,
     scheme,
@@ -235,20 +284,18 @@ export function buildPalette(id: ThemeId, scheme: Scheme): Palette {
     accentText: mix(s.accent, '#000000', 0.12),
     liquidGradient,
     liquidColumn,
-    glassDigit: 'rgba(255, 255, 255, 0.62)',
-    glassFn: 'rgba(255, 255, 255, 0.32)',
-    glassOp: alpha(s.accent, 0.12),
-    glassSci: 'rgba(255, 255, 255, 0.42)',
+    glassDigit: glassFill('#FFFFFF', 0.62, SHEEN_LIGHT),
+    glassFn: glassFill('#FFFFFF', 0.32, SHEEN_LIGHT),
+    glassOp: glassFill(s.accent, 0.12, SHEEN_LIGHT),
+    glassSci: glassFill('#FFFFFF', 0.42, SHEEN_LIGHT),
     glassBorder: 'rgba(255, 255, 255, 0.9)',
-    sheen:
-      'linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 55%)',
-    keyShadow:
-      'inset 0px -1px 0px 0px rgba(20, 40, 52, 0.05), 0px 12px 24px -14px rgba(20, 40, 52, 0.35)',
-    eqShadow: `inset 0px 1px 0px 0px rgba(255, 255, 255, 0.4), 0px 14px 28px -12px ${alpha(s.accent, 0.55)}`,
-    ripple: alpha(s.accent, 0.14),
-    card: 'rgba(255, 255, 255, 0.36)',
+    sheen: sheenGradient(SHEEN_LIGHT),
+    pressGlow: 'rgba(14, 24, 32, 0.07)',
+    eqShadow: `0px 12px 24px -12px ${alpha(s.accent, 0.5)}`,
+    card: glassFill('#FFFFFF', 0.36, SHEEN_LIGHT),
     cardBorder: 'rgba(255, 255, 255, 0.75)',
-    sheet: mix(s.base, '#FFFFFF', 0.72),
+    sheet,
+    sheetFill: glassFill(sheet, 1, SHEEN_LIGHT),
     sheetBorder: 'rgba(255, 255, 255, 0.9)',
     backdrop: 'rgba(10, 20, 28, 0.32)',
     segment: 'rgba(14, 24, 32, 0.06)',

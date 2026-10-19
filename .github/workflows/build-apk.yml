@@ -1,9 +1,10 @@
 name: Build APK
 
-# Builds the Calc Pro release APK on GitHub's servers, checks it on an
-# Android emulator (screenshots, screen recording and log), and publishes the
-# results to the "calcpro-builds" branch so the APK can be downloaded from a
-# phone. Runs on every push to the calcpro branch, or manually from the
+# Builds the Calc Pro release APK on GitHub's servers and publishes it to the
+# "calcpro-builds" branch right away, so it can be downloaded from a phone.
+# Then it checks the app on an Android emulator (screenshots, a screen
+# recording, frame statistics and the log) and adds those results to the same
+# branch. Runs on every push to the calcpro branch, or manually from the
 # Actions tab ("Run workflow").
 
 on:
@@ -67,6 +68,16 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk ../dist/CalcPro.apk
           ls -lh ../dist
 
+      - name: Publish the APK to the calcpro-builds branch
+        # The finished APK goes out before the emulator test, so it can be
+        # downloaded right away. The last step publishes it again with the
+        # test results.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: bash scripts/publish-build.sh
+
       - name: Build emulator APK (x86_64) for the smoke test
         id: emu_apk
         continue-on-error: true
@@ -105,26 +116,9 @@ jobs:
             smoke/
           if-no-files-found: ignore
 
-      - name: Publish to the calcpro-builds branch
+      - name: Add the smoke test results to the calcpro-builds branch
         if: always() && hashFiles('dist/CalcPro.apk') != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          out="$RUNNER_TEMP/out"
-          rm -rf "$out" && mkdir -p "$out"
-          cp dist/CalcPro.apk "$out/"
-          if [ -d smoke ]; then cp -r smoke "$out/"; fi
-          {
-            echo "# Calc Pro build ${{ github.run_number }}"
-            echo
-            echo "Download **CalcPro.apk** from this branch and open it on your Android phone to install."
-            echo
-            echo "Built from commit ${GITHUB_SHA::7}. The smoke folder has emulator screenshots and the log."
-          } > "$out/README.md"
-          cd "$out"
-          git init -q -b calcpro-builds
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "Calc Pro build ${{ github.run_number }} (${GITHUB_SHA::7})"
-          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" calcpro-builds
+          RUN_NUMBER: ${{ github.run_number }}
+        run: bash scripts/publish-build.sh

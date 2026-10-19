@@ -82,6 +82,18 @@ wait "$REC" 2>/dev/null
 sleep 1
 adb pull /sdcard/demo.mp4 "$OUT/demo.mp4" >/dev/null 2>&1 || log "no screen recording"
 
+# Frame statistics for a burst of fast typing (no screen recording running).
+# The emulator renders on the CPU, so absolute numbers are far slower than a
+# phone; they are for comparing builds.
+tap Clear 0.6
+adb shell dumpsys gfxinfo "$PKG" reset >/dev/null 2>&1
+for k in 7 8 9 4 5 6 1 2 3 0 7 8 9 4 5; do tap "$k" 0.12; done
+tap Plus 0.3
+for k in 9 9 9; do tap "$k" 0.12; done
+tap Equals 1.2
+adb shell dumpsys gfxinfo "$PKG" > "$OUT/gfxinfo.txt" 2>&1
+grep -E "Total frames rendered|Janky frames|50th percentile|90th percentile|95th percentile|99th percentile" "$OUT/gfxinfo.txt" | head -6 | while read -r line; do log "gfx: $line"; done
+
 tap "Scientific keys" 1.5
 animations 0
 sleep 1

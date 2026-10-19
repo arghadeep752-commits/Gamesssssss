@@ -48,6 +48,18 @@ export function writeJSON(key: string, value: unknown): void {
   writeString(key, JSON.stringify(value));
 }
 
+/**
+ * Tells the native side the app has drawn its first frames. The app paints
+ * the whole window itself, so the window background underneath is released.
+ */
+export function windowReady(): void {
+  try {
+    NativeCalcKit?.windowReady();
+  } catch {
+    // Purely an optimization.
+  }
+}
+
 export type HapticKind = 'tap' | 'confirm' | 'long';
 
 export function haptic(kind: HapticKind): void {

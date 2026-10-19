@@ -1,18 +1,17 @@
 /**
- * Small glass button (pill or circle) with the same spring press and touch
- * light as the keys. When `active`, it fills with liquid.
+ * Small glass button (pill or circle) with the same spring press and
+ * highlight as the keys. When `active`, it fills with liquid.
  */
 import React from 'react';
 import {
   AccessibilityRole,
   AccessibilityState,
   Animated,
-  Pressable,
   StyleSheet,
   View,
 } from 'react-native';
 import { usePalette } from '../theme/theme';
-import { usePressMotion } from './Key';
+import { AnimatedPressable, usePressMotion } from './Key';
 import { LiquidFill } from './LiquidFill';
 
 interface Props {
@@ -47,58 +46,58 @@ export function GlassButton({
   disabled = false,
 }: Props) {
   const p = usePalette();
-  const motion = usePressMotion(width, height);
+  const motion = usePressMotion();
   const radius = Math.min(width, height) / 2;
+  const fillable = activeChildren !== undefined;
   return (
-    <Animated.View
-      style={{
-        width,
-        height,
-        borderRadius: radius,
-        boxShadow: disabled ? undefined : p.keyShadow,
-        opacity: disabled ? 0.45 : 1,
-        transform: [{ scale: motion.scale }],
-      }}
+    <AnimatedPressable
+      onPressIn={disabled ? undefined : motion.pressIn}
+      onPressOut={disabled ? undefined : motion.pressOut}
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={6}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
+      style={[
+        styles.glass,
+        fillable && styles.clip,
+        {
+          width,
+          height,
+          borderRadius: radius,
+          opacity: disabled ? 0.45 : 1,
+          backgroundImage: tone === 'danger' ? undefined : p.glassFn,
+          borderColor: tone === 'danger' ? p.danger : p.glassBorder,
+          transform: [{ scale: motion.scale }],
+        },
+      ]}
     >
-      <Pressable
-        onPressIn={disabled ? undefined : motion.pressIn}
-        onPressOut={disabled ? undefined : motion.pressOut}
-        onPress={onPress}
-        disabled={disabled}
-        hitSlop={6}
-        accessibilityRole={accessibilityRole}
-        accessibilityLabel={accessibilityLabel}
-        accessibilityState={accessibilityState}
+      <View style={styles.content}>{children}</View>
+      {fillable ? (
+        <LiquidFill
+          active={active}
+          width={width}
+          height={height}
+          color={p.accent}
+          gradient={p.liquidColumn}
+          still={still}
+        >
+          {activeChildren}
+        </LiquidFill>
+      ) : null}
+      <Animated.View
+        pointerEvents="none"
         style={[
-          styles.glass,
+          StyleSheet.absoluteFill,
           {
-            width,
-            height,
-            borderRadius: radius,
-            backgroundColor: tone === 'danger' ? 'transparent' : p.glassFn,
-            backgroundImage: tone === 'danger' ? undefined : p.sheen,
-            borderColor: tone === 'danger' ? p.danger : p.glassBorder,
+            borderRadius: radius - 1,
+            backgroundColor: p.pressGlow,
+            opacity: motion.glow,
           },
         ]}
-      >
-        <View pointerEvents="none" style={styles.content}>
-          {children}
-        </View>
-        {activeChildren !== undefined ? (
-          <LiquidFill
-            active={active}
-            width={width}
-            height={height}
-            color={p.accent}
-            gradient={p.liquidColumn}
-            still={still}
-          >
-            {activeChildren}
-          </LiquidFill>
-        ) : null}
-        {motion.light}
-      </Pressable>
-    </Animated.View>
+      />
+    </AnimatedPressable>
   );
 }
 
@@ -106,8 +105,10 @@ const styles = StyleSheet.create({
   glass: {
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
     borderWidth: 1,
+  },
+  clip: {
+    overflow: 'hidden',
   },
   content: {
     alignItems: 'center',

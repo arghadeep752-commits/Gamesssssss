@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import { fonts, usePalette } from '../theme/theme';
 
@@ -8,7 +8,7 @@ export interface ToastMessage {
 }
 
 /** Short confirmation bubble ("Copied 1,234") that springs in and fades. */
-export function Toast({
+export const Toast = memo(function Toast({
   message,
   bottom,
 }: {
@@ -44,36 +44,38 @@ export function Toast({
     return () => anim.stop();
   }, [message, show]);
 
+  const motion = useMemo(
+    () => ({
+      opacity: show.interpolate({
+        inputRange: [0, 0.6, 1],
+        outputRange: [0, 1, 1],
+      }),
+      transform: [
+        {
+          translateY: show.interpolate({
+            inputRange: [0, 1],
+            outputRange: [14, 0],
+          }),
+        },
+        {
+          scale: show.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.9, 1],
+          }),
+        },
+      ],
+    }),
+    [show],
+  );
+
   return (
     <Animated.View
       pointerEvents="none"
       accessibilityLiveRegion="polite"
       style={[
         styles.toast,
-        {
-          bottom,
-          backgroundColor: p.toast,
-          borderColor: p.glassBorder,
-          boxShadow: p.keyShadow,
-          opacity: show.interpolate({
-            inputRange: [0, 0.6, 1],
-            outputRange: [0, 1, 1],
-          }),
-          transform: [
-            {
-              translateY: show.interpolate({
-                inputRange: [0, 1],
-                outputRange: [14, 0],
-              }),
-            },
-            {
-              scale: show.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.9, 1],
-              }),
-            },
-          ],
-        },
+        motion,
+        { bottom, backgroundColor: p.toast, borderColor: p.glassBorder },
       ]}
     >
       <Text
@@ -85,7 +87,7 @@ export function Toast({
       </Text>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   toast: {

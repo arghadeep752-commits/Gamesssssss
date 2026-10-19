@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { fonts, usePalette } from '../theme/theme';
 import { GlassButton } from './GlassButton';
 
 const tuneIcon = require('../../assets/icons/tune.png');
+
+// Shared objects keep the button's props identical between renders.
+const ON = { checked: true } as const;
+const OFF = { checked: false } as const;
 
 interface Props {
   height: number;
@@ -16,7 +20,7 @@ interface Props {
   onOpenSettings: () => void;
 }
 
-export function TopBar({
+export const TopBar = memo(function TopBar({
   height,
   showTitle,
   showSciToggle,
@@ -35,12 +39,7 @@ export function TopBar({
     <View style={[styles.bar, { height }]}>
       {showTitle ? (
         <View style={styles.brand}>
-          <View
-            style={[
-              styles.dot,
-              { backgroundImage: p.liquidGradient, backgroundColor: p.accent },
-            ]}
-          />
+          <View style={[styles.dot, { backgroundImage: p.liquidGradient }]} />
           <Text
             style={[styles.title, { color: p.ink }]}
             allowFontScaling={false}
@@ -59,7 +58,7 @@ export function TopBar({
             height={40}
             onPress={onToggleSci}
             accessibilityRole="switch"
-            accessibilityState={{ checked: sciOpen }}
+            accessibilityState={sciOpen ? ON : OFF}
             accessibilityLabel="Scientific keys"
             active={sciOpen}
             still={still}
@@ -83,7 +82,7 @@ export function TopBar({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   bar: {

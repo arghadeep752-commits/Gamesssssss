@@ -9,9 +9,10 @@ A liquid glass scientific calculator for Android, built with React Native 0.87 (
 
 ## Design
 
-- **Liquid glass**: frosted glass keys and panels float over slowly drifting pools of colored light.
+- **Liquid glass**: frosted glass keys and panels float over soft pools of colored light.
 - **Liquid fill**: the operator you just chose (and the 2nd and f(x) switches) fills with liquid that rises with a wave and drains away when you type the next number.
-- **Spring motion**: keys squeeze on a spring and light up from the exact point you touch; results spring into place, history rows slide in and the settings sheet springs up. Every animation runs on the native UI thread, so it stays smooth while you type. The system "Remove animations" setting turns them off.
+- **Spring motion**: keys squeeze and light up under your finger and settle with a small rebound; results spring into place, history rows slide in and the settings sheet springs up. The system "Remove animations" setting turns them off.
+- **Smooth on low-end phones**: press animations run on the native UI thread, a key press re-renders only what changed, the background is drawn once and cached on the GPU, every glass surface paints in a single layer, and there are no blurred shadows to recompute.
 - **Four color themes**: Lagoon, Ember, Orchid and Graphite, each in light and dark, plus System/Light/Dark appearance.
 - Typeface: Geist, with tabular numbers so digits don't jump while you type.
 
@@ -87,8 +88,8 @@ src/
     format.ts      Precision control and number formatting
     math.ts        Gamma/factorial, exact trig at multiples of 90°
   components/
-    LiquidBackground.tsx  Drifting color pools (native-driver loops)
-    Key.tsx               Glass key: spring press, touch light, liquid fill
+    LiquidBackground.tsx  Color pools, drawn once and cached on the GPU
+    Key.tsx               Glass key: press squeeze and glow, liquid fill
     LiquidFill.tsx        Rising liquid with a wave crest and inverted label
     Display.tsx           Expression, live result, swipe and copy gestures
     History.tsx           Glass history card
@@ -99,7 +100,7 @@ src/
   theme/         Color themes, fonts, text measurement
 assets/liquid/   Light-pool and wave images (tinted at runtime)
 android/app/src/main/java/com/calcpro/app/
-  CalcKitModule.kt   Native storage (SharedPreferences) and haptics
+  CalcKitModule.kt   Native storage (SharedPreferences), haptics, window background release
   CalcKitPackage.kt  Module registration
   MainApplication.kt Applies the saved light/dark choice before launch
   MainActivity.kt    Paints the window in the chosen theme's color

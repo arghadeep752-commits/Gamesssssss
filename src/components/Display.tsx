@@ -1,9 +1,10 @@
 /**
  * The expression and its live result. A new result springs into place, a
  * horizontal swipe deletes the last character and a long press copies the
- * value.
+ * value. When the space above the keys changes (scientific keys shown or
+ * hidden) the text glides to its new size instead of jumping.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   LayoutChangeEvent,
@@ -33,7 +34,7 @@ interface Props {
   onSwipe: () => void;
 }
 
-export function Display({
+export const Display = memo(function Display({
   text,
   ghost,
   preview,
@@ -52,6 +53,8 @@ export function Display({
   const [width, setWidth] = useState(0);
   const scroll = useRef<ScrollView>(null);
   const rise = useRef(new Animated.Value(0)).current;
+  // Native from the start, so setting it never re-renders anything.
+  const zoom = useRef(new Animated.Value(1, { useNativeDriver: true })).current;
 
   const shown = text === '' ? '0' : text;
   const full = shown + ghost;
@@ -59,6 +62,64 @@ export function Display({
   const previewSize = preview
     ? fitFontSize(preview, width, previewFont, 16)
     : previewFont;
+
+  // Created once: new interpolation nodes on every render would rebuild the
+  // native animation graph on each key press.
+  const textMotion = useMemo(
+    () => ({
+      opacity: rise.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 0.2],
+      }),
+      transform: [
+        {
+          translateY: rise.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 26],
+          }),
+        },
+        {
+          scale: Animated.multiply(
+            zoom,
+            rise.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0.94],
+            }),
+          ),
+        },
+      ],
+    }),
+    [rise, zoom],
+  );
+
+  // When the room for the text changes (scientific keys shown or hidden),
+  // the text starts at its old size and glides to the new one. The starting
+  // scale is set while rendering, so it is committed together with the new
+  // font size and the text never flashes at the wrong size.
+  const sizing = useRef({ font: fontSize, max: maxFont, glide: false });
+  if (sizing.current.max !== maxFont) {
+    const before = sizing.current.font;
+    sizing.current.max = maxFont;
+    if (!still && width > 0 && before !== fontSize) {
+      zoom.setValue(before / fontSize);
+      sizing.current.glide = true;
+    }
+  }
+  sizing.current.font = fontSize;
+
+  useEffect(() => {
+    if (!sizing.current.glide) {
+      return;
+    }
+    sizing.current.glide = false;
+    Animated.spring(zoom, {
+      toValue: 1,
+      stiffness: 240,
+      damping: 30,
+      mass: 1,
+      useNativeDriver: true,
+    }).start();
+  }, [maxFont, zoom]);
 
   // Swipes are only for deleting while the expression fits; once it needs
   // scrolling, horizontal drags scroll it instead.
@@ -127,28 +188,7 @@ export function Display({
           ))}
         </View>
         <View onLayout={onLayout}>
-          <Animated.View
-            style={{
-              opacity: rise.interpolate({
-                inputRange: [0, 1],
-                outputRange: [1, 0.2],
-              }),
-              transform: [
-                {
-                  translateY: rise.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 26],
-                  }),
-                },
-                {
-                  scale: rise.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 0.94],
-                  }),
-                },
-              ],
-            }}
-          >
+          <Animated.View style={[styles.textBox, textMotion]}>
             <ScrollView
               ref={scroll}
               horizontal
@@ -199,9 +239,14 @@ export function Display({
       </Pressable>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
+  textBox: {
+    // Text is right-aligned and sits on the result line, so size changes
+    // grow from the bottom-right corner.
+    transformOrigin: 'right bottom',
+  },
   wrap: {
     paddingHorizontal: 26,
     paddingTop: 4,

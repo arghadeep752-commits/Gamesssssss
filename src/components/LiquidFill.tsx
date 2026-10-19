@@ -3,7 +3,7 @@
  * when it is released. The label on top of the liquid is counter-translated,
  * so it stays put while the rising surface reveals it. Native driver only.
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 const wave = require('../../assets/liquid/wave.png');
@@ -61,16 +61,27 @@ export function LiquidFill({
   }, [active, still, level, flow]);
 
   const waveH = Math.max(8, Math.round(height * 0.2));
-  // Top of the liquid column (wave crest) in the key's coordinates.
-  const top = level.interpolate({
-    inputRange: [0, 1],
-    outputRange: [height + 2, -waveH],
-  });
-  // Opposite movement for the label so it stays aligned with the key.
-  const counter = level.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-(height + 2 + waveH), 0],
-  });
+  // Interpolations are created once per size so re-renders never rebuild
+  // the native animation graph.
+  const motion = useMemo(
+    () => ({
+      // Top of the liquid column (wave crest) in the key's coordinates.
+      top: level.interpolate({
+        inputRange: [0, 1],
+        outputRange: [height + 2, -waveH],
+      }),
+      // Opposite movement for the label so it stays aligned with the key.
+      counter: level.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-(height + 2 + waveH), 0],
+      }),
+      drift: flow.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, -width],
+      }),
+    }),
+    [level, flow, width, height, waveH],
+  );
 
   return (
     <Animated.View
@@ -80,7 +91,7 @@ export function LiquidFill({
         {
           width,
           height: waveH + height * 1.6,
-          transform: [{ translateY: top }],
+          transform: [{ translateY: motion.top }],
         },
       ]}
     >
@@ -93,14 +104,7 @@ export function LiquidFill({
             width: width * 2,
             height: waveH,
             tintColor: color,
-            transform: [
-              {
-                translateX: flow.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, -width],
-                }),
-              },
-            ],
+            transform: [{ translateX: motion.drift }],
           }}
         />
       </View>
@@ -119,7 +123,7 @@ export function LiquidFill({
           <Animated.View
             style={[
               styles.label,
-              { width, height, transform: [{ translateY: counter }] },
+              { width, height, transform: [{ translateY: motion.counter }] },
             ]}
           >
             {children}

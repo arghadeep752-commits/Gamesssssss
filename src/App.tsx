@@ -3,7 +3,15 @@
  *
  * Portrait: history card, display, optional scientific keys, basic keys.
  * Landscape: display above scientific + basic keys side by side.
- * Everything floats as frosted glass over the drifting liquid background.
+ * Everything floats as frosted glass over pools of colored light.
+ *
+ * Performance notes (the app has to stay smooth on low-end phones):
+ * - a key press re-renders only the display and the keys whose state
+ *   changed: metrics, callbacks and derived props are all memoized;
+ * - the portrait scientific keys stay mounted while hidden, so showing them
+ *   never has to build twenty keys in the middle of an animation;
+ * - every animation except the scientific block's height (a layout change)
+ *   runs on the native driver.
  */
 import React, {
   useCallback,
@@ -47,12 +55,12 @@ import {
   toCanonical,
   trimForEval,
 } from './engine';
-import { useLayoutMetrics } from './hooks/useLayoutMetrics';
+import { KEYPAD_PAD, useLayoutMetrics } from './hooks/useLayoutMetrics';
 import { useReduceMotion } from './hooks/useReduceMotion';
 import { loadAppState, reducer } from './state/calcReducer';
 import type { KeyId } from './state/keys';
 import { Settings, loadSettings, saveSettings } from './state/settings';
-import { KEYS, haptic, writeJSON } from './state/storage';
+import { KEYS, haptic, windowReady, writeJSON } from './state/storage';
 import { ThemeProvider, buildPalette } from './theme/theme';
 
 const NOTICE_TEXT: Record<Notice, string> = {
@@ -67,6 +75,8 @@ const OP_KEY: Record<string, KeyId> = {
   '/': 'div',
   '^': 'pow',
 };
+
+const NO_INDICATORS: string[] = [];
 
 /** The operator still waiting for its second operand, if any. */
 function pendingOperator(tokens: Token[]): KeyId | null {
@@ -102,13 +112,47 @@ function Calculator() {
     [settings.palette, scheme],
   );
   const m = useLayoutMetrics(settings.sci);
+  // The portrait scientific keys always use their open-state size, so they
+  // never re-render when they are shown or hidden.
+  const mOpen = useLayoutMetrics(true);
+  const sciMetrics = m.landscape ? m : mOpen;
+  const sciVisible = m.landscape || settings.sci;
 
-  // Scientific keys (portrait): the block's height follows the JS driver,
-  // its keys fade and rise on the native driver.
-  const [sciMounted, setSciMounted] = useState(settings.sci);
+  // Showing the scientific keys grows their block (JS driver, since it is a
+  // layout change the history and display follow) while the keys themselves
+  // fade and rise on the native driver.
   const sciHeight = useRef(new Animated.Value(settings.sci ? 1 : 0)).current;
   const sciFade = useRef(new Animated.Value(settings.sci ? 1 : 0)).current;
-  const sciVisible = m.landscape || sciMounted;
+  const sciBlockStyle = useMemo(
+    () => ({
+      height: sciHeight.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, mOpen.sciBlock],
+      }),
+    }),
+    [sciHeight, mOpen.sciBlock],
+  );
+  const sciKeysStyle = useMemo(
+    () => ({
+      paddingBottom: mOpen.blockGap,
+      opacity: sciFade,
+      transform: [
+        {
+          translateY: sciFade.interpolate({
+            inputRange: [0, 1],
+            outputRange: [18, 0],
+          }),
+        },
+        {
+          scale: sciFade.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.96, 1],
+          }),
+        },
+      ],
+    }),
+    [sciFade, mOpen.blockGap],
+  );
 
   // Persistence
   useEffect(() => saveSettings(settings), [settings]);
@@ -124,6 +168,14 @@ function Calculator() {
     );
     return () => clearTimeout(t);
   }, [app.calc]);
+
+  // Once the first frames are on screen the app paints its own background,
+  // so the window's copy underneath (a full-screen fill on every frame) can
+  // go.
+  useEffect(() => {
+    const t = setTimeout(windowReady, 700);
+    return () => clearTimeout(t);
+  }, []);
 
   // The in-app theme also switches the Android window theme (system bars).
   useEffect(() => {
@@ -188,30 +240,26 @@ function Calculator() {
       haptic('tap');
     }
     setSettings(prev => ({ ...prev, sci: open }));
-    if (open) {
-      setSciMounted(true);
-    }
     const fast = reduceMotion;
     Animated.parallel([
       Animated.timing(sciHeight, {
         toValue: open ? 1 : 0,
-        duration: fast ? 0 : 320,
+        duration: fast ? 0 : 300,
         easing: Easing.bezier(0.2, 0.9, 0.25, 1),
         useNativeDriver: false,
       }),
       Animated.timing(sciFade, {
         toValue: open ? 1 : 0,
-        duration: fast ? 0 : open ? 340 : 160,
-        delay: open && !fast ? 70 : 0,
+        duration: fast ? 0 : open ? 320 : 150,
+        delay: open && !fast ? 60 : 0,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-    ]).start(({ finished }) => {
-      if (finished && !open) {
-        setSciMounted(false);
-      }
-    });
+    ]).start();
   }, [reduceMotion, sciHeight, sciFade]);
+
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
 
   const changeSettings = useCallback((patch: Partial<Settings>) => {
     setSettings(prev => ({ ...prev, ...patch }));
@@ -284,15 +332,13 @@ function Calculator() {
     : `${spokenExpression(calc.tokens, settings.grouping) || '0'}${
         preview ? `, equals ${preview}` : ''
       }`;
-  const indicators = sciVisible
-    ? [settings.angle === 'deg' ? 'DEG' : 'RAD', ...(second ? ['2nd'] : [])]
-    : [];
-
-  const keypadHeight =
-    m.keyH * 5 +
-    m.gap * 4 +
-    14 +
-    (!m.landscape && settings.sci ? m.sciBlock : 0);
+  const indicators = useMemo(
+    () =>
+      sciVisible
+        ? [settings.angle === 'deg' ? 'DEG' : 'RAD', ...(second ? ['2nd'] : [])]
+        : NO_INDICATORS,
+    [sciVisible, settings.angle, second],
+  );
 
   const display = (
     <Display
@@ -314,7 +360,7 @@ function Calculator() {
 
   const sciPad = (
     <SciPad
-      m={m}
+      m={sciMetrics}
       second={second}
       angle={settings.angle}
       activeKey={activeKey}
@@ -332,7 +378,6 @@ function Calculator() {
         style={[
           styles.root,
           {
-            backgroundColor: palette.base,
             paddingTop: insets.top,
             paddingBottom: insets.bottom,
             paddingLeft: insets.left,
@@ -340,11 +385,7 @@ function Calculator() {
           },
         ]}
       >
-        <LiquidBackground
-          width={m.width}
-          height={m.height}
-          still={reduceMotion}
-        />
+        <LiquidBackground width={m.width} height={m.height} />
         <View style={[styles.content, { width: m.contentWidth }]}>
           <TopBar
             height={m.topBar}
@@ -353,7 +394,7 @@ function Calculator() {
             sciOpen={settings.sci}
             still={reduceMotion}
             onToggleSci={toggleSci}
-            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenSettings={openSettings}
           />
           {m.landscape ? (
             <View style={styles.landscapeDisplay}>{display}</View>
@@ -375,48 +416,23 @@ function Calculator() {
           )}
           <View
             style={[
-              { paddingHorizontal: m.pad, paddingBottom: 14 },
+              { paddingHorizontal: m.pad, paddingBottom: KEYPAD_PAD },
               m.landscape ? styles.keysLandscape : null,
             ]}
           >
             {m.landscape ? (
               <View style={{ marginRight: m.blockGap }}>{sciPad}</View>
-            ) : sciMounted ? (
+            ) : (
               <Animated.View
-                style={[
-                  styles.sciClip,
-                  {
-                    height: sciHeight.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, m.sciBlock],
-                    }),
-                  },
-                ]}
+                style={[styles.sciClip, sciBlockStyle]}
+                importantForAccessibility={
+                  settings.sci ? 'auto' : 'no-hide-descendants'
+                }
+                accessibilityElementsHidden={!settings.sci}
               >
-                <Animated.View
-                  style={{
-                    paddingBottom: m.blockGap,
-                    opacity: sciFade,
-                    transform: [
-                      {
-                        translateY: sciFade.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [18, 0],
-                        }),
-                      },
-                      {
-                        scale: sciFade.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.96, 1],
-                        }),
-                      },
-                    ],
-                  }}
-                >
-                  {sciPad}
-                </Animated.View>
+                <Animated.View style={sciKeysStyle}>{sciPad}</Animated.View>
               </Animated.View>
-            ) : null}
+            )}
             <BasicPad
               m={m}
               activeKey={activeKey}
@@ -426,7 +442,7 @@ function Calculator() {
             />
           </View>
         </View>
-        <Toast message={toast} bottom={insets.bottom + keypadHeight + 12} />
+        <Toast message={toast} bottom={insets.bottom + m.keypadHeight + 12} />
         <SettingsSheet
           visible={settingsOpen}
           settings={settings}
@@ -434,7 +450,7 @@ function Calculator() {
           still={reduceMotion}
           onChange={changeSettings}
           onClearHistory={clearHistory}
-          onClose={() => setSettingsOpen(false)}
+          onClose={closeSettings}
         />
       </View>
     </ThemeProvider>

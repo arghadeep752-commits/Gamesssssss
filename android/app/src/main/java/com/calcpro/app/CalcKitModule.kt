@@ -12,8 +12,9 @@ import com.facebook.react.bridge.UiThreadUtil
  * Turbo Native Module behind src/specs/NativeCalcKit.ts.
  *
  * Stores settings, the calculation tape and the current input in
- * SharedPreferences (synchronous reads keep the first frame complete), and
- * plays the system keyboard haptic on key presses.
+ * SharedPreferences (synchronous reads keep the first frame complete), plays
+ * the system keyboard haptic on key presses, and releases the window
+ * background once the app draws its own.
  */
 class CalcKitModule(reactContext: ReactApplicationContext) : NativeCalcKitSpec(reactContext) {
 
@@ -43,6 +44,22 @@ class CalcKitModule(reactContext: ReactApplicationContext) : NativeCalcKitSpec(r
           else -> HapticFeedbackConstants.KEYBOARD_TAP
         }
     UiThreadUtil.runOnUiThread { activity.window?.decorView?.performHapticFeedback(feedback) }
+  }
+
+  /**
+   * Called once the app has drawn its first frames. From then on its root
+   * view paints every pixel of the window, so the window background below it
+   * is pure overdraw: a full-screen fill on every frame. Releasing it saves
+   * GPU time on low-end phones. (The launch screen uses the theme's own
+   * background and is not affected.)
+   */
+  override fun windowReady() {
+    val activity = reactApplicationContext.currentActivity ?: return
+    UiThreadUtil.runOnUiThread {
+      if (!activity.isFinishing) {
+        activity.window?.setBackgroundDrawable(null)
+      }
+    }
   }
 
   companion object {

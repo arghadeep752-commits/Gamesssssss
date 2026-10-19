@@ -1,7 +1,7 @@
 /**
  * Segmented control whose selection slides between options on a spring.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   LayoutChangeEvent,
@@ -59,6 +59,16 @@ export function Segmented<T extends string>({
 
   const segW = width > 0 ? (width - PAD * 2) / options.length : 0;
   const last = options.length - 1;
+  const slide = useMemo(
+    () =>
+      last > 0
+        ? pos.interpolate({
+            inputRange: [0, last],
+            outputRange: [0, last * segW],
+          })
+        : 0,
+    [pos, last, segW],
+  );
   const onLayout = (e: LayoutChangeEvent) =>
     setWidth(e.nativeEvent.layout.width);
 
@@ -81,18 +91,8 @@ export function Segmented<T extends string>({
               width: segW,
               backgroundColor: p.segmentOn,
               backgroundImage: p.sheen,
-              boxShadow: p.keyShadow,
-              transform: [
-                {
-                  translateX:
-                    last > 0
-                      ? pos.interpolate({
-                          inputRange: [0, last],
-                          outputRange: [0, last * segW],
-                        })
-                      : 0,
-                },
-              ],
+              borderColor: p.glassBorder,
+              transform: [{ translateX: slide }],
             },
           ]}
         />
@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
     padding: PAD - 1,
   },
   indicator: {
+    borderWidth: 1,
     position: 'absolute',
     left: PAD - 1,
     top: PAD - 1,

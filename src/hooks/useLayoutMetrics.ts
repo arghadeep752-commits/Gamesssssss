@@ -2,9 +2,21 @@
  * Sizes the keypad from the window so keys stay large on phones, compact on
  * small screens and never stretch on tablets. The display and the history
  * card get whatever height is left.
+ *
+ * The result is memoized: the same object comes back until the window, the
+ * insets or the scientific switch change, so memoized keypads skip
+ * re-rendering on every key press.
  */
+import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+interface Insets {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
 
 export interface Metrics {
   landscape: boolean;
@@ -33,6 +45,8 @@ export interface Metrics {
   displayFont: number;
   /** False on screens too short for the history card. */
   showHistory: boolean;
+  /** Height of everything below the display (keys plus bottom padding). */
+  keypadHeight: number;
 }
 
 const clamp = (v: number, lo: number, hi: number) =>
@@ -44,9 +58,24 @@ const HISTORY_MIN = 68;
 const MIN_FONT = 30;
 const LINE = 1.18;
 
+/** Bottom padding under the keys. */
+export const KEYPAD_PAD = 14;
+
 export function useLayoutMetrics(sciOpen: boolean): Metrics {
   const { width, height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const { top, bottom, left, right } = useSafeAreaInsets();
+  return useMemo(
+    () => computeMetrics(width, height, { top, bottom, left, right }, sciOpen),
+    [width, height, top, bottom, left, right, sciOpen],
+  );
+}
+
+export function computeMetrics(
+  width: number,
+  height: number,
+  insets: Insets,
+  sciOpen: boolean,
+): Metrics {
   const innerW = width - insets.left - insets.right;
   const innerH = height - insets.top - insets.bottom;
   const landscape = innerW > innerH * 1.05;
@@ -60,12 +89,12 @@ export function useLayoutMetrics(sciOpen: boolean): Metrics {
     const display = clamp(innerH * 0.24, 72, 140);
     const colW = (contentWidth - pad * 2 - blockGap - gap * 5) / 7;
     const keyH = clamp(
-      (innerH - topBar - display - 14 - gap * 4) / 5,
+      (innerH - topBar - display - KEYPAD_PAD - gap * 4) / 5,
       30,
       colW * 0.8,
     );
     const digitFont = clamp(keyH * 0.46, 16, 28);
-    const spare = innerH - topBar - 14 - (keyH * 5 + gap * 4);
+    const spare = innerH - topBar - KEYPAD_PAD - (keyH * 5 + gap * 4);
     return {
       landscape,
       width,
@@ -87,6 +116,7 @@ export function useLayoutMetrics(sciOpen: boolean): Metrics {
       sciBlock: 0,
       displayFont: clamp((spare - 60) / LINE, 22, 46),
       showHistory: false,
+      keypadHeight: keyH * 5 + gap * 4 + KEYPAD_PAD,
     };
   }
 
@@ -101,7 +131,7 @@ export function useLayoutMetrics(sciOpen: boolean): Metrics {
   let keyH = clamp(keyW * 0.84, 54, 84);
   let sciH = clamp(keyH * 0.58, 36, 48);
 
-  const available = innerH - topBar - 14;
+  const available = innerH - topBar - KEYPAD_PAD;
   const keys = () =>
     keyH * 5 + gap * 4 + (sciOpen ? sciH * 3 + sciGap * 2 + blockGap : 0);
   // Room the display and history need at the very least.
@@ -146,5 +176,6 @@ export function useLayoutMetrics(sciOpen: boolean): Metrics {
     sciBlock: sciH * 3 + sciGap * 2 + blockGap,
     displayFont,
     showHistory,
+    keypadHeight: keys() + KEYPAD_PAD,
   };
 }
