@@ -1,0 +1,40 @@
+Scientific keys	815	206
+Settings	980	206
+789,456,123,078,945 + 999 equals 789,456,123,079,944	540	308
+sin(30) + π equals 3.64159265358979	540	403
+3.64159265358979	540	656
+Second functions	136	883
+Degrees, switch to radians	338	883
+Open parenthesis	540	883
+Close parenthesis	741	883
+Reciprocal	943	883
+Sine	136	1015
+Cosine	338	1015
+Tangent	540	1015
+Pi	741	1015
+Factorial	943	1015
+Natural logarithm	136	1147
+Logarithm	338	1147
+Square root	540	1147
+Square	741	1147
+Power	943	1147
+Clear	158	1332
+Delete	412	1332
+Percent	667	1332
+Divide	921	1332
+7	158	1551
+8	412	1551
+9	667	1551
+Multiply	921	1551
+4	158	1769
+5	412	1769
+6	667	1769
+Minus	921	1769
+1	158	1988
+2	412	1988
+3	667	1988
+Plus	921	1988
+Change sign	158	2206
+0	412	2206
+Decimal point	667	2206
+Equals	921	2206

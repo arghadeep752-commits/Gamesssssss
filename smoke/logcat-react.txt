@@ -1,0 +1,2 @@
+--------- beginning of main
+10-19 17:53:26.190  3030  3227 I ReactNativeJS: Running "CalcPro"

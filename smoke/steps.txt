@@ -1,0 +1,15 @@
+installing dist-emu/CalcPro-x86_64.apk
+screenshot 01-start
+screenshot 02-operator
+screenshot 03-result
+screenshot 04-typing
+gfx: Total frames rendered: 103
+gfx: Janky frames: 103 (100.00%)
+gfx: Janky frames (legacy): 103 (100.00%)
+gfx: 50th percentile: 150ms
+gfx: 90th percentile: 150ms
+gfx: 95th percentile: 200ms
+screenshot 05-scientific
+screenshot 06-dark
+screenshot 07-settings
+PASS
