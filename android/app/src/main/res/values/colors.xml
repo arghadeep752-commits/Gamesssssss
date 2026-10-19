@@ -1,0 +1,4 @@
+<resources>
+    <!-- Window color behind the app before the first frame (Lagoon, light). -->
+    <color name="app_background">#E4EFF1</color>
+</resources>

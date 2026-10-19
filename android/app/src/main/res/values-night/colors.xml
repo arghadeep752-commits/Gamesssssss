@@ -1,0 +1,4 @@
+<resources>
+    <!-- Window color behind the app before the first frame (Lagoon, dark). -->
+    <color name="app_background">#04111A</color>
+</resources>
