@@ -53,8 +53,11 @@ export const Display = memo(function Display({
   const [width, setWidth] = useState(0);
   const scroll = useRef<ScrollView>(null);
   const rise = useRef(new Animated.Value(0)).current;
-  // Native from the start, so setting it never re-renders anything.
-  const zoom = useRef(new Animated.Value(1, { useNativeDriver: true })).current;
+  // Native from the start, so setting it never re-renders anything. Created
+  // lazily: a native value allocates a node on the UI side when constructed.
+  const [zoom] = useState(
+    () => new Animated.Value(1, { useNativeDriver: true }),
+  );
 
   const shown = text === '' ? '0' : text;
   const full = shown + ghost;

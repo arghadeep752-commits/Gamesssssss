@@ -121,8 +121,8 @@ function Calculator() {
   // Showing the scientific keys grows their block (JS driver, since it is a
   // layout change the history and display follow) while the keys themselves
   // fade and rise on the native driver.
-  const sciHeight = useRef(new Animated.Value(settings.sci ? 1 : 0)).current;
-  const sciFade = useRef(new Animated.Value(settings.sci ? 1 : 0)).current;
+  const [sciHeight] = useState(() => new Animated.Value(settings.sci ? 1 : 0));
+  const [sciFade] = useState(() => new Animated.Value(settings.sci ? 1 : 0));
   const sciBlockStyle = useMemo(
     () => ({
       height: sciHeight.interpolate({
