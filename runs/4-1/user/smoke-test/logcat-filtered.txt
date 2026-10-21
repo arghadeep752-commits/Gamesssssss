@@ -1,0 +1,64 @@
+10-21 13:51:17.312  3628  3628 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-21 13:51:17.318  3628  3628 I AndroidRuntime: Using default boot image
+10-21 13:51:17.318  3628  3628 I AndroidRuntime: Leaving lock profiling enabled
+10-21 13:51:17.496  3628  3628 D AndroidRuntime: Calling main entry com.android.commands.monkey.Monkey
+10-21 13:51:17.496  3628  3628 W Monkey  : args: [-p, com.devdarshan.wallpapers, -c, android.intent.category.LAUNCHER, 1]
+10-21 13:51:17.496  3628  3628 W Monkey  :  arg: "com.devdarshan.wallpapers"
+10-21 13:51:17.496  3628  3628 W Monkey  : data="com.devdarshan.wallpapers"
+10-21 13:51:17.619   522  3656 D SystemServerTimingAsync: ssm.onCompletedEventUser-0_{|Unlocked|}_com.android.server.wallpaper.WallpaperManagerService$Lifecycle
+10-21 13:51:17.619   522  3656 V SystemServerTimingAsync: ssm.onCompletedEventUser-0_{|Unlocked|}_com.android.server.wallpaper.WallpaperManagerService$Lifecycle took to complete: 0ms
+10-21 13:51:17.788   522  1785 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.devdarshan.wallpapers/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+10-21 13:51:17.793   836   867 V WindowManagerShell: Transition requested: android.os.BinderProxy@7df4a71 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.devdarshan.wallpapers/.MainActivity } baseActivity=ComponentInfo{com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity} topActivity=ComponentInfo{com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity} origActivity=null realActivity=ComponentInfo{com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity} numActivities=1 lastActiveTime=57515 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@7275056} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{ebb98d7 com.devdarshan.wallpapers.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-21 13:51:17.815   522  2403 D CoreBackPreview: Window{77227b u0 Splash Screen com.devdarshan.wallpapers}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@74d38f1, mPriority=0, mIsAnimationCallback=false}
+10-21 13:51:18.152   522   553 I ActivityManager: Start proc 3686:com.devdarshan.wallpapers/u0a192 for next-top-activity {com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity}
+10-21 13:51:18.437  3628  3628 I AndroidRuntime: VM exiting with result code 0.
+10-21 13:51:18.628   522   541 V WindowManager: Sent Transition #7 createdAt=10-21 13:51:17.574 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.devdarshan.wallpapers/.MainActivity } baseActivity=ComponentInfo{com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity} topActivity=ComponentInfo{com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity} origActivity=null realActivity=ComponentInfo{com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity} numActivities=1 lastActiveTime=57515 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{79e6de2 Task{5a95769 #8 type=standard A=10192:com.devdarshan.wallpapers}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{2bbd573 com.devdarshan.wallpapers.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-21 13:51:18.628   522   541 V WindowManager:     info={id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{79e6de2 Task{5a95769 #8 type=standard A=10192:com.devdarshan.wallpapers}}} m=OPEN f=NONE leash=Surface(name=Task=8)/@0xac947c4 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{78a7feb Task{5c99e69 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x3a03f45 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
+10-21 13:51:18.874  3686  3686 D nativeloader: Configuring clns-6 for other apk /data/app/~~VOyUtp1etERaFZavfJdbwQ==/com.devdarshan.wallpapers-a4oNTaRsH-OkXLGnKooiWQ==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~VOyUtp1etERaFZavfJdbwQ==/com.devdarshan.wallpapers-a4oNTaRsH-OkXLGnKooiWQ==/lib/x86_64:/data/app/~~VOyUtp1etERaFZavfJdbwQ==/com.devdarshan.wallpapers-a4oNTaRsH-OkXLGnKooiWQ==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.devdarshan.wallpapers
+10-21 13:51:19.052   522   807 I SdkSandboxManager: No SDKs used. Skipping SDK data reconcilation for CallingInfo{mUid=10192, mPackageName='com.devdarshan.wallpapers, mAppProcessToken='null'}
+10-21 13:51:19.196  3686  3686 V GraphicsEnvironment: ANGLE GameManagerService for com.devdarshan.wallpapers: false
+10-21 13:51:19.196  3686  3686 V GraphicsEnvironment: com.devdarshan.wallpapers is not listed in per-application setting
+10-21 13:51:19.214  3686  3686 D ReactNativeFirebaseApp: received application context.
+10-21 13:51:19.286  3686  3686 W SoLoader: Recording new base apk path: /data/app/~~VOyUtp1etERaFZavfJdbwQ==/com.devdarshan.wallpapers-a4oNTaRsH-OkXLGnKooiWQ==/base.apk
+10-21 13:51:19.286  3686  3686 I SoLoader: Preparing SO source: DirectApkSoSource[root = [/data/app/~~VOyUtp1etERaFZavfJdbwQ==/com.devdarshan.wallpapers-a4oNTaRsH-OkXLGnKooiWQ==/base.apk!/lib/x86_64]]
+10-21 13:51:19.321  3686  3686 I SoLoader: Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~VOyUtp1etERaFZavfJdbwQ==/com.devdarshan.wallpapers-a4oNTaRsH-OkXLGnKooiWQ==/lib/x86_64 flags = 0]]
+10-21 13:51:19.639   522  2404 D CoreBackPreview: Window{59238a1 u0 com.devdarshan.wallpapers/com.devdarshan.wallpapers.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@ac82a87, mPriority=0, mIsAnimationCallback=false}
+10-21 13:51:19.849  3686  3778 I ExpoModulesCore: ✅ AppContext was initialized
+10-21 13:51:19.921   522  2043 D WallpaperManagerService: WPMS.saveSettingsLocked-0
+10-21 13:51:19.923   522  2043 V WallpaperManagerService: WPMS.saveSettingsLocked-0 took to complete: 2ms
+10-21 13:51:19.923   522  2043 D WallpaperManagerService: WPMS.saveSettingsLocked-0
+10-21 13:51:19.962   522  2043 V WallpaperManagerService: WPMS.saveSettingsLocked-0 took to complete: 38ms
+10-21 13:51:20.089  3686  3779 I ExpoModulesCore: ✅ JSI interop was installed
+10-21 13:51:20.105  3686  3779 I ExpoModulesCore: ✅ Constants were exported
+10-21 13:51:20.327   522   535 D ConnectivityService: requestNetwork for uid/pid:10192/3686 activeRequest: null callbackRequest: 93 [NetworkRequest [ REQUEST id=94, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.wallpapers UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+10-21 13:51:20.351   522   761 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=94, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.wallpapers UnderlyingNetworks: Null] ]
+10-21 13:51:20.351   522   761 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=94, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.wallpapers UnderlyingNetworks: Null] ]
+10-21 13:51:20.351   522   761 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=94, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.wallpapers UnderlyingNetworks: Null] ]
+10-21 13:51:20.351   522   761 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=94, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.wallpapers UnderlyingNetworks: Null] ]
+10-21 13:51:20.419  3686  3779 V AsyncStorageExpoMigration: No scoped database found
+10-21 13:51:20.420  3686  3779 I ReactNativeJS: Running "main"
+10-21 13:51:20.559  3686  3780 W unknown:ReactNative: StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+10-21 13:51:20.559  3686  3780 W unknown:ReactNative: StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+10-21 13:51:20.602  1048  1048 D CarrierSvcBindHelper: onPackageAdded: com.devdarshan.wallpapers
+10-21 13:51:20.609  1048  1316 D ImsResolver: maybeAddedImsService, packageName: com.devdarshan.wallpapers
+10-21 13:51:20.650  1048  1048 D CarrierSvcBindHelper: onPackageModified: com.devdarshan.wallpapers
+10-21 13:51:21.168  1048  1316 D ImsResolver: maybeAddedImsService, packageName: com.devdarshan.wallpapers
+10-21 13:51:21.490   522   541 I ActivityTaskManager: Displayed com.devdarshan.wallpapers/.MainActivity for user 0: +3s630ms
+10-21 13:51:21.688   522  1782 W InputManager-JNI: Input channel object '77227b Splash Screen com.devdarshan.wallpapers (client)' was disposed without first being removed with the input manager!
+10-21 13:51:24.240   838   838 I SafetyLabelChangedBroadcastReceiver: received broadcast packageName: com.devdarshan.wallpapers, current user: UserHandle{0}, packageChangeEvent: NEW_INSTALL, intent user: UserHandle{0}
+10-21 13:51:24.858  1635  1635 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.devdarshan.wallpapers], userId:[0], reason:[package is added.].
+10-21 13:51:24.866  3686  4174 D ProfileInstaller: Installing profile for com.devdarshan.wallpapers
+10-21 13:51:25.727  1635  1635 I AiAiEcho: AppFetcherImpl onPackageChanged com.devdarshan.wallpapers.
+10-21 13:51:25.728  1635  3284 I AiAiEcho: AppIndexer Package:[com.devdarshan.wallpapers] UserProfile:[0] Enabled:[true].
+10-21 13:51:25.728  1635  3284 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.devdarshan.wallpapers], userId:[0], reason:[package is updated.].
+10-21 13:51:31.792  1454  3984 I BlockstoreStorage: Clearing Blockstore Data for package com.devdarshan.wallpapers [CONTEXT service_id=258 ]
+10-21 13:51:32.310  4601  4601 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-21 13:51:32.332  4601  4601 I AndroidRuntime: Using default boot image
+10-21 13:51:32.332  4601  4601 I AndroidRuntime: Leaving lock profiling enabled
+10-21 13:51:32.689  4601  4601 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-21 13:51:33.996  4601  4601 D AndroidRuntime: Shutting down VM
+10-21 13:51:35.229  4653  4653 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-21 13:51:35.238  4653  4653 I AndroidRuntime: Using default boot image
+10-21 13:51:35.239  4653  4653 I AndroidRuntime: Leaving lock profiling enabled
+10-21 13:51:35.478  4653  4653 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-21 13:51:36.558  4653  4653 D AndroidRuntime: Shutting down VM
