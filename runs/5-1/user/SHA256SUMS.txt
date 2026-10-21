@@ -1,0 +1,4 @@
+436354b4eee7f7067a84ecac501f9c414458188118c2d4a5f89abfae17a25a42  DevDarshan-1.0.0-arm64-v8a-TEST.apk
+b240f2a10bc137c3b6da3f35a0ad3c40591ef20b2188d8d0f6f7b5893ea0ebe7  DevDarshan-1.0.0-armeabi-v7a-TEST.apk
+ca68c831621e40a1c1c09e2839c407ac6a89a47412ed6cf62f6bb029b63a34b1  DevDarshan-1.0.0-universal-TEST.apk
+cd2dd607a77b9e0b97a3845c7975cf67cc68850c7bdf5f8547a92ad2534754b4  DevDarshan-1.0.0-x86_64-TEST.apk
