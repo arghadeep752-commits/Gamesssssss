@@ -15,6 +15,8 @@ path, title = sys.argv[1], sys.argv[2]
 lines = [l.rstrip("\r") for l in open(path, errors="replace").read().splitlines()]
 ansi = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 lines = [ansi.sub("", l) for l in lines]
+# Stack frames add nothing an error message doesn't already say.
+lines = [l for l in lines if not re.match(r"^\s+at |^\s+\.\.\. \d+ more", l)]
 
 sections = []
 

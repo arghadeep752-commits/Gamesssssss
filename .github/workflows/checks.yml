@@ -29,7 +29,13 @@ jobs:
         run: |
           for app in user admin; do
             echo "::group::apps/$app"
-            (cd "apps/$app" && npx expo install --check) || echo "::warning::apps/$app has versions that differ from the Expo SDK recommendations"
+            if ! out="$(cd "apps/$app" && npx expo install --check 2>&1)"; then
+              echo "$out"
+              msg="$(echo "$out" | tail -n 40 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')"
+              echo "::warning title=Expo SDK versions (apps/$app)::$msg"
+            else
+              echo "$out"
+            fi
             echo "::endgroup::"
           done
       - name: Typecheck

@@ -9,6 +9,9 @@ version = '1.0.0'
 android {
   namespace "com.devdarshan.nativemodule"
   defaultConfig {
+    // Required by expo-module-gradle-plugin (used for its publication metadata).
+    versionCode 1
+    versionName "1.0.0"
     consumerProguardFiles 'consumer-rules.pro'
   }
 }
