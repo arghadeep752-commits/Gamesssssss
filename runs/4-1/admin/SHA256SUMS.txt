@@ -1,0 +1,4 @@
+a3d046efa71cd97990fd4891ab2d5f57fe902e75c7a99bec057f152ff580acf2  DevDarshan-Admin-1.0.0-arm64-v8a-TEST.apk
+4cfe153860e79b3363357d370c3b5c541653d76a6a2a0fce1e1ad37d68a521b2  DevDarshan-Admin-1.0.0-armeabi-v7a-TEST.apk
+a558a31e9be6e656cedb9d1930a7711e0dafaf37ff7115a48a388364ac407717  DevDarshan-Admin-1.0.0-universal-TEST.apk
+4d19ddd6600b2b536a7a5f7144de22699dad52407ef492f802aeab4f87a066d7  DevDarshan-Admin-1.0.0-x86_64-TEST.apk

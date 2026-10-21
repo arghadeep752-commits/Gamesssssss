@@ -1,0 +1,65 @@
+10-21 13:48:00.260  1043  1043 D CarrierSvcBindHelper: onPackageAdded: com.devdarshan.admin
+10-21 13:48:00.310   523   806 I SdkSandboxManager: No SDKs used. Skipping SDK data reconcilation for CallingInfo{mUid=10192, mPackageName='com.devdarshan.admin, mAppProcessToken='null'}
+10-21 13:48:00.350  1043  1359 D ImsResolver: maybeAddedImsService, packageName: com.devdarshan.admin
+10-21 13:48:00.421  3761  3761 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-21 13:48:00.425  3761  3761 I AndroidRuntime: Using default boot image
+10-21 13:48:00.425  3761  3761 I AndroidRuntime: Leaving lock profiling enabled
+10-21 13:48:00.590  3761  3761 D AndroidRuntime: Calling main entry com.android.commands.monkey.Monkey
+10-21 13:48:00.590  3761  3761 W Monkey  : args: [-p, com.devdarshan.admin, -c, android.intent.category.LAUNCHER, 1]
+10-21 13:48:00.590  3761  3761 W Monkey  :  arg: "com.devdarshan.admin"
+10-21 13:48:00.590  3761  3761 W Monkey  : data="com.devdarshan.admin"
+10-21 13:48:00.653  1043  1043 D CarrierSvcBindHelper: onPackageModified: com.devdarshan.admin
+10-21 13:48:00.715   523  3838 D SystemServerTimingAsync: ssm.onCompletedEventUser-0_{|Unlocked|}_com.android.server.wallpaper.WallpaperManagerService$Lifecycle
+10-21 13:48:00.715   523  3838 V SystemServerTimingAsync: ssm.onCompletedEventUser-0_{|Unlocked|}_com.android.server.wallpaper.WallpaperManagerService$Lifecycle took to complete: 0ms
+10-21 13:48:00.795  1043  1359 D ImsResolver: maybeAddedImsService, packageName: com.devdarshan.admin
+10-21 13:48:00.876   834   870 V WindowManagerShell: Transition requested: android.os.BinderProxy@61f8f2 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.devdarshan.admin/.MainActivity } baseActivity=ComponentInfo{com.devdarshan.admin/com.devdarshan.admin.MainActivity} topActivity=ComponentInfo{com.devdarshan.admin/com.devdarshan.admin.MainActivity} origActivity=null realActivity=ComponentInfo{com.devdarshan.admin/com.devdarshan.admin.MainActivity} numActivities=1 lastActiveTime=47278 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@bceb43} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{8f0c5c0 com.devdarshan.admin.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-21 13:48:00.887   523  2080 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.devdarshan.admin/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+10-21 13:48:00.904   523  2119 D CoreBackPreview: Window{5596211 u0 Splash Screen com.devdarshan.admin}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b458977, mPriority=0, mIsAnimationCallback=false}
+10-21 13:48:01.028  3761  3761 I AndroidRuntime: VM exiting with result code 0.
+10-21 13:48:01.067   523   543 V WindowManager: Sent Transition #7 createdAt=10-21 13:48:00.823 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.devdarshan.admin/.MainActivity } baseActivity=ComponentInfo{com.devdarshan.admin/com.devdarshan.admin.MainActivity} topActivity=ComponentInfo{com.devdarshan.admin/com.devdarshan.admin.MainActivity} origActivity=null realActivity=ComponentInfo{com.devdarshan.admin/com.devdarshan.admin.MainActivity} numActivities=1 lastActiveTime=47278 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{8feabc8 Task{3f9d606 #8 type=standard A=10192:com.devdarshan.admin}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{1764461 com.devdarshan.admin.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-21 13:48:01.068   523   543 V WindowManager:     info={id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{8feabc8 Task{3f9d606 #8 type=standard A=10192:com.devdarshan.admin}}} m=OPEN f=NONE leash=Surface(name=Task=8)/@0x888ddc sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{c36db86 Task{c6bc323 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x98ee6eb sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
+10-21 13:48:01.088   523   554 I ActivityManager: Start proc 3883:com.devdarshan.admin/u0a192 for next-top-activity {com.devdarshan.admin/com.devdarshan.admin.MainActivity}
+10-21 13:48:01.341  3883  3883 D nativeloader: Configuring clns-6 for other apk /data/app/~~mbBKaHylqBBjcok0sjk60g==/com.devdarshan.admin-JdjgKu59GeWaa7P1Fz20NA==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~mbBKaHylqBBjcok0sjk60g==/com.devdarshan.admin-JdjgKu59GeWaa7P1Fz20NA==/lib/x86_64:/data/app/~~mbBKaHylqBBjcok0sjk60g==/com.devdarshan.admin-JdjgKu59GeWaa7P1Fz20NA==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.devdarshan.admin
+10-21 13:48:01.356  3883  3883 V GraphicsEnvironment: ANGLE GameManagerService for com.devdarshan.admin: false
+10-21 13:48:01.356  3883  3883 V GraphicsEnvironment: com.devdarshan.admin is not listed in per-application setting
+10-21 13:48:01.373  3883  3883 D ReactNativeFirebaseApp: received application context.
+10-21 13:48:01.378  3883  3883 W SoLoader: Recording new base apk path: /data/app/~~mbBKaHylqBBjcok0sjk60g==/com.devdarshan.admin-JdjgKu59GeWaa7P1Fz20NA==/base.apk
+10-21 13:48:01.378  3883  3883 I SoLoader: Preparing SO source: DirectApkSoSource[root = [/data/app/~~mbBKaHylqBBjcok0sjk60g==/com.devdarshan.admin-JdjgKu59GeWaa7P1Fz20NA==/base.apk!/lib/x86_64]]
+10-21 13:48:01.382  3883  3883 I SoLoader: Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~mbBKaHylqBBjcok0sjk60g==/com.devdarshan.admin-JdjgKu59GeWaa7P1Fz20NA==/lib/x86_64 flags = 0]]
+10-21 13:48:02.047   523   910 D CoreBackPreview: Window{1048076 u0 com.devdarshan.admin/com.devdarshan.admin.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@aa7c2e4, mPriority=0, mIsAnimationCallback=false}
+10-21 13:48:02.108  3883  3986 I ExpoModulesCore: ✅ AppContext was initialized
+10-21 13:48:02.414  3883  3988 I ExpoModulesCore: ✅ JSI interop was installed
+10-21 13:48:02.419  3883  3988 I ExpoModulesCore: ✅ Constants were exported
+10-21 13:48:02.620   523   910 D ConnectivityService: requestNetwork for uid/pid:10192/3883 activeRequest: null callbackRequest: 102 [NetworkRequest [ REQUEST id=103, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.admin UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647
+10-21 13:48:02.625   523   758 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=103, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.admin UnderlyingNetworks: Null] ]
+10-21 13:48:02.625   523   758 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=103, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.admin UnderlyingNetworks: Null] ]
+10-21 13:48:02.625   523   758 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=103, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.admin UnderlyingNetworks: Null] ]
+10-21 13:48:02.625   523   758 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=103, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED Uid: 10192 RequestorUid: 10192 RequestorPkg: com.devdarshan.admin UnderlyingNetworks: Null] ]
+10-21 13:48:02.836  3883  3988 V AsyncStorageExpoMigration: No scoped database found
+10-21 13:48:02.840  3883  3988 I ReactNativeJS: Running "main"
+10-21 13:48:02.900  3883  3989 W unknown:ReactNative: StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+10-21 13:48:02.900  3883  3989 W unknown:ReactNative: StatusBarModule: Ignored status bar change, current activity is edge-to-edge.
+10-21 13:48:02.963   523  1730 W ProcessStats: Tracking association SourceState{9119c6e com.devdarshan.admin/10192 BTop #1672} whose proc state 2 is better than process ProcessState{d19031c com.google.android.gms.persistent/10130 pkg=com.google.android.gms} proc state 4 (20237 skipped)
+10-21 13:48:03.197   835   835 I SafetyLabelChangedBroadcastReceiver: received broadcast packageName: com.devdarshan.admin, current user: UserHandle{0}, packageChangeEvent: NEW_INSTALL, intent user: UserHandle{0}
+10-21 13:48:03.442   523  1088 I ImeTracker: com.devdarshan.admin:ad49fa60: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+10-21 13:48:03.442   523  1088 I ImeTracker: com.devdarshan.admin:ad49fa60: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-21 13:48:03.521   523   543 I ActivityTaskManager: Displayed com.devdarshan.admin/.MainActivity for user 0: +2s557ms
+10-21 13:48:03.615  1592  1592 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.devdarshan.admin fieldId=0 fieldName=null extras=null}, false)
+10-21 13:48:03.619   523  2080 D CoreBackPreview: Window{5596211 u0 Splash Screen com.devdarshan.admin}: Setting back callback null
+10-21 13:48:03.619   523  2263 W InputManager-JNI: Input channel object '5596211 Splash Screen com.devdarshan.admin (client)' was disposed without first being removed with the input manager!
+10-21 13:48:04.359  1650  1650 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.devdarshan.admin], userId:[0], reason:[package is added.].
+10-21 13:48:04.981  1650  1650 I AiAiEcho: AppFetcherImpl onPackageChanged com.devdarshan.admin.
+10-21 13:48:04.982  1650  3664 I AiAiEcho: AppIndexer Package:[com.devdarshan.admin] UserProfile:[0] Enabled:[true].
+10-21 13:48:04.982  1650  3664 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.devdarshan.admin], userId:[0], reason:[package is updated.].
+10-21 13:48:07.339  3883  4571 D ProfileInstaller: Installing profile for com.devdarshan.admin
+10-21 13:48:08.399  1478  3492 I BlockstoreStorage: Clearing Blockstore Data for package com.devdarshan.admin [CONTEXT service_id=258 ]
+10-21 13:48:14.777  4843  4843 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-21 13:48:14.798  4843  4843 I AndroidRuntime: Using default boot image
+10-21 13:48:14.798  4843  4843 I AndroidRuntime: Leaving lock profiling enabled
+10-21 13:48:15.031  4843  4843 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-21 13:48:16.222  4843  4843 D AndroidRuntime: Shutting down VM
+10-21 13:48:17.174  4912  4912 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-21 13:48:17.183  4912  4912 I AndroidRuntime: Using default boot image
+10-21 13:48:17.183  4912  4912 I AndroidRuntime: Leaving lock profiling enabled
+10-21 13:48:17.316  4912  4912 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-21 13:48:18.399  4912  4912 D AndroidRuntime: Shutting down VM
