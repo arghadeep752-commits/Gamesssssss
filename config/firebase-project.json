@@ -1,0 +1,6 @@
+{
+  "projectId": "",
+  "projectNumber": "",
+  "githubRepository": "",
+  "notes": "Filled in after the one-time setup script runs (docs/SETUP-FROM-PHONE.md). While projectId is empty, CI builds use a placeholder Firebase config and the apps show a 'not connected' screen."
+}

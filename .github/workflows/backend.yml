@@ -1,0 +1,121 @@
+name: Firebase backend
+
+# Deploys Firestore rules + indexes, Storage rules and Cloud Functions.
+# Authenticates with Workload Identity Federation (no stored keys).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firebase/**'
+      - 'packages/shared/src/**'
+      - 'config/firebase-project.json'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read project
+        id: cfg
+        run: |
+          PROJECT_ID="$(jq -r '.projectId // ""' config/firebase-project.json)"
+          PROJECT_NUMBER="$(jq -r '.projectNumber // ""' config/firebase-project.json)"
+          echo "project_id=$PROJECT_ID" >> "$GITHUB_OUTPUT"
+          echo "project_number=$PROJECT_NUMBER" >> "$GITHUB_OUTPUT"
+          if [ -z "$PROJECT_ID" ] || [ -z "$PROJECT_NUMBER" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Firebase is not connected yet (config/firebase-project.json is empty); nothing to deploy." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v7
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          node-version: 22
+
+      - name: Authenticate to Google Cloud
+        if: steps.cfg.outputs.configured == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ steps.cfg.outputs.project_number }}/locations/global/workloadIdentityPools/github/providers/devdarshan
+          service_account: devdarshan-ci@${{ steps.cfg.outputs.project_id }}.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.cfg.outputs.configured == 'true'
+
+      - name: Match function regions to the database and bucket
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          PROJECT: ${{ steps.cfg.outputs.project_id }}
+        run: |
+          to_region() {
+            case "$(echo "$1" | tr '[:upper:]' '[:lower:]')" in
+              nam5|nam7|us) echo us-central1 ;;
+              eur3|eu) echo europe-west1 ;;
+              asia) echo asia-east1 ;;
+              *) echo "$1" | tr '[:upper:]' '[:lower:]' ;;
+            esac
+          }
+          FS_LOCATION="$(gcloud firestore databases describe --database='(default)' --project "$PROJECT" --format='value(locationId)')"
+          BUCKET=""
+          for B in "$PROJECT.firebasestorage.app" "$PROJECT.appspot.com"; do
+            if gcloud storage buckets describe "gs://$B" --project "$PROJECT" >/dev/null 2>&1; then BUCKET="$B"; break; fi
+          done
+          if [ -z "$BUCKET" ]; then
+            echo "::error::No Firebase Storage bucket found. Open Firebase console → Storage → Get started, then re-run."
+            exit 1
+          fi
+          BUCKET_LOCATION="$(gcloud storage buckets describe "gs://$BUCKET" --format='value(location)')"
+          # Storage rules read admin roles from Firestore (cross-service rules).
+          gcloud projects add-iam-policy-binding "$PROJECT" \
+            --member="serviceAccount:service-${{ steps.cfg.outputs.project_number }}@gcp-sa-firebasestorage.iam.gserviceaccount.com" \
+            --role=roles/firebaserules.firestoreServiceAgent --condition=None --quiet >/dev/null \
+            || echo "::warning::Could not grant the Storage service agent read access to Firestore rules"
+          FS_REGION="$(to_region "$FS_LOCATION")"
+          ST_REGION="$(to_region "$BUCKET_LOCATION")"
+          sed -i "s/^DEVDARSHAN_FIRESTORE_REGION=.*/DEVDARSHAN_FIRESTORE_REGION=$FS_REGION/" firebase/functions/.env
+          sed -i "s/^DEVDARSHAN_STORAGE_REGION=.*/DEVDARSHAN_STORAGE_REGION=$ST_REGION/" firebase/functions/.env
+          {
+            echo "- Firestore: \`$FS_LOCATION\` → Firestore triggers in \`$FS_REGION\`"
+            echo "- Storage: \`$BUCKET\` (\`$BUCKET_LOCATION\`) → Storage trigger in \`$ST_REGION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install function dependencies
+        if: steps.cfg.outputs.configured == 'true'
+        working-directory: firebase/functions
+        run: npm install --no-audit --no-fund
+
+      - name: Deploy rules, indexes and functions
+        if: steps.cfg.outputs.configured == 'true'
+        working-directory: firebase
+        run: |
+          # The very first deploy of event-triggered functions can fail while Google
+          # provisions the Eventarc / Pub/Sub service agents; a later attempt succeeds.
+          for attempt in 1 2 3; do
+            if npx --yes firebase-tools@15 deploy \
+                --only firestore,storage,functions \
+                --project "${{ steps.cfg.outputs.project_id }}" \
+                --non-interactive --force; then
+              echo "Deployed rules, indexes and functions to **${{ steps.cfg.outputs.project_id }}** (attempt $attempt)." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::warning::Deploy attempt $attempt failed; retrying in 90 seconds"
+            sleep 90
+          done
+          echo "::error::Deploy failed three times; see the log above."
+          exit 1

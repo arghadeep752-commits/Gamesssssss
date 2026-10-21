@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Expo / React Native generated native projects (Continuous Native Generation)
+apps/*/android/
+apps/*/ios/
+apps/*/.expo/
+apps/*/dist/
+apps/*/web-build/
+
+# Firebase config is fetched or generated at build time, never committed
+apps/*/google-services.json
+google-services.json
+GoogleService-Info.plist
+
+# Signing material must never be committed
+*.jks
+*.keystore
+*.p12
+*.pem
+signing/
+
+# Build outputs
+*.apk
+*.aab
+build-output/
+firebase/functions/lib/
+firebase/functions/src/shared/
+coverage/
+
+# Local env files (the committed firebase/functions/.env is intentional and holds no secrets)
+.env.local
+*.local
+
+# Firebase emulator logs
+firebase-debug.log
+firestore-debug.log
+storage-debug.log
+ui-debug.log
+firebase/.firebaserc.local
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log

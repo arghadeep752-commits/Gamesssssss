@@ -1,0 +1,21 @@
+{
+  "name": "@devdarshan/ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DevDarshan React Native UI kit: theme provider, typography, icons, buttons, sheets, toasts and states.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@devdarshan/shared": "*"
+  },
+  "peerDependencies": {
+    "expo-image": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-svg": "*"
+  }
+}

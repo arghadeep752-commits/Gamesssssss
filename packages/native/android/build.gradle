@@ -1,0 +1,26 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.devdarshan.nativemodule'
+version = '1.0.0'
+
+android {
+  namespace "com.devdarshan.nativemodule"
+  defaultConfig {
+    consumerProguardFiles 'consumer-rules.pro'
+  }
+}
+
+dependencies {
+  // FileProvider + ContextCompat. Declared low on purpose: Gradle picks the newer
+  // version React Native already brings, so this never forces a compileSdk bump.
+  implementation "androidx.core:core-ktx:1.13.1"
+
+  // Sign in with Google through Credential Manager (Google's current recommendation;
+  // the legacy GoogleSignInClient API is deprecated).
+  implementation "androidx.credentials:credentials:1.6.0"
+  implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+  implementation "com.google.android.libraries.identity.googleid:googleid:1.2.1"
+}

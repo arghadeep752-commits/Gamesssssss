@@ -1,0 +1,196 @@
+rules_version = '2';
+
+// DevDarshan Firestore security rules.
+//
+// Principles
+//  - Anyone may read published wallpapers, active categories and the public app config.
+//  - Only admins may write content. "Admin" = a server-set custom claim AND a role
+//    document written by Cloud Functions; clients can never grant themselves either.
+//  - Clients may only touch editorial fields. Image URLs, sizes, counters, search
+//    keywords and the featured flag are written exclusively by Cloud Functions.
+//  - Signed-in users manage only their own favourites, and only for published wallpapers.
+//  - Everything not matched below is denied.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.admin == true
+        && exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid));
+    }
+
+    function isText(value, minSize, maxSize) {
+      return value is string && value.size() >= minSize && value.size() <= maxSize;
+    }
+
+    function stampedBy(data) {
+      return data.updatedAt == request.time && data.updatedBy == request.auth.uid;
+    }
+
+    // ---------- Wallpapers ----------
+
+    function wallpaperFieldsValid(d) {
+      return isText(d.title, 2, 80)
+        && isText(d.description, 0, 500)
+        && d.categoryIds is list && d.categoryIds.size() >= 1 && d.categoryIds.size() <= 5
+        && d.tags is list && d.tags.size() <= 15
+        && d.requestedStatus in ['draft', 'published'];
+    }
+
+    // Publishing requires a fully processed image; unpublishing is always allowed.
+    function validStatusChange(before, after) {
+      return after.status == before.status
+        || after.status == 'draft'
+        || (after.status == 'published' && before.processing == 'ready' && after.processing == 'ready');
+    }
+
+    // Clients may only start a replacement upload or report their own failed upload.
+    function validProcessingChange(before, after) {
+      return (after.processing == before.processing
+              && after.get('processingError', null) == before.get('processingError', null))
+        || (after.processing == 'uploading'
+              && before.processing in ['ready', 'failed']
+              && after.processingError == null)
+        || (after.processing == 'failed'
+              && before.processing == 'uploading'
+              && isText(after.processingError, 1, 300));
+    }
+
+    match /wallpapers/{wallpaperId} {
+      allow get, list: if resource.data.status == 'published' || isAdmin();
+
+      allow create: if isAdmin()
+        && wallpaperId.size() <= 40
+        && request.resource.data.keys().hasOnly([
+             'title', 'description', 'categoryIds', 'tags', 'status', 'requestedStatus',
+             'processing', 'processingError', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'])
+        && request.resource.data.keys().hasAll([
+             'title', 'description', 'categoryIds', 'tags', 'status', 'requestedStatus',
+             'processing', 'processingError', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'])
+        && wallpaperFieldsValid(request.resource.data)
+        && request.resource.data.status == 'draft'
+        && request.resource.data.processing == 'uploading'
+        && request.resource.data.processingError == null
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.createdBy == request.auth.uid
+        && stampedBy(request.resource.data);
+
+      allow update: if isAdmin()
+        && resource.data.status != 'deleting'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'title', 'description', 'categoryIds', 'tags', 'status', 'requestedStatus',
+             'processing', 'processingError', 'updatedAt', 'updatedBy'])
+        && wallpaperFieldsValid(request.resource.data)
+        && request.resource.data.status in ['draft', 'published']
+        && validStatusChange(resource.data, request.resource.data)
+        && validProcessingChange(resource.data, request.resource.data)
+        && stampedBy(request.resource.data);
+
+      // Deletion cleans up files and favourites, so it only happens in the deleteWallpaper function.
+      allow delete: if false;
+    }
+
+    // ---------- Categories ----------
+
+    function categoryFieldsValid(d) {
+      return isText(d.name, 1, 60)
+        && isText(d.nameHi, 0, 60)
+        && isText(d.description, 0, 300)
+        && d.sortOrder is number && d.sortOrder >= 0 && d.sortOrder <= 1000000
+        && d.isActive is bool;
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if resource.data.isActive == true || isAdmin();
+
+      allow create: if isAdmin()
+        && categoryId.matches('^[a-z0-9][a-z0-9-]{1,47}$')
+        && request.resource.data.keys().hasOnly([
+             'name', 'nameHi', 'slug', 'description', 'sortOrder', 'isActive', 'createdAt', 'updatedAt', 'updatedBy'])
+        && request.resource.data.keys().hasAll([
+             'name', 'nameHi', 'slug', 'description', 'sortOrder', 'isActive', 'createdAt', 'updatedAt', 'updatedBy'])
+        && request.resource.data.slug == categoryId
+        && categoryFieldsValid(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && stampedBy(request.resource.data);
+
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'name', 'nameHi', 'description', 'sortOrder', 'isActive', 'updatedAt', 'updatedBy'])
+        && categoryFieldsValid(request.resource.data)
+        && stampedBy(request.resource.data);
+
+      // Deletion must reassign or block wallpapers first, so it only happens in deleteCategory.
+      allow delete: if false;
+    }
+
+    // ---------- Public app configuration ----------
+
+    function appConfigValid(d) {
+      return d.keys().hasOnly([
+               'featuredWallpaperIds', 'featuredCategoryIds', 'homeSectionOrder', 'festival',
+               'maintenanceMode', 'maintenanceMessage', 'minimumSupportedVersionCode', 'updateUrl',
+               'supportEmail', 'shareMessage', 'updatedAt', 'updatedBy'])
+        && (!('featuredWallpaperIds' in d) || (d.featuredWallpaperIds is list && d.featuredWallpaperIds.size() <= 30))
+        && (!('featuredCategoryIds' in d) || (d.featuredCategoryIds is list && d.featuredCategoryIds.size() <= 30))
+        && (!('homeSectionOrder' in d) || (d.homeSectionOrder is list && d.homeSectionOrder.size() <= 6))
+        && (!('festival' in d) || (d.festival is map
+              && d.festival.keys().hasOnly(['enabled', 'title', 'titleHi', 'categoryId'])))
+        && (!('maintenanceMode' in d) || d.maintenanceMode is bool)
+        && (!('maintenanceMessage' in d) || isText(d.maintenanceMessage, 0, 300))
+        && (!('minimumSupportedVersionCode' in d)
+              || (d.minimumSupportedVersionCode is number && d.minimumSupportedVersionCode >= 0))
+        && (!('updateUrl' in d) || isText(d.updateUrl, 0, 300))
+        && (!('supportEmail' in d) || isText(d.supportEmail, 0, 120))
+        && (!('shareMessage' in d) || isText(d.shareMessage, 0, 300));
+    }
+
+    match /appConfig/{docId} {
+      allow get: if docId == 'public';
+      allow list: if false;
+      allow create, update: if isAdmin()
+        && docId == 'public'
+        && appConfigValid(request.resource.data)
+        && stampedBy(request.resource.data);
+      allow delete: if false;
+    }
+
+    // ---------- Favourites ----------
+
+    match /users/{uid}/favorites/{wallpaperId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      allow create: if signedIn() && request.auth.uid == uid
+        && wallpaperId.size() <= 40
+        && request.resource.data.keys().hasOnly(['wallpaperId', 'createdAt'])
+        && request.resource.data.wallpaperId == wallpaperId
+        && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/wallpapers/$(wallpaperId)).data.status == 'published';
+
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow update: if false;
+    }
+
+    // ---------- Admin-only, server-written ----------
+
+    match /adminRoles/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /adminLog/{entryId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /stats/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

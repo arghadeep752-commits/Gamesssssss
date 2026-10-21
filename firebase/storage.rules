@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// DevDarshan Cloud Storage security rules.
+//
+//  uploads/...     admins upload source images here; Cloud Functions process them.
+//  wallpapers/...  processed files, written only by Cloud Functions. The apps load them
+//                  through download-token URLs stored on published wallpaper documents.
+//  categories/...  processed category covers, public.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.admin == true
+        && firestore.exists(/databases/(default)/documents/adminRoles/$(request.auth.uid));
+    }
+
+    function isImageUpload(maxBytes) {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= maxBytes
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    match /uploads/wallpapers/{wallpaperId}/{fileName} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && wallpaperId.size() <= 40
+        && fileName.matches('source[.](jpg|png|webp)')
+        && isImageUpload(30 * 1024 * 1024);
+    }
+
+    match /uploads/categories/{categoryId}/{fileName} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && categoryId.matches('[a-z0-9][a-z0-9-]{1,47}')
+        && fileName.matches('cover[.](jpg|png|webp)')
+        && isImageUpload(15 * 1024 * 1024);
+    }
+
+    match /wallpapers/{wallpaperId}/{fileName} {
+      allow read: if isAdmin()
+        || firestore.get(/databases/(default)/documents/wallpapers/$(wallpaperId)).data.status == 'published';
+      allow write: if false;
+    }
+
+    match /categories/{categoryId}/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

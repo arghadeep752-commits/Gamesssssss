@@ -1,0 +1,32 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- Normal permission, granted at install: needed by WallpaperManager. -->
+  <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+  <!-- Only Android 7–9 need this to save into Pictures/DevDarshan; Android 10+ uses MediaStore without any permission. -->
+  <uses-permission
+    android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    android:maxSdkVersion="28" />
+
+  <!-- Android 11+ package visibility: lets the app offer a direct WhatsApp share when it's installed. -->
+  <queries>
+    <package android:name="com.whatsapp" />
+    <package android:name="com.whatsapp.w4b" />
+    <intent>
+      <action android:name="android.intent.action.SEND" />
+      <data android:mimeType="image/*" />
+    </intent>
+  </queries>
+
+  <application>
+    <provider
+      android:name="com.devdarshan.nativemodule.DevDarshanFileProvider"
+      android:authorities="${applicationId}.devdarshan.fileprovider"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/devdarshan_file_paths" />
+    </provider>
+  </application>
+</manifest>

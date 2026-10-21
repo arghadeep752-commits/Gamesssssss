@@ -1,0 +1,21 @@
+{
+  "name": "@devdarshan/native",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DevDarshan native Android module (Kotlin, Expo Modules API): set wallpaper, save to gallery, share, Google sign-in.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "android",
+    "app.plugin.js",
+    "expo-module.config.json"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react-native": "*"
+  }
+}
