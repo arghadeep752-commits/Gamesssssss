@@ -25,5 +25,7 @@ dependencies {
   // the legacy GoogleSignInClient API is deprecated).
   implementation "androidx.credentials:credentials:1.6.0"
   implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
-  implementation "com.google.android.libraries.identity.googleid:googleid:1.2.1"
+  // 1.1.1: newer releases are compiled with Kotlin 2.4 metadata, which the Kotlin
+  // version React Native ships with (2.1.x) cannot read.
+  implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
 }
