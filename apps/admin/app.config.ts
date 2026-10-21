@@ -70,6 +70,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'com.google.android.gms.permission.AD_ID',
       'android.permission.ACCESS_ADSERVICES_AD_ID',
       'android.permission.ACCESS_ADSERVICES_ATTRIBUTION',
+      // Pulled in by Credential Manager / Play services / Firebase libraries but not used by
+      // DevDarshan (no biometrics, push messaging or install-referrer tracking).
+      'android.permission.USE_BIOMETRIC',
+      'android.permission.USE_FINGERPRINT',
+      'com.google.android.c2dm.permission.RECEIVE',
+      'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE',
     ],
   },
   plugins: [

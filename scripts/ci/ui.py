@@ -21,7 +21,7 @@ def adb(*args, check=True):
     return subprocess.run(["adb", *args], check=check, capture_output=True, text=True).stdout
 
 
-def dump():
+def raw_dump():
     for _ in range(3):
         adb("shell", "uiautomator", "dump", "/sdcard/ui.xml", check=False)
         xml = adb("shell", "cat", "/sdcard/ui.xml", check=False)
@@ -29,6 +29,30 @@ def dump():
             return ET.fromstring(xml[xml.index("<hierarchy"):])
         time.sleep(1.5)
     raise SystemExit("could not dump UI hierarchy")
+
+
+def dismiss_system_anr(root):
+    """Slow CI emulators often show "Pixel Launcher / System UI isn't responding"
+    over the app. Tap "Wait" on those (never on a DevDarshan dialog) and report it."""
+    for node in root.iter("node"):
+        text = node.get("text", "")
+        if "isn't responding" in text and "DevDarshan" not in text:
+            wait = find(root, lambda n: n.get("text", "") == "Wait")
+            if wait is not None:
+                sys.stderr.write(f"dismissed system dialog: {text}\n")
+                tap(wait)
+                time.sleep(2)
+                return True
+    return False
+
+
+def dump():
+    root = raw_dump()
+    for _ in range(3):
+        if not dismiss_system_anr(root):
+            break
+        root = raw_dump()
+    return root
 
 
 def centre(node):

@@ -14,7 +14,7 @@
     "doctor": "npm exec --workspace apps/user -- expo-doctor && npm exec --workspace apps/admin -- expo-doctor"
   },
   "devDependencies": {
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.3",
     "vitest": "^3.2.4"
   },
   "engines": {

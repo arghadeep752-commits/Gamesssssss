@@ -46,6 +46,10 @@ adb shell input keyevent 82 >/dev/null 2>&1 || true
 adb shell settings put global window_animation_scale 0 >/dev/null 2>&1 || true
 adb shell settings put global transition_animation_scale 0 >/dev/null 2>&1 || true
 adb shell settings put global animator_duration_scale 0 >/dev/null 2>&1 || true
+# Let the launcher finish starting (slow software-rendered emulators otherwise raise
+# "isn't responding" dialogs over the app), then clear any system dialogs.
+sleep 20
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 
 note "Device: $(adb shell getprop ro.product.model | tr -d '\r') · Android $(adb shell getprop ro.build.version.release | tr -d '\r') (API $(adb shell getprop ro.build.version.sdk | tr -d '\r'))"
 adb install -r -g "$APK" > "$OUT/install.txt" 2>&1 || fail "install: $(cat "$OUT/install.txt")"
@@ -62,7 +66,7 @@ note "Launched and still running after 12 s (process started in $(( $(date +%s%3
 shot launch
 
 if [ "$APP" = "user" ]; then
-  if $UI has-text "Almost ready"; then
+  if $UI has-text "Almost ready" || $UI has-text "Device self-test"; then
     note "Build is not connected to Firebase yet: the 'Almost ready' gate is shown (expected for test builds)"
 
     # Device self-test: the app sets a generated image on Home + Lock, saves it to the
