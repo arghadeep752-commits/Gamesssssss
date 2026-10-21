@@ -3,7 +3,6 @@ import {
   onAuthStateChanged,
   signInWithCredential,
   signOut as firebaseSignOut,
-  type FirebaseAuthTypes,
 } from '@react-native-firebase/auth';
 import { httpsCallable } from '@react-native-firebase/functions';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -13,7 +12,8 @@ import { buildInfo } from '../config';
 import { AppError } from '../errors';
 import { auth, functions, isBackendConfigured } from '../firebase';
 
-export type AppUser = FirebaseAuthTypes.User;
+/** The signed-in Firebase user (derived from the SDK so it follows its type names across versions). */
+export type AppUser = NonNullable<typeof auth.currentUser>;
 
 interface AuthState {
   user: AppUser | null;

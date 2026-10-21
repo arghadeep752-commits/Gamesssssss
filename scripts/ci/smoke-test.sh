@@ -34,6 +34,7 @@ wallpaper_state() { adb shell dumpsys wallpaper 2>/dev/null | grep -E 'mWallpape
 crashed() { adb logcat -d -b crash 2>/dev/null | grep -q "$PKG"; }
 fail() {
   note "FAILED: $*"
+  echo "::error title=Smoke test ($APP)::$*"
   shot failure
   adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true
   exit 1
@@ -180,4 +181,5 @@ alive || fail "process died at the end of the run"
 crashed && fail "crash recorded in the crash buffer"
 adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true
 note "PASSED: no crashes"
+echo "::notice title=Smoke test ($APP)::passed"
 exit 0

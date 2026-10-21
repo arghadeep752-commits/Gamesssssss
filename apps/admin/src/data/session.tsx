@@ -4,7 +4,6 @@ import {
   onAuthStateChanged,
   signInWithCredential,
   signOut as firebaseSignOut,
-  type FirebaseAuthTypes,
 } from '@react-native-firebase/auth';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -16,9 +15,12 @@ import { auth, callFunction, db, isBackendConfigured } from '../firebase';
 
 export type SessionStatus = 'loading' | 'signed-out' | 'checking' | 'not-admin' | 'admin';
 
+/** The signed-in Firebase user (derived from the SDK so it follows its type names across versions). */
+type AuthUser = NonNullable<typeof auth.currentUser>;
+
 interface Session {
   status: SessionStatus;
-  user: FirebaseAuthTypes.User | null;
+  user: AuthUser | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   /** One-time bootstrap for the configured first admin. */
@@ -34,11 +36,11 @@ const SessionContext = createContext<Session | null>(null);
  * rules apply). The app only reflects that state; it can't grant anything itself.
  */
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<SessionStatus>(isBackendConfigured ? 'loading' : 'signed-out');
   const checkId = useRef(0);
 
-  const evaluate = useCallback(async (next: FirebaseAuthTypes.User | null, forceRefresh: boolean) => {
+  const evaluate = useCallback(async (next: AuthUser | null, forceRefresh: boolean) => {
     const id = ++checkId.current;
     if (!next) {
       setStatus('signed-out');

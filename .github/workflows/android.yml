@@ -156,7 +156,10 @@ jobs:
         if: needs.prepare.outputs.configured == 'true'
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          set -o pipefail
+          mkdir -p "build-output/$APP"
+          npm install --no-audit --no-fund 2>&1 | tee "build-output/$APP/npm-install.log"
 
       - name: Firebase config and signing key
         run: |
@@ -169,7 +172,9 @@ jobs:
 
       - name: Generate the native Android project (expo prebuild)
         working-directory: apps/${{ matrix.app }}
-        run: npx expo prebuild --platform android --no-install
+        run: |
+          set -o pipefail
+          npx expo prebuild --platform android --no-install 2>&1 | tee "$GITHUB_WORKSPACE/build-output/$APP/prebuild.log"
 
       - name: Gradle cache
         uses: actions/cache@v4
@@ -183,7 +188,19 @@ jobs:
 
       - name: Build release APKs
         working-directory: apps/${{ matrix.app }}/android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64 \
+            2>&1 | tee "$GITHUB_WORKSPACE/build-output/$APP/gradle.log"
+
+      - name: Explain a failed build
+        if: failure()
+        run: |
+          for log in npm-install prebuild gradle; do
+            f="build-output/$APP/$log.log"
+            [ -f "$f" ] && bash scripts/ci/annotate-errors.sh "$f" "$APP $log"
+          done
+          true
 
       - name: Verify APKs
         run: bash scripts/ci/collect-apks.sh "$APP" "$VERSION_NAME" "$DEVDARSHAN_VERSION_CODE" "$DEVDARSHAN_BUILD_CHANNEL"
@@ -212,7 +229,16 @@ jobs:
         run: |
           if [ -f "build-output/$APP/smoke-test/results.md" ]; then
             { echo "### Emulator smoke test: $APP"; cat "build-output/$APP/smoke-test/results.md"; } >> "$GITHUB_STEP_SUMMARY"
+            body="$(grep -v 'screenshot:' "build-output/$APP/smoke-test/results.md" | head -c 12000 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')"
+            echo "::notice title=Smoke test results ($APP)::$body"
           fi
+
+      - name: Publish CI evidence to the devdarshan-ci branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: bash scripts/ci/publish-diagnostics.sh "$APP"
 
       - name: Upload build output
         if: always()
