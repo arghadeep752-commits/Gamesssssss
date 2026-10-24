@@ -1,0 +1,4 @@
+573a570a55dbd210dcda530f633530d79abe02711ce668e441117c54b2606d22  DevDarshan-1.0.0-arm64-v8a-DEMO.apk
+34a9712cdf0147b2c90329e87127bce2e63ac859f1af5becd749e6f7027a31bf  DevDarshan-1.0.0-armeabi-v7a-DEMO.apk
+98cd81bc17517abb41a19cf9ec14c46473d3e27933d12f355bab1241577c6713  DevDarshan-1.0.0-universal-DEMO.apk
+875118b0fe3cf481232a479b4fbfe6465f0de9f1c2d8c760c6aad6de0fff202b  DevDarshan-1.0.0-x86_64-DEMO.apk

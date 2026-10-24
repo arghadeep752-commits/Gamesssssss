@@ -1,0 +1,19 @@
+- Creating native directory (./android)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json | no changes
+- Running prebuild
+✔ Finished prebuild
+--- size-related settings in the generated project
+17:    enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
+117:            shrinkResources enableShrinkResources.toBoolean()
+118:            minifyEnabled enableMinifyInReleaseBuilds
+126:            def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
+127:            useLegacyPackaging enableLegacyPackaging.toBoolean()
+198:        resourceConfigurations += ["en", "hi"]
+216:            minifyEnabled ddMinify
+217:            shrinkResources ddMinify
+38:newArchEnabled=true
+42:hermesEnabled=true
+61:expo.useLegacyPackaging=true
+65:android.enableBundleCompression=true
