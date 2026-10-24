@@ -175,9 +175,9 @@ PY
         shot set-sheet
         $UI tap-id set-both || fail "'Both Screens' option not found"
         confirmed=""
-        for _ in $(seq 1 60); do
-          sleep 1
+        for _ in $(seq 1 12); do
           if $UI has-text "Set on" --contains || $UI has-text "wallpaper set" --contains; then confirmed=yes; break; fi
+          sleep 1
         done
         shot after-set
         after="$(wallpaper_state)"

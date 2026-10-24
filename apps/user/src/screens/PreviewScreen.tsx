@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  Pressable,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -12,6 +13,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { DevDarshanNative } from '@devdarshan/native';
 import { categoryLabel, formatBytes, formatCount, type Wallpaper } from '@devdarshan/shared';
 import {
@@ -38,16 +40,46 @@ import { useWallpaperActions } from '../features/useWallpaperActions';
 import type { RootNavigation, RootStackParamList } from '../navigation/types';
 import { usePreviewSessions } from '../state/previewSession';
 
-const PreviewPage = memo(function PreviewPage({ wallpaper, width, height }: { wallpaper: Wallpaper; width: number; height: number }) {
+/** Soft dark gradient behind the floating controls, so they stay readable on any wallpaper. */
+function Scrim({ direction }: { direction: 'top' | 'bottom' }) {
+  const id = `scrim-${direction}`;
   return (
-    <View style={{ width, height }}>
+    <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none" pointerEvents="none">
+      <Defs>
+        <LinearGradient id={id} x1="0" y1={direction === 'top' ? '0' : '1'} x2="0" y2={direction === 'top' ? '1' : '0'}>
+          <Stop offset="0" stopColor="#000000" stopOpacity="0.62" />
+          <Stop offset="1" stopColor="#000000" stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  );
+}
+
+/**
+ * Full-bleed page: the wallpaper fills the screen the way it will on the phone
+ * ("cover"), with the controls floating above it. Tapping toggles the controls.
+ */
+const PreviewPage = memo(function PreviewPage({
+  wallpaper,
+  width,
+  height,
+  onTap,
+}: {
+  wallpaper: Wallpaper;
+  width: number;
+  height: number;
+  onTap: () => void;
+}) {
+  return (
+    <Pressable style={{ width, height }} onPress={onTap} accessibilityRole="imagebutton" accessibilityHint="Shows or hides the controls">
       <Image
         source={wallpaper.previewUrl ? { uri: wallpaper.previewUrl } : undefined}
         placeholder={
           wallpaper.thumbnailUrl ? { uri: wallpaper.thumbnailUrl } : wallpaper.placeholder ? { uri: wallpaper.placeholder } : undefined
         }
-        placeholderContentFit="contain"
-        contentFit="contain"
+        placeholderContentFit="cover"
+        contentFit="cover"
         transition={200}
         priority="high"
         cachePolicy="memory-disk"
@@ -55,7 +87,7 @@ const PreviewPage = memo(function PreviewPage({ wallpaper, width, height }: { wa
         accessibilityLabel={wallpaper.title}
         style={{ width, height }}
       />
-    </View>
+    </Pressable>
   );
 });
 
@@ -156,6 +188,8 @@ export function PreviewScreen() {
   const [index, setIndex] = useState(initialIndex);
   const [pagerHeight, setPagerHeight] = useState(0);
   const [sheet, setSheet] = useState<'set' | 'info' | null>(null);
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const toggleChrome = useCallback(() => setChromeVisible((v) => !v), []);
   const [manufacturer, setManufacturer] = useState<string | null>(null);
   const current = list[Math.min(index, list.length - 1)];
 
@@ -191,7 +225,8 @@ export function PreviewScreen() {
   };
 
   const topBar = (
-    <View style={[styles.topBar, { paddingTop: insets.top, paddingHorizontal: spacing.sm }]}>
+    <View style={[styles.topBar, styles.overlayTop, { paddingTop: insets.top, paddingHorizontal: spacing.sm, paddingBottom: spacing.xl }]}>
+      <Scrim direction="top" />
       <IconButton name="arrowLeft" tone="overlay" accessibilityLabel="Close preview" onPress={() => navigation.goBack()} />
       <View style={styles.titles}>
         {current ? (
@@ -231,9 +266,8 @@ export function PreviewScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.previewBackground }]}>
-      <StatusBar style="light" />
-      {topBar}
-      <View style={styles.pager} onLayout={onLayout}>
+      <StatusBar style="light" hidden={!chromeVisible} />
+      <View style={StyleSheet.absoluteFill} onLayout={onLayout}>
         {pagerHeight > 0 ? (
           <FlatList
             data={list}
@@ -242,7 +276,7 @@ export function PreviewScreen() {
             keyExtractor={(w) => w.id}
             initialScrollIndex={initialIndex}
             getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-            renderItem={({ item }) => <PreviewPage wallpaper={item} width={width} height={pagerHeight} />}
+            renderItem={({ item }) => <PreviewPage wallpaper={item} width={width} height={pagerHeight} onTap={toggleChrome} />}
             onMomentumScrollEnd={onMomentumEnd}
             showsHorizontalScrollIndicator={false}
             initialNumToRender={1}
@@ -254,13 +288,17 @@ export function PreviewScreen() {
         ) : null}
       </View>
 
+      {chromeVisible ? topBar : null}
+
       {actions.progress ? (
-        <View style={[styles.progress, { bottom: insets.bottom + 150, paddingHorizontal: spacing.lg }]}>
+        <View style={[styles.progress, { bottom: insets.bottom + 200, paddingHorizontal: spacing.lg }]}>
           <ActionProgressCard progress={actions.progress} onCancel={actions.cancel} />
         </View>
       ) : null}
 
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.md, paddingHorizontal: spacing.lg }]}>
+      {chromeVisible ? (
+      <View style={[styles.bottomBar, styles.overlayBottom, { paddingBottom: insets.bottom + spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.xxl }]}>
+        <Scrim direction="bottom" />
         <View style={styles.actionRow}>
           <ActionButton icon="heart" label={liked ? 'Liked' : 'Like'} active={liked} onPress={toggleLike} testID="preview-like" />
           <ActionButton icon="download" label="Download" onPress={() => void actions.download(current)} disabled={actions.busy} testID="preview-download" />
@@ -276,6 +314,7 @@ export function PreviewScreen() {
           testID="preview-set-wallpaper"
         />
       </View>
+      ) : null}
 
       <SetWallpaperSheet
         visible={sheet === 'set'}
@@ -303,6 +342,18 @@ const styles = StyleSheet.create({
   },
   titles: {
     flex: 1,
+  },
+  overlayTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  overlayBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   pager: {
     flex: 1,
