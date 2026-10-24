@@ -7,6 +7,7 @@ interface BuildExtra {
   googleWebClientId?: string | null;
   buildChannel?: string;
   gitSha?: string | null;
+  demo?: boolean;
 }
 
 const extra = (Constants.expoConfig?.extra ?? {}) as BuildExtra;
@@ -17,6 +18,8 @@ export const buildInfo = {
   channel: extra.buildChannel ?? 'local',
   gitSha: extra.gitSha ?? null,
   googleWebClientId: extra.googleWebClientId ?? null,
+  /** DEMO builds (no Firebase project) browse a built-in sample catalogue instead of the server. */
+  demo: extra.demo === true,
 };
 
 export function versionLabel(): string {

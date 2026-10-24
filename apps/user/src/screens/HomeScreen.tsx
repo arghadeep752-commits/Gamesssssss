@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categoryLabel, type Category, type HomeSection } from '@devdarshan/shared';
 import { AppText, Avatar, EmptyState, Icon, IconButton, SectionTitle, Skeleton, Touchable, useTheme } from '@devdarshan/ui';
 import { BrandMark } from '../components/Brand';
+import { DemoBanner } from '../components/DemoBanner';
+import { buildInfo } from '../config';
 import { CategoryArtwork, CategoryBubble } from '../components/CategoryVisuals';
 import { FeaturedStrip } from '../components/FeaturedStrip';
 import { OfflineBanner } from '../components/OfflineBanner';
@@ -154,6 +156,7 @@ export function HomeScreen() {
         </View>
       </View>
       <OfflineBanner />
+      {buildInfo.demo ? <DemoBanner /> : null}
       {config.homeSectionOrder.filter((s) => s !== 'latest').map(renderSection)}
       <SectionTitle title="Latest wallpapers" />
     </View>

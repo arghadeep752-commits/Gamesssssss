@@ -60,6 +60,8 @@ export function describeError(error: unknown): FriendlyError {
       return { title: 'Sign-in interrupted', message: 'Please try again.', silent: false };
     case 'E_UNAVAILABLE':
       return { title: 'Not available', message: raw, silent: false };
+    case 'DEMO_MODE':
+      return { title: 'Demo build', message: raw, silent: false };
     default:
       break;
   }

@@ -264,8 +264,8 @@ export function PreviewScreen() {
         <View style={styles.actionRow}>
           <ActionButton icon="heart" label={liked ? 'Liked' : 'Like'} active={liked} onPress={toggleLike} testID="preview-like" />
           <ActionButton icon="download" label="Download" onPress={() => void actions.download(current)} disabled={actions.busy} testID="preview-download" />
-          <ActionButton icon="share" label="Share" onPress={() => void actions.share(current, 'chooser')} disabled={actions.busy} />
-          <ActionButton icon="message" label="WhatsApp" onPress={() => void actions.share(current, 'whatsapp')} disabled={actions.busy} />
+          <ActionButton icon="share" label="Share" onPress={() => void actions.share(current, 'chooser')} disabled={actions.busy} testID="preview-share" />
+          <ActionButton icon="message" label="WhatsApp" onPress={() => void actions.share(current, 'whatsapp')} disabled={actions.busy} testID="preview-whatsapp" />
         </View>
         <Button
           title="Set Wallpaper"

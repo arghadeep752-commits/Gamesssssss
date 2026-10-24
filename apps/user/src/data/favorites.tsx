@@ -9,7 +9,11 @@ import {
   setDoc,
 } from '@react-native-firebase/firestore';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { COLLECTIONS } from '@devdarshan/shared';
+import { buildInfo } from '../config';
 import { db } from '../firebase';
 import { useAuth } from './auth';
 
@@ -33,7 +37,48 @@ const FavoritesContext = createContext<FavoritesState | null>(null);
  * them on reconnect. The heart flips immediately (optimistic) and rolls back if
  * the server rejects the write.
  */
+/** DEMO builds: likes are kept on this phone only (there is no account to sync with). */
+const useDemoLikes = create<{ ids: string[]; setIds: (ids: string[]) => void }>()(
+  persist((set) => ({ ids: [], setIds: (ids) => set({ ids }) }), {
+    name: 'devdarshan-demo-likes',
+    storage: createJSONStorage(() => AsyncStorage),
+    partialize: (state) => ({ ids: state.ids }),
+  }),
+);
+
+function DemoFavoritesProvider({ children }: { children: ReactNode }) {
+  const ids = useDemoLikes((s) => s.ids);
+  const setIds = useDemoLikes((s) => s.setIds);
+  const value = useMemo<FavoritesState>(() => {
+    const set = new Set(ids);
+    return {
+      ids,
+      ready: true,
+      isFavorite: (id) => set.has(id),
+      toggle: async (id) => {
+        const current = useDemoLikes.getState().ids;
+        if (current.includes(id)) {
+          setIds(current.filter((x) => x !== id));
+          return 'removed';
+        }
+        setIds([id, ...current]);
+        return 'added';
+      },
+      remove: async (removeIds) => {
+        const drop = new Set(removeIds);
+        setIds(useDemoLikes.getState().ids.filter((x) => !drop.has(x)));
+      },
+    };
+  }, [ids, setIds]);
+  return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
+}
+
 export function FavoritesProvider({ children }: { children: ReactNode }) {
+  if (buildInfo.demo) return <DemoFavoritesProvider>{children}</DemoFavoritesProvider>;
+  return <CloudFavoritesProvider>{children}</CloudFavoritesProvider>;
+}
+
+function CloudFavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
   const [confirmed, setConfirmed] = useState<{ ids: string[]; ready: boolean }>({ ids: [], ready: false });

@@ -76,7 +76,7 @@ jobs:
             echo "project_number=$PROJECT_NUMBER"
             echo "version_code=$CODE"
             echo "tag=v${VERSION_NAME}-build.${CODE}"
-            if [ "$CONFIGURED" = true ]; then echo "release_tag=v${VERSION_NAME}-build.${CODE}"; else echo "release_tag=test-build"; fi
+            if [ "$CONFIGURED" = true ]; then echo "release_tag=v${VERSION_NAME}-build.${CODE}"; else echo "release_tag=demo-build"; fi
             echo "matrix=$MATRIX"
             echo "smoke=${{ github.event.inputs.smoke_test || 'true' }}"
           } >> "$GITHUB_OUTPUT"
@@ -106,15 +106,16 @@ jobs:
         if: steps.cfg.outputs.configured == 'true'
         run: bash scripts/ci/firebase-prepare.sh "${{ steps.cfg.outputs.project_id }}"
 
-      - name: Start the test-build pre-release
+      - name: Start the demo-build pre-release
         if: steps.cfg.outputs.configured != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # One rolling "test-build" pre-release: replaced by every unconfigured build.
+          # One rolling "demo-build" pre-release, replaced by every build made before Firebase is connected.
           gh release delete test-build --yes --cleanup-tag || true
-          gh release create test-build --prerelease --target "$GITHUB_SHA" \
-            --title "DevDarshan test build ${{ steps.cfg.outputs.version_code }} (not connected to Firebase yet)" --notes "Building…"
+          gh release delete demo-build --yes --cleanup-tag || true
+          gh release create demo-build --prerelease --target "$GITHUB_SHA" \
+            --title "DevDarshan demo ${{ steps.cfg.outputs.version_code }} (sample wallpapers, not connected to Firebase yet)" --notes "Building…"
 
       - name: Create draft release
         if: steps.cfg.outputs.configured == 'true'
@@ -296,21 +297,22 @@ jobs:
             echo "Build failed; the release was discarded." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          SUFFIX=""; [ "$CONFIGURED" = "true" ] || SUFFIX="-TEST"
+          USUFFIX=""; ASUFFIX=""
+          if [ "$CONFIGURED" != "true" ]; then USUFFIX="-DEMO"; ASUFFIX="-TEST"; fi
           mkdir notes && cd notes
           gh release download "$TAG" -p 'report-*.md' -p 'smoke-*.md' || true
           {
             if [ "$CONFIGURED" != "true" ]; then
-              echo "> **Test build.** Firebase isn't connected yet, so the user app shows *Almost ready* instead of wallpapers, and the admin app can't sign in."
-              echo "> It's still useful on a real phone: open DevDarshan and tap **Run self-test**. It sets a test wallpaper on the Home and Lock screens, saves it to *Pictures/DevDarshan* and opens the share sheet."
+              echo "> **Demo build.** Firebase isn't connected yet, so DevDarshan runs with a built-in sample catalogue: 32 original artworks loaded over the internet. Browsing, search, preview, likes (saved on the phone), set wallpaper, download and share all work; Google sign-in is turned off."
+              echo "> The admin app can't sign in until Firebase is connected."
               echo
             fi
             echo "## Install"
             echo
             echo "On your phone, download the APK and open it (allow installs from your browser when Android asks)."
             echo
-            echo "- **DevDarshan** (users): \`DevDarshan-${VERSION_NAME}-arm64-v8a${SUFFIX}.apk\` for almost all phones; \`armeabi-v7a\` for older 32-bit phones; \`universal\` if unsure (larger)."
-            echo "- **DevDarshan Admin**: \`DevDarshan-Admin-${VERSION_NAME}-arm64-v8a${SUFFIX}.apk\`."
+            echo "- **DevDarshan** (users): \`DevDarshan-${VERSION_NAME}-arm64-v8a${USUFFIX}.apk\` for almost all phones; \`armeabi-v7a\` for older 32-bit phones; \`universal\` if unsure (larger)."
+            echo "- **DevDarshan Admin**: \`DevDarshan-Admin-${VERSION_NAME}-arm64-v8a${ASUFFIX}.apk\`."
             echo
             [ "$CONFIGURED" = "true" ] && echo "Signing certificate SHA-256: \`${{ needs.prepare.outputs.sha256 }}\` · Google sign-in: **${{ needs.prepare.outputs.google_sign_in }}**"
             echo

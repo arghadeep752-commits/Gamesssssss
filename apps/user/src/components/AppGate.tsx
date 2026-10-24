@@ -29,7 +29,7 @@ function GateScreen({ children }: { children: ReactNode }) {
 export function AppGate({ children }: { children: ReactNode }) {
   const { config } = useAppConfig();
 
-  if (!isBackendConfigured) {
+  if (!isBackendConfigured && !buildInfo.demo) {
     return (
       <GateScreen>
         <ScrollView contentContainerStyle={styles.scroll}>

@@ -40,7 +40,7 @@ You don't need a computer. The whole pipeline runs in GitHub Actions in this rep
 3. GitHub Actions deploys the backend, builds both signed APKs, verifies them, runs them on an Android emulator and publishes them as a **[GitHub Release](https://github.com/arghadeep752-commits/Gamesssssss/releases)**. Anyone can download from there on a phone.
 4. Install **DevDarshan Admin**, sign in with the bootstrap admin account and tap **Claim admin access**. Then add the starter categories and upload wallpapers.
 
-Before step 2, every push still builds **test APKs** (placeholder config, marked `-TEST`) so the code is always proven to compile and launch.
+Before step 2, every push builds a **demo** of the user app (sample artwork, marked `-DEMO`) and a test admin APK. They're published as the [`demo-build` pre-release](https://github.com/arghadeep752-commits/Gamesssssss/releases/tag/demo-build), so the app can be tried on a phone straight away.
 
 ## Documentation
 

@@ -1,6 +1,8 @@
 import { doc, onSnapshot } from '@react-native-firebase/firestore';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { APP_CONFIG_DOC_ID, COLLECTIONS, DEFAULT_APP_CONFIG, toAppConfig, type AppConfig } from '@devdarshan/shared';
+import { buildInfo } from '../config';
+import { DEMO_CONFIG } from '../demo/catalog';
 import { db, isBackendConfigured } from '../firebase';
 
 interface AppConfigState {
@@ -13,7 +15,9 @@ const AppConfigContext = createContext<AppConfigState>({ config: DEFAULT_APP_CON
 
 /** Live public config: featured lists, home layout, maintenance mode, minimum version. */
 export function AppConfigProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppConfigState>({ config: DEFAULT_APP_CONFIG, loaded: !isBackendConfigured });
+  const [state, setState] = useState<AppConfigState>(
+    buildInfo.demo ? { config: DEMO_CONFIG, loaded: true } : { config: DEFAULT_APP_CONFIG, loaded: !isBackendConfigured },
+  );
 
   useEffect(() => {
     if (!isBackendConfigured) return undefined;

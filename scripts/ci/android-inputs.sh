@@ -5,7 +5,8 @@
 #
 # With a project: downloads the real config and the upload key from Secret Manager.
 # Without one: writes the placeholder config and signs with a throwaway key, so the
-# build pipeline can still be verified end to end (such APKs are labelled TEST).
+# build pipeline can still be verified end to end. The user app is then a DEMO build
+# (sample catalogue, labelled -DEMO); the admin app is labelled -TEST.
 set -euo pipefail
 
 APP="${1:?app}"
@@ -30,7 +31,13 @@ else
   keytool -genkeypair -noprompt -keystore "$WORK/upload.p12" -storetype PKCS12 -alias devdarshan \
     -keyalg RSA -keysize 2048 -validity 30 -storepass "$PASSWORD" -keypass "$PASSWORD" \
     -dname "CN=DevDarshan Test Build, O=DevDarshan, C=IN" >/dev/null
-  CHANNEL=test
+  if [ "$APP" = "user" ]; then
+    # Without a backend the user app is built as a DEMO with a sample catalogue.
+    CHANNEL=demo
+    echo "DEVDARSHAN_DEMO=true" >> "$env_out"
+  else
+    CHANNEL=test
+  fi
 fi
 
 {

@@ -45,6 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async () => {
+    if (buildInfo.demo) {
+      throw new AppError('DEMO_MODE', 'Google sign-in is turned off in this demo. The full app signs in with Google and syncs your likes across phones.');
+    }
     if (!isBackendConfigured || !buildInfo.googleWebClientId) {
       throw new AppError('SIGNIN_NOT_CONFIGURED', 'Google sign-in is not configured for this build.');
     }

@@ -138,6 +138,21 @@ PY
       fi
     done
 
+    # Scrolling performance and memory on the home grid (software-rendered emulator,
+    # so real phones do better; useful for spotting regressions between builds).
+    sleep 3
+    adb shell dumpsys gfxinfo "$PKG" reset >/dev/null 2>&1 || true
+    for _ in 1 2 3 4 5 6; do adb shell input swipe 540 1900 540 600 250; sleep 0.6; done
+    for _ in 1 2 3 4 5 6; do adb shell input swipe 540 600 540 1900 250; sleep 0.6; done
+    gfx="$(adb shell dumpsys gfxinfo "$PKG" 2>/dev/null | tr -d '\r')"
+    frames="$(echo "$gfx" | sed -n 's/^Total frames rendered: //p' | head -n1)"
+    janky="$(echo "$gfx" | sed -n 's/^Janky frames: //p' | head -n1)"
+    p90="$(echo "$gfx" | sed -n 's/^90th percentile: //p' | head -n1)"
+    mem="$(adb shell dumpsys meminfo "$PKG" 2>/dev/null | tr -d '\r' | awk '/TOTAL PSS:|TOTAL:/ {print $2; exit}')"
+    note "Scrolling (emulator): ${frames:-?} frames, janky ${janky:-?}, 90th percentile frame ${p90:-?}; memory ${mem:+$((mem / 1024)) MB PSS}"
+    shot scrolled
+    alive || fail "crashed while scrolling"
+
     if title="$($UI tap-first-image)"; then
       sleep 5
       alive || fail "crashed opening a wallpaper"
@@ -167,6 +182,36 @@ PY
         fi
         adb shell input keyevent 3; sleep 2; shot home-screen-wallpaper
         adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 3
+      fi
+
+      # Like, download (MediaStore) and share from the same preview.
+      if $UI tap-id preview-like; then
+        sleep 2
+        $UI has-text "Liked" && note "Like: the heart switched to Liked" || note "Like: tapped (signed-out builds ask to sign in)"
+      fi
+      if $UI tap-id preview-download; then
+        saved=""
+        for _ in $(seq 1 45); do
+          sleep 1
+          if $UI has-text "Saved to your gallery" || $UI has-text "Already in your gallery"; then saved=yes; break; fi
+        done
+        shot download
+        file="$(adb shell ls /sdcard/Pictures/DevDarshan/ 2>/dev/null | tr -d '\r' | grep -v selftest | head -n1)"
+        [ -n "$saved" ] && [ -n "$file" ] || fail "download did not reach Pictures/DevDarshan (toast: ${saved:-none}, file: ${file:-none})"
+        note "Download: Pictures/DevDarshan/$file"
+      fi
+      if $UI tap-id preview-share; then
+        top=""
+        for _ in $(seq 1 20); do
+          sleep 1
+          top="$(adb shell dumpsys activity activities 2>/dev/null | grep -E 'topResumedActivity|mResumedActivity' | head -n1 | tr -d '\r')"
+          echo "$top" | grep -qiE 'chooser|resolver' && break
+        done
+        shot share
+        echo "$top" | grep -qiE 'chooser|resolver' || fail "share sheet did not open from the preview (top: $top)"
+        note "Share: system share sheet opened"
+        adb shell input keyevent 4; sleep 2
+        alive || fail "app died after closing the share sheet"
       fi
     else
       note "No published wallpapers yet: skipped the set-wallpaper check"

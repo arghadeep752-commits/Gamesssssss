@@ -107,6 +107,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     firebaseProjectId: firebase.projectId,
     googleWebClientId: firebase.webClientId,
     buildChannel: process.env.DEVDARSHAN_BUILD_CHANNEL ?? 'local',
+    // Only for builds without a Firebase project: sample catalogue, no sign-in.
+    demo: process.env.DEVDARSHAN_DEMO === 'true' && firebase.projectId !== null && firebase.projectId.endsWith('not-configured'),
     gitSha: (process.env.GITHUB_SHA ?? '').slice(0, 7) || null,
   },
 });

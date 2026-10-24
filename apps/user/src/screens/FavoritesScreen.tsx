@@ -5,7 +5,10 @@ import { AppText, Button, EmptyState, LoadingState, ScreenHeader, useTheme, useT
 import { OfflineBanner } from '../components/OfflineBanner';
 import { useSignInPrompt } from '../components/SignInSheet';
 import { WallpaperGrid } from '../components/WallpaperGrid';
+import { buildInfo } from '../config';
 import { useAuth } from '../data/auth';
+
+const DEMO_USER = { uid: 'demo' } as const;
 import { useFavorites } from '../data/favorites';
 import { useWallpapersByIds } from '../data/queries';
 import type { RootNavigation } from '../navigation/types';
@@ -15,7 +18,9 @@ export function FavoritesScreen() {
   const navigation = useNavigation<RootNavigation>();
   const { colors, spacing, radii } = useTheme();
   const toast = useToast();
-  const { user, initializing } = useAuth();
+  const { user: signedInUser, initializing } = useAuth();
+  // DEMO builds keep likes on the phone, so they behave as if signed in.
+  const user = signedInUser ?? (buildInfo.demo ? DEMO_USER : null);
   const favorites = useFavorites();
   const wallpapers = useWallpapersByIds(favorites.ids, favorites.ready && !!user);
   const openPreview = useOpenPreview();

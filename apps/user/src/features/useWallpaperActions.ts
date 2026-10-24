@@ -14,7 +14,7 @@ import { CALLABLES, wallpaperFileName, type Wallpaper } from '@devdarshan/shared
 import { useToast } from '@devdarshan/ui';
 import { useAppConfig } from '../data/appConfig';
 import { AppError, describeError } from '../errors';
-import { functions } from '../firebase';
+import { functions, isBackendConfigured } from '../firebase';
 
 export type ActionKind = 'set' | 'download' | 'share';
 
@@ -34,6 +34,7 @@ function getCapabilities(): Promise<Capabilities | null> {
 
 const recordedDownloads = new Set<string>();
 function recordDownload(wallpaperId: string): void {
+  if (!isBackendConfigured) return;
   if (recordedDownloads.has(wallpaperId)) return;
   recordedDownloads.add(wallpaperId);
   httpsCallable(functions, CALLABLES.recordDownload)({ wallpaperId }).catch(() => recordedDownloads.delete(wallpaperId));

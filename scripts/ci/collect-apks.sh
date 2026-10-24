@@ -24,12 +24,15 @@ case "$APP" in
   admin) LABEL="DevDarshan-Admin"; EXPECTED_PACKAGE="com.devdarshan.admin" ;;
   *) echo "unknown app $APP" >&2; exit 1 ;;
 esac
-SUFFIX=""
-[ "$CHANNEL" = "release" ] || SUFFIX="-TEST"
+case "$CHANNEL" in
+  release) SUFFIX=""; KIND="" ;;
+  demo) SUFFIX="-DEMO"; KIND=" — demo build with sample artwork, not connected to Firebase" ;;
+  *) SUFFIX="-TEST"; KIND=" — test build, not connected to Firebase" ;;
+esac
 
 REPORT="$OUT/report.md"
 {
-  echo "## $LABEL $VERSION ($CODE)${SUFFIX:+ — test build, not connected to Firebase}"
+  echo "## $LABEL $VERSION ($CODE)$KIND"
   echo
 } > "$REPORT"
 

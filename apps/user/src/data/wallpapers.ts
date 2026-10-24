@@ -23,6 +23,15 @@ import {
   type Category,
   type Wallpaper,
 } from '@devdarshan/shared';
+import { buildInfo } from '../config';
+import {
+  DEMO_CATEGORIES,
+  demoCategoryPage,
+  demoLatestPage,
+  demoSearch,
+  demoWallpaper,
+  demoWallpapersByIds,
+} from '../demo/catalog';
 import { db } from '../firebase';
 
 /**
@@ -31,7 +40,12 @@ import { db } from '../firebase';
  * with cursors, and served from Firestore's on-device cache when offline.
  */
 
-export type Cursor = QueryDocumentSnapshot<DocumentData> | null;
+/** A Firestore document cursor (or a plain offset in DEMO builds). */
+export type Cursor = QueryDocumentSnapshot<DocumentData> | number | null;
+
+const demo = buildInfo.demo;
+const docCursor = (cursor: Cursor) => (typeof cursor === 'number' ? null : cursor);
+const offset = (cursor: Cursor) => (typeof cursor === 'number' ? cursor : null);
 
 export interface WallpaperPage {
   items: Wallpaper[];
@@ -48,8 +62,10 @@ function toPage(docs: QueryDocumentSnapshot<DocumentData>[], pageSize: number): 
 }
 
 export async function fetchLatestPage(cursor: Cursor, pageSize: number = LIMITS.pageSize): Promise<WallpaperPage> {
+  if (demo) return demoLatestPage(offset(cursor), pageSize);
+  const start = docCursor(cursor);
   const base = query(wallpapers(), where('status', '==', 'published'), orderBy('publishedAt', 'desc'));
-  const snap = await getDocs(cursor ? query(base, startAfter(cursor), limit(pageSize)) : query(base, limit(pageSize)));
+  const snap = await getDocs(start ? query(base, startAfter(start), limit(pageSize)) : query(base, limit(pageSize)));
   return toPage(snap.docs, pageSize);
 }
 
@@ -58,18 +74,21 @@ export async function fetchCategoryPage(
   cursor: Cursor,
   pageSize: number = LIMITS.pageSize,
 ): Promise<WallpaperPage> {
+  if (demo) return demoCategoryPage(categoryId, offset(cursor), pageSize);
+  const start = docCursor(cursor);
   const base = query(
     wallpapers(),
     where('status', '==', 'published'),
     where('categoryIds', 'array-contains', categoryId),
     orderBy('publishedAt', 'desc'),
   );
-  const snap = await getDocs(cursor ? query(base, startAfter(cursor), limit(pageSize)) : query(base, limit(pageSize)));
+  const snap = await getDocs(start ? query(base, startAfter(start), limit(pageSize)) : query(base, limit(pageSize)));
   return toPage(snap.docs, pageSize);
 }
 
 /** One indexed term goes to Firestore; every other term is matched on the device. */
 export async function searchWallpapers(input: string): Promise<Wallpaper[]> {
+  if (demo) return demoSearch(input);
   const parsed = parseSearchQuery(input);
   if (!parsed.term) return [];
   const snap = await getDocs(
@@ -88,6 +107,7 @@ export async function searchWallpapers(input: string): Promise<Wallpaper[]> {
 
 /** Fetches published wallpapers by id (30 per query, Firestore's `in` limit), keeping the given order. */
 export async function fetchWallpapersByIds(ids: readonly string[]): Promise<{ items: Wallpaper[]; missing: string[] }> {
+  if (demo) return demoWallpapersByIds(ids);
   const unique = [...new Set(ids)].filter(Boolean);
   const found = new Map<string, Wallpaper>();
   for (let i = 0; i < unique.length; i += 30) {
@@ -109,6 +129,7 @@ export async function fetchWallpapersByIds(ids: readonly string[]): Promise<{ it
 }
 
 export async function fetchWallpaper(id: string): Promise<Wallpaper | null> {
+  if (demo) return demoWallpaper(id);
   try {
     const snap = await getDoc(doc(db, COLLECTIONS.wallpapers, id));
     if (!snap.exists()) return null;
@@ -121,6 +142,7 @@ export async function fetchWallpaper(id: string): Promise<Wallpaper | null> {
 }
 
 export async function fetchCategories(): Promise<Category[]> {
+  if (demo) return DEMO_CATEGORIES;
   const snap = await getDocs(
     query(collection(db, COLLECTIONS.categories), where('isActive', '==', true), orderBy('sortOrder', 'asc'), limit(200)),
   );

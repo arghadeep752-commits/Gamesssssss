@@ -17,7 +17,7 @@ import {
   useToast,
   type ThemePreference,
 } from '@devdarshan/ui';
-import { versionLabel } from '../config';
+import { buildInfo, versionLabel } from '../config';
 import { useAppConfig } from '../data/appConfig';
 import { useAuth } from '../data/auth';
 import { useFavorites } from '../data/favorites';
@@ -135,13 +135,15 @@ export function ProfileScreen() {
               <>
                 <AppText variant="heading">Welcome, devotee</AppText>
                 <AppText variant="caption" color="textMuted">
-                  Sign in to sync your liked wallpapers.
+                  {buildInfo.demo
+                    ? 'Demo build: likes are saved on this phone. The full app signs in with Google and syncs them.'
+                    : 'Sign in to sync your liked wallpapers.'}
                 </AppText>
               </>
             )}
           </View>
         </Card>
-        {!user ? (
+        {!user && !buildInfo.demo ? (
           <Button
             title="Sign in with Google"
             icon="logIn"
@@ -169,7 +171,7 @@ export function ProfileScreen() {
           <ListRow
             icon="heart"
             title="Liked wallpapers"
-            value={user ? String(ids.length) : undefined}
+            value={user || buildInfo.demo ? String(ids.length) : undefined}
             onPress={() => navigation.navigate('Tabs', { screen: 'Favorites' })}
           />
           <Divider inset={52} />
