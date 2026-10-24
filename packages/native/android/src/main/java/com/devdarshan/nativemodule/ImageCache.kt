@@ -185,8 +185,8 @@ class ImageCache(private val context: Context) {
     private const val PROGRESS_INTERVAL_MS = 120L
     private const val SPACE_MARGIN = 20L * 1024 * 1024
     private const val MIN_FREE_UNKNOWN_SIZE = 50L * 1024 * 1024
-    private const val MAX_BYTES = 300L * 1024 * 1024
-    private const val TARGET_BYTES = 200L * 1024 * 1024
+    private const val MAX_BYTES = 150L * 1024 * 1024
+    private const val TARGET_BYTES = 100L * 1024 * 1024
 
     fun safeKey(key: String): String = key.replace(Regex("[^A-Za-z0-9_-]"), "_").take(80).ifEmpty { "image" }
 

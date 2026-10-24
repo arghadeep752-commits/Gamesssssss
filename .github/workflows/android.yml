@@ -48,6 +48,7 @@ jobs:
       project_number: ${{ steps.cfg.outputs.project_number }}
       version_code: ${{ steps.cfg.outputs.version_code }}
       tag: ${{ steps.cfg.outputs.tag }}
+      release_tag: ${{ steps.cfg.outputs.release_tag }}
       matrix: ${{ steps.cfg.outputs.matrix }}
       smoke: ${{ steps.cfg.outputs.smoke }}
       user_app_id: ${{ steps.firebase.outputs.user_app_id }}
@@ -75,6 +76,7 @@ jobs:
             echo "project_number=$PROJECT_NUMBER"
             echo "version_code=$CODE"
             echo "tag=v${VERSION_NAME}-build.${CODE}"
+            if [ "$CONFIGURED" = true ]; then echo "release_tag=v${VERSION_NAME}-build.${CODE}"; else echo "release_tag=test-build"; fi
             echo "matrix=$MATRIX"
             echo "smoke=${{ github.event.inputs.smoke_test || 'true' }}"
           } >> "$GITHUB_OUTPUT"
@@ -103,6 +105,16 @@ jobs:
         id: firebase
         if: steps.cfg.outputs.configured == 'true'
         run: bash scripts/ci/firebase-prepare.sh "${{ steps.cfg.outputs.project_id }}"
+
+      - name: Start the test-build pre-release
+        if: steps.cfg.outputs.configured != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # One rolling "test-build" pre-release: replaced by every unconfigured build.
+          gh release delete test-build --yes --cleanup-tag || true
+          gh release create test-build --prerelease --target "$GITHUB_SHA" \
+            --title "DevDarshan test build ${{ steps.cfg.outputs.version_code }} (not connected to Firebase yet)" --notes "Building…"
 
       - name: Create draft release
         if: steps.cfg.outputs.configured == 'true'
@@ -254,8 +266,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Attach APKs to the draft release
-        if: success() && needs.prepare.outputs.configured == 'true'
+      - name: Attach APKs to the release
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -263,12 +275,12 @@ jobs:
           cp report.md "report-$APP.md"
           [ -f smoke-test/results.md ] && cp smoke-test/results.md "smoke-$APP.md" || true
           files=$(ls *.apk | grep -v x86_64)
-          gh release upload "${{ needs.prepare.outputs.tag }}" $files "report-$APP.md" $( [ -f "smoke-$APP.md" ] && echo "smoke-$APP.md" ) --clobber
+          gh release upload "${{ needs.prepare.outputs.release_tag }}" $files "report-$APP.md" $( [ -f "smoke-$APP.md" ] && echo "smoke-$APP.md" ) --clobber
 
   publish:
     name: Publish release
     needs: [prepare, build]
-    if: always() && needs.prepare.outputs.configured == 'true'
+    if: always() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -276,24 +288,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ needs.prepare.outputs.tag }}
+          TAG: ${{ needs.prepare.outputs.release_tag }}
+          CONFIGURED: ${{ needs.prepare.outputs.configured }}
         run: |
           if [ "${{ needs.build.result }}" != "success" ]; then
             gh release delete "$TAG" --yes --cleanup-tag || true
-            echo "Build failed; the draft release was discarded." >> "$GITHUB_STEP_SUMMARY"
+            echo "Build failed; the release was discarded." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          SUFFIX=""; [ "$CONFIGURED" = "true" ] || SUFFIX="-TEST"
           mkdir notes && cd notes
           gh release download "$TAG" -p 'report-*.md' -p 'smoke-*.md' || true
           {
+            if [ "$CONFIGURED" != "true" ]; then
+              echo "> **Test build.** Firebase isn't connected yet, so the user app shows *Almost ready* instead of wallpapers, and the admin app can't sign in."
+              echo "> It's still useful on a real phone: open DevDarshan and tap **Run self-test**. It sets a test wallpaper on the Home and Lock screens, saves it to *Pictures/DevDarshan* and opens the share sheet."
+              echo
+            fi
             echo "## Install"
             echo
             echo "On your phone, download the APK and open it (allow installs from your browser when Android asks)."
             echo
-            echo "- **DevDarshan** (users): \`DevDarshan-${VERSION_NAME}-arm64-v8a.apk\` for almost all phones; \`armeabi-v7a\` for older 32-bit phones; \`universal\` if unsure."
-            echo "- **DevDarshan Admin**: \`DevDarshan-Admin-${VERSION_NAME}-arm64-v8a.apk\`."
+            echo "- **DevDarshan** (users): \`DevDarshan-${VERSION_NAME}-arm64-v8a${SUFFIX}.apk\` for almost all phones; \`armeabi-v7a\` for older 32-bit phones; \`universal\` if unsure (larger)."
+            echo "- **DevDarshan Admin**: \`DevDarshan-Admin-${VERSION_NAME}-arm64-v8a${SUFFIX}.apk\`."
             echo
-            echo "Signing certificate SHA-256: \`${{ needs.prepare.outputs.sha256 }}\` · Google sign-in: **${{ needs.prepare.outputs.google_sign_in }}**"
+            [ "$CONFIGURED" = "true" ] && echo "Signing certificate SHA-256: \`${{ needs.prepare.outputs.sha256 }}\` · Google sign-in: **${{ needs.prepare.outputs.google_sign_in }}**"
             echo
             for f in report-*.md; do [ -f "$f" ] && cat "$f" && echo; done
             for f in smoke-*.md; do
@@ -303,5 +322,9 @@ jobs:
             done
           } > notes.md
           for f in report-*.md smoke-*.md; do [ -f "$f" ] && gh release delete-asset "$TAG" "$f" --yes || true; done
-          gh release edit "$TAG" --draft=false --latest --notes-file notes.md
+          if [ "$CONFIGURED" = "true" ]; then
+            gh release edit "$TAG" --draft=false --latest --notes-file notes.md
+          else
+            gh release edit "$TAG" --prerelease --notes-file notes.md
+          fi
           echo "Published release $TAG" >> "$GITHUB_STEP_SUMMARY"

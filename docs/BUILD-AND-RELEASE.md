@@ -45,8 +45,20 @@ The `x86_64` APK is used for the emulator only and isn't attached to releases. E
 | Firebase config | Placeholder (`devdarshan-not-configured`) | Real `google-services.json` from the project |
 | Signing key | Throwaway key generated for that run | Upload key from Secret Manager (stable) |
 | File names | `…-TEST.apk` | `DevDarshan-1.0.0-arm64-v8a.apk` etc. |
-| Published | Workflow artifact only | GitHub Release |
+| Published | Rolling `test-build` pre-release (replaced each build) | GitHub Release |
 | App behaviour | Shows "Almost ready, not connected" | Full app |
+
+## APK sizes
+
+Measured on the latest build:
+
+| APK | DevDarshan | DevDarshan Admin |
+| --- | --- | --- |
+| arm64-v8a (most phones) | 14.0 MB | 14.3 MB |
+| armeabi-v7a (older phones) | 13.2 MB | 13.5 MB |
+| universal (all phones) | 32.2 MB | 32.5 MB |
+
+Before the size work, the arm64 APK was 28.8 MB. The savings come from compressed native libraries and JS bundle, English/Hindi-only resources, and removing unused SDKs.
 
 ## Downloading
 
