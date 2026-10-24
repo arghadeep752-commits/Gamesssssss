@@ -76,7 +76,7 @@ jobs:
             echo "project_number=$PROJECT_NUMBER"
             echo "version_code=$CODE"
             echo "tag=v${VERSION_NAME}-build.${CODE}"
-            if [ "$CONFIGURED" = true ]; then echo "release_tag=v${VERSION_NAME}-build.${CODE}"; else echo "release_tag=demo-build"; fi
+            if [ "$CONFIGURED" = true ]; then echo "release_tag=v${VERSION_NAME}-build.${CODE}"; else echo "release_tag=demo-build-next"; fi
             echo "matrix=$MATRIX"
             echo "smoke=${{ github.event.inputs.smoke_test || 'true' }}"
           } >> "$GITHUB_OUTPUT"
@@ -106,15 +106,16 @@ jobs:
         if: steps.cfg.outputs.configured == 'true'
         run: bash scripts/ci/firebase-prepare.sh "${{ steps.cfg.outputs.project_id }}"
 
-      - name: Start the demo-build pre-release
+      - name: Stage the next demo build
         if: steps.cfg.outputs.configured != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # One rolling "demo-build" pre-release, replaced by every build made before Firebase is connected.
+          # The public "demo-build" pre-release stays up while this one is built as a
+          # hidden draft; the publish job swaps it in only if every build passes.
           gh release delete test-build --yes --cleanup-tag || true
-          gh release delete demo-build --yes --cleanup-tag || true
-          gh release create demo-build --prerelease --target "$GITHUB_SHA" \
+          gh release delete demo-build-next --yes --cleanup-tag || true
+          gh release create demo-build-next --draft --prerelease --target "$GITHUB_SHA" \
             --title "DevDarshan demo ${{ steps.cfg.outputs.version_code }} (sample wallpapers, not connected to Firebase yet)" --notes "Building…"
 
       - name: Create draft release
@@ -327,6 +328,8 @@ jobs:
           if [ "$CONFIGURED" = "true" ]; then
             gh release edit "$TAG" --draft=false --latest --notes-file notes.md
           else
-            gh release edit "$TAG" --prerelease --notes-file notes.md
+            gh release delete demo-build --yes --cleanup-tag || true
+            gh release edit "$TAG" --tag demo-build --draft=false --prerelease --notes-file notes.md
+            TAG=demo-build
           fi
           echo "Published release $TAG" >> "$GITHUB_STEP_SUMMARY"
