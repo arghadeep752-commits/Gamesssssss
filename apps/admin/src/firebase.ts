@@ -1,5 +1,4 @@
 import { getApp } from '@react-native-firebase/app';
-import { ReactNativeFirebaseAppCheckProvider, initializeAppCheck } from '@react-native-firebase/app-check';
 import { getAuth } from '@react-native-firebase/auth';
 import { getFirestore } from '@react-native-firebase/firestore';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
@@ -19,18 +18,4 @@ export async function callFunction<TRequest, TResponse>(name: string, data: TReq
   const callable = httpsCallable<TRequest, TResponse>(functions, name);
   const result = await callable(data);
   return result.data;
-}
-
-let appCheckStarted = false;
-
-export function startAppCheck(): void {
-  if (appCheckStarted || !isBackendConfigured) return;
-  appCheckStarted = true;
-  try {
-    const provider = new ReactNativeFirebaseAppCheckProvider();
-    provider.configure({ android: { provider: __DEV__ ? 'debug' : 'playIntegrity' } });
-    void Promise.resolve(initializeAppCheck(app, { provider, isTokenAutoRefreshEnabled: true })).catch(() => undefined);
-  } catch {
-    // Defence in depth only.
-  }
 }

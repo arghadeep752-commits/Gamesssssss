@@ -25,7 +25,8 @@ All builds run in GitHub Actions. Nothing has to be installed locally.
    - `npm install`;
    - `scripts/ci/android-inputs.sh` writes `google-services.json` (the real one from Firebase, or a placeholder) and the signing key;
    - `expo prebuild` generates `android/`;
-   - `./gradlew assembleRelease` with Hermes, R8 + resource shrinking and per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86_64` + `universal`).
+   - `./gradlew assembleRelease` with Hermes, R8 + resource shrinking and per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86_64` + `universal`);
+   - native libraries and the JS bundle are compressed, and only `en`/`hi` resources are kept (`packages/native/app.plugin.js`), so each phone downloads as little as possible.
 3. **Verify** (`scripts/ci/collect-apks.sh`), for every APK:
    - `aapt2` confirms the package id, version, SDK levels, ABIs and permissions;
    - `apksigner verify` confirms the v2/v3 signature and signer certificate;
@@ -69,7 +70,7 @@ Play needs an Android App Bundle. Add `./gradlew bundleRelease` next to `assembl
 
 Also on Play:
 
-- Turn on App Check enforcement (see [SECURITY.md](SECURITY.md)).
+- Add App Check and turn on enforcement (see [SECURITY.md](SECURITY.md)).
 - Host [PRIVACY-POLICY.md](PRIVACY-POLICY.md) at a public URL; Play requires one.
 - Data safety form answers: email, name and user ID for account management; app interactions (likes); no sharing; deletion available in the app.
 

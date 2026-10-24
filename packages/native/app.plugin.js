@@ -4,6 +4,8 @@
  *  - signs release builds with the key given through DEVDARSHAN_KEYSTORE_* env vars;
  *  - enables R8 + resource shrinking (DEVDARSHAN_MINIFY, default "true");
  *  - optionally splits APKs per ABI (DEVDARSHAN_ABI_SPLITS=true);
+ *  - keeps the APK small: native libraries and the JS bundle are stored compressed,
+ *    and only English and Hindi resources are packaged from libraries;
  *  - gives Gradle enough memory for CI.
  *
  * Usage in app.config.ts:  ['@devdarshan/native', { legacyStorage: true }]
@@ -29,6 +31,10 @@ def ddMinify = (ddEnv("DEVDARSHAN_MINIFY") ?: "true") == "true"
 def ddAbiSplits = (ddEnv("DEVDARSHAN_ABI_SPLITS") ?: "false") == "true"
 
 android {
+    defaultConfig {
+        // Libraries ship translations for ~80 languages; the app UI is English + Hindi.
+        resourceConfigurations += ["en", "hi"]
+    }
     if (ddKeystorePath != null) {
         signingConfigs {
             devdarshanRelease {
@@ -71,6 +77,10 @@ val ddMinify = (ddEnv("DEVDARSHAN_MINIFY") ?: "true") == "true"
 val ddAbiSplits = (ddEnv("DEVDARSHAN_ABI_SPLITS") ?: "false") == "true"
 
 android {
+    defaultConfig {
+        // Libraries ship translations for ~80 languages; the app UI is English + Hindi.
+        resourceConfigurations += listOf("en", "hi")
+    }
     if (ddKeystorePath != null) {
         signingConfigs {
             create("devdarshanRelease") {
@@ -104,10 +114,35 @@ android {
 }
 `;
 
+// Store .so files compressed in the APK (smaller download; Android extracts them on
+// install). Only needed when the template doesn't already read expo.useLegacyPackaging.
+const GROOVY_PACKAGING = `
+android {
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+`;
+const KOTLIN_PACKAGING = `
+android {
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+`;
+
 function withReleaseGradle(config) {
   return withAppBuildGradle(config, (cfg) => {
     if (cfg.modResults.contents.includes(MARKER)) return cfg;
-    const block = cfg.modResults.language === 'groovy' ? GRADLE_BLOCK : KOTLIN_BLOCK;
+    const groovy = cfg.modResults.language === 'groovy';
+    let block = groovy ? GRADLE_BLOCK : KOTLIN_BLOCK;
+    if (!cfg.modResults.contents.includes('expo.useLegacyPackaging')) {
+      block += groovy ? GROOVY_PACKAGING : KOTLIN_PACKAGING;
+    }
     cfg.modResults.contents = `${cfg.modResults.contents.trimEnd()}\n${block}`;
     return cfg;
   });
@@ -145,6 +180,9 @@ function withGradleTuning(config) {
     setProperty(cfg.modResults, 'org.gradle.jvmargs', '-Xmx3072m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8');
     setProperty(cfg.modResults, 'kotlin.daemon.jvmargs', '-Xmx1536m');
     setProperty(cfg.modResults, 'org.gradle.parallel', 'true');
+    // Lighter APKs: compressed native libraries and a compressed JS (Hermes) bundle.
+    setProperty(cfg.modResults, 'expo.useLegacyPackaging', 'true');
+    setProperty(cfg.modResults, 'android.enableBundleCompression', 'true');
     return cfg;
   });
 }

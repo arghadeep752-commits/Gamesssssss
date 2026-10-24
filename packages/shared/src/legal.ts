@@ -41,7 +41,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Service providers',
       body:
-        'DevDarshan runs on Google Firebase (Authentication, Cloud Firestore, Cloud Storage, Cloud Functions and App Check). Google processes this data on our behalf under its own privacy terms. Sharing a wallpaper hands the image to the app you choose, such as WhatsApp.',
+        'DevDarshan runs on Google Firebase (Authentication, Cloud Firestore, Cloud Storage and Cloud Functions). Google processes this data on our behalf under its own privacy terms. Sharing a wallpaper hands the image to the app you choose, such as WhatsApp.',
     },
     {
       heading: 'Retention and deletion',

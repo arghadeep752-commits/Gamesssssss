@@ -8,13 +8,11 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, ToastProvider, useTheme } from '@devdarshan/ui';
 import { SessionProvider, useSession } from './data/session';
-import { startAppCheck } from './firebase';
 import { RootNavigator } from './navigation/RootNavigator';
 import { GateScreen } from './screens/GateScreen';
 import { useSettings } from './state/settings';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
-startAppCheck();
 
 // Admin data must be fresh: short stale time, and queries pause while offline
 // (writes need the server anyway, and the UI shows an error state).

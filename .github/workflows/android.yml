@@ -175,6 +175,11 @@ jobs:
         run: |
           set -o pipefail
           npx expo prebuild --platform android --no-install 2>&1 | tee "$GITHUB_WORKSPACE/build-output/$APP/prebuild.log"
+          {
+            echo "--- size-related settings in the generated project"
+            grep -nE "useLegacyPackaging|enableBundleCompression|resourceConfigurations|minifyEnabled|shrinkResources|isMinifyEnabled" android/app/build.gradle* || true
+            grep -nE "useLegacyPackaging|enableBundleCompression|hermesEnabled|newArchEnabled" android/gradle.properties || true
+          } | tee -a "$GITHUB_WORKSPACE/build-output/$APP/prebuild.log"
 
       - name: Gradle cache
         uses: actions/cache@v4

@@ -11,7 +11,7 @@
                     ▼                                        ▼
    ┌──────────────────────────────────────────────────────────────────────┐
    │ Firebase: Auth (Google) · Firestore (asia-south1) · Storage          │
-   │           (us-central1) · App Check (prepared)                       │
+   │           (us-central1)                                              │
    └──────────────┬─────────────────────────────────────┬─────────────────┘
                   │ triggers                            │ callables (asia-south1)
                   ▼                                     ▼
@@ -32,7 +32,7 @@ Native projects are **generated**, not committed. `expo prebuild` creates `andro
 
 | Layer | Contents |
 | --- | --- |
-| `src/firebase.ts` | Firebase instances, the `isBackendConfigured` flag (placeholder builds show an "almost ready" screen), and App Check start-up. |
+| `src/firebase.ts` | Firebase instances and the `isBackendConfigured` flag (placeholder builds show an "almost ready" screen). |
 | `src/data/*` | Firestore queries (paged by cursor), the live `appConfig/public` subscription, auth (Credential Manager, then Firebase), and favourites (live subscription with an optimistic overlay and rollback). |
 | `src/features/useWallpaperActions.ts` | Set wallpaper / download / share. It downloads the original once into the native cache (with progress and cancel), then hands the file to the native module. |
 | `src/components`, `src/screens` | UI: Home, Categories, Category, Search, Liked, Profile, Preview pager, Legal. |
@@ -124,6 +124,10 @@ Every output object gets a **fresh download token** on each write. Replacing an 
 - FlashList v2 with recycling and `expo-image` with `recyclingKey`, memory + disk cache and blur-up placeholders.
 - Paged queries (24 per page) with cursor pagination. No unbounded reads, and indexes are declared for every query.
 - Release builds use R8 and resource shrinking, Hermes, and per-ABI APK splits.
+- **Small downloads**:
+  - native libraries and the Hermes bundle are stored compressed in the APK;
+  - only English and Hindi resources are kept from libraries;
+  - permissions and SDKs the app doesn't use (App Check, biometrics, push, install referrer) are left out.
 
 ## Search
 

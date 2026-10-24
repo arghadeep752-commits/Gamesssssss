@@ -12,12 +12,10 @@ import { SignInSheet } from './components/SignInSheet';
 import { AppConfigProvider } from './data/appConfig';
 import { AuthProvider } from './data/auth';
 import { FavoritesProvider } from './data/favorites';
-import { startAppCheck } from './firebase';
 import { RootNavigator } from './navigation/RootNavigator';
 import { useSettings } from './state/settings';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
-startAppCheck();
 
 // Firestore serves cached results offline, so queries must still run without a
 // connection ("offlineFirst") instead of pausing.

@@ -6,7 +6,7 @@
 | --- | --- |
 | Service-account keys | **None exist.** GitHub Actions authenticates to Google Cloud with Workload Identity Federation. Trust is limited to this repository's numeric id **and** its `main` branch (`assertion.repository_id == '1418506005' && assertion.ref == 'refs/heads/main'`). |
 | Android upload (signing) key | Generated in CI on the first configured run and stored only in **Google Secret Manager** (`devdarshan-android-upload-keystore`, with a random password in `devdarshan-android-upload-password`). It is never committed, printed or stored in GitHub, and it is deleted from the runner after use. |
-| `google-services.json` | Fetched at build time and never committed. It holds *public* identifiers (API key, app id, web OAuth client id). They are not secrets: access is controlled by the security rules, and (once enforced) App Check. |
+| `google-services.json` | Fetched at build time and never committed. It holds *public* identifiers (API key, app id, web OAuth client id). They are not secrets: access is controlled by the security rules. |
 | OAuth client secret | **Not used.** Android sign-in uses Credential Manager with the public web client id. |
 | Admin bootstrap email | `firebase/functions/.env`, stored as a **SHA-256 hash** so the address isn't published. It is not a credential: a Google-verified sign-in with the matching email is still required, and it only works while no admin exists. |
 
@@ -79,17 +79,17 @@ Sharing uses a `FileProvider` scoped to one cache sub-directory (`devdarshan-sha
 
 ## App Check
 
-The apps initialise App Check with Play Integrity. Functions can enforce it (`DEVDARSHAN_ENFORCE_APP_CHECK=true` in `firebase/functions/.env`), and Firestore and Storage enforcement can be switched on in the Firebase console.
+App Check isn't bundled in the apps. Its Play Integrity provider can't vouch for APKs installed outside Google Play, and leaving it out keeps the apps lighter. The Cloud Functions already honour `DEVDARSHAN_ENFORCE_APP_CHECK` in `firebase/functions/.env`.
 
-**Keep it off while distributing APKs outside Google Play.** Play Integrity can't vouch for sideloaded installs, so enforcement would lock those users out. When the app is published on Google Play:
+When the app is published on Google Play:
 
-1. Register both apps under App Check → Play Integrity.
-2. Watch the metrics for a few days.
-3. Then enforce.
+1. Add `@react-native-firebase/app-check` back with the Play Integrity provider.
+2. Register both apps under App Check → Play Integrity.
+3. Watch the metrics, then enforce for Functions, Firestore and Storage.
 
 ## Known limitations
 
-- **Download counts are best-effort.** `recordDownload` accepts guest calls (downloads don't need sign-in), so a determined person could inflate the counter. It only feeds statistics. App Check enforcement (via Google Play) closes this.
+- **Download counts are best-effort.** `recordDownload` accepts guest calls (downloads don't need sign-in), so a determined person could inflate the counter. It only feeds statistics. App Check (once the app is on Google Play) would close this.
 - **Unpublishing doesn't revoke file URLs** someone already has. Deleting a wallpaper removes its files, and replacing the image issues new URLs.
 - **Accounts.** The admin app relies on Google accounts, so protect the admin Google accounts with 2-Step Verification.
 

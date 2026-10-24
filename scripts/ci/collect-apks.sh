@@ -53,10 +53,15 @@ for apk in "$SRC"/*.apk; do
   abis="$(echo "$badging" | sed -n "s/^native-code: //p" | tr -d "'")"
   appname="$(echo "$badging" | sed -n "s/^application-label:'\([^']*\)'.*/\1/p")"
   perms="$("$AAPT2" dump permissions "$OUT/$name" | sed -n "s/^uses-permission: name='\([^']*\)'\(.*maxSdkVersion='\([0-9]*\)'\)\{0,1\}.*/\1 \3/p" | sed 's/ $//; s/ \([0-9][0-9]*\)$/ (up to API \1)/' | sort -u)"
-  certs="$("$APKSIGNER" verify --verbose --print-certs "$OUT/$name")"
+  certs="$("$APKSIGNER" verify --verbose --print-certs "$OUT/$name" 2>&1)"
   schemes="$(echo "$certs" | grep -E '^Verified using v[0-9].*: true' | sed 's/Verified using //; s/ scheme.*//' | paste -sd ', ' -)"
-  signer256="$(echo "$certs" | sed -n 's/^Signer.*certificate SHA-256 digest: //p' | head -n1)"
-  signer1="$(echo "$certs" | sed -n 's/^Signer.*certificate SHA-1 digest: //p' | head -n1)"
+  signer256="$(echo "$certs" | grep -m1 'SHA-256 digest' | sed 's/.*SHA-256 digest: *//' || true)"
+  signer1="$(echo "$certs" | grep -m1 'SHA-1 digest' | sed 's/.*SHA-1 digest: *//' || true)"
+  if [ -z "$signer256" ]; then
+    # Fall back to the certificate itself (apksigner output formats vary between versions).
+    signer256="$("$APKSIGNER" verify --print-certs-pem "$OUT/$name" 2>/dev/null | openssl x509 -noout -fingerprint -sha256 2>/dev/null | sed 's/.*=//; s/://g' | tr 'A-F' 'a-f' || true)"
+    signer1="$("$APKSIGNER" verify --print-certs-pem "$OUT/$name" 2>/dev/null | openssl x509 -noout -fingerprint -sha1 2>/dev/null | sed 's/.*=//; s/://g' | tr 'A-F' 'a-f' || true)"
+  fi
   size="$(du -k "$OUT/$name" | cut -f1)"
   sha="$(sha256sum "$OUT/$name" | cut -d' ' -f1)"
 
