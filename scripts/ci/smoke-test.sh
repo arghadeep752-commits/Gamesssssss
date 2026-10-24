@@ -32,7 +32,18 @@ alive() { adb shell pidof "$PKG" >/dev/null 2>&1; }
 # Ids of the current system and lock wallpapers; they change whenever one is set.
 wallpaper_state() { adb shell dumpsys wallpaper 2>/dev/null | grep -E 'mWallpaperId|id=' | head -n 6 | tr -d '\r'; }
 crashed() { adb logcat -d -b crash 2>/dev/null | grep -q "$PKG"; }
+finished=""
+on_exit() {
+  rc=$?
+  if [ "$rc" -ne 0 ] && [ -z "$finished" ]; then
+    note "FAILED: the smoke test script stopped unexpectedly (exit $rc)"
+    echo "::error title=Smoke test ($APP)::script stopped unexpectedly (exit $rc)"
+    adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true
+  fi
+}
+trap on_exit EXIT
 fail() {
+  finished=yes
   note "FAILED: $*"
   echo "::error title=Smoke test ($APP)::$*"
   shot failure
@@ -148,8 +159,8 @@ PY
     frames="$(echo "$gfx" | sed -n 's/^Total frames rendered: //p' | head -n1)"
     janky="$(echo "$gfx" | sed -n 's/^Janky frames: //p' | head -n1)"
     p90="$(echo "$gfx" | sed -n 's/^90th percentile: //p' | head -n1)"
-    mem="$(adb shell dumpsys meminfo "$PKG" 2>/dev/null | tr -d '\r' | awk '/TOTAL PSS:|TOTAL:/ {print $2; exit}')"
-    note "Scrolling (emulator): ${frames:-?} frames, janky ${janky:-?}, 90th percentile frame ${p90:-?}; memory ${mem:+$((mem / 1024)) MB PSS}"
+    mem="$(adb shell dumpsys meminfo "$PKG" 2>/dev/null | tr -d '\r' | awk '/TOTAL PSS:/ { for (i = 1; i <= NF; i++) if ($i == "PSS:") { printf "%d", $(i + 1) / 1024; exit } } /^ +TOTAL +[0-9]/ { printf "%d", $2 / 1024; exit }')"
+    note "Scrolling (emulator): ${frames:-?} frames, janky ${janky:-?}, 90th percentile frame ${p90:-?}; memory ${mem:-?} MB PSS"
     shot scrolled
     alive || fail "crashed while scrolling"
 
@@ -229,6 +240,7 @@ sleep 2
 alive || fail "process died at the end of the run"
 crashed && fail "crash recorded in the crash buffer"
 adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true
+finished=yes
 note "PASSED: no crashes"
 echo "::notice title=Smoke test ($APP)::passed"
 exit 0
