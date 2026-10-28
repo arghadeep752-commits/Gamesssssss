@@ -15,6 +15,7 @@ CSC="$KIT/DotNetSdkRoslyn/csc.dll"
 
 COMMON="-nologo -nostdlib+ -noconfig -langversion:9.0 -target:library -debug- -nowarn:1701,1702,0169,0414,0649"
 REFS="-r:$KIT/NetStandard/ref/2.1.0/netstandard.dll"
+for f in "$KIT"/NetStandard/compat/2.1.0/shims/netfx/*.dll "$KIT"/NetStandard/compat/2.1.0/shims/netstandard/*.dll; do REFS="$REFS -r:$f"; done
 for f in "$KIT"/Managed/UnityEngine/UnityEngine*.dll; do REFS="$REFS -r:$f"; done
 
 report() {
