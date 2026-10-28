@@ -58,9 +58,9 @@ find "$PROJ/Assets" -name "*.cs" -not -path "*/Editor/*" > "$OUT/runtime.txt"
 report "$OUT/runtime.log" "Assembly-CSharp" || STATUS=1
 
 if [ $STATUS -eq 0 ]; then
-  EDREFS="-r:$KIT/Managed/UnityEditor.dll"
-  [ -f "$KIT/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll" ] && EDREFS="$EDREFS -r:$KIT/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll"
-  for f in "$KIT"/Managed/UnityEngine/UnityEditor.*Module.dll; do EDREFS="$EDREFS -r:$f"; done
+  EDREFS=""
+  [ -f "$KIT/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll" ] && EDREFS="-r:$KIT/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll"
+  for f in "$KIT"/Managed/UnityEngine/UnityEditor*.dll; do EDREFS="$EDREFS -r:$f"; done
   find "$PROJ/Assets" -path "*/Editor/*" -name "*.cs" > "$OUT/editor.txt"
   "$DOTNET" "$CSC" $COMMON $REFS $EDREFS -r:"$OUT/UnityEngine.UI.dll" -r:"$OUT/Assembly-CSharp.dll" \
     -define:"UNITY_EDITOR;$DEFINES" -out:"$OUT/Assembly-CSharp-Editor.dll" @"$OUT/editor.txt" > "$OUT/editor.log" 2>&1
