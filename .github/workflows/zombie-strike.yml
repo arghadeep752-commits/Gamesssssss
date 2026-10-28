@@ -1,0 +1,197 @@
+# Builds the Zombie Strike Unity game into an Android APK entirely in the cloud.
+#
+# One-time setup (repository secrets, Settings > Secrets and variables > Actions):
+#   UNITY_EMAIL     your Unity account email
+#   UNITY_PASSWORD  your Unity account password (two-step verification must be off)
+#
+# Every push to the zombie-strike branch installs Unity, activates a free Unity
+# Personal license, builds the APK and publishes it as a GitHub release
+# ("zombie-strike-build-<n>") that can be downloaded straight to a phone.
+
+name: Zombie Strike APK
+
+on:
+  push:
+    branches: [zombie-strike]
+  workflow_dispatch:
+    inputs:
+      smoke_test:
+        description: Run the APK in an Android emulator and capture screenshots
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zombie-strike
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 2021.3.45f2
+  KIT_TAG: unity-kit-2021.3.45f2
+  LOGS_TAG: zombie-strike-logs
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    outputs:
+      release_tag: ${{ steps.publish.outputs.tag }}
+      apk_name: ${{ steps.publish.outputs.apk }}
+    steps:
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+
+      - name: Check Unity login secrets
+        id: login
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        id: unity
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          cache-installation: true
+
+      - name: Publish private compile kit (first run only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/publish_kit.sh "$UNITY_EDITOR_PATH"
+
+      - name: Stop if the Unity login secrets are missing
+        if: steps.login.outputs.ready != 'true'
+        run: |
+          echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+          exit 1
+
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Prepare signing key
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: zombie-strike-keystore-v1
+
+      - name: Create signing key (first run only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/zombiestrike.keystore \
+            -alias zombiestrike -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass zombiestrike -keypass zombiestrike -dname "CN=Zombie Strike, O=Zombie Strike"
+
+      - name: Build APK with Unity
+        uses: RageAgainstThePixel/unity-action@v3
+        env:
+          ZS_KEYSTORE: ${{ github.workspace }}/ci-keystore/zombiestrike.keystore
+          ZS_KEYSTORE_PASS: zombiestrike
+          ZS_KEY_ALIAS: zombiestrike
+        with:
+          project-path: ${{ github.workspace }}
+          build-target: Android
+          args: >-
+            -quit -batchmode -nographics
+            -executeMethod ZombieStrike.EditorTools.BuildScript.BuildAndroid
+            -buildNumber ${{ github.run_number }}
+            -logFile ${{ github.workspace }}/Logs/build.log
+
+      - name: Check the APK
+        run: |
+          ls -la Build || true
+          test -f Build/ZombieStrike.apk
+          unzip -l Build/ZombieStrike.apk | grep -E "lib/|assets/bin/Data/(data.unity3d|globalgamemanagers)" | head -20 || true
+
+      - name: Publish APK release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="zombie-strike-build-${{ github.run_number }}"
+          APK="ZombieStrike-${{ github.run_number }}.apk"
+          cp Build/ZombieStrike.apk "$APK"
+          printf 'Zombie Strike build %s (Unity %s, commit %s).\n\nDownload the APK below on your Android phone and open it to install.\n' \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Zombie Strike build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "Published release $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report errors and upload logs
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: python3 ci/report.py --workspace "${{ github.workspace }}" --status "$JOB_STATUS"
+
+  smoke-test:
+    name: Smoke test in emulator
+    needs: build
+    if: ${{ needs.build.outputs.release_tag != '' && (github.event_name == 'push' || inputs.smoke_test) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p smoke
+          gh release download "${{ needs.build.outputs.release_tag }}" -p "*.apk" -D smoke
+          ls -la smoke
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the game in an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_4
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+
+      - name: Upload screenshots to the release
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la smoke || true
+          files=$(ls smoke/*.png smoke/*.txt 2>/dev/null || true)
+          if [ -n "$files" ]; then
+            gh release upload "${{ needs.build.outputs.release_tag }}" $files --clobber
+          fi
