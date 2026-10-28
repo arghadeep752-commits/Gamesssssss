@@ -54,7 +54,7 @@ jobs:
 
       - name: Report native module setup
         run: |
-          npm ls expo expo-modules-autolinking expo-modules-core --depth=0 --all 2>/dev/null | head -20 > modules.txt || true
+          npm ls expo-asset --all 2>/dev/null | head -20 > modules.txt || true
           (npx expo-modules-autolinking resolve --platform android --json > autolink.json) 2>autolink.err || true
           python3 - <<'PY'
           import json, os
