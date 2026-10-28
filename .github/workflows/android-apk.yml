@@ -52,6 +52,24 @@ jobs:
       - name: Generate the Android project
         run: npx expo prebuild --platform android --no-install
 
+      - name: Report native module setup
+        run: |
+          npm ls expo expo-modules-autolinking expo-modules-core --depth=0 --all 2>/dev/null | head -20 > modules.txt || true
+          (npx expo-modules-autolinking resolve --platform android --json > autolink.json) 2>autolink.err || true
+          python3 - <<'PY'
+          import json, os
+          lines = open('modules.txt').read().strip().splitlines()
+          try:
+              data = json.load(open('autolink.json'))
+              for i, m in enumerate(data.get('modules', [])):
+                  pubs = [p.get('publication') for p in m.get('projects', []) if p.get('publication')]
+                  lines.append(f"[{i}] {m.get('packageName')} {m.get('packageVersion')} publication={json.dumps(pubs) if pubs else '-'}")
+          except Exception as e:
+              lines.append('autolink resolve failed: ' + str(e) + ' ' + open('autolink.err').read()[-800:])
+          text = '\n'.join(lines)[-3500:]
+          print('::warning title=Native modules::' + text.replace('%', '%25').replace('\n', '%0A'))
+          PY
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build release APK
