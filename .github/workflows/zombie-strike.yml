@@ -34,8 +34,40 @@ env:
   GH_REPO: ${{ github.repository }}
 
 jobs:
+  compile:
+    name: Compile check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Get Unity's compiler (private draft)
+        id: kit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq "[.[] | select(.tag_name == \"$KIT_TAG\") | .assets[] | select(.name == \"unity-kit.tar.xz\") | .id][0] // empty")
+          if [ -z "$ID" ]; then
+            echo "No compile kit yet; the full build will check the code instead."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/kit"
+          gh api -H "Accept: application/octet-stream" "repos/$GH_REPO/releases/assets/$ID" > "$RUNNER_TEMP/kit.tar.xz"
+          tar -xJf "$RUNNER_TEMP/kit.tar.xz" -C "$RUNNER_TEMP/kit"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install OpenSSL 1.1
+        if: steps.kit.outputs.available == 'true'
+        run: bash ci/install_libssl.sh
+
+      - name: Compile scripts
+        if: steps.kit.outputs.available == 'true'
+        run: bash ci/compile_check.sh "$RUNNER_TEMP/kit" "$GITHUB_WORKSPACE"
+
   build:
     name: Build APK
+    needs: compile
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     outputs:
@@ -76,6 +108,9 @@ jobs:
           build-targets: Android
           auto-update-hub: false
           cache-installation: true
+
+      - name: Install OpenSSL 1.1 for Unity's script compiler
+        run: bash ci/install_libssl.sh
 
       - name: Publish private compile kit (first run only)
         env:
