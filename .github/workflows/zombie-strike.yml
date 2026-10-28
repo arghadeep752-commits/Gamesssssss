@@ -90,10 +90,14 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
-          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "problem=Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again." >> "$GITHUB_OUTPUT"
+          elif ! printf '%s' "$UNITY_EMAIL" | tr -d '\r\n' | grep -Eq '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "problem=The UNITY_EMAIL secret is not a plain email address - check it for extra symbols (like #) or spaces and save it again." >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install Unity Hub
@@ -117,10 +121,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash ci/publish_kit.sh "$UNITY_EDITOR_PATH"
 
-      - name: Stop if the Unity login secrets are missing
+      - name: Stop if the Unity login secrets are missing or malformed
         if: steps.login.outputs.ready != 'true'
+        env:
+          PROBLEM: ${{ steps.login.outputs.problem }}
         run: |
-          echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+          echo "::error title=Unity login needed::$PROBLEM"
           exit 1
 
       - name: Activate Unity Personal license

@@ -144,6 +144,20 @@ def main():
     elif a.status != "success":
         annotate("warning", "No Unity build log", "The build stopped before Unity ran (see earlier steps).")
 
+    if a.status != "success":
+        # surface the licensing client's own error (without the account email)
+        lic = os.path.join(os.path.expanduser("~"), ".config", "unity3d", "Unity", "Unity.Licensing.Client.log")
+        text = read(lic)
+        msgs = re.findall(r'"message"\s*:\s*"([^"]+)"', text)
+        errs = [ln for ln in text.splitlines() if " ERROR " in ln]
+        if msgs or errs:
+            email = re.compile(r"[A-Za-z0-9._%+#-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+            detail = "\n".join([email.sub("<email>", e)[-400:] for e in errs[-4:]] + ["Unity says: " + m for m in msgs[-3:]])
+            hint = ""
+            if any("Invalid Credential" in m for m in msgs):
+                hint = "Unity rejected the email/password. Re-enter UNITY_EMAIL and UNITY_PASSWORD exactly (no extra characters).\n"
+            annotate("error", "Unity licensing", hint + detail)
+
     try:
         upload_logs(logs, a.status)
     except Exception as e:  # never fail the job because of log upload
