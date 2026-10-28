@@ -56,7 +56,28 @@ jobs:
 
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../gradle.log
+
+      # Surfaces the key Gradle errors as run annotations, readable without the full log.
+      - name: Report build errors
+        if: failure()
+        run: |
+          [ -f gradle.log ] || exit 0
+          python3 - <<'PY'
+          import re
+          log = open('gradle.log', errors='replace').read().splitlines()
+          keep = []
+          for i, line in enumerate(log):
+              if 'What went wrong' in line:
+                  keep += log[i:i + 30]
+          keep += [l for l in log if re.search(r'(^e: |error:|ERROR|FAILED|Could not|Unresolved|not found)', l)][:80]
+          text = '\n'.join(dict.fromkeys(keep))[-14000:]
+          for i in range(0, len(text), 3500):
+              chunk = text[i:i + 3500].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+              print(f'::error title=Gradle {i // 3500 + 1}::{chunk}')
+          PY
 
       - name: Collect APK
         id: apk
