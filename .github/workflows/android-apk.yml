@@ -1,0 +1,87 @@
+# Builds an installable Android APK on GitHub's servers, so no computer is
+# needed: push this project to GitHub (or press "Run workflow" on the Actions
+# tab) and download the APK from the Releases page when it finishes.
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master, arrow-flow]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: 'true'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Align native module versions with the Expo SDK
+        run: npx expo install --fix
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests (engine, solver, sessions, saves)
+        run: npm test
+
+      - name: Validate all levels and daily puzzles
+        run: npm run levels:validate
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Collect APK
+        id: apk
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/ArrowFlow-${{ github.run_number }}.apk"
+          SIZE=$(du -h dist/*.apk | cut -f1)
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "### Arrow Flow APK: $SIZE" >> "$GITHUB_STEP_SUMMARY"
+          unzip -l dist/*.apk | sort -k1 -n -r | head -25 >> "$GITHUB_STEP_SUMMARY"
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          "$ANDROID_HOME/build-tools/$BT/aapt" dump permissions dist/*.apk >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArrowFlow-apk-${{ github.run_number }}
+          path: dist/*.apk
+
+      - name: Publish as a downloadable release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: arrow-flow-build-${{ github.run_number }}
+          name: Arrow Flow build ${{ github.run_number }} (${{ steps.apk.outputs.size }})
+          body: Installable test build of Arrow Flow. Download the APK below on your Android phone and open it to install.
+          files: dist/*.apk
+          prerelease: true
