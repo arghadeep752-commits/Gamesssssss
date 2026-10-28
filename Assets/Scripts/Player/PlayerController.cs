@@ -76,7 +76,7 @@ namespace ZombieStrike
             var weaponCam = weaponCamGo.AddComponent<Camera>();
             weaponCam.clearFlags = CameraClearFlags.Depth;
             weaponCam.cullingMask = 1 << Layers.Weapon;
-            weaponCam.fieldOfView = 58f;
+            weaponCam.fieldOfView = 64f;
             weaponCam.nearClipPlane = 0.01f;
             weaponCam.farClipPlane = 5f;
             weaponCam.depth = 1f;
@@ -87,9 +87,9 @@ namespace ZombieStrike
             flGo.transform.localRotation = Quaternion.Euler(1.5f, -1.5f, 0f);
             var fl = flGo.AddComponent<Light>();
             fl.type = LightType.Spot;
-            fl.range = 26f;
-            fl.spotAngle = 56f;
-            fl.intensity = 2.1f;
+            fl.range = 30f;
+            fl.spotAngle = 62f;
+            fl.intensity = 2.6f;
             fl.color = new Color(1f, 0.95f, 0.85f);
             fl.shadows = LightShadows.None;
             fl.renderMode = LightRenderMode.ForcePixel;

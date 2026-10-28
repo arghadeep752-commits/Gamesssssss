@@ -26,7 +26,7 @@ namespace ZombieStrike
         Camera cam;
         Transform rig, model, muzzle, magazine, flash;
         Light flashLight;
-        readonly Vector3 rigBase = new Vector3(0.2f, -0.21f, 0.36f);
+        readonly Vector3 rigBase = new Vector3(0.21f, -0.235f, 0.44f);
         Vector3 magBase;
         float nextFire, reloadT, bloom, kickBack, kickUp, flashT, swayX, swayY, bobT, sprintBlend, emptyClickAt;
         float autoReloadAt = -1f;
@@ -47,6 +47,7 @@ namespace ZombieStrike
             model = new GameObject("Rifle").transform;
             model.SetParent(rig, false);
             model.gameObject.layer = L;
+            model.localScale = Vector3.one * 0.85f;
 
             Material metal = Art.Lit(new Color(0.24f, 0.25f, 0.27f), "metal");
             Material dark = Art.Lit(new Color(0.1f, 0.1f, 0.11f));
@@ -54,7 +55,6 @@ namespace ZombieStrike
             Material tan = Art.Lit(new Color(0.55f, 0.47f, 0.33f), "grime");
             Material glove = Art.Lit(new Color(0.13f, 0.13f, 0.13f), "grime");
             Material sleeve = Art.Lit(new Color(0.27f, 0.3f, 0.21f), "grime");
-            Material lens = Art.Unlit(new Color(1f, 0.15f, 0.1f));
 
             Part(metal, new Vector3(0f, 0f, 0.02f), new Vector3(0.065f, 0.095f, 0.34f), Vector3.zero);
             Part(dark, new Vector3(0f, 0.058f, 0.02f), new Vector3(0.04f, 0.022f, 0.3f), Vector3.zero);
@@ -68,7 +68,6 @@ namespace ZombieStrike
             Part(tan, new Vector3(0f, -0.015f, -0.24f), new Vector3(0.055f, 0.085f, 0.17f), Vector3.zero);
             Part(dark, new Vector3(0f, -0.02f, -0.33f), new Vector3(0.06f, 0.1f, 0.02f), Vector3.zero);
             Part(dark, new Vector3(0f, 0.088f, 0.03f), new Vector3(0.036f, 0.036f, 0.075f), Vector3.zero);
-            Part(lens, new Vector3(0f, 0.09f, -0.006f), new Vector3(0.02f, 0.02f, 0.004f), Vector3.zero);
             // hands and sleeves
             Part(glove, new Vector3(0.02f, -0.1f, -0.07f), new Vector3(0.075f, 0.075f, 0.1f), new Vector3(-10f, 0f, 0f));
             Part(sleeve, new Vector3(0.075f, -0.165f, -0.25f), new Vector3(0.088f, 0.088f, 0.27f), new Vector3(-16f, -12f, 0f));

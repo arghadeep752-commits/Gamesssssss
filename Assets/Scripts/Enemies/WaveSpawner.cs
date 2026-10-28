@@ -115,9 +115,10 @@ namespace ZombieStrike
                 Vector3 d = s - pp;
                 d.y = 0f;
                 float dist = d.magnitude;
-                if (dist < 14f) continue;
-                float behind = -Vector3.Dot(fwd, d / Mathf.Max(dist, 0.01f));
-                float score = behind * 10f - Mathf.Abs(dist - 26f) * 0.3f + Random.Range(0f, 9f);
+                if (dist < 16f) continue;
+                // mostly in front of / beside the player, so zombies are seen coming out of the fog
+                float facing = Vector3.Dot(fwd, d / Mathf.Max(dist, 0.01f));
+                float score = facing * 6f - Mathf.Abs(dist - 24f) * 0.35f + Random.Range(0f, 8f);
                 if (score > bestScore)
                 {
                     bestScore = score;

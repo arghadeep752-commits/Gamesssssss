@@ -143,10 +143,10 @@ namespace ZombieStrike.EditorTools
             // Fog and ambient light live in the scene, so the fog shader variants are kept in the build.
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.045f;
+            RenderSettings.fogDensity = 0.034f;
             RenderSettings.fogColor = new Color(0.07f, 0.09f, 0.11f);
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.25f, 0.27f, 0.33f);
+            RenderSettings.ambientLight = new Color(0.34f, 0.36f, 0.43f);
             RenderSettings.skybox = null;
 
             var game = new GameObject("Game");

@@ -93,10 +93,10 @@ namespace ZombieStrike
         {
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.042f;
+            RenderSettings.fogDensity = 0.034f;
             RenderSettings.fogColor = new Color(0.06f, 0.075f, 0.09f);
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.25f, 0.27f, 0.33f);
+            RenderSettings.ambientLight = new Color(0.34f, 0.36f, 0.43f);
 
             var moonGo = new GameObject("Moonlight");
             moonGo.transform.SetParent(root, false);
@@ -104,7 +104,7 @@ namespace ZombieStrike
             var moon = moonGo.AddComponent<Light>();
             moon.type = LightType.Directional;
             moon.color = new Color(0.62f, 0.7f, 0.95f);
-            moon.intensity = 0.5f;
+            moon.intensity = 0.7f;
             moon.shadows = LightShadows.None;
         }
 

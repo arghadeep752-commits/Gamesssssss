@@ -32,12 +32,12 @@ namespace ZombieStrike
 
         static readonly Color[] SkinTones =
         {
-            new Color(0.45f, 0.58f, 0.36f), new Color(0.52f, 0.6f, 0.43f), new Color(0.4f, 0.5f, 0.42f)
+            new Color(0.55f, 0.74f, 0.42f), new Color(0.62f, 0.76f, 0.5f), new Color(0.5f, 0.68f, 0.52f)
         };
         static readonly Color[] ShirtColors =
         {
-            new Color(0.25f, 0.3f, 0.48f), new Color(0.52f, 0.13f, 0.1f), new Color(0.38f, 0.32f, 0.23f),
-            new Color(0.46f, 0.46f, 0.43f), new Color(0.2f, 0.34f, 0.23f), new Color(0.58f, 0.52f, 0.36f)
+            new Color(0.3f, 0.38f, 0.62f), new Color(0.68f, 0.16f, 0.12f), new Color(0.5f, 0.42f, 0.3f),
+            new Color(0.6f, 0.6f, 0.56f), new Color(0.26f, 0.45f, 0.3f), new Color(0.72f, 0.65f, 0.45f)
         };
         static readonly Color[] PantsColors =
         {
@@ -121,8 +121,8 @@ namespace ZombieStrike
         void BuildBody()
         {
             int L = Layers.Zombie;
-            Color skin = Kind == ZombieKind.Runner ? new Color(0.66f, 0.68f, 0.57f) :
-                Kind == ZombieKind.Brute ? new Color(0.36f, 0.47f, 0.3f) : SkinTones[Random.Range(0, SkinTones.Length)];
+            Color skin = Kind == ZombieKind.Runner ? new Color(0.78f, 0.8f, 0.66f) :
+                Kind == ZombieKind.Brute ? new Color(0.45f, 0.6f, 0.36f) : SkinTones[Random.Range(0, SkinTones.Length)];
             Color shirt = Kind == ZombieKind.Brute ? new Color(0.22f, 0.2f, 0.2f) : ShirtColors[Random.Range(0, ShirtColors.Length)];
             Color pants = PantsColors[Random.Range(0, PantsColors.Length)];
             Material skinM = Art.Lit(skin, "grime");
@@ -162,8 +162,8 @@ namespace ZombieStrike
 
             head = Pivot(torso, new Vector3(0f, 0.7f, 0f));
             Art.Box(head, new Vector3(0f, 0.2f, 0.02f), new Vector3(0.4f, 0.4f, 0.4f), skinM, Vector3.zero, L);
-            Art.Box(head, new Vector3(-0.09f, 0.25f, 0.225f), new Vector3(0.085f, 0.055f, 0.02f), eyeM, Vector3.zero, L);
-            Art.Box(head, new Vector3(0.09f, 0.25f, 0.225f), new Vector3(0.085f, 0.055f, 0.02f), eyeM, Vector3.zero, L);
+            Art.Box(head, new Vector3(-0.09f, 0.25f, 0.225f), new Vector3(0.1f, 0.07f, 0.02f), eyeM, Vector3.zero, L);
+            Art.Box(head, new Vector3(0.09f, 0.25f, 0.225f), new Vector3(0.1f, 0.07f, 0.02f), eyeM, Vector3.zero, L);
             Art.Box(head, new Vector3(0f, 0.1f, 0.222f), new Vector3(0.2f, 0.06f, 0.02f), mouthM, Vector3.zero, L);
             Art.Box(head, new Vector3(-0.06f, 0.36f, 0.15f), new Vector3(0.18f, 0.06f, 0.16f), bloodM, Vector3.zero, L);
 

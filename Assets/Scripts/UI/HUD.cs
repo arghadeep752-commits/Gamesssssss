@@ -63,7 +63,7 @@ namespace ZombieStrike
             scaler.matchWidthOrHeight = 1f;
             root = (RectTransform)cgo.transform;
 
-            FullImage(root, "Vignette", Art.UISprite("vignette"), new Color(0f, 0f, 0f, 0.6f));
+            FullImage(root, "Vignette", Art.UISprite("vignette"), new Color(0f, 0f, 0f, 0.4f));
             damageVignette = FullImage(root, "DamageVignette", Art.UISprite("vignette"), new Color(0.85f, 0f, 0f, 0f));
             lowHpVignette = FullImage(root, "LowHealthVignette", Art.UISprite("vignette"), new Color(0.6f, 0f, 0f, 0f));
 

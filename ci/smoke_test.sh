@@ -16,14 +16,14 @@ adb install -r -g "$APK" 2>&1 | tail -2
 adb shell settings put system accelerometer_rotation 0 || true
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 
-# Wait for the game to report it is ready (it logs "ZS-READY" and its layout).
+# Wait until the game has drawn its first frames (it logs "ZS-LAYOUT" on frame 3).
 READY=0
-for i in $(seq 1 90); do
-  if adb logcat -d -s Unity:V 2>/dev/null | grep -q "ZS-READY"; then READY=1; break; fi
+for i in $(seq 1 120); do
+  if adb logcat -d -s Unity:V 2>/dev/null | grep -q "ZS-LAYOUT"; then READY=1; break; fi
   sleep 2
 done
 echo "ready=$READY after ~$((i*2))s"
-sleep 3
+sleep 4
 shot 01-menu
 
 LAYOUT=$(adb logcat -d -s Unity:V 2>/dev/null | grep -o "ZS-LAYOUT.*" | tail -1)
@@ -52,14 +52,21 @@ if [ -n "$W" ] && [ -n "$H" ]; then
   sleep 0.6
   shot 04-move-fire
   wait
-  sleep 12
+  sleep 8
   shot 05-zombies-coming
-  adb shell input swipe "$FX" "$FY" "$FX" "$FY" 2500 &
-  sleep 1
-  shot 06-shooting
+  # look around in quarter turns to find the zombies
+  Q=$((H / 2))
+  for k in 1 2 3; do
+    adb shell input swipe $((W*3/4)) $((H/2)) $((W*3/4 - Q)) $((H/2)) 600
+    sleep 1.5
+    shot "06-look-$k"
+  done
+  adb shell input swipe "$FX" "$FY" "$FX" "$FY" 3000 &
+  sleep 1.2
+  shot 07-shooting
   wait
-  sleep 15
-  shot 07-later
+  sleep 10
+  shot 08-later
 else
   echo "No layout reported by the game"
 fi
