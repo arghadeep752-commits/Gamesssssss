@@ -64,6 +64,9 @@ jobs:
             echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Install Unity Hub
+        run: bash ci/install_hub.sh
+
       - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
         id: unity
         uses: RageAgainstThePixel/unity-setup@v2
@@ -71,6 +74,7 @@ jobs:
           unity-version: ${{ env.UNITY_VERSION }}
           version-file: None
           build-targets: Android
+          auto-update-hub: false
           cache-installation: true
 
       - name: Publish private compile kit (first run only)
