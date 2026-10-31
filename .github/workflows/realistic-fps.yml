@@ -1,0 +1,267 @@
+# Builds "Silent Valley" (realistic first-person Unity prototype) into an Android APK
+# entirely in the cloud.
+#
+# One-time setup (repository secrets, Settings > Secrets and variables > Actions):
+#   UNITY_EMAIL     your Unity account email
+#   UNITY_PASSWORD  your Unity account password (two-step verification must be off)
+#
+# Every push to the realistic-fps branch downloads the free CC0 assets (Poly Haven),
+# processes them, installs Unity 2021.3, activates a free Unity Personal license,
+# builds the APK, publishes it as a GitHub release ("realistic-fps-build-<n>") and
+# runs it in an Android emulator to take screenshots.
+
+name: Silent Valley APK
+
+on:
+  push:
+    branches: [realistic-fps]
+  workflow_dispatch:
+    inputs:
+      smoke_test:
+        description: Run the APK in an Android emulator and capture screenshots
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: realistic-fps
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 2021.3.45f2
+  KIT_TAG: unity-kit-2021.3.45f2
+  LOGS_TAG: realistic-fps-logs
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  compile:
+    name: Compile check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Get Unity's compiler (private draft)
+        id: kit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq "[.[] | select(.tag_name == \"$KIT_TAG\") | .assets[] | select(.name == \"unity-kit.tar.xz\") | .id][0] // empty")
+          if [ -z "$ID" ]; then
+            echo "No compile kit yet; the full build will check the code instead."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/kit"
+          gh api -H "Accept: application/octet-stream" "repos/$GH_REPO/releases/assets/$ID" > "$RUNNER_TEMP/kit.tar.xz"
+          tar -xJf "$RUNNER_TEMP/kit.tar.xz" -C "$RUNNER_TEMP/kit"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install OpenSSL 1.1
+        if: steps.kit.outputs.available == 'true'
+        run: bash ci/install_libssl.sh
+
+      - name: Compile scripts
+        if: steps.kit.outputs.available == 'true'
+        run: bash ci/compile_check.sh "$RUNNER_TEMP/kit" "$GITHUB_WORKSPACE"
+
+  build:
+    name: Build APK
+    needs: compile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    outputs:
+      release_tag: ${{ steps.publish.outputs.tag }}
+      apk_name: ${{ steps.publish.outputs.apk }}
+    steps:
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+
+      - name: Check Unity login secrets
+        id: login
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "problem=Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again." >> "$GITHUB_OUTPUT"
+          elif ! printf '%s' "$UNITY_EMAIL" | tr -d '\r\n' | grep -Eq '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "problem=The UNITY_EMAIL secret is not a plain email address - check it for extra symbols (like #) or spaces and save it again." >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python packages for the asset processing
+        run: python -m pip install --quiet numpy pillow scipy
+
+      - name: Cache the downloaded CC0 source assets
+        id: sources
+        uses: actions/cache@v4
+        with:
+          path: SourceAssets
+          key: rf-sources-${{ hashFiles('tools/fetch_assets.py') }}
+
+      - name: Download source assets from Poly Haven (CC0)
+        if: steps.sources.outputs.cache-hit != 'true'
+        run: python tools/fetch_assets.py SourceAssets
+
+      - name: Process assets (sky, terrain, foliage, models, sounds, UI)
+        run: |
+          python tools/process_assets.py SourceAssets .
+          du -sh Assets/Art
+
+      - name: Install Unity Hub
+        run: bash ci/install_hub.sh
+
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        id: unity
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+
+      - name: Install OpenSSL 1.1 for Unity's script compiler
+        run: bash ci/install_libssl.sh
+
+      - name: Publish private compile kit (first run only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/publish_kit.sh "$UNITY_EDITOR_PATH"
+
+      - name: Stop if the Unity login secrets are missing or malformed
+        if: steps.login.outputs.ready != 'true'
+        env:
+          PROBLEM: ${{ steps.login.outputs.problem }}
+        run: |
+          echo "::error title=Unity login needed::$PROBLEM"
+          exit 1
+
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Prepare signing key
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: realistic-fps-keystore-v1
+
+      - name: Create signing key (first run only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/silentvalley.keystore \
+            -alias silentvalley -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass silentvalley -keypass silentvalley -dname "CN=Silent Valley, O=Silent Valley"
+
+      - name: Build APK with Unity
+        uses: RageAgainstThePixel/unity-action@v3
+        env:
+          RF_KEYSTORE: ${{ github.workspace }}/ci-keystore/silentvalley.keystore
+          RF_KEYSTORE_PASS: silentvalley
+          RF_KEY_ALIAS: silentvalley
+        with:
+          project-path: ${{ github.workspace }}
+          build-target: Android
+          args: >-
+            -quit -batchmode -nographics
+            -executeMethod RealFPS.EditorTools.RFBuild.BuildAndroid
+            -buildNumber ${{ github.run_number }}
+            -logFile ${{ github.workspace }}/Logs/build.log
+
+      - name: Check the APK
+        run: |
+          ls -la Build || true
+          test -f Build/SilentValley.apk
+          unzip -l Build/SilentValley.apk | grep -E "lib/|assets/bin/Data/(data.unity3d|globalgamemanagers)" | head -20 || true
+
+      - name: Publish APK release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="realistic-fps-build-${{ github.run_number }}"
+          APK="SilentValley-${{ github.run_number }}.apk"
+          cp Build/SilentValley.apk "$APK"
+          printf 'Silent Valley build %s (Unity %s, commit %s).\n\nDownload the APK below on your Android phone and open it to install.\n\nSky, textures and models: Poly Haven (CC0).\n' \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Silent Valley build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "Published release $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report errors and upload logs
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: python3 ci/report.py --workspace "${{ github.workspace }}" --status "$JOB_STATUS"
+
+  smoke-test:
+    name: Smoke test in emulator
+    needs: build
+    if: ${{ needs.build.outputs.release_tag != '' && (github.event_name == 'push' || inputs.smoke_test) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p smoke
+          gh release download "${{ needs.build.outputs.release_tag }}" -p "*.apk" -D smoke
+          ls -la smoke
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the game in an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_4
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+
+      - name: Upload screenshots to the release
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la smoke || true
+          files=$(ls smoke/*.png smoke/*.txt 2>/dev/null || true)
+          if [ -n "$files" ]; then
+            gh release upload "${{ needs.build.outputs.release_tag }}" $files --clobber
+          fi
