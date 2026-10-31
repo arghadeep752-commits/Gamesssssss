@@ -1,0 +1,32 @@
+# One-off helper: lists Poly Haven's free CC0 assets (with thumbnails) into a
+# private draft release so the game's realistic assets can be chosen.
+name: Realistic FPS asset probe
+
+on:
+  push:
+    branches: [realistic-fps]
+    paths:
+      - tools/probe_polyhaven.py
+      - .github/workflows/realistic-fps-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - name: Probe Poly Haven
+        run: python3 tools/probe_polyhaven.py "$RUNNER_TEMP/probe"
+      - name: Upload as a private draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP/probe" && zip -qr "$RUNNER_TEMP/probe.zip" . && cd -
+          ls -la "$RUNNER_TEMP/probe.zip"
+          gh release create "realistic-fps-probe-${{ github.run_number }}" "$RUNNER_TEMP/probe.zip" --draft \
+            --title "Realistic FPS asset probe (private draft, safe to delete)" \
+            --notes "Poly Haven asset listing used to pick the game's assets. Safe to delete."
