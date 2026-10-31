@@ -93,10 +93,10 @@ namespace RealFPS.EditorTools
         public static List<Part> Parts(GameObject model)
         {
             var list = new List<Part>();
+            // keep the imported root rotation/scale: single-mesh FBX files carry the
+            // Blender unit scale (x100) and axis rotation on the root itself
             var inst = Object.Instantiate(model);
             inst.transform.position = Vector3.zero;
-            inst.transform.rotation = Quaternion.identity;
-            inst.transform.localScale = Vector3.one;
             foreach (MeshFilter mf in inst.GetComponentsInChildren<MeshFilter>())
             {
                 var mr = mf.GetComponent<MeshRenderer>();
@@ -166,9 +166,10 @@ namespace RealFPS.EditorTools
             var v = new List<Vector3>();
             var col = new List<Color>();
             var tris = new List<int>();
-            Color forest = new Color(0.12f, 0.16f, 0.11f);
-            Color rock = new Color(0.36f, 0.35f, 0.34f);
-            Color snow = new Color(0.86f, 0.88f, 0.9f);
+            // linear albedo (vertex colours are not gamma-converted)
+            Color forest = new Color(0.055f, 0.075f, 0.05f);
+            Color rock = new Color(0.22f, 0.21f, 0.2f);
+            Color snow = new Color(0.78f, 0.8f, 0.84f);
             for (int r = 0; r <= rings; r++)
             {
                 float k = r / (float)rings;

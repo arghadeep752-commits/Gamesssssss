@@ -100,6 +100,9 @@ namespace RealFPS
             ui.ShowHud();
             yield return ui.Fade(0f, 0.6f);
             ui.Hud.ShowHint("Left side: move  •  Right side: look around", 6f);
+            yield return new WaitForSeconds(7f);
+            if (State == GameState.Playing && LanternsFound == 0)
+                ui.Hud.ShowHint("Find the 5 lost lanterns — follow the trail down to the lake", 6f);
         }
 
         public void Pause()

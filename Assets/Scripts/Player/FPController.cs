@@ -85,6 +85,7 @@ namespace RealFPS
             camT.localPosition = Vector3.zero;
             camT.localRotation = Quaternion.identity;
             cam = camT.GetComponent<Camera>();
+            if (cam != null) cam.nearClipPlane = 0.15f;
             ApplySettings();
         }
 

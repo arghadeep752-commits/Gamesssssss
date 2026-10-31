@@ -21,7 +21,11 @@ namespace RealFPS
             camera_ = c.GetComponent<Camera>();
             if (first) t = 0f;
             running = points != null && points.Length >= 2;
-            if (camera_ != null) camera_.fieldOfView = fieldOfView;
+            if (camera_ != null)
+            {
+                camera_.fieldOfView = fieldOfView;
+                camera_.nearClipPlane = 0.5f;   // high above the lake: better depth precision
+            }
             LateUpdate();
         }
 

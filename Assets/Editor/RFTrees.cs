@@ -13,7 +13,7 @@ namespace RealFPS.EditorTools
     {
         public class TreeMesh
         {
-            public Mesh lod0, lod1;
+            public Mesh lod0, lod1, lod2;
             public float height, trunkRadius;
         }
 
@@ -51,6 +51,7 @@ namespace RealFPS.EditorTools
             t.trunkRadius = 0.16f + height * 0.012f;
             t.lod0 = BuildLod(seed, height, t.trunkRadius, twigRects, 0);
             t.lod1 = BuildLod(seed, height, t.trunkRadius, twigRects, 1);
+            t.lod2 = BuildFar(seed, height);
             return t;
         }
 
@@ -112,31 +113,31 @@ namespace RealFPS.EditorTools
             float crownStart = height * Rnd(r, 0.1f, 0.2f);
             float crownR = height * Rnd(0.21f, 0.26f, r);
             float y0 = crownStart;
-            float spacing = lod == 0 ? 0.52f : 1.25f;
+            float spacing = lod == 0 ? 0.52f : 1.5f;
             float whorlRot = Rnd(r, 0f, 6.28f);
             while (y0 < height - 0.9f)
             {
                 float tt = (y0 - crownStart) / (height - crownStart);
-                int count = lod == 0 ? Mathf.RoundToInt(Mathf.Lerp(7f, 4f, tt)) : 4;
+                int count = lod == 0 ? Mathf.RoundToInt(Mathf.Lerp(7f, 4f, tt)) : (tt > 0.7f ? 3 : 4);
                 for (int k = 0; k < count; k++)
                 {
                     float az = whorlRot + k * Mathf.PI * 2f / count + Rnd(r, -0.3f, 0.3f);
                     float len = crownR * Mathf.Pow(1f - tt, 0.85f) * Rnd(r, 0.85f, 1.15f) + 0.35f;
-                    if (lod == 1) len *= 1.12f;
+                    if (lod == 1) len *= 1.15f;
                     float pitch = Mathf.Lerp(-24f, 10f, tt) + Rnd(r, -7f, 7f);
                     float droop = Mathf.Lerp(-16f, 6f, tt) + Rnd(r, -6f, 6f);
                     int cell = tt > 0.82f ? 2 + r.Next(2) : r.Next(2);
                     if (r.NextDouble() < 0.3) cell = r.Next(4);
                     float y = y0 + Rnd(r, -0.12f, 0.12f);
                     Vector3 origin = Bend(y, height, seedF) + Vector3.up * y;
-                    float width = len * (lod == 0 ? Rnd(r, 0.85f, 1.05f) : 1.25f);
+                    float width = len * (lod == 0 ? Rnd(r, 0.85f, 1.05f) : 1.35f);
                     float roll = Rnd(r, -22f, 22f);
                     float ao = Mathf.Lerp(0.45f, 1f, Mathf.Pow(tt, 0.6f));
-                    AddCard(b, origin, az, pitch, droop, roll, len, width, TrunkR(y, height, r0) * 0.6f, rects, cell, ao, Rnd(r, 0f, 1f), height);
+                    AddCard(b, origin, az, pitch, lod == 0 ? droop : 0f, roll, len, width, TrunkR(y, height, r0) * 0.6f, rects, cell, ao, Rnd(r, 0f, 1f), height, lod == 0);
                     // a second, steeper card fills the crown when seen from the side
                     if (lod == 0 && tt < 0.85f && r.NextDouble() < 0.75)
                         AddCard(b, origin, az + Rnd(r, -0.25f, 0.25f), pitch + 10f, droop, roll + Rnd(r, 50f, 75f) * (r.NextDouble() < 0.5 ? -1f : 1f),
-                                len * 0.85f, width * 0.7f, TrunkR(y, height, r0) * 0.6f, rects, r.Next(4), ao * 0.9f, Rnd(r, 0f, 1f), height);
+                                len * 0.85f, width * 0.7f, TrunkR(y, height, r0) * 0.6f, rects, r.Next(4), ao * 0.9f, Rnd(r, 0f, 1f), height, true);
                 }
                 whorlRot += Rnd(r, 0.5f, 1.3f);
                 y0 += spacing * Rnd(r, 0.85f, 1.2f);
@@ -149,6 +150,48 @@ namespace RealFPS.EditorTools
                 AddUpright(b, tip, az, 1.9f, 1.1f, rects, 2 + k, height);
             }
             return b.ToMesh("Fir_" + seed + "_LOD" + lod);
+        }
+
+        /// <summary>Far LOD: three stacked irregular cones (dark needle green, vertex coloured).</summary>
+        static Mesh BuildFar(int seed, float height)
+        {
+            var r = new System.Random(seed + 991);
+            var v = new List<Vector3>();
+            var n = new List<Vector3>();
+            var c = new List<Color>();
+            var t = new List<int>();
+            float crownR = height * 0.24f;
+            float[] baseY = { height * 0.14f, height * 0.38f, height * 0.6f };
+            float[] radius = { crownR, crownR * 0.74f, crownR * 0.48f };
+            float[] topY = { height * 0.62f, height * 0.84f, height * 1.0f };
+            int sides = 7;
+            for (int tier = 0; tier < 3; tier++)
+            {
+                int apex = v.Count;
+                v.Add(new Vector3(0f, topY[tier], 0f));
+                n.Add(Vector3.up);
+                c.Add(new Color(0.075f, 0.1f, 0.045f, 1f));
+                for (int s = 0; s < sides; s++)
+                {
+                    float a = s / (float)sides * Mathf.PI * 2f + tier * 0.4f;
+                    float rr = radius[tier] * Rnd(r, 0.85f, 1.15f);
+                    var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                    v.Add(new Vector3(d.x * rr, baseY[tier] - rr * 0.25f, d.z * rr));
+                    n.Add((d + Vector3.up * 0.6f).normalized);
+                    c.Add(new Color(0.045f, 0.065f, 0.03f, 1f));
+                }
+                for (int s = 0; s < sides; s++)
+                {
+                    t.Add(apex); t.Add(apex + 1 + (s + 1) % sides); t.Add(apex + 1 + s);
+                }
+            }
+            var m = new Mesh { name = "Fir_" + seed + "_LOD2" };
+            m.SetVertices(v);
+            m.SetNormals(n);
+            m.SetColors(c);
+            m.SetTriangles(t, 0);
+            m.RecalculateBounds();
+            return m;
         }
 
         static void Rect(float[] rects, int cell, out float u0, out float v0, out float u1, out float v1)
@@ -167,7 +210,7 @@ namespace RealFPS.EditorTools
 
         /// <summary>A branch card bent in two segments, from the trunk outwards.</summary>
         static void AddCard(Builder b, Vector3 origin, float az, float pitch, float droop, float roll, float len, float width,
-                            float startR, float[] rects, int cell, float ao, float phase, float height)
+                            float startR, float[] rects, int cell, float ao, float phase, float height, bool bent)
         {
             Rect(rects, cell, out float u0, out float v0, out float u1, out float v1);
             var dirH = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
@@ -181,11 +224,12 @@ namespace RealFPS.EditorTools
             Vector3 axis = new Vector3(origin.x, origin.y - 0.6f, origin.z);
             float hw = width * 0.5f;
             int i0 = b.v.Count;
-            Vector3[] pts = { p0, p1, p2 };
-            float[] vv = { v0, (v0 + v1) * 0.5f, v1 };
-            for (int k = 0; k < 3; k++)
+            Vector3[] pts = bent ? new[] { p0, p1, p2 } : new[] { p0, p0 + d1 * len };
+            float[] vv = bent ? new[] { v0, (v0 + v1) * 0.5f, v1 } : new[] { v0, v1 };
+            int rows = pts.Length;
+            for (int k = 0; k < rows; k++)
             {
-                float along = k / 2f;
+                float along = k / (float)(rows - 1);
                 float w = hw * (k == 0 ? 0.55f : 1f);
                 Vector3 a = pts[k] - side * w;
                 Vector3 c = pts[k] + side * w;
@@ -196,7 +240,7 @@ namespace RealFPS.EditorTools
                 var col = new Color(occl, along * Mathf.Lerp(0.5f, 1f, origin.y / height), phase, 1f);
                 b.c.Add(col); b.c.Add(col);
             }
-            for (int k = 0; k < 2; k++)
+            for (int k = 0; k < rows - 1; k++)
             {
                 int a = i0 + k * 2;
                 b.leaves.Add(a); b.leaves.Add(a + 2); b.leaves.Add(a + 1);

@@ -215,7 +215,19 @@ def sky():
     for r in range(8, 16):
         t = (r - 8) / 7.0
         grid[r, :, :] = horizon * (1 - t) * 0.35 + ground * (0.65 + 0.35 * t)
+    # expected diffuse ambient (irradiance / pi, L2 band-limited) for an up- and a down-facing surface,
+    # used by the build script to calibrate Unity's SH probe
+    gh, gw = grid.shape[:2]
+    gth = (np.arange(gh) + 0.5) / gh * np.pi
+    gdw = (2 * np.pi / gw) * (np.pi / gh) * np.sin(gth)
+    cy = np.cos(gth)
+    def l2(c):
+        return (0.25 + 0.5 * c + (5.0 / 16.0) * (3 * c * c - 1) / 2) * 16.0 / 17.0
+    amb_up = (grid * (gdw / np.pi * l2(cy))[:, None, None]).sum(axis=(0, 1))
+    amb_down = (grid * (gdw / np.pi * l2(-cy))[:, None, None]).sum(axis=(0, 1))
     INFO.update({
+        "ambientUp": [float(x) for x in amb_up],
+        "ambientDown": [float(x) for x in amb_down],
         "sunDir": [float(x) for x in sun_dir],
         "sunColor": [float(x) for x in sun_color],
         "sunIntensity": SUN_INTENSITY,
@@ -224,7 +236,7 @@ def sky():
         "shW": 32, "shH": 16,
         "shGrid": [round(float(x), 5) for x in grid.reshape(-1)],
     })
-    log(f"horizon {horizon} ground {ground} e_sky_h {e_sky_h:.3f}")
+    log(f"horizon {horizon} ground {ground} e_sky_h {e_sky_h:.3f} ambient up {amb_up} down {amb_down}")
     return np.clip(lin_to_srgb(tex), 0, 1)
 
 

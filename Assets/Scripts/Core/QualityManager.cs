@@ -21,7 +21,6 @@ namespace RealFPS
         public float RenderScale { get; private set; } = 1f;
         float baseScale = 1f;
         float minScale = 0.55f;
-        int nativeW, nativeH;
         float fpsTimer;
         int fpsFrames;
         float lastChange;
@@ -33,18 +32,6 @@ namespace RealFPS
         void Awake()
         {
             I = this;
-            nativeW = Display.main.systemWidth;
-            nativeH = Display.main.systemHeight;
-            if (nativeW <= 0 || nativeH <= 0)
-            {
-                nativeW = Screen.width;
-                nativeH = Screen.height;
-            }
-            // landscape
-            if (nativeH > nativeW)
-            {
-                int t = nativeW; nativeW = nativeH; nativeH = t;
-            }
         }
 
         public void Apply()
@@ -71,8 +58,8 @@ namespace RealFPS
                     QualitySettings.antiAliasing = 0;
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
                     QualitySettings.masterTextureLimit = 1;
-                    shadowDist = 28f; lod = 0.55f; detailCull = 30f; propCull = 90f;
-                    terrainError = 14f; basemap = 50f; grassDist = 0f;
+                    shadowDist = 28f; lod = 0.55f; detailCull = 24f; propCull = 90f;
+                    terrainError = 14f; basemap = 250f; grassDist = 0f;
                     break;
                 case GraphicsLevel.High:
                     baseScale = 1.0f;
@@ -83,8 +70,8 @@ namespace RealFPS
                     QualitySettings.antiAliasing = 4;
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
                     QualitySettings.masterTextureLimit = 0;
-                    shadowDist = 75f; lod = 1.6f; detailCull = 80f; propCull = 220f;
-                    terrainError = 5f; basemap = 140f; grassDist = 48f;
+                    shadowDist = 75f; lod = 1.6f; detailCull = 65f; propCull = 220f;
+                    terrainError = 5f; basemap = 1000f; grassDist = 48f;
                     break;
                 default:
                     baseScale = 0.8f;
@@ -94,8 +81,8 @@ namespace RealFPS
                     QualitySettings.antiAliasing = 2;
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
                     QualitySettings.masterTextureLimit = 0;
-                    shadowDist = 45f; lod = 1.0f; detailCull = 55f; propCull = 150f;
-                    terrainError = 8f; basemap = 90f; grassDist = 30f;
+                    shadowDist = 45f; lod = 1.0f; detailCull = 40f; propCull = 150f;
+                    terrainError = 8f; basemap = 1000f; grassDist = 30f;
                     break;
             }
             QualitySettings.shadowDistance = shadowDist;
@@ -109,16 +96,23 @@ namespace RealFPS
                 sun.shadowBias = 0.06f;
                 sun.shadowNormalBias = 0.5f;
             }
+            int msaa = QualitySettings.antiAliasing;
+            QualitySettings.antiAliasing = 0;   // MSAA lives on the scene render target, not the screen
             if (cam != null)
             {
-                cam.allowHDR = g != GraphicsLevel.Low;
-                cam.allowMSAA = QualitySettings.antiAliasing > 0;
                 cam.fieldOfView = GameSettings.FieldOfView;
                 var cull = new float[32];
                 cull[DetailLayer] = detailCull;
                 cull[PropLayer] = propCull;
                 cam.layerCullDistances = cull;
                 cam.layerCullSpherical = true;
+            }
+            if (post != null)
+            {
+                post.hdr = g != GraphicsLevel.Low;
+                post.msaa = msaa;
+                post.effects = g != GraphicsLevel.Low;
+                post.bloom = g == GraphicsLevel.High;
             }
             if (terrain != null)
             {
@@ -130,11 +124,6 @@ namespace RealFPS
             {
                 grass.SetDistance(grassDist);
             }
-            if (post != null)
-            {
-                post.enabled = g != GraphicsLevel.Low;
-                post.bloom = g == GraphicsLevel.High;
-            }
             if (appliedLevel != (int)g)
             {
                 appliedLevel = (int)g;
@@ -142,18 +131,22 @@ namespace RealFPS
             }
         }
 
+        /// <summary>Automated tests in a software-rendered emulator: render few pixels, keep everything else.</summary>
+        public void ForceScale(float s)
+        {
+            baseScale = s;
+            minScale = s;
+            SetScale(s, true);
+        }
+
         void SetScale(float s, bool force)
         {
-            s = Mathf.Clamp(s, 0.4f, 1f);
+            s = Mathf.Clamp(s, 0.25f, 1f);
             if (!force && Mathf.Abs(s - RenderScale) < 0.01f) return;
             RenderScale = s;
-            int w = Mathf.Max(320, Mathf.RoundToInt(nativeW * s));
-            int h = Mathf.Max(180, Mathf.RoundToInt(nativeH * s));
-#if UNITY_ANDROID && !UNITY_EDITOR
-            Screen.SetResolution(w, h, true);
-#endif
+            if (post != null) post.renderScale = s;
             lastChange = Time.unscaledTime;
-            Debug.Log("[RF] render scale " + s.ToString("0.00") + " -> " + w + "x" + h);
+            Debug.Log("[RF] render scale " + s.ToString("0.00"));
         }
 
         void Update()

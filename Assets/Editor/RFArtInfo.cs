@@ -13,6 +13,8 @@ namespace RealFPS.EditorTools
         public float sunIntensity = 1.6f;
         public float skyExposure = 1.6667f;
         public float[] fogColorLinear = { 0.52f, 0.56f, 0.69f };
+        public float[] ambientUp = new float[0];
+        public float[] ambientDown = new float[0];
         public int shW = 32;
         public int shH = 16;
         public float[] shGrid = new float[0];

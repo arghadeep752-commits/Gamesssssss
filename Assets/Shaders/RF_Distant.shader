@@ -14,6 +14,7 @@ Shader "RealFPS/Distant"
 
         CGPROGRAM
         #pragma surface surf Lambert nolightmap nodynlightmap nodirlightmap nometa noforwardadd noshadow exclude_path:deferred exclude_path:prepass
+        #pragma multi_compile_instancing
         #pragma target 3.0
 
         sampler2D _Detail;

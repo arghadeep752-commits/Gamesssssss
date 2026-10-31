@@ -214,6 +214,14 @@ jobs:
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
           echo "Published release $TAG" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Remove the temporary asset-probe drafts
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft and ((.tag_name | startswith("realistic-fps-probe")) or (.tag_name | startswith("realistic-fps-sources")))) | .id' \
+            | while read -r id; do gh api -X DELETE "repos/$GH_REPO/releases/$id" && echo "deleted draft $id"; done || true
+
       - name: Report errors and upload logs
         if: always()
         env:
@@ -226,7 +234,7 @@ jobs:
     needs: build
     if: ${{ needs.build.outputs.release_tag != '' && (github.event_name == 'push' || inputs.smoke_test) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
 
@@ -250,7 +258,7 @@ jobs:
           api-level: 30
           target: google_apis
           arch: x86_64
-          profile: pixel_4
+          profile: pixel_3a
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash ci/smoke_test.sh smoke

@@ -285,12 +285,26 @@ namespace RealFPS.EditorTools
             {
                 sh.AddAmbientLight(new Color(0.45f, 0.5f, 0.6f));
             }
-            var coeffs = new float[27];
-            for (int c = 0; c < 3; c++) for (int i = 0; i < 9; i++) coeffs[c * 9 + i] = sh[c, i];
             var up = new Vector3[] { Vector3.up, Vector3.down, Vector3.right };
             var outC = new Color[3];
             sh.Evaluate(up, outC);
-            Log("ambient up " + outC[0] + " down " + outC[1] + " side " + outC[2]);
+            Log("ambient (raw) up " + outC[0] + " down " + outC[1] + " side " + outC[2]);
+            // Calibrate: Unity's SH directional-light convention differs from irradiance/pi by a
+            // constant factor; match the expected up-facing ambient computed from the HDRI.
+            if (art.ambientUp != null && art.ambientUp.Length == 3)
+            {
+                float expected = 0.2126f * art.ambientUp[0] + 0.7152f * art.ambientUp[1] + 0.0722f * art.ambientUp[2];
+                float got = 0.2126f * outC[0].r + 0.7152f * outC[0].g + 0.0722f * outC[0].b;
+                if (got > 1e-4f && expected > 1e-4f)
+                {
+                    float k = expected / got;
+                    for (int c = 0; c < 3; c++) for (int i = 0; i < 9; i++) sh[c, i] = sh[c, i] * k;
+                    sh.Evaluate(up, outC);
+                    Log("ambient calibrated x" + k.ToString("0.000") + ": up " + outC[0] + " down " + outC[1]);
+                }
+            }
+            var coeffs = new float[27];
+            for (int c = 0; c < 3; c++) for (int i = 0; i < 9; i++) coeffs[c * 9 + i] = sh[c, i];
 
             RenderSettings.ambientMode = AmbientMode.Skybox;
             RenderSettings.ambientProbe = sh;
@@ -530,7 +544,7 @@ namespace RealFPS.EditorTools
             pier.transform.SetParent(propsRoot, false);
             Vector3 measure = new Vector3(0f, -600f, 0f);   // measured well below the terrain
             pier.transform.position = measure;
-            pier.transform.rotation = Quaternion.identity;
+            Quaternion baseRot = pier.transform.rotation;
             foreach (MeshRenderer mr in pier.GetComponentsInChildren<MeshRenderer>())
             {
                 Material[] arr = mr.sharedMaterials;
@@ -581,7 +595,7 @@ namespace RealFPS.EditorTools
             Vector3 shoreEndLocal = b.center - lakeward * (len * 0.5f) - measure;
             shoreEndLocal.y = deck - measure.y;
             Vector3 shoreWorld = new Vector3(shore.x, deckTarget, shore.y);
-            pier.transform.rotation = rot;
+            pier.transform.rotation = rot * baseRot;
             pier.transform.position = shoreWorld - rot * shoreEndLocal;
             foreach (Transform t in pier.GetComponentsInChildren<Transform>()) SetStatic(t.gameObject);
 
@@ -827,6 +841,9 @@ namespace RealFPS.EditorTools
         {
             Material bark = Standard("Bark", Tex("Trees/bark_albedo.jpg"), Tex("Trees/bark_normal.png"), Tex("Trees/bark_mask.png"), 1f, false, 1.2f);
             Material twig = Foliage("Needles", Tex("Trees/twig_atlas.png"), 0.65f, 1f);
+            var farTree = new Material(Shader.Find("RealFPS/Distant")) { name = "FarTree" };
+            farTree.enableInstancing = true;
+            SaveMat(farTree);
             twig.SetColor("_TransColor", new Color(0.55f, 0.7f, 0.22f, 1f));
             twig.SetFloat("_Smoothness", 0.22f);
 
@@ -841,6 +858,7 @@ namespace RealFPS.EditorTools
                 RFTrees.TreeMesh tm = RFTrees.Build(100 + v * 13, h, art.twigRects);
                 tm.lod0 = SaveMesh(tm.lod0);
                 tm.lod1 = SaveMesh(tm.lod1);
+                tm.lod2 = SaveMesh(tm.lod2);
                 heights[v] = h;
                 var go = new GameObject("Fir" + v);
                 go.transform.SetParent(templRoot, false);
@@ -854,8 +872,14 @@ namespace RealFPS.EditorTools
                 l1.AddComponent<MeshFilter>().sharedMesh = tm.lod1;
                 var r1 = l1.AddComponent<MeshRenderer>();
                 r1.sharedMaterials = new[] { bark, twig };
+                var l2 = new GameObject("LOD2");
+                l2.transform.SetParent(go.transform, false);
+                l2.AddComponent<MeshFilter>().sharedMesh = tm.lod2;
+                var r2 = l2.AddComponent<MeshRenderer>();
+                r2.sharedMaterial = farTree;
+                r2.shadowCastingMode = ShadowCastingMode.Off;
                 var lg = go.AddComponent<LODGroup>();
-                lg.SetLODs(new[] { new LOD(0.3f, new Renderer[] { r0 }), new LOD(0.006f, new Renderer[] { r1 }) });
+                lg.SetLODs(new[] { new LOD(0.3f, new Renderer[] { r0 }), new LOD(0.075f, new Renderer[] { r1 }), new LOD(0.004f, new Renderer[] { r2 }) });
                 lg.RecalculateBounds();
                 var cap = go.AddComponent<CapsuleCollider>();
                 cap.radius = tm.trunkRadius * 1.1f;
@@ -879,7 +903,8 @@ namespace RealFPS.EditorTools
                     float f = RFLayout.Forest(px, pz, h, slope);
                     // thin out far up the mountains (keeps the tree count sane)
                     float vr = RFLayout.ValleyR(px, pz);
-                    if (vr > 175f) f *= 0.55f;
+                    if (vr > 150f) f *= 0.65f;
+                    if (vr > 185f) f *= 0.6f;
                     if ((float)rng.NextDouble() > f * 0.92f) continue;
                     if (!Free(px, pz, 1.2f)) continue;
                     int v = rng.Next(variants);
@@ -910,7 +935,7 @@ namespace RealFPS.EditorTools
             List<RFMeshUtil.Part> branches = ModelParts("dry_branches_medium_01", true);
             List<RFMeshUtil.Part> stumps = ModelParts("tree_stump_01", true);
             int nf = 0, nb = 0, ns = 0, tries = 0;
-            while (tries < 9000 && (nf < 240 || nb < 26 || ns < 8))
+            while (tries < 9000 && (nf < 170 || nb < 26 || ns < 8))
             {
                 tries++;
                 float x = R(-160f, 160f), z = R(-120f, 195f);
@@ -923,7 +948,7 @@ namespace RealFPS.EditorTools
                 if (RFLayout.TrailDistance(x, z) < 2f) continue;
                 float forest = RFLayout.Forest(x, z, h, slope);
                 double roll = rng.NextDouble();
-                if (nf < 240 && ferns.Count > 0 && roll < forest * 0.9f + 0.03f)
+                if (nf < 170 && ferns.Count > 0 && roll < forest * 0.9f + 0.03f)
                 {
                     var p = ferns[rng.Next(ferns.Count)];
                     Vector3 n = GroundNormal(x, z);
@@ -979,8 +1004,19 @@ namespace RealFPS.EditorTools
         {
             List<RFMeshUtil.Part> parts = ModelParts("Lantern_01", false);
             var model = Load<GameObject>(Art + "/Models/Lantern_01/Lantern_01.fbx");
-            Material painted = ModelMat("Lantern_01", "painted", true, 0.9f);
-            Material brass = ModelMat("Lantern_01", "brass", true, 0.9f);
+            Material painted = ModelMat("Lantern_01", "painted", false, 0.9f);
+            var glass = new Material(Shader.Find("Standard")) { name = "LanternGlass" };
+            glass.SetFloat("_Mode", 3f);
+            glass.SetOverrideTag("RenderType", "Transparent");
+            glass.SetInt("_SrcBlend", (int)BlendMode.One);
+            glass.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+            glass.SetInt("_ZWrite", 0);
+            glass.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            glass.renderQueue = 3000;
+            glass.SetColor("_Color", new Color(0.9f, 0.85f, 0.75f, 0.18f));
+            glass.SetFloat("_Glossiness", 0.92f);
+            glass.SetFloat("_Metallic", 0f);
+            SaveMat(glass);
             Material glowMat = Particles("LanternGlow", Tex("UI/glow.png"), true, new Color(1f, 0.72f, 0.38f, 0.55f));
             Material flameMat = Particles("LanternFlame", Tex("UI/flame.png"), true, new Color(1f, 0.75f, 0.45f, 0.9f));
 
@@ -1014,8 +1050,7 @@ namespace RealFPS.EditorTools
                     var inst = (GameObject)Object.Instantiate(model, go.transform);
                     inst.name = "Model";
                     inst.transform.localPosition = Vector3.zero;
-                    inst.transform.localRotation = Quaternion.identity;
-                    inst.transform.localScale = Vector3.one * scale;
+                    inst.transform.localScale = inst.transform.localScale * scale;
                     Bounds b = new Bounds();
                     bool first = true;
                     foreach (MeshRenderer mr in inst.GetComponentsInChildren<MeshRenderer>())
@@ -1024,8 +1059,9 @@ namespace RealFPS.EditorTools
                         for (int k = 0; k < arr.Length; k++)
                         {
                             string n = arr[k] != null ? arr[k].name.ToLowerInvariant() : "";
-                            arr[k] = n.Contains("brass") ? brass : painted;
+                            arr[k] = n.Contains("glass") ? glass : painted;
                         }
+                        mr.shadowCastingMode = mr.name.ToLowerInvariant().Contains("glass") ? ShadowCastingMode.Off : ShadowCastingMode.On;
                         mr.sharedMaterials = arr;
                         if (first) { b = mr.bounds; first = false; } else b.Encapsulate(mr.bounds);
                     }
@@ -1055,15 +1091,31 @@ namespace RealFPS.EditorTools
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
-            cam.nearClipPlane = 0.06f;
-            cam.farClipPlane = 2200f;
+            cam.nearClipPlane = 0.15f;
+            cam.farClipPlane = 1800f;
             cam.fieldOfView = 58f;
             cam.allowHDR = true;
             cam.allowMSAA = true;
             cam.clearFlags = CameraClearFlags.Skybox;
             camGo.AddComponent<AudioListener>();
-            var post = camGo.AddComponent<PostFX>();
+            cam.depth = 0f;
+
+            // the "present" camera draws nothing itself: it scales the scene image up to the
+            // screen with post-processing (see PostFX), under the sharp full-resolution UI
+            var presentGo = new GameObject("Present Camera");
+            var present = presentGo.AddComponent<Camera>();
+            present.cullingMask = 0;
+            present.clearFlags = CameraClearFlags.SolidColor;
+            present.backgroundColor = Color.black;
+            present.depth = 10f;
+            present.allowHDR = false;
+            present.allowMSAA = false;
+            present.useOcclusionCulling = false;
+            present.nearClipPlane = 0.1f;
+            present.farClipPlane = 1f;
+            var post = presentGo.AddComponent<PostFX>();
             post.shader = Shader.Find("Hidden/RealFPS/Post");
+            post.sceneCamera = cam;
 
             // player
             Vector2 sp = RFLayout.Spawn;
