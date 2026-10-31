@@ -1,0 +1,33 @@
+# Helper: downloads the game's CC0 source assets (tools/fetch_assets.py) and keeps
+# a copy in a private draft release, so the asset processing can be developed
+# and checked offline.
+name: Realistic FPS source assets
+
+on:
+  push:
+    branches: [realistic-fps]
+    paths:
+      - tools/fetch_assets.py
+      - .github/workflows/realistic-fps-sources.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download source assets
+        run: python3 tools/fetch_assets.py "$RUNNER_TEMP/src"
+      - name: Upload as a private draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP/src" && zip -qr -0 "$RUNNER_TEMP/sources.zip" . && cd -
+          ls -la "$RUNNER_TEMP/sources.zip"
+          gh release create "realistic-fps-sources-${{ github.run_number }}" "$RUNNER_TEMP/sources.zip" --draft \
+            --title "Realistic FPS source assets (private draft, safe to delete)" \
+            --notes "CC0 source assets from Poly Haven used to develop the asset processing. Safe to delete."
