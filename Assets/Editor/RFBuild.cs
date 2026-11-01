@@ -24,6 +24,13 @@ namespace RealFPS.EditorTools
         {
             try
             {
+                // CI runners set UNITY_THISISABUILDMACHINE; with it, Unity 6's Android build adds
+                // Unity's own private Maven mirrors to Gradle, which cannot be reached from here.
+                if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITY_THISISABUILDMACHINE")))
+                {
+                    Environment.SetEnvironmentVariable("UNITY_THISISABUILDMACHINE", null);
+                    Log("cleared UNITY_THISISABUILDMACHINE (keeps Gradle on the public Google / Maven Central repositories)");
+                }
                 int buildNumber = Math.Max(1, ReadIntArg("-buildNumber", 1));
                 string output = ReadArg("-outputPath", "Build/SilentValley.apk");
                 Log("Preparing build " + buildNumber + " -> " + output);

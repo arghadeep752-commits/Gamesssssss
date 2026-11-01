@@ -184,19 +184,24 @@ jobs:
             -storepass silentvalley -keypass silentvalley -dname "CN=Silent Valley, O=Silent Valley"
 
       - name: Build APK with Unity
-        uses: RageAgainstThePixel/unity-action@v3
         env:
           RF_KEYSTORE: ${{ github.workspace }}/ci-keystore/silentvalley.keystore
           RF_KEYSTORE_PASS: silentvalley
           RF_KEY_ALIAS: silentvalley
-        with:
-          project-path: ${{ github.workspace }}
-          build-target: Android
-          args: >-
-            -quit -batchmode -nographics
-            -executeMethod RealFPS.EditorTools.RFBuild.BuildAndroid
-            -buildNumber ${{ github.run_number }}
-            -logFile ${{ github.workspace }}/Logs/build.log
+        run: |
+          mkdir -p Logs
+          # UNITY_THISISABUILDMACHINE makes Unity 6's Android build use Unity's internal (private)
+          # Maven mirrors, which are unreachable from GitHub, so it must not reach the editor.
+          set +e
+          env -u UNITY_THISISABUILDMACHINE timeout 140m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android \
+            -executeMethod RealFPS.EditorTools.RFBuild.BuildAndroid \
+            -buildNumber ${{ github.run_number }} \
+            -logFile "$GITHUB_WORKSPACE/Logs/build.log"
+          status=$?
+          echo "Unity exited with code $status"
+          grep -E "\[RF-BUILD\]|\[RF-ERR\]" Logs/build.log | tail -60 || true
+          exit $status
 
       - name: Check the APK
         run: |
