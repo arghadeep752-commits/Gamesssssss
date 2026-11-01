@@ -437,7 +437,8 @@ namespace RealFPS.EditorTools
 
             string[] names = { "grass", "dirt", "rock", "shore" };
             float[] tiles = { 2.4f, 3.2f, 6.0f, 2.5f };
-            float[] smooth = { 0.08f, 0.06f, 0.16f, 0.12f };
+            // URP terrain smoothness = albedo alpha (from the scanned roughness) x layer smoothness
+            float[] smooth = { 1f, 1f, 1f, 1f };
             var layers = new TerrainLayer[4];
             for (int k = 0; k < 4; k++)
             {
