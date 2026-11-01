@@ -30,7 +30,8 @@ copy "$ED/Data/NetStandard" "$STAGE/Editor/Data"
 copy "$ED/Data/Managed/UnityEngine" "$STAGE/Editor/Data/Managed"
 for f in "$ED"/Data/Managed/*.dll; do [ -e "$f" ] && cp -a "$f" "$STAGE/Editor/Data/Managed/"; done
 for f in "$ED"/Data/PlaybackEngines/AndroidPlayer/*.dll; do [ -e "$f" ] && cp -a "$f" "$STAGE/Editor/Data/PlaybackEngines/AndroidPlayer/"; done
-copy "$ED/Data/Resources/PackageManager/Editor" "$STAGE/Editor/Data/Resources/PackageManager"
+mkdir -p "$STAGE/Editor/Data/Resources/PackageManager/Editor"
+cp "$ED"/Data/Resources/PackageManager/Editor/*.json "$STAGE/Editor/Data/Resources/PackageManager/Editor/" 2>/dev/null || true
 ls "$ED/Data/Resources/PackageManager/BuiltInPackages" > "$STAGE/builtin-packages.txt" 2>/dev/null || true
 find "$ED/Data" -maxdepth 3 > "$STAGE/editor-tree.txt" 2>/dev/null || true
 
@@ -58,7 +59,7 @@ done
 
 for f in "$GITHUB_WORKSPACE"/Logs/*.log "$GITHUB_WORKSPACE"/probe-report.txt "$GITHUB_WORKSPACE"/probe-urp.txt; do [ -e "$f" ] && cp "$f" "$STAGE/"; done
 
-du -sh "$STAGE"/* "$STAGE"/Editor/Data/* > "$STAGE/sizes.txt" 2>&1 || true
+{ du -sh "$STAGE"/*; du -sh "$STAGE"/Editor/Data/*; du -sh "$STAGE"/Editor/Data/Managed/*; } > "$STAGE/sizes.txt" 2>&1 || true
 cat "$STAGE/sizes.txt"
 tar -C "$STAGE" -cf - . | xz -T0 -6 > "$OUTDIR/unity6-kit.tar.xz"
 ls -la "$OUTDIR/unity6-kit.tar.xz"

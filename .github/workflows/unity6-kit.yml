@@ -61,26 +61,16 @@ jobs:
           username: ${{ secrets.UNITY_EMAIL }}
           password: ${{ secrets.UNITY_PASSWORD }}
 
-      - name: Open the probe project (imports and compiles URP)
+      - name: Open the probe project and run the URP / shader probe
         continue-on-error: true
-        uses: RageAgainstThePixel/unity-action@v3
-        with:
-          project-path: ${{ github.workspace }}/kitproj
-          build-target: Android
-          args: >-
-            -quit -batchmode -nographics
-            -logFile ${{ github.workspace }}/Logs/probe-open.log
-
-      - name: Probe URP asset creation
-        continue-on-error: true
-        uses: RageAgainstThePixel/unity-action@v3
-        with:
-          project-path: ${{ github.workspace }}/kitproj
-          build-target: Android
-          args: >-
-            -batchmode -nographics
-            -executeMethod ProbeURP.Run
-            -logFile ${{ github.workspace }}/Logs/probe-urp.log
+        run: |
+          mkdir -p Logs
+          timeout 40m "$UNITY_EDITOR_PATH" -batchmode -nographics -quit -projectPath "$GITHUB_WORKSPACE/kitproj" \
+            -buildTarget Android -logFile "$GITHUB_WORKSPACE/Logs/probe-open.log" || echo "open exit $?"
+          ls -la kitproj/Library/ScriptAssemblies | head -80 || true
+          timeout 30m "$UNITY_EDITOR_PATH" -batchmode -nographics -projectPath "$GITHUB_WORKSPACE/kitproj" \
+            -buildTarget Android -executeMethod ProbeURP.Run -logFile "$GITHUB_WORKSPACE/Logs/probe-urp.log" || echo "probe exit $?"
+          ls -la probe-urp.txt || true
 
       - name: Publish the kit (private draft)
         if: always()

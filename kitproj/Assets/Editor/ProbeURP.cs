@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -23,6 +24,8 @@ public static class ProbeURP
     {
         try { Inner(); }
         catch (Exception e) { L("EXCEPTION " + e); }
+        try { CheckShaders(); }
+        catch (Exception e) { L("SHADER CHECK EXCEPTION " + e); }
         try { File.WriteAllText(Path.GetFullPath("../probe-urp.txt"), sb.ToString()); }
         catch (Exception e) { Debug.Log("[PROBE] could not write report: " + e.Message); }
         EditorApplication.Exit(0);
@@ -55,6 +58,53 @@ public static class ProbeURP
             enter = it.depth < maxDepth;
             L("  " + new string(' ', it.depth * 2) + it.propertyPath + " : " + it.propertyType + " = " + Val(it));
             n++;
+        }
+    }
+
+    static void CheckShaders()
+    {
+        string[][] keywordSets =
+        {
+            new string[0],
+            new[] { "_MAIN_LIGHT_SHADOWS" },
+            new[] { "_MAIN_LIGHT_SHADOWS_CASCADE", "_SHADOWS_SOFT" },
+            new[] { "_MAIN_LIGHT_SHADOWS", "_SHADOWS_SOFT_LOW" },
+            new[] { "FOG_EXP" },
+            new[] { "INSTANCING_ON" },
+            new[] { "_MAIN_LIGHT_SHADOWS", "FOG_EXP", "INSTANCING_ON" },
+        };
+        foreach (string g in AssetDatabase.FindAssets("t:Shader", new[] { "Assets/Shaders" }))
+        {
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(g));
+            if (shader == null) continue;
+            L("== shader " + shader.name + " hasError=" + ShaderUtil.ShaderHasError(shader) + " supported=" + shader.isSupported);
+            foreach (ShaderMessage m in ShaderUtil.GetShaderMessages(shader))
+                L("   import " + m.severity + ": " + m.message + " line " + m.line + " " + m.platform);
+            ShaderData data = ShaderUtil.GetShaderData(shader);
+            for (int si = 0; si < data.SubshaderCount; si++)
+            {
+                ShaderData.Subshader sub = data.GetSubshader(si);
+                for (int p = 0; p < sub.PassCount; p++)
+                {
+                    ShaderData.Pass pass = sub.GetPass(p);
+                    int ok = 0, bad = 0;
+                    foreach (ShaderCompilerPlatform platform in new[] { ShaderCompilerPlatform.GLES3x, ShaderCompilerPlatform.Vulkan })
+                    foreach (string[] kw in keywordSets)
+                    foreach (ShaderType st in new[] { ShaderType.Vertex, ShaderType.Fragment })
+                    {
+                        ShaderData.VariantCompileInfo info = pass.CompileVariant(st, kw, platform, BuildTarget.Android);
+                        if (info.Success) ok++; else bad++;
+                        if (!info.Success || (info.Messages != null && info.Messages.Length > 0))
+                        {
+                            L("   pass '" + pass.Name + "' " + platform + " " + st + " [" + string.Join(",", kw) + "] success=" + info.Success);
+                            if (info.Messages != null)
+                                foreach (ShaderMessage m in info.Messages)
+                                    L("      " + m.severity + ": " + m.message + " (line " + m.line + ") " + m.messageDetails);
+                        }
+                    }
+                    L("   pass '" + pass.Name + "': " + ok + " variants compiled, " + bad + " failed");
+                }
+            }
         }
     }
 
