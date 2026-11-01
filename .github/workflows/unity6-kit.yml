@@ -42,7 +42,7 @@ jobs:
         id: unity
         uses: RageAgainstThePixel/unity-setup@v2
         with:
-          unity-version: 6000.0.x
+          unity-version: 6000.0.85f1
           version-file: None
           build-targets: Android
           auto-update-hub: false
@@ -87,8 +87,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp kitproj/../probe-urp.txt probe-urp.txt 2>/dev/null || true
-          ls -la Logs || true
+          ls -la Logs probe-urp.txt || true
           bash ci/publish_kit6.sh "$UNITY_EDITOR_PATH" kitproj "$KIT_TAG"
-          if [ -f probe-urp.txt ]; then gh release upload "$KIT_TAG" probe-urp.txt --clobber || true; fi
-          for f in Logs/*.log; do gh release upload "$KIT_TAG" "$f" --clobber || true; done
