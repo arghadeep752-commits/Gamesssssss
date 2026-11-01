@@ -144,10 +144,13 @@ jobs:
           cat Packages/manifest.json
 
       - name: Restore Unity's import cache (Library + asset GUIDs)
-        uses: actions/cache@v4
+        id: libcache
+        uses: actions/cache/restore@v4
         with:
           path: |
             Library
+            !Library/Bee
+            !Library/Il2cppBuildCache
             Assets/**/*.meta
           key: rf-library-u6-${{ github.run_number }}
           restore-keys: |
@@ -202,6 +205,18 @@ jobs:
           echo "Unity exited with code $status"
           grep -E "\[RF-BUILD\]|\[RF-ERR\]" Logs/build.log | tail -60 || true
           exit $status
+
+      - name: Save Unity's import cache (also after a failed build)
+        if: always() && steps.libcache.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            Library
+            !Library/Bee
+            !Library/Il2cppBuildCache
+            Assets/**/*.meta
+          key: rf-library-u6-${{ github.run_number }}
 
       - name: Check the APK
         run: |
