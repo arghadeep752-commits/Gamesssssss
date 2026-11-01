@@ -11,6 +11,9 @@ namespace RealFPS.EditorTools
     /// </summary>
     public class RFImport : AssetPostprocessor
     {
+        // bump when the import rules change, so cached imports are redone
+        public override uint GetVersion() { return 6; }
+
         void OnPreprocessTexture()
         {
             if (!assetPath.StartsWith("Assets/Art/")) return;
@@ -25,11 +28,13 @@ namespace RealFPS.EditorTools
             ti.textureCompression = TextureImporterCompression.Compressed;
             ti.mipmapEnabled = true;
             ti.streamingMipmaps = false;
-            ti.anisoLevel = 2;
+            ti.mipmapFilter = TextureImporterMipFilter.KaiserFilter;   // crisper distant mips than box filtering
+            ti.anisoLevel = 4;
             ti.maxTextureSize = 2048;
             ti.wrapMode = TextureWrapMode.Repeat;
             ti.isReadable = false;
-            TextureImporterFormat android = TextureImporterFormat.ASTC_6x6;
+            // ASTC 5x5 (5.1 bits per pixel) keeps surface detail; 6x6 only where it cannot be seen
+            TextureImporterFormat android = TextureImporterFormat.ASTC_5x5;
             int androidMax = 2048;
 
             if (p.Contains("/ui/") || p.Contains("/icons/"))
@@ -48,7 +53,9 @@ namespace RealFPS.EditorTools
             if (file.EndsWith("_normal") || p.Contains("water_normal"))
             {
                 ti.textureType = TextureImporterType.NormalMap;
-                android = TextureImporterFormat.ASTC_5x5;
+                ti.mipmapFilter = TextureImporterMipFilter.BoxFilter;
+                // ground normals are seen up close all the time: highest ASTC quality
+                android = p.Contains("/terrain/") ? TextureImporterFormat.ASTC_4x4 : TextureImporterFormat.ASTC_5x5;
             }
             else if (file.EndsWith("_mask"))
             {
@@ -72,10 +79,26 @@ namespace RealFPS.EditorTools
                 ti.wrapMode = TextureWrapMode.Clamp;
                 android = TextureImporterFormat.ASTC_5x5;
             }
+            if (p.Contains("/terrain/"))
+                ti.anisoLevel = 8;     // the ground is always seen at grazing angles
             if (p.Contains("/terrain/") && file.EndsWith("_albedo"))
             {
                 ti.alphaSource = TextureImporterAlphaSource.FromInput; // smoothness in alpha
-                android = TextureImporterFormat.ASTC_6x6;
+                android = TextureImporterFormat.ASTC_5x5;
+            }
+            if (p.Contains("/grass/detail_"))
+            {
+                // terrain grass cards: the terrain packs them into an atlas at runtime
+                ti.alphaSource = TextureImporterAlphaSource.FromInput;
+                ti.alphaIsTransparency = false;
+                ti.mipMapsPreserveCoverage = true;
+                ti.alphaTestReferenceValue = 0.5f;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.isReadable = true;
+                ti.anisoLevel = 1;
+                ti.maxTextureSize = 512;
+                androidMax = 512;
+                android = TextureImporterFormat.ASTC_5x5;
             }
             if (p.Contains("/sky/sky_pano"))
             {

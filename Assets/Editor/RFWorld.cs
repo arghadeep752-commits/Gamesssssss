@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -27,6 +28,8 @@ namespace RealFPS.EditorTools
         static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
         static System.Random rng;
         static readonly List<Vector3> occupied = new List<Vector3>(); // xz + radius of placed big objects
+        static readonly List<Vector4> groundPatches = new List<Vector4>(); // x, z, radius, strength: dirt blended in around rock bases
+        static float[,,] splat;
 
         static void Log(string m) { Debug.Log("[RF-BUILD] " + m); }
 
@@ -36,6 +39,7 @@ namespace RealFPS.EditorTools
             rng = new System.Random(2026);
             mats.Clear();
             occupied.Clear();
+            groundPatches.Clear();
             RFBuild.EnsureFolder(Gen);
             RFBuild.EnsureFolder(Gen + "/Materials");
             RFBuild.EnsureFolder(Gen + "/Meshes");
@@ -54,13 +58,14 @@ namespace RealFPS.EditorTools
             Transform pierEnd = BuildPier();
             Vector3 campfire = BuildCampfire();
             BuildRocks();
-            BuildTrees();
+            TreeRenderer trees = BuildTrees();
             BuildDetail();
+            BlendGroundAroundRocks();
+            BuildGrass();
             BuildFarMountains();
             Lantern[] lanterns = BuildLanterns(pierEnd, campfire);
-            BuildGame(sun, skyLighting, lanterns);
+            BuildGame(sun, skyLighting, lanterns, trees);
 
-            Lightmapping.giWorkflowMode = Lightmapping.GIWorkflowMode.OnDemand;
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new Exception("Could not save the scene");
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
@@ -103,11 +108,86 @@ namespace RealFPS.EditorTools
             return m;
         }
 
-        static Material Standard(string name, Texture2D albedo, Texture2D normal, Texture2D mask, float smoothScale = 1f, bool cutout = false, float bump = 1f)
+        /// <summary>
+        /// Finds one of the game's own URP shaders; if it failed to compile it falls back to a
+        /// built-in URP shader so the object still renders (and says so in the build log).
+        /// </summary>
+        static readonly Dictionary<string, Shader> checkedShaders = new Dictionary<string, Shader>();
+
+        static Shader GameShader(string name, string fallback)
         {
-            var m = new Material(Shader.Find("Standard")) { name = name };
-            m.SetTexture("_MainTex", albedo);
-            m.SetColor("_Color", Color.white);
+            Shader cached;
+            if (checkedShaders.TryGetValue(name, out cached)) return cached;
+            Shader s = Shader.Find(name);
+            bool broken = s == null;
+            if (!broken)
+            {
+                try { broken = ShaderUtil.ShaderHasError(s); }
+                catch (Exception) { broken = false; }
+            }
+            if (!broken) broken = !CompilesForAndroid(s);
+            if (broken)
+            {
+                Debug.LogWarning("[RF-BUILD] shader " + name + (s == null ? " not found" : " has errors") + "; using " + fallback);
+                foreach (ShaderMessage msg in s != null ? ShaderUtil.GetShaderMessages(s) : new ShaderMessage[0])
+                    Debug.LogWarning("[RF-BUILD]   " + msg.severity + " " + msg.message + " line " + msg.line + " (" + msg.platform + ")");
+                s = Shader.Find(fallback);
+            }
+            checkedShaders[name] = s;
+            return s;
+        }
+
+        /// <summary>Compiles the main variants of every pass for OpenGL ES 3 and reports any error.</summary>
+        static bool CompilesForAndroid(Shader shader)
+        {
+            string[][] sets =
+            {
+                new string[0],
+                new[] { "_MAIN_LIGHT_SHADOWS", "FOG_EXP" },
+                new[] { "_MAIN_LIGHT_SHADOWS_CASCADE", "_SHADOWS_SOFT", "FOG_EXP", "INSTANCING_ON" },
+            };
+            try
+            {
+                ShaderData data = ShaderUtil.GetShaderData(shader);
+                ShaderData.Subshader sub = data.GetSubshader(0);
+                bool ok = true;
+                int compiled = 0;
+                for (int p = 0; p < sub.PassCount; p++)
+                {
+                    ShaderData.Pass pass = sub.GetPass(p);
+                    foreach (string[] kw in sets)
+                    {
+                        foreach (UnityEditor.Rendering.ShaderType st in new[] { UnityEditor.Rendering.ShaderType.Vertex, UnityEditor.Rendering.ShaderType.Fragment })
+                        {
+                            ShaderData.VariantCompileInfo info = pass.CompileVariant(st, kw, UnityEditor.Rendering.ShaderCompilerPlatform.GLES3x, BuildTarget.Android);
+                            compiled++;
+                            if (info.Success) continue;
+                            ok = false;
+                            Debug.LogWarning("[RF-BUILD] " + shader.name + " pass '" + pass.Name + "' " + st + " [" + string.Join(",", kw) + "] failed to compile:");
+                            if (info.Messages != null)
+                                foreach (ShaderMessage m in info.Messages)
+                                    Debug.LogWarning("[RF-BUILD]   " + m.severity + ": " + m.message + " (line " + m.line + ")");
+                        }
+                    }
+                }
+                Log("shader " + shader.name + ": " + compiled + " test variants " + (ok ? "compiled" : "had errors"));
+                return ok;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[RF-BUILD] could not test-compile " + shader.name + ": " + e.Message);
+                return true;
+            }
+        }
+
+        /// <summary>URP Lit (PBR) material: albedo, normal map and a mask map (R metal, G occlusion, A smoothness).</summary>
+        static Material Lit(string name, Texture2D albedo, Texture2D normal, Texture2D mask, float smoothScale = 1f, bool cutout = false, float bump = 1f, bool doubleSided = false)
+        {
+            var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
+            m.SetTexture("_BaseMap", albedo);
+            m.SetColor("_BaseColor", Color.white);
+            m.SetFloat("_WorkflowMode", 1f);      // metallic
+            m.SetFloat("_Surface", 0f);           // opaque
             if (normal != null)
             {
                 m.SetTexture("_BumpMap", normal);
@@ -117,48 +197,62 @@ namespace RealFPS.EditorTools
             if (mask != null)
             {
                 m.SetTexture("_MetallicGlossMap", mask);
-                m.EnableKeyword("_METALLICGLOSSMAP");
-                m.SetFloat("_GlossMapScale", smoothScale);
+                m.EnableKeyword("_METALLICSPECGLOSSMAP");
+                m.SetFloat("_Metallic", 1f);
+                m.SetFloat("_Smoothness", smoothScale);
                 m.SetTexture("_OcclusionMap", mask);
+                m.EnableKeyword("_OCCLUSIONMAP");
                 m.SetFloat("_OcclusionStrength", 1f);
             }
             else
             {
-                m.SetFloat("_Glossiness", 0.15f * smoothScale);
+                m.SetFloat("_Smoothness", 0.15f * smoothScale);
                 m.SetFloat("_Metallic", 0f);
             }
             m.SetFloat("_SmoothnessTextureChannel", 0f);
+            m.SetFloat("_EnvironmentReflections", 1f);
+            m.SetFloat("_SpecularHighlights", 1f);
+            m.SetFloat("_ReceiveShadows", 1f);
             if (cutout)
             {
-                m.SetFloat("_Mode", 1f);
-                m.SetOverrideTag("RenderType", "TransparentCutout");
-                m.EnableKeyword("_ALPHATEST_ON");
+                m.SetFloat("_AlphaClip", 1f);
                 m.SetFloat("_Cutoff", 0.5f);
-                m.renderQueue = 2450;
+                m.EnableKeyword("_ALPHATEST_ON");
+                m.SetOverrideTag("RenderType", "TransparentCutout");
+                m.renderQueue = (int)RenderQueue.AlphaTest;
             }
+            if (doubleSided) m.SetFloat("_Cull", 0f);
             m.enableInstancing = true;
             return SaveMat(m);
         }
 
         static Material Foliage(string name, Texture2D albedo, float translucency, float wind, float cutoff = 0.42f)
         {
-            var m = new Material(Shader.Find("RealFPS/Foliage")) { name = name };
-            m.SetTexture("_MainTex", albedo);
+            var m = new Material(GameShader("RealFPS/Foliage", "Universal Render Pipeline/Simple Lit")) { name = name };
+            m.SetTexture("_BaseMap", albedo);
+            m.SetColor("_BaseColor", Color.white);
             m.SetFloat("_Translucency", translucency);
             m.SetFloat("_WindStrength", wind);
             m.SetFloat("_Cutoff", cutoff);
+            if (m.shader.name != "RealFPS/Foliage")
+            {
+                m.SetFloat("_AlphaClip", 1f);
+                m.EnableKeyword("_ALPHATEST_ON");
+                m.SetFloat("_Cull", 0f);
+                m.renderQueue = (int)RenderQueue.AlphaTest;
+            }
             m.enableInstancing = true;
             return SaveMat(m);
         }
 
         static Material Particles(string name, Texture2D tex, bool additive, Color tint)
         {
-            Shader s = Shader.Find(additive ? "Mobile/Particles/Additive" : "Mobile/Particles/Alpha Blended");
-            if (s == null) s = Shader.Find(additive ? "Legacy Shaders/Particles/Additive" : "Legacy Shaders/Particles/Alpha Blended");
-            var m = new Material(s) { name = name };
-            m.SetTexture("_MainTex", tex);
-            if (m.HasProperty("_TintColor")) m.SetColor("_TintColor", tint);
-            if (m.HasProperty("_Color")) m.SetColor("_Color", tint);
+            var m = new Material(GameShader("RealFPS/Particle", "Universal Render Pipeline/Particles/Unlit")) { name = name };
+            m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", tint);
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", additive ? (float)BlendMode.One : (float)BlendMode.OneMinusSrcAlpha);
+            m.renderQueue = (int)RenderQueue.Transparent;
             return SaveMat(m);
         }
 
@@ -204,7 +298,9 @@ namespace RealFPS.EditorTools
 
         static void SetStatic(GameObject go)
         {
-            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic);
+            // No static batching: it would duplicate the high-detail rock meshes in memory.
+            // Draw calls stay cheap through URP's SRP Batcher and distance culling instead.
+            GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)0);
         }
 
         static void SetLayerRecursive(GameObject go, int layer)
@@ -244,7 +340,7 @@ namespace RealFPS.EditorTools
 
             var cube = Load<Cubemap>(Art + "/Sky/sky_cube.png");
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
-            RenderSettings.customReflection = cube;
+            RenderSettings.customReflectionTexture = cube;
             RenderSettings.reflectionIntensity = 1f;
             RenderSettings.reflectionBounces = 1;
 
@@ -341,6 +437,7 @@ namespace RealFPS.EditorTools
 
             string[] names = { "grass", "dirt", "rock", "shore" };
             float[] tiles = { 2.4f, 3.2f, 6.0f, 2.5f };
+            float[] smooth = { 0.08f, 0.06f, 0.16f, 0.12f };
             var layers = new TerrainLayer[4];
             for (int k = 0; k < 4; k++)
             {
@@ -351,7 +448,7 @@ namespace RealFPS.EditorTools
                     normalMapTexture = Tex("Terrain/" + names[k] + "_normal.png"),
                     tileSize = new Vector2(tiles[k], tiles[k]),
                     normalScale = k == 2 ? 1.3f : 1f,
-                    smoothness = 1f,
+                    smoothness = smooth[k],
                     metallic = 0f
                 };
                 AssetDatabase.CreateAsset(tl, Gen + "/Layer_" + names[k] + ".terrainlayer");
@@ -386,25 +483,113 @@ namespace RealFPS.EditorTools
                 }
             }
             tdata.SetAlphamaps(0, 0, alpha);
+            splat = alpha;
             AssetDatabase.CreateAsset(tdata, Gen + "/Terrain.asset");
 
             GameObject go = Terrain.CreateTerrainGameObject(tdata);
             go.name = "Terrain";
             go.transform.position = tp;
             terrain = go.GetComponent<Terrain>();
-            var tm = new Material(Shader.Find("Nature/Terrain/Standard")) { name = "TerrainStandard" };
+            // URP's terrain shader: 4 PBR layers with normal maps in one pass, GPU-instanced patches
+            var tm = new Material(Shader.Find("Universal Render Pipeline/Terrain/Lit")) { name = "TerrainLit" };
             tm.EnableKeyword("_NORMALMAP");
+            if (tm.HasProperty("_EnableInstancedPerPixelNormal"))
+            {
+                tm.SetFloat("_EnableInstancedPerPixelNormal", 1f);
+                tm.EnableKeyword("_TERRAIN_INSTANCED_PERPIXEL_NORMAL");
+            }
             SaveMat(tm);
+            Log("terrain shader " + tm.shader.name + " supported " + tm.shader.isSupported);
             terrain.materialTemplate = tm;
-            terrain.heightmapPixelError = 8f;
-            terrain.basemapDistance = 90f;
-            terrain.drawTreesAndFoliage = false;
-            terrain.drawInstanced = false;
+            terrain.heightmapPixelError = 6f;
+            terrain.basemapDistance = 250f;
+            terrain.drawTreesAndFoliage = true;      // terrain grass (no terrain trees are used)
+            terrain.drawInstanced = true;
             terrain.reflectionProbeUsage = ReflectionProbeUsage.Off;
             terrain.allowAutoConnect = false;
             terrain.shadowCastingMode = ShadowCastingMode.Off;
-            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.OccludeeStatic);
+            terrain.detailObjectDistance = 28f;
+            terrain.detailObjectDensity = 0.65f;
             Log("terrain built");
+        }
+
+        /// <summary>
+        /// Meadow grass as terrain details (camera-facing grass cards with wind, drawn by URP's
+        /// terrain grass shader). Density follows the grass layer of the splat map and thins out
+        /// on trails, shores, steep ground and under the forest.
+        /// </summary>
+        static void BuildGrass()
+        {
+            // a dense tuft (most of the cover) and two taller stalks for variety
+            string[] files = { "Grass/detail_wide_1.png", "Grass/detail_tall_2.png", "Grass/detail_tall_3.png" };
+            float[] minW = { 0.85f, 0.34f, 0.34f }, maxW = { 1.35f, 0.52f, 0.52f };
+            float[] minH = { 0.42f, 0.5f, 0.5f }, maxH = { 0.68f, 0.8f, 0.8f };
+            float[] share = { 1.25f, 0.55f, 0.55f };
+            var protos = new List<DetailPrototype>();
+            var used = new List<int>();
+            for (int k = 0; k < files.Length; k++)
+            {
+                Texture2D t = AssetDatabase.LoadAssetAtPath<Texture2D>(Art + "/" + files[k]);
+                if (t == null) { Debug.LogWarning("[RF-BUILD] grass texture missing: " + files[k]); continue; }
+                protos.Add(new DetailPrototype
+                {
+                    prototypeTexture = t,
+                    usePrototypeMesh = false,
+                    renderMode = DetailRenderMode.GrassBillboard,
+                    minWidth = minW[k], maxWidth = maxW[k], minHeight = minH[k], maxHeight = maxH[k],
+                    healthyColor = new Color(0.88f, 0.93f, 0.8f),
+                    dryColor = new Color(0.84f, 0.8f, 0.64f),
+                    noiseSpread = 0.35f,
+                    noiseSeed = 11 + k * 31
+                });
+                used.Add(k);
+            }
+            if (protos.Count == 0) return;
+            tdata.detailPrototypes = protos.ToArray();
+            tdata.SetDetailScatterMode(DetailScatterMode.InstanceCountMode);
+            int dr = 512;
+            tdata.SetDetailResolution(dr, 32);
+            tdata.wavingGrassStrength = 0.32f;
+            tdata.wavingGrassAmount = 0.28f;
+            tdata.wavingGrassSpeed = 0.35f;
+            tdata.wavingGrassTint = new Color(0.9f, 0.94f, 0.84f, 1f);
+
+            float size = RFLayout.TerrainSize;
+            Vector3 tp = RFLayout.TerrainPos;
+            int ar = splat.GetLength(0);
+            var maps = new int[protos.Count][,];
+            for (int k = 0; k < maps.Length; k++) maps[k] = new int[dr, dr];
+            long total = 0;
+            for (int j = 0; j < dr; j++)
+            {
+                float z = tp.z + (j + 0.5f) / dr * size;
+                for (int i = 0; i < dr; i++)
+                {
+                    float x = tp.x + (i + 0.5f) / dr * size;
+                    if (RFLayout.ValleyR(x, z) > 205f) continue;
+                    float h = RFLayout.Height(x, z);
+                    if (h < RFLayout.Water + 0.35f) continue;
+                    int si = Mathf.Clamp(i * ar / dr, 0, ar - 1), sj = Mathf.Clamp(j * ar / dr, 0, ar - 1);
+                    float g = splat[sj, si, 0];
+                    if (g < 0.3f) continue;
+                    float slope = Slope(x, z);
+                    if (slope > 32f) continue;
+                    float forest = RFLayout.Forest(x, z, h, slope);
+                    float patchy = Mathf.PerlinNoise(x * 0.06f + 13.1f, z * 0.06f + 7.3f);
+                    float d = (g - 0.3f) / 0.7f * Mathf.Lerp(0.35f, 1.25f, patchy) * (1f - 0.65f * Mathf.Clamp01(forest));
+                    if (RFLayout.TrailDistance(x, z) < 1.6f) d *= 0.15f;
+                    for (int k = 0; k < maps.Length; k++)
+                    {
+                        float v = d * share[used[k]] + (float)rng.NextDouble() * 0.9f - 0.45f;
+                        int n = Mathf.Clamp(Mathf.RoundToInt(v), 0, 3);
+                        maps[k][j, i] = n;
+                        total += n;
+                    }
+                }
+            }
+            for (int k = 0; k < maps.Length; k++) tdata.SetDetailLayer(0, 0, k, maps[k]);
+            EditorUtility.SetDirty(tdata);
+            Log("grass: " + protos.Count + " kinds, " + total + " tufts");
         }
 
         // ------------------------------------------------------------------ water
@@ -433,7 +618,7 @@ namespace RealFPS.EditorTools
             tex.Apply(false, false);
             AssetDatabase.CreateAsset(tex, Gen + "/LakeDepth.asset");
 
-            var m = new Material(Shader.Find("RealFPS/Water")) { name = "Water" };
+            var m = new Material(GameShader("RealFPS/Water", "Universal Render Pipeline/Unlit")) { name = "Water" };
             m.SetTexture("_NormalMap", Tex("Water/water_normal.png"));
             m.SetTexture("_DepthTex", tex);
             m.SetVector("_DepthRect", new Vector4(b.min.x, b.min.z, 1f / b.size.x, 1f / b.size.z));
@@ -482,7 +667,7 @@ namespace RealFPS.EditorTools
             Material m;
             if (mats.TryGetValue(key, out m)) return m;
             Texture2D alb = TexAny("Models/" + id + "/" + tag + "_albedo");
-            return Standard(key, alb, Tex("Models/" + id + "/" + tag + "_normal.png"), Tex("Models/" + id + "/" + tag + "_mask.png"), smooth, cutout);
+            return Lit(key, alb, Tex("Models/" + id + "/" + tag + "_normal.png"), Tex("Models/" + id + "/" + tag + "_mask.png"), smooth, cutout);
         }
 
         /// <summary>Places one model part with its bottom at `ground` (minus sink).</summary>
@@ -785,6 +970,7 @@ namespace RealFPS.EditorTools
                     go.name = "RockFace";
                     SetStatic(go);
                     Occupy(s.x, s.y, Mathf.Max(f.Key.size.x, f.Key.size.z) * scale * 0.5f);
+                    groundPatches.Add(new Vector4(s.x, s.y, Mathf.Max(f.Key.size.x, f.Key.size.z) * scale * 0.65f, 0.9f));
                     placed++;
                 }
             }
@@ -829,6 +1015,7 @@ namespace RealFPS.EditorTools
                     if (!big) SetLayerRecursive(go, QualityManager.DetailLayer);
                     else if (s.Key.size.y * scale < 1.4f) SetLayerRecursive(go, QualityManager.PropLayer);
                     Occupy(x, z, radius);
+                    groundPatches.Add(new Vector4(x, z, radius * 1.25f, big ? 0.85f : 0.5f));
                     count++;
                 }
                 placed += count;
@@ -837,21 +1024,21 @@ namespace RealFPS.EditorTools
         }
 
         // ------------------------------------------------------------------ trees
-        static void BuildTrees()
+        static TreeRenderer BuildTrees()
         {
-            Material bark = Standard("Bark", Tex("Trees/bark_albedo.jpg"), Tex("Trees/bark_normal.png"), Tex("Trees/bark_mask.png"), 1f, false, 1.2f);
+            Material bark = Lit("Bark", Tex("Trees/bark_albedo.jpg"), Tex("Trees/bark_normal.png"), Tex("Trees/bark_mask.png"), 1f, false, 1.2f);
             Material twig = Foliage("Needles", Tex("Trees/twig_atlas.png"), 0.65f, 1f);
-            var farTree = new Material(Shader.Find("RealFPS/Distant")) { name = "FarTree" };
+            var farTree = new Material(GameShader("RealFPS/Distant", "Universal Render Pipeline/Simple Lit")) { name = "FarTree" };
             farTree.enableInstancing = true;
             SaveMat(farTree);
             twig.SetColor("_TransColor", new Color(0.55f, 0.7f, 0.22f, 1f));
             twig.SetFloat("_Smoothness", 0.22f);
 
-            // variants
+            // variants: three detail levels each (full crown, flat cards, coloured silhouette)
             int variants = 6;
-            var templates = new GameObject[variants];
-            var heights = new float[variants];
-            var templRoot = Child(root, "TreeTemplates");
+            var vdata = new TreeRenderer.Variant[variants];
+            var trunkRadius = new float[variants];
+            var vHeight = new float[variants];
             for (int v = 0; v < variants; v++)
             {
                 float h = Mathf.Lerp(13f, 20f, v / (float)(variants - 1)) + R(-1f, 1f);
@@ -859,37 +1046,18 @@ namespace RealFPS.EditorTools
                 tm.lod0 = SaveMesh(tm.lod0);
                 tm.lod1 = SaveMesh(tm.lod1);
                 tm.lod2 = SaveMesh(tm.lod2);
-                heights[v] = h;
-                var go = new GameObject("Fir" + v);
-                go.transform.SetParent(templRoot, false);
-                var l0 = new GameObject("LOD0");
-                l0.transform.SetParent(go.transform, false);
-                l0.AddComponent<MeshFilter>().sharedMesh = tm.lod0;
-                var r0 = l0.AddComponent<MeshRenderer>();
-                r0.sharedMaterials = new[] { bark, twig };
-                var l1 = new GameObject("LOD1");
-                l1.transform.SetParent(go.transform, false);
-                l1.AddComponent<MeshFilter>().sharedMesh = tm.lod1;
-                var r1 = l1.AddComponent<MeshRenderer>();
-                r1.sharedMaterials = new[] { bark, twig };
-                var l2 = new GameObject("LOD2");
-                l2.transform.SetParent(go.transform, false);
-                l2.AddComponent<MeshFilter>().sharedMesh = tm.lod2;
-                var r2 = l2.AddComponent<MeshRenderer>();
-                r2.sharedMaterial = farTree;
-                r2.shadowCastingMode = ShadowCastingMode.Off;
-                var lg = go.AddComponent<LODGroup>();
-                lg.SetLODs(new[] { new LOD(0.3f, new Renderer[] { r0 }), new LOD(0.075f, new Renderer[] { r1 }), new LOD(0.004f, new Renderer[] { r2 }) });
-                lg.RecalculateBounds();
-                var cap = go.AddComponent<CapsuleCollider>();
-                cap.radius = tm.trunkRadius * 1.1f;
-                cap.height = 5f;
-                cap.center = new Vector3(0f, 2.5f, 0f);
-                templates[v] = go;
-                Log("tree variant " + v + " h=" + h.ToString("0.0") + " lod0 tris=" + (tm.lod0.triangles.Length / 3) + " lod1 tris=" + (tm.lod1.triangles.Length / 3));
+                vdata[v] = new TreeRenderer.Variant { lod0 = tm.lod0, lod1 = tm.lod1, lod2 = tm.lod2 };
+                trunkRadius[v] = tm.trunkRadius;
+                vHeight[v] = h;
+                Log("tree variant " + v + " h=" + h.ToString("0.0") + " lod0 tris=" + (tm.lod0.triangles.Length / 3) + " lod1 tris=" + (tm.lod1.triangles.Length / 3) +
+                    " lod2 tris=" + (tm.lod2.triangles.Length / 3));
             }
 
-            int count = 0;
+            var matrices = new List<Matrix4x4>();
+            var variantOf = new List<int>();
+            var heights = new List<float>();
+            var colliders = Child(root, "TreeColliders");
+            int withCollider = 0;
             float step = 5.4f;
             Vector3 tp = RFLayout.TerrainPos;
             for (float x = tp.x + 6f; x < tp.x + RFLayout.TerrainSize - 6f; x += step)
@@ -908,18 +1076,41 @@ namespace RealFPS.EditorTools
                     if ((float)rng.NextDouble() > f * 0.92f) continue;
                     if (!Free(px, pz, 1.2f)) continue;
                     int v = rng.Next(variants);
-                    float s = R(0.82f, 1.22f);
-                    if (vr > 150f) s *= 0.85f;
-                    var t = (GameObject)Object.Instantiate(templates[v], treesRoot);
-                    t.name = "Fir";
-                    t.transform.position = new Vector3(px, h - 0.15f, pz);
-                    t.transform.rotation = Quaternion.Euler(R(-2.5f, 2.5f), R(0f, 360f), R(-2.5f, 2.5f));
-                    t.transform.localScale = Vector3.one * s;
-                    count++;
+                    float sc = R(0.82f, 1.22f);
+                    if (vr > 150f) sc *= 0.85f;
+                    Vector3 pos = new Vector3(px, h - 0.15f, pz);
+                    Quaternion rot = Quaternion.Euler(R(-2.5f, 2.5f), R(0f, 360f), R(-2.5f, 2.5f));
+                    matrices.Add(Matrix4x4.TRS(pos, rot, Vector3.one * sc));
+                    variantOf.Add(v);
+                    heights.Add(vHeight[v] * sc);
+                    // trunks only need colliders where the player can walk
+                    Vector2 fromPlay = new Vector2(px, pz) - RFLayout.PlayCenter;
+                    if (fromPlay.magnitude < RFLayout.PlayRadius + 12f)
+                    {
+                        var c = new GameObject("Trunk");
+                        c.transform.SetParent(colliders, false);
+                        c.transform.position = pos;
+                        var cap = c.AddComponent<CapsuleCollider>();
+                        cap.radius = trunkRadius[v] * 1.1f * sc;
+                        cap.height = 5f;
+                        cap.center = new Vector3(0f, 2.5f, 0f);
+                        withCollider++;
+                    }
                 }
             }
-            Object.DestroyImmediate(templRoot.gameObject);
-            Log("trees placed: " + count);
+
+            var forest = new GameObject("Forest");
+            forest.transform.SetParent(root, false);
+            var tr = forest.AddComponent<TreeRenderer>();
+            tr.variants = vdata;
+            tr.bark = bark;
+            tr.needles = twig;
+            tr.far = farTree;
+            tr.matrices = matrices.ToArray();
+            tr.variantOf = variantOf.ToArray();
+            tr.heights = heights.ToArray();
+            Log("trees placed: " + matrices.Count + " (" + withCollider + " with trunk colliders), drawn with GPU instancing");
+            return tr;
         }
 
         // ------------------------------------------------------------------ small detail: ferns, branches, stumps
@@ -981,11 +1172,47 @@ namespace RealFPS.EditorTools
             Log("detail: ferns " + nf + " branches " + nb + " stumps " + ns);
         }
 
+        /// <summary>Forest-floor dirt around rock bases so they sit in the ground instead of on top of it.</summary>
+        static void BlendGroundAroundRocks()
+        {
+            if (splat == null || groundPatches.Count == 0) return;
+            int ar = splat.GetLength(0);
+            float size = RFLayout.TerrainSize;
+            Vector3 tp = RFLayout.TerrainPos;
+            foreach (Vector4 g in groundPatches)
+            {
+                float r = Mathf.Max(0.8f, g.z) * 1.35f;
+                int i0 = Mathf.Max(0, Mathf.FloorToInt((g.x - r - tp.x) / size * ar));
+                int i1 = Mathf.Min(ar - 1, Mathf.CeilToInt((g.x + r - tp.x) / size * ar));
+                int j0 = Mathf.Max(0, Mathf.FloorToInt((g.y - r - tp.z) / size * ar));
+                int j1 = Mathf.Min(ar - 1, Mathf.CeilToInt((g.y + r - tp.z) / size * ar));
+                for (int j = j0; j <= j1; j++)
+                {
+                    float z = tp.z + (j + 0.5f) / ar * size;
+                    for (int i = i0; i <= i1; i++)
+                    {
+                        float x = tp.x + (i + 0.5f) / ar * size;
+                        float d = Mathf.Sqrt((x - g.x) * (x - g.x) + (z - g.y) * (z - g.y));
+                        float t = 1f - Mathf.Clamp01((d - r * 0.45f) / (r * 0.55f));
+                        if (t <= 0f) continue;
+                        t *= g.w * (0.75f + 0.25f * Mathf.PerlinNoise(x * 0.7f, z * 0.7f));
+                        float grass = splat[j, i, 0];
+                        float moved = grass * t;
+                        splat[j, i, 0] = grass - moved;
+                        splat[j, i, 1] += moved;
+                    }
+                }
+            }
+            tdata.SetAlphamaps(0, 0, splat);
+            EditorUtility.SetDirty(tdata);
+            Log("ground blended around " + groundPatches.Count + " rocks");
+        }
+
         // ------------------------------------------------------------------ distant mountains
         static void BuildFarMountains()
         {
             Mesh m = SaveMesh(RFMeshUtil.FarMountains(RFLayout.ValleyCenter, 430f, 1500f, 160, 10, RFLayout.Water));
-            var mat = new Material(Shader.Find("RealFPS/Distant")) { name = "FarMountains" };
+            var mat = new Material(GameShader("RealFPS/Distant", "Universal Render Pipeline/Simple Lit")) { name = "FarMountains" };
             mat.SetTexture("_Detail", Tex("Terrain/rock_albedo.png"));
             mat.SetFloat("_DetailScale", 0.012f);
             SaveMat(mat);
@@ -1005,17 +1232,10 @@ namespace RealFPS.EditorTools
             List<RFMeshUtil.Part> parts = ModelParts("Lantern_01", false);
             var model = Load<GameObject>(Art + "/Models/Lantern_01/Lantern_01.fbx");
             Material painted = ModelMat("Lantern_01", "painted", false, 0.9f);
-            var glass = new Material(Shader.Find("Standard")) { name = "LanternGlass" };
-            glass.SetFloat("_Mode", 3f);
-            glass.SetOverrideTag("RenderType", "Transparent");
-            glass.SetInt("_SrcBlend", (int)BlendMode.One);
-            glass.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
-            glass.SetInt("_ZWrite", 0);
-            glass.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-            glass.renderQueue = 3000;
-            glass.SetColor("_Color", new Color(0.9f, 0.85f, 0.75f, 0.18f));
-            glass.SetFloat("_Glossiness", 0.92f);
-            glass.SetFloat("_Metallic", 0f);
+            var glass = new Material(GameShader("RealFPS/Glass", "Universal Render Pipeline/Unlit")) { name = "LanternGlass" };
+            glass.SetColor("_BaseColor", new Color(0.9f, 0.85f, 0.75f, 0.18f));
+            glass.SetFloat("_Smoothness", 0.92f);
+            glass.renderQueue = (int)RenderQueue.Transparent;
             SaveMat(glass);
             Material glowMat = Particles("LanternGlow", Tex("UI/glow.png"), true, new Color(1f, 0.72f, 0.38f, 0.55f));
             Material flameMat = Particles("LanternFlame", Tex("UI/flame.png"), true, new Color(1f, 0.75f, 0.45f, 0.9f));
@@ -1085,9 +1305,10 @@ namespace RealFPS.EditorTools
         }
 
         // ------------------------------------------------------------------ player, camera, game
-        static void BuildGame(Light sun, SkyLighting skyLighting, Lantern[] lanterns)
+        static void BuildGame(Light sun, SkyLighting skyLighting, Lantern[] lanterns, TreeRenderer trees)
         {
-            // camera
+            // camera: URP renders straight to the screen at the profile's render scale, with
+            // MSAA from the pipeline asset and the post-processing volume below
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
@@ -1097,25 +1318,23 @@ namespace RealFPS.EditorTools
             cam.allowHDR = true;
             cam.allowMSAA = true;
             cam.clearFlags = CameraClearFlags.Skybox;
-            camGo.AddComponent<AudioListener>();
             cam.depth = 0f;
+            camGo.AddComponent<AudioListener>();
+            var camData = camGo.AddComponent<UniversalAdditionalCameraData>();
+            camData.renderPostProcessing = true;
+            camData.antialiasing = AntialiasingMode.None;
+            camData.renderShadows = true;
+            camData.requiresDepthOption = CameraOverrideOption.Off;
+            camData.requiresColorOption = CameraOverrideOption.Off;
+            camData.dithering = true;
+            camData.stopNaN = false;
 
-            // the "present" camera draws nothing itself: it scales the scene image up to the
-            // screen with post-processing (see PostFX), under the sharp full-resolution UI
-            var presentGo = new GameObject("Present Camera");
-            var present = presentGo.AddComponent<Camera>();
-            present.cullingMask = 0;
-            present.clearFlags = CameraClearFlags.SolidColor;
-            present.backgroundColor = Color.black;
-            present.depth = 10f;
-            present.allowHDR = false;
-            present.allowMSAA = false;
-            present.useOcclusionCulling = false;
-            present.nearClipPlane = 0.1f;
-            present.farClipPlane = 1f;
-            var post = presentGo.AddComponent<PostFX>();
-            post.shader = Shader.Find("Hidden/RealFPS/Post");
-            post.sceneCamera = cam;
+            // global post-processing volume (tonemapping, grading, vignette; bloom on High)
+            var volGo = new GameObject("Post Processing");
+            var volume = volGo.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 1f;
+            volume.sharedProfile = RFRenderSetup.CreateVolumeProfile();
 
             // player
             Vector2 sp = RFLayout.Spawn;
@@ -1159,23 +1378,9 @@ namespace RealFPS.EditorTools
             q.cam = cam;
             q.sun = sun;
             q.terrain = terrain;
-            q.post = post;
+            q.trees = trees;
+            q.volume = volume;
             game.quality = q;
-
-            var grass = gameGo.AddComponent<GrassRenderer>();
-            var gm = new Material(Shader.Find("RealFPS/Grass")) { name = "Grass" };
-            gm.SetTexture("_MainTex", Tex("Grass/grass_atlas.png"));
-            gm.enableInstancing = true;
-            SaveMat(gm);
-            assets.grassMaterial = gm;
-            grass.terrain = terrain;
-            grass.material = gm;
-            grass.rects = art.grassRects;
-            grass.kinds = art.grassKinds;
-            grass.waterLevel = RFLayout.Water;
-            grass.worldCenter = new Vector3(RFLayout.PlayCenter.x, 0f, RFLayout.PlayCenter.y);
-            grass.worldRadius = RFLayout.PlayRadius;
-            q.grass = grass;
 
             var amb = gameGo.AddComponent<AmbientAudio>();
             amb.lakeCenter = RFLayout.LakeCenter;
@@ -1260,7 +1465,6 @@ namespace RealFPS.EditorTools
             };
             a.stepGrass = Steps("grass", 4); a.stepDirt = Steps("dirt", 4); a.stepRock = Steps("rock", 3);
             a.stepWood = Steps("wood", 3); a.stepWater = Steps("water", 3);
-            a.postShader = Shader.Find("Hidden/RealFPS/Post");
         }
     }
 }

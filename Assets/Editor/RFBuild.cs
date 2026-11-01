@@ -1,18 +1,18 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
-using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace RealFPS.EditorTools
 {
     /// <summary>
-    /// Command-line entry point used by CI:
+    /// Command-line entry point used by CI (Unity 6, Universal Render Pipeline):
     ///   Unity -batchmode -quit -buildTarget Android -executeMethod RealFPS.EditorTools.RFBuild.BuildAndroid
-    /// Configures the project for mobile (linear lighting, HDR, ASTC), builds the
-    /// scene from code and produces the APK.
+    /// Configures the project for mobile (linear lighting, URP with three graphics profiles,
+    /// ASTC textures), builds the scene from code and produces the APK.
     /// </summary>
     public static class RFBuild
     {
@@ -29,6 +29,7 @@ namespace RealFPS.EditorTools
                 Log("Preparing build " + buildNumber + " -> " + output);
 
                 ConfigureProject();
+                RFRenderSetup.Setup();
                 AssetDatabase.Refresh();
                 RFArtInfo art = RFArtInfo.Load();
                 RFWorld.Build(art);
@@ -97,29 +98,15 @@ namespace RealFPS.EditorTools
                 PlayerSettings.colorSpace = ColorSpace.Linear;
                 Log("colour space -> linear");
             }
+            // OpenGL ES 3 is the most compatible API on older Mali / Adreno phones (Galaxy A21s
+            // class); the forest is GPU-instanced, so the draw-call count stays low anyway.
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
             GraphicsSettings.lightsUseLinearIntensity = true;
             GraphicsSettings.lightsUseColorTemperature = false;
             EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
-
-            foreach (GraphicsTier tier in new[] { GraphicsTier.Tier1, GraphicsTier.Tier2, GraphicsTier.Tier3 })
-            {
-                TierSettings ts = EditorGraphicsSettings.GetTierSettings(BuildTargetGroup.Android, tier);
-                ts.renderingPath = RenderingPath.Forward;
-                ts.hdr = true;
-                ts.hdrMode = CameraHDRMode.R11G11B10;
-                ts.standardShaderQuality = ShaderQuality.Medium;
-                ts.cascadedShadowMaps = true;
-                ts.reflectionProbeBoxProjection = false;
-                ts.reflectionProbeBlending = false;
-                ts.semitransparentShadows = false;
-                ts.enableLPPV = false;
-                ts.detailNormalMap = false;
-                ts.prefer32BitShadowMaps = false;
-                EditorGraphicsSettings.SetTierSettings(BuildTargetGroup.Android, tier, ts);
-            }
             KeepFogVariants();
+            SetPlayerSetting("activeInputHandler", 0);   // classic touch input (Input Manager)
             PlayerSettings.bakeCollisionMeshes = true;
             Log("project configured");
         }
@@ -146,6 +133,24 @@ namespace RealFPS.EditorTools
             }
         }
 
+        static void SetPlayerSetting(string name, int value)
+        {
+            try
+            {
+                UnityEngine.Object[] objs = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+                if (objs == null || objs.Length == 0) return;
+                var so = new SerializedObject(objs[0]);
+                SerializedProperty p = so.FindProperty(name);
+                if (p == null) { Debug.LogWarning("[RF-BUILD] player setting not found: " + name); return; }
+                p.intValue = value;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[RF-BUILD] Could not set " + name + ": " + e.Message);
+            }
+        }
+
         static void SetBool(SerializedObject so, string name, bool value)
         {
             SerializedProperty p = so.FindProperty(name);
@@ -157,16 +162,18 @@ namespace RealFPS.EditorTools
         {
             PlayerSettings.companyName = "SilentValley";
             PlayerSettings.productName = "Silent Valley";
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, AppId);
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, AppId);
             PlayerSettings.bundleVersion = "1.0." + buildNumber;
             PlayerSettings.Android.bundleVersionCode = buildNumber;
 
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel22;
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+            PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
             PlayerSettings.stripEngineCode = false;
-            PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Android, ManagedStrippingLevel.Low);
+            PlayerSettings.SetIl2CppCompilerConfiguration(NamedBuildTarget.Android, Il2CppCompilerConfiguration.Release);
             PlayerSettings.MTRendering = true;
             PlayerSettings.Android.optimizedFramePacing = true;
 
@@ -180,9 +187,9 @@ namespace RealFPS.EditorTools
 
             PlayerSettings.SplashScreen.backgroundColor = Color.black;
             PlayerSettings.SplashScreen.unityLogoStyle = PlayerSettings.SplashScreen.UnityLogoStyle.LightOnDark;
+            PlayerSettings.SplashScreen.show = false;
 
             EditorUserBuildSettings.buildAppBundle = false;
-            EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
             EditorUserBuildSettings.development = false;
 
             string keystore = Environment.GetEnvironmentVariable("RF_KEYSTORE");
@@ -211,7 +218,7 @@ namespace RealFPS.EditorTools
                 Debug.LogWarning("[RF-BUILD] App icon not found at " + IconPath);
                 return;
             }
-            PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Unknown, new[] { icon });
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
             Log("app icon set");
         }
     }

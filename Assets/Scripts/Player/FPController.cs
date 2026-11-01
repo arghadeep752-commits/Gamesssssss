@@ -289,9 +289,18 @@ namespace RealFPS
             // breathing when standing still
             float breathe = Mathf.Sin(Time.time * 1.4f) * 0.006f * Mathf.Clamp01(idleTime);
 
-            // landing dip spring
-            landVel += (-landDip * 90f - landVel * 13f) * dt;
-            landDip += landVel * dt;
+            // landing dip: a damped spring, integrated in small fixed steps so it stays
+            // stable at any frame rate (one big step at a low frame rate used to blow up)
+            float springTime = Mathf.Min(dt, 0.1f);
+            int springSteps = Mathf.Max(1, Mathf.CeilToInt(springTime / 0.008f));
+            float h = springTime / springSteps;
+            for (int i = 0; i < springSteps; i++)
+            {
+                landVel += (-landDip * 90f - landVel * 13f) * h;
+                landDip += landVel * h;
+            }
+            landDip = Mathf.Clamp(landDip, -2f, 2f);
+            landVel = Mathf.Clamp(landVel, -20f, 20f);
 
             head.localPosition = new Vector3(bobX, eye + bobY + breathe + landDip * 0.1f, 0f);
             head.localRotation = Quaternion.Euler(pitch, 0f, roll);

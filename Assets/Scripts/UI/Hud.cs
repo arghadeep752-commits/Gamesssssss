@@ -243,7 +243,8 @@ namespace RealFPS
                 if (fpsAccum > 0.5f)
                 {
                     float scale = QualityManager.I != null ? QualityManager.I.RenderScale : 1f;
-                    fpsText.text = Mathf.RoundToInt(fpsFrames / fpsAccum) + " FPS  ·  " + Mathf.RoundToInt(scale * 100f) + "% res";
+                    string level = QualityManager.I != null ? QualityManager.I.Level.ToString() : "";
+                    fpsText.text = Mathf.RoundToInt(fpsFrames / fpsAccum) + " FPS  ·  " + Mathf.RoundToInt(scale * 100f) + "% res  ·  " + level;
                     fpsAccum = 0f;
                     fpsFrames = 0;
                 }

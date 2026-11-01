@@ -47,17 +47,60 @@ namespace RealFPS
             if (Changed != null) Changed();
         }
 
-        /// <summary>A sensible starting level from the device's memory and GPU.</summary>
+        /// <summary>
+        /// A sensible starting level from the phone's GPU and memory (the player can change it
+        /// in Settings). Entry-level GPUs such as the Mali-G52 in the Galaxy A21s start on Low,
+        /// mid-range GPUs on Medium, recent flagship GPUs with plenty of memory on High.
+        /// </summary>
         public static GraphicsLevel DefaultLevel()
         {
             int ram = SystemInfo.systemMemorySize;        // MB
-            int vram = SystemInfo.graphicsMemorySize;     // MB (often unknown on Android)
             string gpu = (SystemInfo.graphicsDeviceName ?? "").ToLowerInvariant();
-            if (ram > 0 && ram < 2600) return GraphicsLevel.Low;
-            bool strongGpu = gpu.Contains("adreno (tm) 7") || gpu.Contains("adreno (tm) 6") && !gpu.Contains("adreno (tm) 610") && !gpu.Contains("adreno (tm) 612")
-                             || gpu.Contains("mali-g7") || gpu.Contains("mali-g6") || gpu.Contains("xclipse") || gpu.Contains("immortalis");
-            if (strongGpu && ram >= 5500) return GraphicsLevel.High;
+            if (ram > 0 && ram < 3000) return GraphicsLevel.Low;
+            int tier = GpuTier(gpu);
+            if (tier <= 0) return GraphicsLevel.Low;
+            if (tier >= 2 && ram >= 5500) return GraphicsLevel.High;
             return GraphicsLevel.Medium;
+        }
+
+        /// <summary>0 = entry level, 1 = mid range, 2 = high end (unknown GPUs count as mid range).</summary>
+        public static int GpuTier(string gpu)
+        {
+            int n = NumberAfter(gpu, "adreno");
+            if (n > 0)
+            {
+                if (n >= 650) return 2;                       // Snapdragon 865 and newer
+                if (n >= 618) return 1;                       // Snapdragon 7xx-class
+                return 0;                                     // Adreno 3xx-5xx, 610/612/613
+            }
+            if (gpu.Contains("immortalis") || gpu.Contains("xclipse")) return 2;
+            if (gpu.Contains("mali"))
+            {
+                int g = NumberAfter(gpu, "mali-g");
+                if (g <= 0) return 0;                         // Mali-4xx / T-series
+                if (g >= 710 || g == 77 || g == 78) return 2;
+                if (g == 31 || g == 51 || g == 52) return 0;  // e.g. Galaxy A21s (Mali-G52 MP1)
+                return 1;                                     // G57, G68, G72, G76 ...
+            }
+            if (gpu.Contains("powervr") || gpu.Contains("ge8") || gpu.Contains("img bxm")) return 0;
+            return 1;
+        }
+
+        static int NumberAfter(string s, string key)
+        {
+            int i = s.IndexOf(key, System.StringComparison.Ordinal);
+            if (i < 0) return 0;
+            i += key.Length;
+            int limit = Mathf.Min(s.Length, i + 8);
+            while (i < limit && !char.IsDigit(s[i])) i++;
+            int v = 0, digits = 0;
+            while (i < s.Length && char.IsDigit(s[i]) && digits < 4)
+            {
+                v = v * 10 + (s[i] - '0');
+                i++;
+                digits++;
+            }
+            return v;
         }
     }
 }

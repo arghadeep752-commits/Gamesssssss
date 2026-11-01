@@ -408,6 +408,13 @@ def grass():
     lin *= np.array([0.95, 1.0, 0.85], np.float32)
     A_rgb = bleed(lin_to_srgb(lin), A_a)
     save_rgba(np.dstack([A_rgb, A_a]), out("Grass", "grass_atlas.png"))
+    # single grass cards for the terrain's detail (grass) system
+    for kind in ("tall", "wide"):
+        for n, (x0, y0, x1, y1) in enumerate(cells[kind]):
+            card_a = A_a[y0:y1, x0:x1]
+            if card_a.max() < 0.2:
+                continue
+            save_rgba(np.dstack([A_rgb[y0:y1, x0:x1], card_a]), out("Grass", f"detail_{kind}_{n}.png"))
     INFO["grassRects"] = [round(x, 5) for x in rects]
     INFO["grassKinds"] = kinds
 

@@ -26,9 +26,6 @@ namespace RealFPS
         public AudioClip[] stepGrass, stepDirt, stepRock, stepWood, stepWater;
 
         [Header("Rendering")]
-        public Shader postShader;
-        public Material grassMaterial;
-        public Mesh[] grassMeshes;
         /// <summary>Ambient light (spherical harmonics, 3 x 9 floats) baked from the HDRI sky.</summary>
         public float[] ambientSH = new float[27];
         public Color fogColor = new Color(0.7f, 0.75f, 0.8f);
@@ -37,7 +34,7 @@ namespace RealFPS
         void Awake()
         {
             I = this;
-            if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (uiFontBold == null) uiFontBold = uiFont;
             if (titleFont == null) titleFont = uiFontBold;
         }

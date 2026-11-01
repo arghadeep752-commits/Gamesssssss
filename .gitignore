@@ -23,3 +23,6 @@ smoke/
 /Assets/Generated.meta
 /Assets/Scenes/
 /Assets/Scenes.meta
+# URP pipeline assets and quality profiles are created by the build script (RFRenderSetup)
+/Assets/Settings/
+/Assets/Settings.meta

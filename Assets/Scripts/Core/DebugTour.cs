@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text;
 using UnityEngine;
 
 namespace RealFPS
@@ -53,8 +54,11 @@ namespace RealFPS
         {
             if (type != LogType.Exception && type != LogType.Error) return;
             exceptions++;
-            if (exceptions <= 12)
-                Debug.Log("[RF] EXC " + condition + " @ " + (stackTrace ?? "").Replace("\n", " | ").Substring(0, Mathf.Min(300, (stackTrace ?? "").Length)));
+            if (exceptions <= 20)
+            {
+                string st = stackTrace ?? "";
+                Debug.Log("[RF] EXC " + condition + " @ " + st.Replace("\n", " | ").Substring(0, Mathf.Min(300, st.Length)));
+            }
         }
 
         void Update()
@@ -80,16 +84,46 @@ namespace RealFPS
             shot++;
             Camera c = Camera.main;
             string pos = c != null ? c.transform.position.ToString("F1") + " fwd " + c.transform.forward.ToString("F2") : "no camera";
+            TreeRenderer tr = Game.I != null && Game.I.quality != null ? Game.I.quality.trees : null;
+            string trees = tr != null ? " trees=" + tr.DrawnLastFrame + "/" + tr.DrawCallsLastFrame + "calls" : "";
             Debug.Log("[RF] TOUR shot " + shot + " " + name + " fps=" + fps.ToString("0.0") + " frameMs=" + lastFrameMs.ToString("0") +
-                      " cam " + pos + " exc=" + exceptions);
+                      " cam " + pos + trees + " exc=" + exceptions);
             yield return new WaitForSecondsRealtime(3.5f);  // time for the screenshot
+        }
+
+        static void Diagnostics()
+        {
+            var sb = new StringBuilder();
+            sb.Append("[RF] DIAG ").Append(RenderCompat.Describe());
+            sb.Append(" | quality ").Append(QualitySettings.GetQualityLevel()).Append('/').Append(QualitySettings.names.Length);
+            sb.Append(" | pipeline ").Append(UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null ? UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.name : "BUILT-IN");
+            sb.Append(" | fog ").Append(RenderSettings.fog).Append(' ').Append(RenderSettings.fogDensity).Append(' ').Append(RenderSettings.fogColor);
+            Debug.Log(sb.ToString());
+            Terrain t = Terrain.activeTerrain;
+            if (t != null)
+            {
+                Material m = t.materialTemplate;
+                Debug.Log("[RF] DIAG terrain " + t.terrainData.size + " at " + t.transform.position + " shader=" + (m != null ? m.shader.name + " supported=" + m.shader.isSupported : "none") +
+                          " instanced=" + t.drawInstanced + " pixelError=" + t.heightmapPixelError + " basemap=" + t.basemapDistance +
+                          " details=" + t.detailObjectDistance + "m x" + t.detailObjectDensity + " layers=" + t.terrainData.terrainLayers.Length +
+                          " detailProtos=" + t.terrainData.detailPrototypes.Length);
+            }
+            foreach (Renderer r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+            {
+                Vector3 s = r.bounds.size;
+                if (s.x < 60f && s.z < 60f) continue;
+                Material m = r.sharedMaterial;
+                Debug.Log("[RF] DIAG big renderer " + r.name + " bounds " + r.bounds.center.ToString("F0") + " size " + s.ToString("F0") +
+                          " shader=" + (m != null ? m.shader.name + " supported=" + m.shader.isSupported : "none") + " enabled=" + r.enabled);
+            }
         }
 
         IEnumerator Start()
         {
             Debug.Log("[RF] TOUR start");
-            // the emulator renders in software: keep the Medium look but render few pixels
-            if (QualityManager.I != null) QualityManager.I.ForceScale(0.38f);
+            Diagnostics();
+            // the emulator renders in software: keep the look but render fewer pixels
+            if (QualityManager.I != null) QualityManager.I.ForceScale(0.5f);
             yield return WaitFrames(6, 6f);
             yield return Shot("menu");
 
@@ -125,12 +159,26 @@ namespace RealFPS
                     yield return Shot(v.name);
                 }
             }
+
             // walk forward a bit from the spawn
             g.player.Spawn(g.spawnPoint.position, g.spawnPoint.eulerAngles.y);
+            g.player.Pitch = 0f;
             TouchControls.I.SimulatedMove = new Vector2(0f, 1f);
             yield return WaitFrames(12, 4f);
             TouchControls.I.SimulatedMove = Vector2.zero;
             yield return Shot("walked");
+
+            // the same view on each graphics profile (not saved to the player's settings)
+            GraphicsLevel original = GameSettings.Graphics;
+            foreach (GraphicsLevel level in new[] { GraphicsLevel.Low, GraphicsLevel.Medium, GraphicsLevel.High })
+            {
+                GameSettings.Graphics = level;
+                if (QualityManager.I != null) QualityManager.I.Apply();
+                yield return Shot("profile_" + level);
+            }
+            GameSettings.Graphics = original;
+            if (QualityManager.I != null) QualityManager.I.Apply();
+
             g.Pause();
             yield return Shot("pause");
             Debug.Log("[RF] TOUR done exc=" + exceptions);

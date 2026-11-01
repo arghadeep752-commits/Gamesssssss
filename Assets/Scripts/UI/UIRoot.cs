@@ -40,7 +40,7 @@ namespace RealFPS
             scaler.matchWidthOrHeight = 1f;
             cgo.AddComponent<GraphicRaycaster>();
 
-            if (FindObjectOfType<EventSystem>() == null)
+            if (FindFirstObjectByType<EventSystem>() == null)
             {
                 var es = new GameObject("EventSystem");
                 es.AddComponent<EventSystem>();

@@ -11,13 +11,14 @@ APK=$(ls "$OUT"/*.apk | head -1)
 alive() { timeout 20 adb shell pidof "$PKG" >/dev/null 2>&1; }
 shot() { timeout 60 adb exec-out screencap -p > "$OUT/$1.png" 2>/dev/null; echo "screenshot $1 ($(date +%T))"; }
 
+adb logcat -G 16M 2>/dev/null || true
 adb logcat -c || true
 echo "Installing $APK"
 adb install -r -g "$APK" 2>&1 | tail -2
 adb shell settings put system accelerometer_rotation 0 || true
 adb shell am start -n "$PKG/com.unity3d.player.UnityPlayerActivity" -e rf_tour 1 >/dev/null 2>&1
 
-dump() { timeout 60 adb logcat -d 2>/dev/null | grep -E "Unity|RF|AndroidRuntime|FATAL|CRASH|libc|DEBUG|ActivityManager" | tail -800 > "$OUT/logcat.txt" || true; }
+dump() { timeout 60 adb logcat -d 2>/dev/null | grep -E "Unity|RF|AndroidRuntime|FATAL|CRASH|libc|DEBUG|ActivityManager" | tail -6000 > "$OUT/logcat.txt" || true; }
 
 taken=""
 start=$(date +%s)
