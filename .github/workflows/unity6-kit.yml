@@ -1,0 +1,94 @@
+# Installs Unity 6 (6000.0 LTS) with Android support, opens a small URP probe project
+# and publishes a private "compile kit" draft release (compiler, reference assemblies,
+# compiled URP assemblies and URP shader sources) for the Silent Valley build.
+
+name: Unity 6 compile kit
+
+on:
+  push:
+    branches: [unity6-kit]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: unity6-kit
+  cancel-in-progress: true
+
+env:
+  GH_REPO: ${{ github.repository }}
+  KIT_TAG: unity6-kit
+
+jobs:
+  kit:
+    name: Unity 6 kit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+
+      - name: Install Unity Hub
+        run: bash ci/install_hub.sh
+
+      - name: Install Unity 6 with Android support
+        id: unity
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: 6000.0.x
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+
+      - name: Match the probe project's packages to the editor
+        run: |
+          echo "UNITY_EDITOR_PATH=$UNITY_EDITOR_PATH"
+          python3 ci/unity6_manifest.py "$UNITY_EDITOR_PATH" kitproj/Packages/manifest.json --report probe-report.txt
+          cat kitproj/Packages/manifest.json
+
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Open the probe project (imports and compiles URP)
+        continue-on-error: true
+        uses: RageAgainstThePixel/unity-action@v3
+        with:
+          project-path: ${{ github.workspace }}/kitproj
+          build-target: Android
+          args: >-
+            -quit -batchmode -nographics
+            -logFile ${{ github.workspace }}/Logs/probe-open.log
+
+      - name: Probe URP asset creation
+        continue-on-error: true
+        uses: RageAgainstThePixel/unity-action@v3
+        with:
+          project-path: ${{ github.workspace }}/kitproj
+          build-target: Android
+          args: >-
+            -batchmode -nographics
+            -executeMethod ProbeURP.Run
+            -logFile ${{ github.workspace }}/Logs/probe-urp.log
+
+      - name: Publish the kit (private draft)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp kitproj/../probe-urp.txt probe-urp.txt 2>/dev/null || true
+          ls -la Logs || true
+          bash ci/publish_kit6.sh "$UNITY_EDITOR_PATH" kitproj "$KIT_TAG"
+          if [ -f probe-urp.txt ]; then gh release upload "$KIT_TAG" probe-urp.txt --clobber || true; fi
+          for f in Logs/*.log; do gh release upload "$KIT_TAG" "$f" --clobber || true; done
