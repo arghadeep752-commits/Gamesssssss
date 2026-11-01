@@ -43,13 +43,23 @@ namespace RealFPS
         void Start()
         {
             if (quality != null) quality.Apply();
+            if (SkyLighting.I != null) SkyLighting.I.Apply(GameSettings.NightStyle);
             GameSettings.Changed += OnSettingsChanged;
             ui = gameObject.AddComponent<UIRoot>();
             ui.Build(this);
-            EnterMenu(true);
             tour = DebugTour.Requested();
+            // no main menu: the game opens straight into play
+            StartGame();
             if (tour) gameObject.AddComponent<DebugTour>();
             StartCoroutine(ReportLayout());
+        }
+
+        /// <summary>Starts the level again from the beginning (pause menu).</summary>
+        public void Restart()
+        {
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
         }
 
         void OnDestroy()
@@ -60,6 +70,7 @@ namespace RealFPS
         void OnSettingsChanged()
         {
             if (quality != null) quality.Apply();
+            if (SkyLighting.I != null && SkyLighting.I.Night != GameSettings.NightStyle) SkyLighting.I.Apply(GameSettings.NightStyle);
             AudioListener.volume = GameSettings.Volume;
             if (player != null) player.ApplySettings();
         }
@@ -91,7 +102,7 @@ namespace RealFPS
 
         IEnumerator StartGameRoutine()
         {
-            yield return ui.Fade(1f, 0.45f);
+            yield return ui.Fade(1f, 0.01f);
             if (menuCamera != null) menuCamera.Stop();
             player.Spawn(spawnPoint.position, spawnPoint.eulerAngles.y);
             player.AttachCamera(mainCamera.transform);

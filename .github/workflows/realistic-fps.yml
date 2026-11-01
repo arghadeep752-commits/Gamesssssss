@@ -191,6 +191,8 @@ jobs:
           RF_KEYSTORE: ${{ github.workspace }}/ci-keystore/silentvalley.keystore
           RF_KEYSTORE_PASS: silentvalley
           RF_KEY_ALIAS: silentvalley
+          # an extra x86_64 APK only for the emulator smoke test (never published)
+          TEST_APK_ARG: ${{ (github.event_name == 'push' || inputs.smoke_test) && '-testApk Build/SilentValley-emulator.apk' || '' }}
         run: |
           mkdir -p Logs
           # UNITY_THISISABUILDMACHINE makes Unity 6's Android build use Unity's internal (private)
@@ -199,7 +201,7 @@ jobs:
           env -u UNITY_THISISABUILDMACHINE timeout 140m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
             -projectPath "$GITHUB_WORKSPACE" -buildTarget Android \
             -executeMethod RealFPS.EditorTools.RFBuild.BuildAndroid \
-            -buildNumber ${{ github.run_number }} \
+            -buildNumber ${{ github.run_number }} $TEST_APK_ARG \
             -logFile "$GITHUB_WORKSPACE/Logs/build.log"
           status=$?
           echo "Unity exited with code $status"
@@ -223,6 +225,15 @@ jobs:
           ls -la Build || true
           test -f Build/SilentValley.apk
           unzip -l Build/SilentValley.apk | grep -E "lib/|assets/bin/Data/(data.unity3d|globalgamemanagers)" | head -20 || true
+
+      - name: Keep the emulator test APK for the smoke test
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: Build/SilentValley-emulator.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
 
       - name: Publish APK release
         id: publish
@@ -265,12 +276,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Download the APK
+      - name: Download the emulator test APK (x86_64)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: smoke
+
+      - name: Fall back to the phone APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p smoke
-          gh release download "${{ needs.build.outputs.release_tag }}" -p "*.apk" -D smoke
+          if ls smoke/*.apk >/dev/null 2>&1; then
+            echo "Testing the x86_64 emulator build" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No x86_64 test APK: testing the ARM64 phone APK under ARM translation" | tee -a "$GITHUB_STEP_SUMMARY"
+            gh release download "${{ needs.build.outputs.release_tag }}" -p "*.apk" -D smoke
+          fi
           ls -la smoke
 
       - name: Enable KVM

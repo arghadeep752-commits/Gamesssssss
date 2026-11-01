@@ -20,7 +20,7 @@ namespace RealFPS
         System.Action settingsBack;
 
         // settings widgets
-        Button[] gfxButtons, fpsButtons;
+        Button[] gfxButtons, fpsButtons, styleButtons;
         Button invertBtn, bobBtn, fpsShowBtn;
 
         public void Build(Game g)
@@ -115,8 +115,8 @@ namespace RealFPS
             t.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -10f), new Vector2(600f, 110f));
             pauseLanterns = UIKit.Label(box, "Lanterns", "", 30, UIKit.Accent, TextAnchor.MiddleCenter, A.uiFont);
             pauseLanterns.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -122f), new Vector2(600f, 40f));
-            string[] labels = { "RESUME", "SETTINGS", "MAIN MENU" };
-            UnityEngine.Events.UnityAction[] actions = { () => game.Resume(), () => OpenSettings(ShowPause), () => game.QuitToMenu() };
+            string[] labels = { "RESUME", "SETTINGS", "RESTART" };
+            UnityEngine.Events.UnityAction[] actions = { () => game.Resume(), () => OpenSettings(ShowPause), () => game.Restart() };
             for (int i = 0; i < 3; i++)
             {
                 Button b = UIKit.Btn(box, labels[i], labels[i], new Vector2(440f, 92f), actions[i]);
@@ -136,8 +136,8 @@ namespace RealFPS
             Text t = UIKit.Label(box, "Title", "SETTINGS", 64, Color.white, TextAnchor.MiddleCenter, A.titleFont);
             t.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f), new Vector2(800f, 90f));
 
-            float rowY = -150f;
-            const float rowH = 86f;
+            float rowY = -140f;
+            const float rowH = 82f;
             int row = 0;
 
             RectTransform Row(string label)
@@ -167,6 +167,16 @@ namespace RealFPS
                 bool sixty = i == 1;
                 fpsButtons[i] = UIKit.Btn(fr, fl[i], fl[i], new Vector2(196f, 66f), () => { GameSettings.Fps60 = sixty; GameSettings.Save(); RefreshSettings(); }, 28);
                 fpsButtons[i].GetComponent<RectTransform>().Place(new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(440f + i * 208f, 0f), new Vector2(196f, 66f));
+            }
+
+            RectTransform st = Row("Look");
+            string[] sl = { "NIGHT FOG", "DAY" };
+            styleButtons = new Button[2];
+            for (int i = 0; i < 2; i++)
+            {
+                bool night = i == 0;
+                styleButtons[i] = UIKit.Btn(st, sl[i], sl[i], new Vector2(196f, 66f), () => { GameSettings.NightStyle = night; GameSettings.Save(); RefreshSettings(); }, 28);
+                styleButtons[i].GetComponent<RectTransform>().Place(new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(440f + i * 208f, 0f), new Vector2(196f, 66f));
             }
 
             RectTransform sens = Row("Look sensitivity");
@@ -203,6 +213,8 @@ namespace RealFPS
                 Highlight(gfxButtons[i], (int)GameSettings.Graphics == i);
             Highlight(fpsButtons[0], !GameSettings.Fps60);
             Highlight(fpsButtons[1], GameSettings.Fps60);
+            Highlight(styleButtons[0], GameSettings.NightStyle);
+            Highlight(styleButtons[1], !GameSettings.NightStyle);
             UIKit.SetLabel(invertBtn, "Invert look: " + (GameSettings.InvertY ? "ON" : "OFF"));
             UIKit.SetLabel(bobBtn, "Head bob: " + (GameSettings.HeadBob ? "ON" : "OFF"));
             UIKit.SetLabel(fpsShowBtn, "Show FPS: " + (GameSettings.ShowFps ? "ON" : "OFF"));

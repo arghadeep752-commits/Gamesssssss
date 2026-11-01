@@ -17,6 +17,8 @@ namespace RealFPS
         public static bool ShowFps;
         public static bool Fps60;
         public static float Volume;
+        /// <summary>Night fog look (dark fog, short view distance) instead of the daylight sky.</summary>
+        public static bool NightStyle = true;
 
         public static System.Action Changed;
 
@@ -31,6 +33,7 @@ namespace RealFPS
             ShowFps = PlayerPrefs.GetInt(Prefix + "fps", 0) == 1;
             Fps60 = PlayerPrefs.GetInt(Prefix + "fps60", Graphics == GraphicsLevel.High ? 1 : 0) == 1;
             Volume = PlayerPrefs.GetFloat(Prefix + "vol", 1f);
+            NightStyle = PlayerPrefs.GetInt(Prefix + "night", 1) == 1;
         }
 
         public static void Save()
@@ -43,6 +46,7 @@ namespace RealFPS
             PlayerPrefs.SetInt(Prefix + "fps", ShowFps ? 1 : 0);
             PlayerPrefs.SetInt(Prefix + "fps60", Fps60 ? 1 : 0);
             PlayerPrefs.SetFloat(Prefix + "vol", Volume);
+            PlayerPrefs.SetInt(Prefix + "night", NightStyle ? 1 : 0);
             PlayerPrefs.Save();
             if (Changed != null) Changed();
         }

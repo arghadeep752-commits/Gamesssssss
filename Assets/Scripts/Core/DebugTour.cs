@@ -124,28 +124,11 @@ namespace RealFPS
             Diagnostics();
             // the emulator renders in software: keep the look but render fewer pixels
             if (QualityManager.I != null) QualityManager.I.ForceScale(0.5f);
-            yield return WaitFrames(6, 6f);
-            yield return Shot("menu");
-
             Game g = Game.I;
-            g.StartGame();
-            yield return WaitFrames(6, 3f);
-            yield return Shot("spawn");
+            yield return WaitFrames(8, 8f);
+            yield return Shot("start");
 
-            // an aerial view of the whole valley
-            Camera cam = g.mainCamera;
-            g.player.SetActive(false);
-            cam.transform.SetParent(null, true);
-            cam.transform.position = new Vector3(-40f, 230f, -150f);
-            cam.transform.rotation = Quaternion.LookRotation(new Vector3(30f, 0f, 70f) - cam.transform.position, Vector3.up);
-            cam.nearClipPlane = 0.5f;
-            yield return Shot("aerial");
-            cam.transform.position = new Vector3(-10f, 45f, -95f);
-            cam.transform.rotation = Quaternion.LookRotation(new Vector3(10f, 22f, 60f) - cam.transform.position, Vector3.up);
-            yield return Shot("lowaerial");
-            g.player.AttachCamera(cam.transform);
-            g.player.SetActive(true);
-
+            // viewpoints around the valley (night fog look, the default)
             Transform[] views = g.tourPoints;
             if (views != null)
             {
@@ -178,6 +161,26 @@ namespace RealFPS
             }
             GameSettings.Graphics = original;
             if (QualityManager.I != null) QualityManager.I.Apply();
+
+            // the daylight look for comparison, including views from above
+            if (SkyLighting.I != null) SkyLighting.I.Apply(false);
+            g.player.Spawn(g.spawnPoint.position, g.spawnPoint.eulerAngles.y);
+            g.player.Pitch = 0f;
+            yield return Shot("day_spawn");
+            Camera cam = g.mainCamera;
+            g.player.SetActive(false);
+            cam.transform.SetParent(null, true);
+            cam.transform.position = new Vector3(-40f, 230f, -150f);
+            cam.transform.rotation = Quaternion.LookRotation(new Vector3(30f, 0f, 70f) - cam.transform.position, Vector3.up);
+            cam.nearClipPlane = 0.5f;
+            yield return Shot("day_aerial");
+            cam.transform.position = new Vector3(-10f, 45f, -95f);
+            cam.transform.rotation = Quaternion.LookRotation(new Vector3(10f, 22f, 60f) - cam.transform.position, Vector3.up);
+            yield return Shot("day_lowaerial");
+            g.player.AttachCamera(cam.transform);
+            g.player.SetActive(true);
+            if (SkyLighting.I != null) SkyLighting.I.Apply(GameSettings.NightStyle);
+            g.player.Spawn(g.spawnPoint.position, g.spawnPoint.eulerAngles.y);
 
             g.Pause();
             yield return Shot("pause");

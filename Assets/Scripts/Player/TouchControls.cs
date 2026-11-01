@@ -5,8 +5,9 @@ namespace RealFPS
     public enum HudAction { Jump, Crouch, Run, Pause, Interact }
 
     /// <summary>
-    /// Multi-touch controls: a floating joystick on the left part of the screen,
-    /// drag-to-look anywhere else, and on-screen buttons (drawn by <see cref="Hud"/>).
+    /// Multi-touch controls: a fixed joystick at the bottom-left, the right half of the screen as a
+    /// look pad, and on-screen buttons (drawn by <see cref="Hud"/>). Pushing the stick all the way
+    /// forward runs.
     /// Keyboard and mouse work too (for testing in the editor).
     /// </summary>
     public class TouchControls : MonoBehaviour
@@ -29,8 +30,7 @@ namespace RealFPS
         float rimTime;
         readonly int[] buttonFinger = new int[8];
 
-        const float JoyZone = 0.42f;      // left part of the screen
-        const float JoyRadiusRef = 125f;  // in canvas units
+        const float LookZone = 0.5f;      // the right half of the screen looks around
 
         void Awake()
         {
@@ -78,8 +78,6 @@ namespace RealFPS
                 return;
             }
 
-            float scale = hud.CanvasScale;
-            float joyRadius = JoyRadiusRef * scale;
             Vector2 move = Move;
             bool joyActive = false;
 
@@ -97,16 +95,19 @@ namespace RealFPS
                             PressButton(b, id);
                             break;
                         }
-                        if (t.position.x < Screen.width * JoyZone && joyFinger < 0)
+                        // fixed joystick: grab it anywhere on (or just around) its ring
+                        Vector2 jc = hud.JoyCenterScreen();
+                        if (joyFinger < 0 && Vector2.Distance(t.position, jc) < hud.JoyRadiusScreen() * 1.45f)
                         {
                             joyFinger = id;
-                            joyCenter = t.position;
-                            move = Vector2.zero;
+                            joyCenter = jc;
                             joyActive = true;
-                            hud.SetJoystick(true, joyCenter, joyCenter);
+                            move = StickVector(t.position - joyCenter, hud.JoyTravelScreen(), out Vector2 knob0);
+                            hud.SetJoystick(true, joyCenter, joyCenter + knob0);
                         }
-                        else if (lookFinger < 0)
+                        else if (lookFinger < 0 && t.position.x > Screen.width * LookZone)
                         {
+                            // the right half of the screen is the look pad
                             lookFinger = id;
                             lastLook = t.position;
                         }
@@ -117,24 +118,9 @@ namespace RealFPS
                     {
                         if (id == joyFinger)
                         {
-                            Vector2 d = t.position - joyCenter;
-                            float len = d.magnitude;
-                            if (len > joyRadius * 1.35f)
-                            {
-                                // let the base follow the thumb
-                                joyCenter = t.position - d / len * joyRadius * 1.35f;
-                                d = t.position - joyCenter;
-                                len = d.magnitude;
-                            }
-                            Vector2 v = d / joyRadius;
-                            if (v.magnitude > 1f) v = v.normalized;
-                            // small dead zone, then a slightly eased response
-                            float m = v.magnitude;
-                            float dm = Mathf.InverseLerp(0.08f, 1f, m);
-                            move = m > 1e-4f ? v / m * Mathf.Pow(dm, 1.15f) : Vector2.zero;
+                            move = StickVector(t.position - joyCenter, hud.JoyTravelScreen(), out Vector2 knob);
                             joyActive = true;
-                            Vector2 knob = joyCenter + Vector2.ClampMagnitude(d, joyRadius);
-                            hud.SetJoystick(true, joyCenter, knob);
+                            hud.SetJoystick(true, joyCenter, joyCenter + knob);
                         }
                         else if (id == lookFinger)
                         {
@@ -180,6 +166,16 @@ namespace RealFPS
             else rimTime = 0f;
             Sprint = RunLocked || rimTime > 0.18f;
             hud.SetSprinting(Sprint && move.y > 0.35f);
+        }
+
+        /// <summary>Thumb offset -> movement (dead zone, eased response) and the clamped knob offset.</summary>
+        static Vector2 StickVector(Vector2 d, float travel, out Vector2 knob)
+        {
+            knob = Vector2.ClampMagnitude(d, travel);
+            Vector2 v = d / Mathf.Max(1f, travel);
+            float m = Mathf.Min(1f, v.magnitude);
+            float dm = Mathf.InverseLerp(0.1f, 1f, m);
+            return m > 1e-4f ? v.normalized * Mathf.Pow(dm, 1.15f) : Vector2.zero;
         }
 
         void PressButton(int index, int finger)

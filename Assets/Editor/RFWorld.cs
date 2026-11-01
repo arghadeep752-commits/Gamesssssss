@@ -62,9 +62,13 @@ namespace RealFPS.EditorTools
             BuildDetail();
             BlendGroundAroundRocks();
             BuildGrass();
-            BuildFarMountains();
+            GameObject farMountains = BuildFarMountains();
             Lantern[] lanterns = BuildLanterns(pierEnd, campfire);
             BuildGame(sun, skyLighting, lanterns, trees);
+            skyLighting.sun = sun;
+            skyLighting.water = waterMat;
+            skyLighting.farMountains = farMountains;
+            skyLighting.lanterns = lanterns;
 
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new Exception("Could not save the scene");
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
@@ -415,6 +419,9 @@ namespace RealFPS.EditorTools
             skyLighting.sh = coeffs;
             skyLighting.fogColor = fog;
             skyLighting.fogDensity = 0.0024f;
+            skyLighting.skybox = skyMat;
+            skyLighting.sunColor = sun.color;
+            skyLighting.sunIntensity = sun.intensity;
             return sun;
         }
 
@@ -1210,7 +1217,7 @@ namespace RealFPS.EditorTools
         }
 
         // ------------------------------------------------------------------ distant mountains
-        static void BuildFarMountains()
+        static GameObject BuildFarMountains()
         {
             Mesh m = SaveMesh(RFMeshUtil.FarMountains(RFLayout.ValleyCenter, 430f, 1500f, 160, 10, RFLayout.Water));
             var mat = new Material(GameShader("RealFPS/Distant", "Universal Render Pipeline/Simple Lit")) { name = "FarMountains" };
@@ -1225,6 +1232,7 @@ namespace RealFPS.EditorTools
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = false;
             SetStatic(go);
+            return go;
         }
 
         // ------------------------------------------------------------------ lanterns
@@ -1329,6 +1337,8 @@ namespace RealFPS.EditorTools
             camData.requiresColorOption = CameraOverrideOption.Off;
             camData.dithering = true;
             camData.stopNaN = false;
+            skyLighting.cam = cam;
+            skyLighting.dayFarClip = cam.farClipPlane;
 
             // global post-processing volume (tonemapping, grading, vignette; bloom on High)
             var volGo = new GameObject("Post Processing");

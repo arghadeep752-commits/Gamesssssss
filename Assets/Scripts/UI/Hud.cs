@@ -4,7 +4,12 @@ using UnityEngine.UI;
 
 namespace RealFPS
 {
-    /// <summary>In-game overlay: joystick, buttons, crosshair, lantern counter, messages.</summary>
+    /// <summary>
+    /// In-game overlay: fixed joystick, buttons, crosshair, lantern counter, messages.
+    /// Layout follows the classic mobile horror-game scheme: a fixed joystick bottom-left, the
+    /// right half of the screen to look around, a small crosshair, crouch and settings buttons
+    /// top-left, a big hand (interact) button on the right and an action button top-right.
+    /// </summary>
     public class Hud : MonoBehaviour
     {
         class HudButton
@@ -13,7 +18,7 @@ namespace RealFPS
             public RectTransform rect;
             public Image bg, icon;
             public float radiusRef;
-            public bool pressed, highlighted;
+            public bool pressed, highlighted, dimmed;
             public Text label;
         }
 
@@ -44,36 +49,34 @@ namespace RealFPS
             Root.Stretch();
             GameAssets A = GameAssets.I;
 
-            // joystick (floating). A faint "home" ring shows where to put the thumb.
-            joyHome = UIKit.Img(Root, "JoyHome", A.ring, new Color(1f, 1f, 1f, 0.18f)).rectTransform
-                .Place(new Vector2(0f, 0f), new Vector2(0.5f, 0.5f), new Vector2(260f, 230f), new Vector2(250f, 250f));
-            joyBaseImg = UIKit.Img(Root, "JoyBase", A.ring, new Color(1f, 1f, 1f, 0.55f));
+            // fixed joystick, bottom-left: a ring with a big knob that moves inside it
+            joyHome = UIKit.Rect(Root, "Joystick").Place(new Vector2(0f, 0f), new Vector2(0.5f, 0.5f), new Vector2(JoyX, JoyY), new Vector2(JoySize, JoySize));
+            joyBaseImg = UIKit.Img(joyHome, "Base", A.circle, new Color(0f, 0f, 0f, 0.28f));
             joyBase = joyBaseImg.rectTransform;
-            joyBase.Place(Vector2.zero, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(250f, 250f));
-            var baseFill = UIKit.Img(joyBase, "Fill", A.circle, new Color(0f, 0f, 0f, 0.18f));
-            baseFill.rectTransform.Stretch(8, 8, 8, 8);
-            joyKnobImg = UIKit.Img(Root, "JoyKnob", A.circle, new Color(1f, 1f, 1f, 0.7f));
+            joyBase.Stretch();
+            var baseRing = UIKit.Img(joyHome, "Ring", A.ring, new Color(1f, 1f, 1f, 0.5f));
+            baseRing.rectTransform.Stretch();
+            joyKnobImg = UIKit.Img(joyHome, "Stick", A.circle, new Color(1f, 1f, 1f, 0.42f));
             joyKnob = joyKnobImg.rectTransform;
-            joyKnob.Place(Vector2.zero, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110f, 110f));
+            joyKnob.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(KnobSize, KnobSize));
             SetJoystick(false, Vector2.zero, Vector2.zero);
 
-            // buttons (bottom-right cluster + pause)
-            AddButton(HudAction.Jump, A.iconJump, new Vector2(1f, 0f), new Vector2(-170f, 175f), 92f);
-            AddButton(HudAction.Crouch, A.iconCrouch, new Vector2(1f, 0f), new Vector2(-370f, 110f), 66f);
-            run = AddButton(HudAction.Run, A.iconRun, new Vector2(1f, 0f), new Vector2(-165f, 395f), 64f);
-            AddButton(HudAction.Pause, A.iconPause, new Vector2(1f, 1f), new Vector2(-80f, -78f), 46f);
-            interact = AddButton(HudAction.Interact, A.iconHand, new Vector2(1f, 0f), new Vector2(-405f, 320f), 70f);
-            interact.label = UIKit.Label(interact.rect, "Label", "PICK UP", 26, UIKit.TextColor, TextAnchor.MiddleCenter, A.uiFontBold);
-            interact.label.rectTransform.Place(new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(200f, 40f));
+            // buttons
+            AddButton(HudAction.Crouch, A.iconCrouch, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(69f, -174f), new Vector2(134f, 240f), false);
+            AddButton(HudAction.Pause, A.iconGear, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(267f, -58f), new Vector2(100f, 100f), true);
+            interact = AddButton(HudAction.Interact, A.iconHand, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-104f, 132f), new Vector2(240f, 240f), true);
+            interact.label = UIKit.Label(interact.rect, "Label", "PICK UP", 28, UIKit.TextColor, TextAnchor.MiddleCenter, A.uiFontBold);
+            interact.label.rectTransform.Place(new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -10f), new Vector2(260f, 40f));
+            AddButton(HudAction.Jump, A.iconJump, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-63f, -26f), new Vector2(250f, 250f), true);
             SetInteract(false, null);
 
             // crosshair
-            crosshair = UIKit.Img(Root, "Crosshair", A.dot, new Color(1f, 1f, 1f, 0.75f));
-            crosshair.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(10f, 10f));
+            crosshair = UIKit.Img(Root, "Crosshair", A.dot, new Color(1f, 1f, 1f, 0.8f));
+            crosshair.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(7f, 7f));
 
-            // lantern objective (top-left)
+            // lantern objective (top centre)
             var objBg = UIKit.Img(Root, "Objective", A.rounded, new Color(0f, 0f, 0f, 0.35f));
-            objBg.rectTransform.Place(new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -36f), new Vector2(260f, 70f));
+            objBg.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(230f, 66f));
             var objIcon = UIKit.Img(objBg.transform, "Icon", A.iconLantern, UIKit.Accent);
             objIcon.rectTransform.Place(new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(14f, 0f), new Vector2(48f, 48f));
             objective = UIKit.Label(objBg.transform, "Text", "0 / 5", 34, UIKit.TextColor, TextAnchor.MiddleLeft, A.uiFontBold);
@@ -97,20 +100,25 @@ namespace RealFPS
             hint = UIKit.Label(h, "Text", "", 28, UIKit.TextColor, TextAnchor.MiddleCenter, A.uiFont, false);
             hint.rectTransform.Stretch(20, 20, 0, 0);
 
-            fpsText = UIKit.Label(Root, "FPS", "", 24, new Color(1f, 1f, 1f, 0.8f), TextAnchor.UpperLeft, A.uiFont);
-            fpsText.rectTransform.Place(new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(44f, -116f), new Vector2(300f, 30f));
+            fpsText = UIKit.Label(Root, "FPS", "", 24, new Color(1f, 1f, 1f, 0.8f), TextAnchor.UpperCenter, A.uiFont);
+            fpsText.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -104f), new Vector2(600f, 30f));
             UpdateObjective();
         }
 
-        HudButton AddButton(HudAction action, Sprite icon, Vector2 anchor, Vector2 pos, float radius)
+        HudButton AddButton(HudAction action, Sprite icon, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, bool round)
         {
-            var b = new HudButton { action = action, radiusRef = radius };
-            b.bg = UIKit.Img(Root, action + "Button", GameAssets.I.circle, BtnIdle);
-            b.rect = b.bg.rectTransform.Place(anchor, new Vector2(0.5f, 0.5f), pos, new Vector2(radius * 2f, radius * 2f));
-            var ring = UIKit.Img(b.rect, "Ring", GameAssets.I.ring, new Color(1f, 1f, 1f, 0.45f));
-            ring.rectTransform.Stretch();
+            var b = new HudButton { action = action, radiusRef = Mathf.Min(size.x, size.y) * 0.5f };
+            b.bg = UIKit.Img(Root, action + "Button", round ? GameAssets.I.circle : GameAssets.I.rounded, BtnIdle);
+            b.rect = b.bg.rectTransform.Place(anchor, pivot, pos, size);
+            if (round)
+            {
+                var ring = UIKit.Img(b.rect, "Ring", GameAssets.I.ring, new Color(1f, 1f, 1f, 0.45f));
+                ring.rectTransform.Stretch();
+            }
             b.icon = UIKit.Img(b.rect, "Icon", icon, IconColor);
-            b.icon.rectTransform.Stretch(radius * 0.42f, radius * 0.42f, radius * 0.42f, radius * 0.42f);
+            float iconSize = Mathf.Min(size.x, size.y) * 0.56f;
+            b.icon.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(iconSize, iconSize));
+            b.icon.preserveAspect = true;
             buttons.Add(b);
             return b;
         }
@@ -118,18 +126,18 @@ namespace RealFPS
         // ------------------------------------------------------------------ input queries
         public int HitButton(Vector2 screen)
         {
-            int best = -1;
-            float bestD = float.MaxValue;
             for (int i = 0; i < buttons.Count; i++)
             {
                 HudButton b = buttons[i];
                 if (!b.rect.gameObject.activeInHierarchy) continue;
-                Vector2 c = RectTransformUtility.WorldToScreenPoint(null, b.rect.position);
-                float r = b.radiusRef * CanvasScale * 1.3f;
-                float d = Vector2.Distance(screen, c);
-                if (d < r && d < bestD) { best = i; bestD = d; }
+                // a little extra margin around each button for fat fingers
+                Vector2 local;
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(b.rect, screen, null, out local)) continue;
+                Rect r = b.rect.rect;
+                float m = 18f;
+                if (local.x >= r.xMin - m && local.x <= r.xMax + m && local.y >= r.yMin - m && local.y <= r.yMax + m) return i;
             }
-            return best;
+            return -1;
         }
 
         public HudAction ButtonAction(int i) { return buttons[i].action; }
@@ -154,32 +162,47 @@ namespace RealFPS
         {
             Color c = b.pressed ? BtnPressed : BtnIdle;
             if (b.highlighted) c = new Color(UIKit.Accent.r, UIKit.Accent.g, UIKit.Accent.b, b.pressed ? 0.6f : 0.42f);
+            if (b.dimmed && !b.pressed) c.a *= 0.55f;
             b.bg.color = c;
+            b.icon.color = new Color(IconColor.r, IconColor.g, IconColor.b, b.dimmed ? 0.4f : IconColor.a);
             b.rect.localScale = Vector3.one * (b.pressed ? 0.93f : 1f);
         }
 
-        public void SetRunLocked(bool on)
-        {
-            run.highlighted = on;
-            RefreshButton(run);
-        }
+        public void SetRunLocked(bool on) { }
 
         public void SetSprinting(bool on)
         {
             if (on == sprinting) return;
             sprinting = on;
-            joyKnobImg.color = on ? new Color(UIKit.Accent.r, UIKit.Accent.g, UIKit.Accent.b, 0.85f) : new Color(1f, 1f, 1f, 0.7f);
+            joyKnobImg.color = on ? new Color(UIKit.Accent.r, UIKit.Accent.g, UIKit.Accent.b, 0.8f) : new Color(1f, 1f, 1f, 0.62f);
         }
 
-        public void SetJoystick(bool visible, Vector2 centerScreen, Vector2 knobScreen)
+        // joystick geometry in canvas units (1920x1080 reference)
+        const float JoyX = 321f, JoyY = 258f, JoySize = 282f, KnobSize = 190f;
+
+        /// <summary>Centre of the fixed joystick in screen pixels.</summary>
+        public Vector2 JoyCenterScreen()
         {
-            joyBase.gameObject.SetActive(visible);
-            joyKnob.gameObject.SetActive(visible);
-            joyHome.gameObject.SetActive(!visible);
-            if (!visible) return;
-            float s = CanvasScale;
-            joyBase.anchoredPosition = centerScreen / s - SafeOffset();
-            joyKnob.anchoredPosition = knobScreen / s - SafeOffset();
+            return RectTransformUtility.WorldToScreenPoint(null, joyHome.position);
+        }
+
+        /// <summary>How far the knob can travel, in screen pixels.</summary>
+        public float JoyTravelScreen()
+        {
+            return (JoySize - KnobSize * 0.5f) * 0.5f * CanvasScale;
+        }
+
+        public float JoyRadiusScreen()
+        {
+            return JoySize * 0.5f * CanvasScale;
+        }
+
+        /// <summary>Shows the knob pushed from the centre (screen pixels); "active" brightens it.</summary>
+        public void SetJoystick(bool active, Vector2 centerScreen, Vector2 knobScreen)
+        {
+            Vector2 offset = active ? (knobScreen - centerScreen) / CanvasScale : Vector2.zero;
+            joyKnob.anchoredPosition = offset;
+            if (!sprinting) joyKnobImg.color = new Color(1f, 1f, 1f, active ? 0.62f : 0.42f);
         }
 
         Vector2 SafeOffset()
@@ -190,10 +213,15 @@ namespace RealFPS
             return new Vector2(corners[0].x, corners[0].y) / CanvasScale;
         }
 
-        public void SetInteract(bool visible, string label)
+        /// <summary>The hand button is always there; it lights up when something can be picked up.</summary>
+        public void SetInteract(bool available, string label)
         {
-            interact.rect.gameObject.SetActive(visible);
-            if (visible && label != null) interact.label.text = label;
+            if (interact.dimmed == !available && (label == null || interact.label.text == label)) return;
+            interact.dimmed = !available;
+            interact.highlighted = available;
+            interact.label.gameObject.SetActive(available);
+            if (available && label != null) interact.label.text = label;
+            RefreshButton(interact);
         }
 
         // ------------------------------------------------------------------ messages

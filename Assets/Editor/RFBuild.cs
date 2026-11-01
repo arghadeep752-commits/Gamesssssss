@@ -64,6 +64,22 @@ namespace RealFPS.EditorTools
                             if (m.type == LogType.Error || m.type == LogType.Exception)
                                 Debug.Log("[RF-ERR] " + step.name + ": " + m.content);
                     EditorApplication.Exit(2);
+                    return;
+                }
+
+                // Optional second APK for the cloud emulator test only. The emulator is x86_64 and
+                // cannot reliably run the ARM64 phone build through its ARM translation layer.
+                // The phone APK above is the one that is published; this one is never released.
+                string testApk = ReadArg("-testApk", "");
+                if (!string.IsNullOrEmpty(testApk))
+                {
+                    AndroidArchitecture phoneArch = PlayerSettings.Android.targetArchitectures;
+                    PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+                    options.locationPathName = testApk;
+                    BuildReport tr = BuildPipeline.BuildPlayer(options);
+                    Log("emulator test APK (x86_64) result=" + tr.summary.result + " size=" + tr.summary.totalSize + " time=" + tr.summary.totalTime);
+                    PlayerSettings.Android.targetArchitectures = phoneArch;
+                    if (tr.summary.result != BuildResult.Succeeded && File.Exists(testApk)) File.Delete(testApk);
                 }
             }
             catch (Exception e)
