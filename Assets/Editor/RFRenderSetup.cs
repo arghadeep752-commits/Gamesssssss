@@ -126,6 +126,9 @@ namespace RealFPS.EditorTools
             Set(so, "m_ColorGradingLutSize", 32);
             Set(so, "m_UseFastSRGBLinearConversion", true);
             Set(so, "m_GPUResidentDrawerMode", 0);
+            Set(so, "m_SupportDataDrivenLensFlare", false);
+            Set(so, "m_SupportScreenSpaceLensFlare", false);
+            Set(so, "m_UseAdaptivePerformance", false);
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(asset);
             Log("pipeline asset " + asset.name + ": msaa " + asset.msaaSampleCount + ", shadows " + asset.shadowDistance + " m @" +

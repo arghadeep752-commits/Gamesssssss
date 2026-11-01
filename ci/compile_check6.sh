@@ -19,6 +19,10 @@ COMMON="-nologo -nostdlib+ -noconfig -langversion:9.0 -target:library -debug- -n
 REFS="-r:$DATA/NetStandard/ref/2.1.0/netstandard.dll"
 for f in "$DATA"/NetStandard/compat/2.1.0/shims/netfx/*.dll "$DATA"/NetStandard/compat/2.1.0/shims/netstandard/*.dll; do [ -e "$f" ] && REFS="$REFS -r:$f"; done
 for f in "$DATA"/Managed/UnityEngine/UnityEngine*.dll; do REFS="$REFS -r:$f"; done
+if ! ls "$ASM"/*.dll >/dev/null 2>&1; then
+  echo "::warning title=Compile check skipped::The compile kit has no compiled package assemblies; the full build will check the code instead."
+  exit 0
+fi
 RUNTIME_PKGS=""
 EDITOR_PKGS=""
 for f in "$ASM"/*.dll; do
