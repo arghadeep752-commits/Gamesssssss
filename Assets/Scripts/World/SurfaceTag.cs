@@ -1,10 +1,10 @@
 using UnityEngine;
 
-namespace RealFPS
+namespace NightClass
 {
-    /// <summary>Marks a collider's footstep surface (pier = wood, rocks = rock).</summary>
+    /// <summary>Marks the floor material under the player (footstep sounds).</summary>
     public class SurfaceTag : MonoBehaviour
     {
-        public Surface surface = Surface.Rock;
+        public Surface surface = Surface.Concrete;
     }
 }

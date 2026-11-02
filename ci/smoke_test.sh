@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Installs the APK in the emulator, starts it with the automated screenshot tour
-# (intent extra rf_tour) and saves a screenshot each time the game reports a view
+# (intent extra nc_tour) and saves a screenshot each time the game reports a view
 # ("[RF] TOUR shot <n> <name>"), then a short touch-control test and a filtered logcat.
 set -uo pipefail
 OUT="${1:-smoke}"
 mkdir -p "$OUT"
-PKG="com.silentvalley.fps"
+PKG="com.nightclass.horror"
 APK=$(ls "$OUT"/*.apk | head -1)
 
 alive() { timeout 20 adb shell pidof "$PKG" >/dev/null 2>&1; }
@@ -16,7 +16,7 @@ adb logcat -c || true
 echo "Installing $APK"
 adb install -r -g "$APK" 2>&1 | tail -2
 adb shell settings put system accelerometer_rotation 0 || true
-adb shell am start -n "$PKG/com.unity3d.player.UnityPlayerActivity" -e rf_tour 1 >/dev/null 2>&1
+adb shell am start -n "$PKG/com.unity3d.player.UnityPlayerActivity" -e nc_tour 1 >/dev/null 2>&1
 
 dump() { timeout 60 adb logcat -d 2>/dev/null | grep -E "Unity|RF|AndroidRuntime|FATAL|CRASH|libc|DEBUG|ActivityManager" | tail -6000 > "$OUT/logcat.txt" || true; }
 

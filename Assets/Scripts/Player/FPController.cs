@@ -1,82 +1,80 @@
 using UnityEngine;
 
-namespace RealFPS
+namespace NightClass
 {
     /// <summary>
-    /// First-person movement on a CharacterController: walk / sprint / crouch / jump,
-    /// smooth acceleration, slope sliding, head bob, footsteps by surface, landing
-    /// dip, sprint FOV kick, and soft limits at deep water and the valley edge.
+    /// First-person movement: smooth acceleration, crouch (crawl spaces), jump, head bob tied to the
+    /// stride, surface footsteps, landing dip, and hiding inside lockers / wardrobes.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class FPController : MonoBehaviour
     {
-        [Header("Scene (set by the build script)")]
-        public Transform head;
-        public Terrain terrain;
-        public float waterLevel = 21f;
-        public Vector3 worldCenter = Vector3.zero;
-        public float worldRadius = 175f;
+        public static FPController I { get; private set; }
 
-        [Header("Movement")]
-        public float walkSpeed = 3.1f;
-        public float runSpeed = 6.2f;
-        public float crouchSpeed = 1.6f;
-        public float acceleration = 20f;
-        public float deceleration = 26f;
-        public float airControl = 3f;
+        public float walkSpeed = 3.3f;
+        public float crouchSpeed = 1.5f;
+        public float acceleration = 16f;
+        public float deceleration = 22f;
+        public float airControl = 2.5f;
         public float gravity = 19f;
-        public float jumpHeight = 1.05f;
-        public float standHeight = 1.8f;
-        public float crouchHeight = 1.05f;
-        public float slopeSlide = 5f;
+        public float jumpHeight = 0.85f;
+        public float standHeight = 1.75f;
+        public float crouchHeight = 0.9f;
+        public Transform head;
 
         CharacterController cc;
         Camera cam;
+        float yaw, pitch, height;
         Vector3 velocity;
-        float yaw, pitch;
         bool grounded, crouching, active;
-        float height;
-        float stepDistance, lastStepIndex;
-        float bobBlend, landDip, landVel;
-        float idleTime;
-        Vector3 groundNormal = Vector3.up;
-        float groundNormalTime;
-        float fovCurrent;
-        float airTime;
-        bool running;
+        float stepDistance, lastStepIndex, bobBlend, idleTime, airTime, landDip, landVel, fovCurrent;
+        int noStandZones;
+        HidingSpot spot;
+        float hideYaw0;
 
-        public bool IsActive { get { return active; } }
-        public bool Running { get { return running; } }
+        public bool Crouching { get { return crouching; } }
+        public bool Hidden { get; private set; }
+        public HidingSpot Spot { get { return spot; } }
+        public HidingSpot SpotInRange;
+        public float Speed { get; private set; }
+        public Vector3 HeadPosition { get { return head != null ? head.position : transform.position + Vector3.up * 1.6f; } }
+        public Camera Cam { get { return cam; } }
+        public float Yaw { get { return yaw; } }
 
         void Awake()
         {
+            I = this;
             cc = GetComponent<CharacterController>();
             height = standHeight;
+            ApplyHeight();
         }
 
-        public void ApplySettings()
+        void ApplyHeight()
         {
-            if (cam != null) fovCurrent = cam.fieldOfView = GameSettings.FieldOfView;
+            cc.height = height;
+            cc.center = new Vector3(0f, height * 0.5f, 0f);
         }
 
         public void Spawn(Vector3 pos, float yawDeg)
         {
+            Hidden = false;
+            spot = null;
             cc.enabled = false;
-            if (terrain != null)
-            {
-                float ground = terrain.SampleHeight(pos) + terrain.transform.position.y;
-                pos.y = Mathf.Max(pos.y, ground + 0.05f);
-            }
             transform.position = pos;
             yaw = yawDeg;
             pitch = 0f;
             velocity = Vector3.zero;
             crouching = false;
+            noStandZones = 0;
             height = standHeight;
             ApplyHeight();
             cc.enabled = true;
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-            head.localRotation = Quaternion.identity;
+            if (head != null)
+            {
+                head.localPosition = new Vector3(0f, height - 0.12f, 0f);
+                head.localRotation = Quaternion.identity;
+            }
         }
 
         public void AttachCamera(Transform camT)
@@ -85,73 +83,117 @@ namespace RealFPS
             camT.localPosition = Vector3.zero;
             camT.localRotation = Quaternion.identity;
             cam = camT.GetComponent<Camera>();
-            if (cam != null) cam.nearClipPlane = 0.15f;
-            ApplySettings();
+            if (cam != null) { cam.fieldOfView = GameSettings.FieldOfView; fovCurrent = cam.fieldOfView; }
         }
 
         public void SetActive(bool on)
         {
             active = on;
-            cc.enabled = on;
             if (!on) velocity = Vector3.zero;
+            if (TouchControls.I != null) TouchControls.I.ResetAll();
         }
 
-        public float Yaw { get { return yaw; } set { yaw = value; } }
-        public float Pitch { get { return pitch; } set { pitch = Mathf.Clamp(value, -84f, 84f); } }
+        float shakeAmount;
+        public void Shake(float amount) { shakeAmount = Mathf.Max(shakeAmount, amount); }
 
-        void ApplyHeight()
+        public void EnterNoStand() { noStandZones++; }
+        public void ExitNoStand() { noStandZones = Mathf.Max(0, noStandZones - 1); }
+        public bool CanStand { get { return noStandZones == 0; } }
+
+        public void ToggleCrouch()
         {
-            cc.height = height;
-            cc.center = new Vector3(0f, height * 0.5f, 0f);
+            if (Hidden) return;
+            if (crouching)
+            {
+                if (!CanStand)
+                {
+                    NCGame.I.Message("Not enough room to stand up here.", 2f);
+                    return;
+                }
+                float r = cc.radius * 0.9f;
+                if (Physics.SphereCast(transform.position + Vector3.up * (height - r), r, Vector3.up, out _, standHeight - height + 0.05f, ~((1 << 11) | (1 << 12) | (1 << 13)), QueryTriggerInteraction.Ignore))
+                {
+                    NCGame.I.Message("Not enough room to stand up here.", 2f);
+                    return;
+                }
+                crouching = false;
+            }
+            else crouching = true;
+            Sfx.Play2D(GameAssets.I.land, 0.25f, crouching ? 1.25f : 1.1f);
         }
 
-        float TerrainHeight(Vector3 p)
+        // ------------------------------------------------------------------ hiding
+        public void Hide(HidingSpot s)
         {
-            if (terrain == null) return -1000f;
-            return terrain.SampleHeight(p) + terrain.transform.position.y;
+            if (Hidden || s == null) return;
+            spot = s;
+            Hidden = true;
+            cc.enabled = false;
+            transform.position = s.hidePoint.position - Vector3.up * (standHeight - 0.12f);
+            yaw = s.hidePoint.eulerAngles.y;
+            hideYaw0 = yaw;
+            pitch = 0f;
+            crouching = false;
+            height = standHeight;
+            ApplyHeight();
+            velocity = Vector3.zero;
+            s.OnHide();
+            if (NCGame.I.teacher != null) NCGame.I.teacher.OnPlayerHid(s);
         }
 
-        float WaterDepth(Vector3 p)
+        public void Unhide()
         {
-            return waterLevel - TerrainHeight(p);
+            if (!Hidden || spot == null) return;
+            HidingSpot s = spot;
+            transform.position = s.exitPoint.position;
+            yaw = s.exitPoint.eulerAngles.y;
+            pitch = 0f;
+            cc.enabled = true;
+            Hidden = false;
+            spot = null;
+            s.OnUnhide();
         }
 
+        public void ForceUnhide()
+        {
+            if (!Hidden) return;
+            Unhide();
+        }
+
+        // ------------------------------------------------------------------ update
         void Update()
         {
-            if (!active || Game.I == null || Game.I.State != GameState.Playing) return;
+            if (!active || NCGame.I == null || NCGame.I.State != GameState.Playing) return;
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
             TouchControls input = TouchControls.I;
 
-            // ---------------------------------------------------------- look
             Vector2 look = input != null ? input.ConsumeLook() : Vector2.zero;
             yaw += look.x;
-            pitch = Mathf.Clamp(pitch - look.y * (GameSettings.InvertY ? -1f : 1f), -84f, 84f);
+            pitch = Mathf.Clamp(pitch - look.y, -82f, 82f);
 
-            // ---------------------------------------------------------- crouch
-            if (input != null && input.ConsumeCrouch())
+            if (Hidden)
             {
-                if (crouching)
-                {
-                    if (!Physics.SphereCast(transform.position + Vector3.up * (height - cc.radius), cc.radius * 0.9f, Vector3.up, out _, standHeight - height + 0.05f, ~0, QueryTriggerInteraction.Ignore))
-                        crouching = false;
-                }
-                else if (grounded) crouching = true;
+                yaw = hideYaw0 + Mathf.Clamp(Mathf.DeltaAngle(hideYaw0, yaw), -55f, 55f);
+                pitch = Mathf.Clamp(pitch, -35f, 35f);
+                Speed = 0f;
+                transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                head.localPosition = new Vector3(0f, standHeight - 0.12f + Mathf.Sin(Time.time * 1.2f) * 0.004f, 0f);
+                head.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+                return;
             }
+
+            // auto-crouch inside crawl spaces
+            if (!CanStand && !crouching) crouching = true;
             float targetH = crouching ? crouchHeight : standHeight;
             if (!Mathf.Approximately(height, targetH))
             {
-                height = Mathf.MoveTowards(height, targetH, 5f * dt);
+                height = Mathf.MoveTowards(height, targetH, 4f * dt);
                 ApplyHeight();
             }
 
-            // ---------------------------------------------------------- move
             Vector2 mv = input != null ? input.Move : Vector2.zero;
-            running = input != null && input.Sprint && mv.y > 0.35f && !crouching;
-            float depthHere = WaterDepth(transform.position);
-            float maxSpeed = crouching ? crouchSpeed : (running ? runSpeed : walkSpeed);
-            if (depthHere > 0.25f) maxSpeed *= Mathf.Lerp(0.85f, 0.55f, Mathf.InverseLerp(0.25f, 0.9f, depthHere));
-
+            float maxSpeed = crouching ? crouchSpeed : walkSpeed;
             Vector3 wish = transform.right * mv.x + transform.forward * mv.y;
             float mag = Mathf.Clamp01(wish.magnitude);
             if (mag > 0.001f) wish /= wish.magnitude;
@@ -162,50 +204,20 @@ namespace RealFPS
                 float rate = target.sqrMagnitude > hv.sqrMagnitude ? acceleration : deceleration;
                 hv = Vector3.MoveTowards(hv, target, rate * dt);
             }
-            else
-            {
-                hv = Vector3.MoveTowards(hv, target, airControl * dt);
-            }
+            else hv = Vector3.MoveTowards(hv, target, airControl * dt);
 
-            // soft limits: deep water and the edge of the valley
-            hv = LimitTowardsDeepWater(hv, dt);
-            Vector3 fromCenter = transform.position - worldCenter;
-            fromCenter.y = 0f;
-            if (fromCenter.magnitude > worldRadius)
-            {
-                Vector3 outDir = fromCenter.normalized;
-                float outward = Vector3.Dot(hv, outDir);
-                if (outward > 0f) hv -= outDir * outward;
-                hv -= outDir * Mathf.Min(3f, fromCenter.magnitude - worldRadius);
-            }
-
-            // ---------------------------------------------------------- jump & gravity
             if (input != null && input.ConsumeJump() && grounded)
             {
-                if (crouching)
-                {
-                    crouching = false;
-                }
+                if (crouching) ToggleCrouch();
                 else
                 {
                     velocity.y = Mathf.Sqrt(2f * gravity * jumpHeight);
                     grounded = false;
-                    Sfx.Play2D(GameAssets.I.jump, 0.35f, Random.Range(0.95f, 1.05f));
+                    Sfx.Play2D(GameAssets.I.jump, 0.3f, Random.Range(0.95f, 1.05f));
                 }
             }
             if (grounded && velocity.y < 0f) velocity.y = -2f;
             else velocity.y -= gravity * dt;
-
-            // slide down slopes that are too steep to stand on
-            if (grounded && Time.time - groundNormalTime < 0.2f)
-            {
-                float angle = Vector3.Angle(groundNormal, Vector3.up);
-                if (angle > cc.slopeLimit + 2f)
-                {
-                    Vector3 slide = new Vector3(groundNormal.x, 0f, groundNormal.z).normalized;
-                    hv += slide * slopeSlide * Mathf.InverseLerp(cc.slopeLimit, 70f, angle) * 2f;
-                }
-            }
 
             velocity = new Vector3(hv.x, velocity.y, hv.z);
             float fallSpeed = velocity.y;
@@ -215,30 +227,12 @@ namespace RealFPS
             if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
             if (!grounded) airTime += dt; else airTime = 0f;
             if (!wasGrounded && grounded) Land(fallSpeed);
+            Speed = hv.magnitude;
 
-            // fell through the world somehow -> back to the spawn point
-            if (transform.position.y < TerrainHeight(transform.position) - 3f && Game.I.spawnPoint != null)
-                Spawn(Game.I.spawnPoint.position, yaw);
+            if (transform.position.y < -12f && NCGame.I.playerSpawn != null)
+                Spawn(NCGame.I.playerSpawn.position, yaw);
 
             UpdateHead(hv, dt);
-        }
-
-        Vector3 LimitTowardsDeepWater(Vector3 hv, float dt)
-        {
-            if (terrain == null || hv.sqrMagnitude < 0.0001f) return hv;
-            Vector3 p = transform.position;
-            Vector3 ahead = p + hv.normalized * 0.6f;
-            float dAhead = WaterDepth(ahead);
-            if (dAhead < 1.0f) return hv;
-            float e = 0.6f;
-            Vector3 grad = new Vector3(WaterDepth(p + Vector3.right * e) - WaterDepth(p - Vector3.right * e), 0f,
-                                       WaterDepth(p + Vector3.forward * e) - WaterDepth(p - Vector3.forward * e));
-            if (grad.sqrMagnitude < 1e-6f) return Vector3.zero;
-            Vector3 deeper = grad.normalized;
-            float into = Vector3.Dot(hv, deeper);
-            if (into > 0f) hv -= deeper * into;
-            if (WaterDepth(p) > 1.15f) hv -= deeper * 1.5f; // gently push back to the shallows
-            return hv;
         }
 
         void Land(float fallSpeed)
@@ -247,8 +241,7 @@ namespace RealFPS
             if (airTime > 0.12f || impact > 0f)
             {
                 landVel = -(0.6f + impact * 1.8f);
-                Surface s = SurfaceBelow();
-                Sfx.Play2D(Sfx.Pick(GameAssets.I.StepsFor(s)), 0.5f + impact * 0.4f, 0.85f);
+                Sfx.Play2D(Sfx.Pick(GameAssets.I.StepsFor(SurfaceBelow())), 0.5f + impact * 0.4f, 0.85f);
                 if (impact > 0.2f) Sfx.Play2D(GameAssets.I.land, 0.25f + impact * 0.5f);
             }
         }
@@ -257,11 +250,8 @@ namespace RealFPS
         {
             float speed = hv.magnitude;
             float eye = height - 0.12f;
-
-            // footsteps every stride; stride grows with speed
-            float stride = Mathf.Lerp(0.78f, 1.45f, Mathf.InverseLerp(walkSpeed, runSpeed, speed));
-            if (crouching) stride = 0.6f;
-            bool moving = grounded && speed > 0.35f;
+            float stride = crouching ? 0.55f : 0.8f;
+            bool moving = grounded && speed > 0.3f;
             if (moving)
             {
                 stepDistance += speed * dt;
@@ -273,28 +263,20 @@ namespace RealFPS
                 }
                 idleTime = 0f;
             }
-            else
-            {
-                idleTime += dt;
-            }
-            bobBlend = Mathf.MoveTowards(bobBlend, moving ? 1f : 0f, dt * 4f);
+            else idleTime += dt;
+            bobBlend = Mathf.MoveTowards(bobBlend, moving ? Mathf.Clamp01(speed / walkSpeed) : 0f, dt * 4f);
 
             float phase = stepDistance / stride * Mathf.PI;
-            float run01 = Mathf.InverseLerp(walkSpeed, runSpeed, speed);
-            float amp = GameSettings.HeadBob ? Mathf.Lerp(0.03f, 0.055f, run01) * bobBlend : 0f;
+            float amp = GameSettings.HeadBob ? (crouching ? 0.018f : 0.034f) * bobBlend : 0f;
             float bobY = -Mathf.Abs(Mathf.Sin(phase)) * amp + amp * 0.5f;
             float bobX = Mathf.Cos(phase) * amp * 0.6f;
-            float roll = GameSettings.HeadBob ? Mathf.Cos(phase) * 0.6f * bobBlend * (0.5f + run01) : 0f;
-
-            // breathing when standing still
+            float roll = GameSettings.HeadBob ? Mathf.Cos(phase) * 0.5f * bobBlend : 0f;
             float breathe = Mathf.Sin(Time.time * 1.4f) * 0.006f * Mathf.Clamp01(idleTime);
 
-            // landing dip: a damped spring, integrated in small fixed steps so it stays
-            // stable at any frame rate (one big step at a low frame rate used to blow up)
             float springTime = Mathf.Min(dt, 0.1f);
-            int springSteps = Mathf.Max(1, Mathf.CeilToInt(springTime / 0.008f));
-            float h = springTime / springSteps;
-            for (int i = 0; i < springSteps; i++)
+            int steps = Mathf.Max(1, Mathf.CeilToInt(springTime / 0.008f));
+            float h = springTime / steps;
+            for (int i = 0; i < steps; i++)
             {
                 landVel += (-landDip * 90f - landVel * 13f) * h;
                 landDip += landVel * h;
@@ -302,13 +284,19 @@ namespace RealFPS
             landDip = Mathf.Clamp(landDip, -2f, 2f);
             landVel = Mathf.Clamp(landVel, -20f, 20f);
 
-            head.localPosition = new Vector3(bobX, eye + bobY + breathe + landDip * 0.1f, 0f);
-            head.localRotation = Quaternion.Euler(pitch, 0f, roll);
+            Vector3 shake = Vector3.zero;
+            if (shakeAmount > 0.001f)
+            {
+                shake = Random.insideUnitSphere * shakeAmount * 0.12f;
+                shakeAmount = Mathf.MoveTowards(shakeAmount, 0f, dt * 0.6f);
+            }
+            head.localPosition = new Vector3(bobX, eye + bobY + breathe + landDip * 0.1f, 0f) + shake;
+            head.localRotation = Quaternion.Euler(pitch + shake.y * 30f, 0f, roll + shake.x * 30f);
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
 
-            if (cam != null)
+            if (cam != null && cam.transform.parent == head)
             {
-                float targetFov = GameSettings.FieldOfView + (running && speed > walkSpeed + 0.5f ? 6f : 0f);
+                float targetFov = GameSettings.FieldOfView;
                 fovCurrent = Mathf.Lerp(fovCurrent <= 0f ? targetFov : fovCurrent, targetFov, dt * 5f);
                 cam.fieldOfView = fovCurrent;
             }
@@ -316,57 +304,20 @@ namespace RealFPS
 
         void Footstep(float speed)
         {
-            Surface s = SurfaceBelow();
-            float vol = Mathf.Lerp(0.28f, 0.6f, Mathf.InverseLerp(1f, runSpeed, speed));
-            if (crouching) vol *= 0.5f;
-            Sfx.Play2D(Sfx.Pick(GameAssets.I.StepsFor(s)), vol, Random.Range(0.9f, 1.1f));
+            float vol = Mathf.Lerp(0.25f, 0.55f, Mathf.InverseLerp(1f, walkSpeed, speed));
+            if (crouching) vol *= 0.45f;
+            Sfx.Play2D(Sfx.Pick(GameAssets.I.StepsFor(SurfaceBelow())), vol, Random.Range(0.9f, 1.1f));
         }
 
         public Surface SurfaceBelow()
         {
-            Vector3 p = transform.position;
-            if (WaterDepth(p) > 0.05f) return Surface.Water;
             RaycastHit hit;
-            if (Physics.Raycast(p + Vector3.up * 0.4f, Vector3.down, out hit, 1.2f, ~0, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(transform.position + Vector3.up * 0.4f, Vector3.down, out hit, 1.2f, ~((1 << 11) | (1 << 12)), QueryTriggerInteraction.Ignore))
             {
                 var tag = hit.collider.GetComponentInParent<SurfaceTag>();
                 if (tag != null) return tag.surface;
-                if (hit.collider is TerrainCollider) return TerrainSurface(hit.point);
-                return Surface.Rock;
             }
-            return TerrainSurface(p);
-        }
-
-        Surface TerrainSurface(Vector3 p)
-        {
-            if (terrain == null) return Surface.Grass;
-            TerrainData td = terrain.terrainData;
-            Vector3 local = p - terrain.transform.position;
-            int x = Mathf.Clamp((int)(local.x / td.size.x * td.alphamapWidth), 0, td.alphamapWidth - 1);
-            int z = Mathf.Clamp((int)(local.z / td.size.z * td.alphamapHeight), 0, td.alphamapHeight - 1);
-            float[,,] a = td.GetAlphamaps(x, z, 1, 1);
-            int best = 0;
-            float bw = -1f;
-            for (int i = 0; i < a.GetLength(2); i++)
-            {
-                if (a[0, 0, i] > bw) { bw = a[0, 0, i]; best = i; }
-            }
-            switch (best)
-            {
-                case 1: return Surface.Dirt;
-                case 2: return Surface.Rock;
-                case 3: return Surface.Dirt;
-                default: return Surface.Grass;
-            }
-        }
-
-        void OnControllerColliderHit(ControllerColliderHit hit)
-        {
-            if (hit.point.y < transform.position.y + cc.radius)
-            {
-                groundNormal = hit.normal;
-                groundNormalTime = Time.time;
-            }
+            return Surface.Concrete;
         }
     }
 }

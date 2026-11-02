@@ -1,36 +1,25 @@
 using UnityEngine;
 
-namespace RealFPS
+namespace NightClass
 {
-    public enum HudAction { Jump, Crouch, Run, Pause, Interact }
+    public enum HudAction { Interact, Drop, Crouch, Jump, Hide, Fire, Pause }
 
     /// <summary>
-    /// Multi-touch controls: a fixed joystick at the bottom-left, the right half of the screen as a
-    /// look pad, and on-screen buttons (drawn by <see cref="Hud"/>). Pushing the stick all the way
-    /// forward runs.
-    /// Keyboard and mouse work too (for testing in the editor).
+    /// Multi-touch input: fixed joystick bottom-left, the right half of the screen looks around,
+    /// and the Granny-style buttons drawn by <see cref="Hud"/>. Keyboard + mouse work in the editor.
     /// </summary>
     public class TouchControls : MonoBehaviour
     {
         public static TouchControls I { get; private set; }
-
         public Hud hud;
-
         public Vector2 Move { get; private set; }
-        /// <summary>Used by the automated test tour to walk without touches.</summary>
         public Vector2 SimulatedMove;
-        public bool Sprint { get; private set; }
-        public bool RunLocked { get; private set; }
 
         Vector2 lookAccum;
-        bool jumpQueued, crouchQueued, interactQueued;
-
         int joyFinger = -1, lookFinger = -1;
         Vector2 joyCenter, lastLook;
-        float rimTime;
-        readonly int[] buttonFinger = new int[8];
-
-        const float LookZone = 0.5f;      // the right half of the screen looks around
+        readonly int[] buttonFinger = new int[12];
+        bool jumpQueued;
 
         void Awake()
         {
@@ -38,26 +27,17 @@ namespace RealFPS
             for (int i = 0; i < buttonFinger.Length; i++) buttonFinger[i] = -1;
         }
 
-        public Vector2 ConsumeLook()
-        {
-            Vector2 v = lookAccum;
-            lookAccum = Vector2.zero;
-            return v;
-        }
-
+        public Vector2 ConsumeLook() { Vector2 v = lookAccum; lookAccum = Vector2.zero; return v; }
         public bool ConsumeJump() { bool v = jumpQueued; jumpQueued = false; return v; }
-        public bool ConsumeCrouch() { bool v = crouchQueued; crouchQueued = false; return v; }
-        public bool ConsumeInteract() { bool v = interactQueued; interactQueued = false; return v; }
+        public void AddLook(Vector2 degrees) { lookAccum += degrees; }
 
         public void ResetAll()
         {
             Move = Vector2.zero;
             lookAccum = Vector2.zero;
-            jumpQueued = crouchQueued = interactQueued = false;
+            jumpQueued = false;
             joyFinger = lookFinger = -1;
             for (int i = 0; i < buttonFinger.Length; i++) buttonFinger[i] = -1;
-            rimTime = 0f;
-            Sprint = RunLocked;
             if (hud != null)
             {
                 hud.SetJoystick(false, Vector2.zero, Vector2.zero);
@@ -67,20 +47,18 @@ namespace RealFPS
 
         float DegreesPerPixel()
         {
-            return 150f / Mathf.Max(1, Screen.height) * GameSettings.LookSensitivity;
+            return 140f / Mathf.Max(1, Screen.height) * GameSettings.LookSensitivity;
         }
 
         void Update()
         {
-            if (Game.I == null || Game.I.State != GameState.Playing || hud == null)
+            if (NCGame.I == null || NCGame.I.State != GameState.Playing || hud == null)
             {
                 if (joyFinger >= 0 || lookFinger >= 0 || Move != Vector2.zero) ResetAll();
                 return;
             }
-
             Vector2 move = Move;
             bool joyActive = false;
-
             for (int i = 0; i < Input.touchCount; i++)
             {
                 Touch t = Input.GetTouch(i);
@@ -90,24 +68,19 @@ namespace RealFPS
                     case TouchPhase.Began:
                     {
                         int b = hud.HitButton(t.position);
-                        if (b >= 0)
-                        {
-                            PressButton(b, id);
-                            break;
-                        }
-                        // fixed joystick: grab it anywhere on (or just around) its ring
+                        if (b >= 0) { PressButton(b, id); break; }
                         Vector2 jc = hud.JoyCenterScreen();
-                        if (joyFinger < 0 && Vector2.Distance(t.position, jc) < hud.JoyRadiusScreen() * 1.45f)
+                        if (joyFinger < 0 && t.position.x < Screen.width * 0.5f && Vector2.Distance(t.position, jc) < hud.JoyRadiusScreen() * 1.6f)
                         {
                             joyFinger = id;
                             joyCenter = jc;
                             joyActive = true;
-                            move = StickVector(t.position - joyCenter, hud.JoyTravelScreen(), out Vector2 knob0);
+                            Vector2 knob0;
+                            move = StickVector(t.position - joyCenter, hud.JoyTravelScreen(), out knob0);
                             hud.SetJoystick(true, joyCenter, joyCenter + knob0);
                         }
-                        else if (lookFinger < 0 && t.position.x > Screen.width * LookZone)
+                        else if (lookFinger < 0 && t.position.x > Screen.width * 0.42f)
                         {
-                            // the right half of the screen is the look pad
                             lookFinger = id;
                             lastLook = t.position;
                         }
@@ -118,7 +91,8 @@ namespace RealFPS
                     {
                         if (id == joyFinger)
                         {
-                            move = StickVector(t.position - joyCenter, hud.JoyTravelScreen(), out Vector2 knob);
+                            Vector2 knob;
+                            move = StickVector(t.position - joyCenter, hud.JoyTravelScreen(), out knob);
                             joyActive = true;
                             hud.SetJoystick(true, joyCenter, joyCenter + knob);
                         }
@@ -126,8 +100,7 @@ namespace RealFPS
                         {
                             Vector2 delta = t.position - lastLook;
                             lastLook = t.position;
-                            if (delta.magnitude < Screen.height * 0.35f)
-                                lookAccum += delta * DegreesPerPixel();
+                            if (delta.magnitude < Screen.height * 0.35f) lookAccum += delta * DegreesPerPixel();
                         }
                         break;
                     }
@@ -154,47 +127,60 @@ namespace RealFPS
                 }
             }
             if (joyFinger < 0 && !joyActive) move = Vector2.zero;
-
 #if UNITY_EDITOR || UNITY_STANDALONE
             KeyboardMouse(ref move);
 #endif
             if (SimulatedMove != Vector2.zero) move = SimulatedMove;
             Move = move;
-
-            // sprint: lock button, or push the stick all the way forward
-            if (move.magnitude > 0.92f && move.y > 0.7f) rimTime += Time.deltaTime;
-            else rimTime = 0f;
-            Sprint = RunLocked || rimTime > 0.18f;
-            hud.SetSprinting(Sprint && move.y > 0.35f);
         }
 
-        /// <summary>Thumb offset -> movement (dead zone, eased response) and the clamped knob offset.</summary>
         static Vector2 StickVector(Vector2 d, float travel, out Vector2 knob)
         {
             knob = Vector2.ClampMagnitude(d, travel);
             Vector2 v = d / Mathf.Max(1f, travel);
             float m = Mathf.Min(1f, v.magnitude);
             float dm = Mathf.InverseLerp(0.1f, 1f, m);
-            return m > 1e-4f ? v.normalized * Mathf.Pow(dm, 1.15f) : Vector2.zero;
+            return m > 1e-4f ? v.normalized * Mathf.Pow(dm, 1.1f) : Vector2.zero;
         }
 
         void PressButton(int index, int finger)
         {
             if (index < buttonFinger.Length) buttonFinger[index] = finger;
             hud.SetButtonPressed(index, true);
-            switch (hud.ButtonAction(index))
+            Do(hud.ButtonAction(index));
+        }
+
+        public void Do(HudAction a)
+        {
+            FPController p = FPController.I;
+            switch (a)
             {
-                case HudAction.Jump: jumpQueued = true; break;
-                case HudAction.Crouch: crouchQueued = true; break;
-                case HudAction.Run:
-                    RunLocked = !RunLocked;
-                    hud.SetRunLocked(RunLocked);
+                case HudAction.Interact:
+                    if (Interactor.I != null) Interactor.I.Use();
+                    break;
+                case HudAction.Drop:
+                    if (Inventory.I != null) Inventory.I.Drop();
+                    break;
+                case HudAction.Crouch:
+                    if (p != null) p.ToggleCrouch();
+                    break;
+                case HudAction.Jump:
+                    jumpQueued = true;
+                    break;
+                case HudAction.Hide:
+                    if (p != null)
+                    {
+                        if (p.Hidden) p.Unhide();
+                        else if (p.SpotInRange != null) p.Hide(p.SpotInRange);
+                    }
+                    break;
+                case HudAction.Fire:
+                    if (Inventory.I != null) Inventory.I.Fire();
                     break;
                 case HudAction.Pause:
                     Sfx.Play2D(GameAssets.I.uiClick, 0.5f);
-                    Game.I.Pause();
+                    NCGame.I.Pause();
                     break;
-                case HudAction.Interact: interactQueued = true; break;
             }
         }
 
@@ -207,9 +193,12 @@ namespace RealFPS
             if (Input.GetMouseButton(1))
                 lookAccum += new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * 3f * GameSettings.LookSensitivity;
             if (Input.GetKeyDown(KeyCode.Space)) jumpQueued = true;
-            if (Input.GetKeyDown(KeyCode.C)) crouchQueued = true;
-            if (Input.GetKeyDown(KeyCode.E)) interactQueued = true;
-            if (Input.GetKey(KeyCode.LeftShift) && move.y > 0f) move = move.normalized;
+            if (Input.GetKeyDown(KeyCode.C)) Do(HudAction.Crouch);
+            if (Input.GetKeyDown(KeyCode.E)) Do(HudAction.Interact);
+            if (Input.GetKeyDown(KeyCode.G)) Do(HudAction.Drop);
+            if (Input.GetKeyDown(KeyCode.H)) Do(HudAction.Hide);
+            if (Input.GetKeyDown(KeyCode.F)) Do(HudAction.Fire);
+            if (Input.GetKeyDown(KeyCode.Escape)) Do(HudAction.Pause);
         }
 #endif
     }

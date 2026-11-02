@@ -1,9 +1,8 @@
 using UnityEngine;
 
-namespace RealFPS
+namespace NightClass
 {
-    /// <summary>Keeps a RectTransform inside the screen's safe area (camera cut-outs).</summary>
-    [RequireComponent(typeof(RectTransform))]
+    /// <summary>Keeps a RectTransform inside the screen's safe area (notches, rounded corners).</summary>
     public class SafeArea : MonoBehaviour
     {
         RectTransform rt;
@@ -12,7 +11,7 @@ namespace RealFPS
 
         void Awake()
         {
-            rt = (RectTransform)transform;
+            rt = GetComponent<RectTransform>();
             Apply();
         }
 
@@ -23,19 +22,17 @@ namespace RealFPS
 
         void Apply()
         {
-            last = Screen.safeArea;
+            if (rt == null) return;
+            Rect sa = Screen.safeArea;
+            last = sa;
             lastSize = new Vector2Int(Screen.width, Screen.height);
             if (Screen.width <= 0 || Screen.height <= 0) return;
-            Vector2 min = last.position;
-            Vector2 max = last.position + last.size;
-            min.x /= Screen.width;
-            min.y /= Screen.height;
-            max.x /= Screen.width;
-            max.y /= Screen.height;
+            Vector2 min = sa.position, max = sa.position + sa.size;
+            min.x /= Screen.width; min.y /= Screen.height;
+            max.x /= Screen.width; max.y /= Screen.height;
             rt.anchorMin = min;
             rt.anchorMax = max;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
         }
     }
 }

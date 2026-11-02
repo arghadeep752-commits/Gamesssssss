@@ -1,35 +1,42 @@
 using UnityEngine;
 
-namespace RealFPS
+namespace NightClass
 {
+    public enum Surface { Concrete, Wood, Tile, Metal }
+
     /// <summary>
-    /// Holds every asset the runtime code needs. The editor build script fills the
-    /// fields, so nothing is loaded by name at runtime.
+    /// Every asset the runtime needs. The editor build script fills the fields,
+    /// so nothing is loaded by name at runtime. Missing assets fall back gracefully.
     /// </summary>
     public class GameAssets : MonoBehaviour
     {
         public static GameAssets I { get; private set; }
 
-        [Header("UI")]
+        [Header("Fonts")]
         public Font uiFont;
         public Font uiFontBold;
         public Font titleFont;
-        public Sprite circle, ring, rounded, glow, dot, fadeH, fadeV;
-        public Sprite iconJump, iconCrouch, iconRun, iconPause, iconHand, iconLantern, iconGear;
+        public Font chalkFont;
+
+        [Header("UI sprites")]
+        public Sprite circle, ring, rounded, glow, vignette, dot;
+        public Sprite iconHand, iconDrop, iconCrouch, iconStand, iconHide, iconUnhide, iconFire, iconJump, iconPause;
+        public Sprite itemMainKey, itemHammer, itemTorch, itemNote, itemSafeKey, itemSpring, itemDynamite;
 
         [Header("Audio")]
-        public AudioClip wind;
-        public AudioClip lake;
-        public AudioClip fire;
-        public AudioClip jump, land, uiClick, pickup, complete;
-        public AudioClip[] birds;
-        public AudioClip[] stepGrass, stepDirt, stepRock, stepWood, stepWater;
+        public AudioClip uiClick, pickup, drop, doorOpen, doorClose, doorLocked, plankBreak;
+        public AudioClip fireWhoosh, fireLoop, water, steam, keypadBeep, keypadOk, keypadNo, safeOpen;
+        public AudioClip explosion, fuse, eat, bell, motor, trapdoor, burnScream, scream, heartbeat;
+        public AudioClip chaseLoop, ambientLoop, teacherHum, jump, land, rulerHit, lightPop, musicBox, slam;
+        public AudioClip[] stepConcrete, stepWood, stepTile, stepMetal, teacherSteps, ambientOneShots;
 
-        [Header("Rendering")]
-        /// <summary>Ambient light (spherical harmonics, 3 x 9 floats) baked from the HDRI sky.</summary>
-        public float[] ambientSH = new float[27];
-        public Color fogColor = new Color(0.7f, 0.75f, 0.8f);
-        public float fogDensity = 0.0024f;
+        [Header("Effects")]
+        public Material fireMat, smokeMat, waterMat, sparkMat, dustMat;
+
+        [Header("Atmosphere")]
+        public Color fogColor = new Color(0.035f, 0.045f, 0.06f);
+        public float fogDensity = 0.03f;
+        public float fogDensityHard = 0.075f;
 
         void Awake()
         {
@@ -37,20 +44,33 @@ namespace RealFPS
             if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (uiFontBold == null) uiFontBold = uiFont;
             if (titleFont == null) titleFont = uiFontBold;
+            if (chalkFont == null) chalkFont = uiFontBold;
         }
 
         public AudioClip[] StepsFor(Surface s)
         {
             switch (s)
             {
-                case Surface.Dirt: return stepDirt;
-                case Surface.Rock: return stepRock;
                 case Surface.Wood: return stepWood;
-                case Surface.Water: return stepWater;
-                default: return stepGrass;
+                case Surface.Tile: return stepTile;
+                case Surface.Metal: return stepMetal;
+                default: return stepConcrete;
             }
         }
-    }
 
-    public enum Surface { Grass, Dirt, Rock, Wood, Water }
+        public Sprite IconFor(ItemType t)
+        {
+            switch (t)
+            {
+                case ItemType.MainKey: return itemMainKey;
+                case ItemType.Hammer: return itemHammer;
+                case ItemType.Torch: return itemTorch;
+                case ItemType.CodeNote: return itemNote;
+                case ItemType.SafeKey: return itemSafeKey;
+                case ItemType.Spring: return itemSpring;
+                case ItemType.Dynamite: return itemDynamite;
+            }
+            return null;
+        }
+    }
 }

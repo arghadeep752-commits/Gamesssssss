@@ -3,21 +3,22 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-namespace RealFPS
+namespace NightClass
 {
     /// <summary>Helpers that build the uGUI interface in code.</summary>
     public static class UIKit
     {
-        public static readonly Color PanelColor = new Color(0.04f, 0.05f, 0.06f, 0.72f);
-        public static readonly Color ButtonColor = new Color(0.08f, 0.1f, 0.11f, 0.78f);
-        public static readonly Color Accent = new Color(0.98f, 0.78f, 0.42f, 1f);
-        public static readonly Color TextColor = new Color(0.96f, 0.96f, 0.94f, 1f);
-        public static readonly Color DimText = new Color(0.82f, 0.84f, 0.84f, 0.85f);
+        public static readonly Color PanelColor = new Color(0.03f, 0.035f, 0.04f, 0.82f);
+        public static readonly Color ButtonColor = new Color(0.09f, 0.1f, 0.1f, 0.85f);
+        public static readonly Color Accent = new Color(0.86f, 0.18f, 0.14f, 1f);
+        public static readonly Color Chalk = new Color(0.93f, 0.94f, 0.9f, 1f);
+        public static readonly Color TextColor = new Color(0.95f, 0.95f, 0.93f, 1f);
+        public static readonly Color DimText = new Color(0.78f, 0.8f, 0.8f, 0.9f);
 
         public static RectTransform Rect(Transform parent, string name)
         {
             var go = new GameObject(name, typeof(RectTransform));
-            go.layer = 5; // UI
+            go.layer = 5;
             var rt = (RectTransform)go.transform;
             rt.SetParent(parent, false);
             return rt;
@@ -64,18 +65,19 @@ namespace RealFPS
             t.color = color;
             t.alignment = align;
             t.raycastTarget = false;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.verticalOverflow = VerticalWrapMode.Overflow;
+            t.supportRichText = true;
             if (shadow)
             {
                 var s = rt.gameObject.AddComponent<Shadow>();
-                s.effectColor = new Color(0f, 0f, 0f, 0.55f);
+                s.effectColor = new Color(0f, 0f, 0f, 0.7f);
                 s.effectDistance = new Vector2(2f, -2f);
             }
             return t;
         }
 
-        public static Button Btn(Transform parent, string name, string label, Vector2 size, UnityAction onClick, int fontSize = 34)
+        public static Button Btn(Transform parent, string name, string label, Vector2 size, UnityAction onClick, int fontSize = 36)
         {
             Image bg = Img(parent, name, GameAssets.I.rounded, ButtonColor, true);
             bg.rectTransform.sizeDelta = size;
@@ -83,15 +85,15 @@ namespace RealFPS
             ColorBlock cb = b.colors;
             cb.normalColor = Color.white;
             cb.highlightedColor = Color.white;
-            cb.pressedColor = new Color(1f, 0.85f, 0.6f, 1f);
+            cb.pressedColor = new Color(1f, 0.55f, 0.5f, 1f);
             cb.selectedColor = Color.white;
-            cb.fadeDuration = 0.08f;
+            cb.fadeDuration = 0.06f;
             b.colors = cb;
             b.targetGraphic = bg;
-            b.onClick.AddListener(() => Sfx.Play2D(GameAssets.I.uiClick, 0.45f));
+            b.onClick.AddListener(() => Sfx.Play2D(GameAssets.I.uiClick, 0.5f));
             if (onClick != null) b.onClick.AddListener(onClick);
             Text t = Label(bg.transform, "Label", label, fontSize, TextColor, TextAnchor.MiddleCenter, GameAssets.I.uiFontBold, false);
-            t.rectTransform.Stretch(16, 16, 0, 0);
+            t.rectTransform.Stretch(14, 14, 0, 0);
             var nav = b.navigation;
             nav.mode = Navigation.Mode.None;
             b.navigation = nav;
@@ -130,18 +132,10 @@ namespace RealFPS
             nav.mode = Navigation.Mode.None;
             s.navigation = nav;
             if (onChange != null) s.onValueChanged.AddListener(v => onChange(v));
-            // a bigger invisible touch area
             Image hit = Img(root, "TouchArea", null, new Color(0, 0, 0, 0), true);
             hit.rectTransform.Stretch(-10, -10, -18, -18);
             hit.transform.SetAsFirstSibling();
             return s;
-        }
-
-        public static void Fit(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = rt.offsetMax = Vector2.zero;
         }
     }
 }

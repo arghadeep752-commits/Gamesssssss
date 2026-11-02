@@ -1,66 +1,34 @@
-# Silent Valley — realistic first-person Unity prototype (Android)
+# Night Class
 
-A first-person exploration prototype for Android phones, made with **Unity 6 (6000.0 LTS)** and the
-**Universal Render Pipeline (URP)**, built entirely in the cloud with GitHub Actions — no PC needed.
+An original first-person school horror game for Android, made with **Unity 6 (URP)** and built
+entirely in the cloud by GitHub Actions (no PC needed).
 
-You walk through a mountain valley with a lake, a fir forest, a pier and a campfire, and look for 5 lost
-lanterns.
+You wake up at your desk after dark. The school is locked, and the strict old teacher is still
+walking the halls with her ruler. You have **5 lessons (lives)** to solve the school and escape.
 
-## Get the APK
+## How it plays
+- Explore a dark school: classrooms, teachers' lounge, toilets, principal's office, library,
+  cafeteria, janitor's room, basement and boiler room, gym, garage.
+- The teacher patrols, **sees** you in a cone (crouch to be harder to spot), **hears** dropped
+  items and loud noises, chases you, opens doors, and drags you out of a locker if she saw you hide.
+- **Hide** in lockers and wardrobes, **crawl** through the vent, **crouch**, **jump**.
+- Carry **one item at a time**; drop items to distract her.
+- **Burn** her with the torch to stop her for 30 seconds.
+- Puzzle chain: hammer -> planks, hatch -> basement torch, sprinkler valve -> corridor fire,
+  principal's note -> garage keypad, dynamite -> basement rubble, small key -> lounge safe,
+  spring -> food elevator, main key -> main door.
+- Difficulties: **Ghost** (she can't catch you), **Normal**, **Hard** (faster, sharper eyes,
+  thick fog, no ambient sound). A secret room opens after your first escape.
 
-Every push to this branch builds a new APK and publishes it on the repository's **Releases** page as
-`realistic-fps-build-<number>`. Open it on your Android phone and tap the `.apk` file to install.
-The emulator screenshots of each build are attached to the same release.
+## Build
+Every push to the `night-class` branch:
+1. downloads CC0 textures from Poly Haven and OFL fonts (`tools/fetch_assets.py`),
+2. generates every other asset - decals, UI, the teacher's face, all sounds (`tools/process_assets.py`),
+3. builds the whole school, the teacher and the game in Unity from code (`Assets/Editor/NCWorld*.cs`),
+4. publishes the APK as a GitHub release `night-class-build-<n>`,
+5. plays it in an Android emulator and attaches screenshots to the release.
 
-## Controls
+Repository secrets needed: `UNITY_EMAIL`, `UNITY_PASSWORD` (Unity Personal license).
 
-- **Left side of the screen**: floating joystick — push it all the way forward to sprint
-- **Right side**: drag to look around
-- **Jump** (big button), **crouch**, **run lock**, **pause** (top-right)
-- **Pick up** appears next to a lantern
-
-## Graphics
-
-- Real HDRI sky (Poly Haven `kloofendal_48d_partly_cloudy_puresky`) for the skybox, the ambient light
-  (spherical harmonics) and reflections; the sun matches the sky.
-- Photo-scanned PBR textures for the terrain (grass, forest floor, lichen rock, lake-shore pebbles) and
-  photo-scanned models (rock faces, mossy boulders, ferns, wooden pier, fire pit, oil lanterns).
-- Procedural fir trees using Poly Haven's fir-branch texture atlas, with three levels of detail, drawn
-  with GPU instancing (a few dozen draw calls for the whole forest).
-- URP terrain (4 PBR layers with normal maps) with wind-blown terrain grass, a lake shader with sky
-  reflections, sun glints and shore depth, distant mountain range, fog, linear lighting, URP shadows and a
-  post-processing volume (ACES tonemapping, colour grading, white balance, subtle vignette, restrained
-  bloom on High). No depth of field or motion blur.
-- Three graphics profiles, picked automatically from the phone's GPU and memory and changeable in
-  Settings (each is a URP asset + quality level, see `Assets/Editor/RFRenderSetup.cs`):
-
-  | | Low | Medium | High |
-  |---|---|---|---|
-  | Render resolution (short side, max) | 720 px | 900 px | 1080 px |
-  | MSAA | 2x | 2x | 4x |
-  | Sun shadows | 25 m, 1024, hard | 38 m, 1024, soft | 60 m, 2048, 2 cascades, soft |
-  | Grass distance / density | 16 m / 35% | 28 m / 65% | 42 m / 100% |
-  | Tree detail distance | x0.7 | x1.0 | x1.35 |
-  | Bloom / vignette | off / off | off / on | on / on |
-
-- Settings: graphics profile, 30 or 60 FPS, look sensitivity, field of view, invert look, head bob, FPS
-  counter. The render resolution drops a little at a time when the frame rate cannot keep up.
-
-## One-time setup
-
-Unity needs a (free) Unity Personal license to build. Add two repository secrets under
-**Settings → Secrets and variables → Actions**: `UNITY_EMAIL` and `UNITY_PASSWORD`
-(two-step verification must be off on that Unity account).
-
-## Project layout
-
-- `tools/fetch_assets.py` — downloads the CC0 assets from Poly Haven (in CI)
-- `tools/process_assets.py` — turns them into game textures, atlases, sky data; generates sounds and UI icons
-- `Assets/Editor/` — the build script: creates the terrain, sky, lake, forest, props and the scene, then builds the APK
-- `Assets/Scripts/` — the game (player controller, touch controls, menus, quality settings, grass, post-processing)
-- `Assets/Shaders/` — water, foliage, grass, distant mountains and post-processing shaders
-- `.github/workflows/realistic-fps.yml` — the cloud build and emulator test
-
-## Credits
-
-Sky, textures and 3D models: [Poly Haven](https://polyhaven.com) (CC0). Fonts: Barlow and Cinzel (SIL Open Font License).
+Credits: textures by Poly Haven (CC0); fonts Barlow, Creepster, Cabin Sketch, Permanent Marker
+(Google Fonts, SIL OFL / Apache). All code, models, sounds and other art are original.

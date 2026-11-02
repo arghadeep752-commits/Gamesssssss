@@ -11,7 +11,7 @@ import sys
 
 COMPILE_RE = re.compile(r"^(Assets/[^\(\n]+)\((\d+),(\d+)\): error (CS\d+): (.*)$")
 KEY_PATTERNS = [
-    "Error building Player", "BuildFailedException", "[RF-BUILD]", "[RF-ERR]", "Shader error", "Shader warning in 'RealFPS", "NullReferenceException",
+    "Error building Player", "BuildFailedException", "[RF-BUILD]", "[RF-ERR]", "Shader error", "Shader warning in 'NightClass", "NullReferenceException",
     "CommandInvokationFailure", "What went wrong", "executeMethod class",
     "Scripts have compiler errors", "No valid Unity Editor license",
     "License is not active", "Failed to activate", "Exception:", "error:",
@@ -88,7 +88,7 @@ def gh_api(*args, data=None):
 
 def upload_logs(files, status):
     repo = os.environ.get("GH_REPO")
-    tag = os.environ.get("LOGS_TAG", "realistic-fps-logs")
+    tag = os.environ.get("LOGS_TAG", "night-class-logs")
     token = os.environ.get("GH_TOKEN")
     if not (repo and token):
         return
@@ -96,7 +96,7 @@ def upload_logs(files, status):
     rel = next((r for r in releases if r.get("tag_name") == tag), None)
     if rel is None:
         rel = gh_api(f"repos/{repo}/releases", "-X", "POST", "-f", f"tag_name={tag}",
-                     "-f", "name=Silent Valley build logs (private draft)", "-F", "draft=true",
+                     "-f", "name=Night Class build logs (private draft)", "-F", "draft=true",
                      "-f", "body=Private draft holding the latest build logs. Safe to delete.")
     if not rel or "id" not in rel:
         print("Could not create the logs release", file=sys.stderr)

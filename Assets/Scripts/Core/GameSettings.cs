@@ -1,110 +1,96 @@
 using UnityEngine;
 
-namespace RealFPS
+namespace NightClass
 {
     public enum GraphicsLevel { Low = 0, Medium = 1, High = 2 }
 
-    /// <summary>Player options, saved with PlayerPrefs.</summary>
+    /// <summary>Player preferences (saved with PlayerPrefs).</summary>
     public static class GameSettings
     {
-        const string Prefix = "rf_";
-
         public static GraphicsLevel Graphics;
+        public static bool GraphicsChosen;
         public static float LookSensitivity;   // 0.3 .. 2.5
         public static float FieldOfView;       // vertical degrees
-        public static bool InvertY;
         public static bool HeadBob;
-        public static bool ShowFps;
         public static bool Fps60;
         public static float Volume;
-        /// <summary>Night fog look (dark fog, short view distance) instead of the daylight sky.</summary>
-        public static bool NightStyle = true;
-
-        public static System.Action Changed;
+        static bool loaded;
 
         public static void Load()
         {
-            int defLevel = (int)DefaultLevel();
-            Graphics = (GraphicsLevel)Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "gfx", defLevel), 0, 2);
-            LookSensitivity = PlayerPrefs.GetFloat(Prefix + "sens", 1.0f);
-            FieldOfView = PlayerPrefs.GetFloat(Prefix + "fov", 58f);
-            InvertY = PlayerPrefs.GetInt(Prefix + "invy", 0) == 1;
-            HeadBob = PlayerPrefs.GetInt(Prefix + "bob", 1) == 1;
-            ShowFps = PlayerPrefs.GetInt(Prefix + "fps", 0) == 1;
-            Fps60 = PlayerPrefs.GetInt(Prefix + "fps60", Graphics == GraphicsLevel.High ? 1 : 0) == 1;
-            Volume = PlayerPrefs.GetFloat(Prefix + "vol", 1f);
-            NightStyle = PlayerPrefs.GetInt(Prefix + "night", 1) == 1;
+            if (loaded) return;
+            loaded = true;
+            GraphicsChosen = PlayerPrefs.HasKey("nc_gfx");
+            Graphics = (GraphicsLevel)PlayerPrefs.GetInt("nc_gfx", (int)DefaultLevel());
+            LookSensitivity = PlayerPrefs.GetFloat("nc_sens", 1f);
+            FieldOfView = PlayerPrefs.GetFloat("nc_fov", 64f);
+            HeadBob = PlayerPrefs.GetInt("nc_bob", 1) == 1;
+            Fps60 = PlayerPrefs.GetInt("nc_fps60", 1) == 1;
+            Volume = PlayerPrefs.GetFloat("nc_vol", 1f);
+            Apply();
         }
 
         public static void Save()
         {
-            PlayerPrefs.SetInt(Prefix + "gfx", (int)Graphics);
-            PlayerPrefs.SetFloat(Prefix + "sens", LookSensitivity);
-            PlayerPrefs.SetFloat(Prefix + "fov", FieldOfView);
-            PlayerPrefs.SetInt(Prefix + "invy", InvertY ? 1 : 0);
-            PlayerPrefs.SetInt(Prefix + "bob", HeadBob ? 1 : 0);
-            PlayerPrefs.SetInt(Prefix + "fps", ShowFps ? 1 : 0);
-            PlayerPrefs.SetInt(Prefix + "fps60", Fps60 ? 1 : 0);
-            PlayerPrefs.SetFloat(Prefix + "vol", Volume);
-            PlayerPrefs.SetInt(Prefix + "night", NightStyle ? 1 : 0);
+            PlayerPrefs.SetInt("nc_gfx", (int)Graphics);
+            PlayerPrefs.SetFloat("nc_sens", LookSensitivity);
+            PlayerPrefs.SetFloat("nc_fov", FieldOfView);
+            PlayerPrefs.SetInt("nc_bob", HeadBob ? 1 : 0);
+            PlayerPrefs.SetInt("nc_fps60", Fps60 ? 1 : 0);
+            PlayerPrefs.SetFloat("nc_vol", Volume);
             PlayerPrefs.Save();
-            if (Changed != null) Changed();
+            GraphicsChosen = true;
+            Apply();
         }
 
-        /// <summary>
-        /// A sensible starting level from the phone's GPU and memory (the player can change it
-        /// in Settings). Entry-level GPUs such as the Mali-G52 in the Galaxy A21s start on Low,
-        /// mid-range GPUs on Medium, recent flagship GPUs with plenty of memory on High.
-        /// </summary>
+        public static void Apply()
+        {
+            Application.targetFrameRate = Fps60 ? 60 : 30;
+            AudioListener.volume = Volume;
+        }
+
+        /// <summary>Picks a starting graphics profile from the GPU and memory.</summary>
         public static GraphicsLevel DefaultLevel()
         {
-            int ram = SystemInfo.systemMemorySize;        // MB
-            string gpu = (SystemInfo.graphicsDeviceName ?? "").ToLowerInvariant();
-            if (ram > 0 && ram < 3000) return GraphicsLevel.Low;
-            int tier = GpuTier(gpu);
-            if (tier <= 0) return GraphicsLevel.Low;
-            if (tier >= 2 && ram >= 5500) return GraphicsLevel.High;
-            return GraphicsLevel.Medium;
+            int mem = SystemInfo.systemMemorySize;
+            int tier = GpuTier(SystemInfo.graphicsDeviceName);
+            if (tier >= 2 && mem >= 6000) return GraphicsLevel.High;
+            if (tier >= 1 && mem >= 3500) return GraphicsLevel.Medium;
+            return GraphicsLevel.Low;
         }
 
-        /// <summary>0 = entry level, 1 = mid range, 2 = high end (unknown GPUs count as mid range).</summary>
+        /// <summary>0 = entry level (Mali-G52 / Adreno 50x class), 1 = mid range, 2 = high end.</summary>
         public static int GpuTier(string gpu)
         {
-            int n = NumberAfter(gpu, "adreno");
-            if (n > 0)
+            if (string.IsNullOrEmpty(gpu)) return 0;
+            string g = gpu.ToLowerInvariant();
+            if (g.Contains("adreno"))
             {
-                if (n >= 650) return 2;                       // Snapdragon 865 and newer
-                if (n >= 618) return 1;                       // Snapdragon 7xx-class
-                return 0;                                     // Adreno 3xx-5xx, 610/612/613
+                int n = Number(g);
+                if (n >= 730) return 2;
+                if (n >= 618) return 1;
+                return 0;
             }
-            if (gpu.Contains("immortalis") || gpu.Contains("xclipse")) return 2;
-            if (gpu.Contains("mali"))
+            if (g.Contains("mali"))
             {
-                int g = NumberAfter(gpu, "mali-g");
-                if (g <= 0) return 0;                         // Mali-4xx / T-series
-                if (g >= 710 || g == 77 || g == 78) return 2;
-                if (g == 31 || g == 51 || g == 52) return 0;  // e.g. Galaxy A21s (Mali-G52 MP1)
-                return 1;                                     // G57, G68, G72, G76 ...
+                if (g.Contains("g7") || g.Contains("immortalis") || g.Contains("g610") || g.Contains("g615")) return g.Contains("g71") || g.Contains("g72") ? 0 : 2;
+                if (g.Contains("g57") || g.Contains("g68") || g.Contains("g77") || g.Contains("g78")) return 1;
+                return 0;
             }
-            if (gpu.Contains("powervr") || gpu.Contains("ge8") || gpu.Contains("img bxm")) return 0;
+            if (g.Contains("xclipse") || g.Contains("apple")) return 2;
+            if (g.Contains("powervr")) return 0;
             return 1;
         }
 
-        static int NumberAfter(string s, string key)
+        static int Number(string s)
         {
-            int i = s.IndexOf(key, System.StringComparison.Ordinal);
-            if (i < 0) return 0;
-            i += key.Length;
-            int limit = Mathf.Min(s.Length, i + 8);
-            while (i < limit && !char.IsDigit(s[i])) i++;
-            int v = 0, digits = 0;
-            while (i < s.Length && char.IsDigit(s[i]) && digits < 4)
+            int best = 0, cur = 0;
+            foreach (char c in s)
             {
-                v = v * 10 + (s[i] - '0');
-                i++;
-                digits++;
+                if (char.IsDigit(c)) { cur = cur * 10 + (c - '0'); if (cur > best) best = cur; }
+                else cur = 0;
             }
-            return v;
+            return best;
         }
     }
 }
