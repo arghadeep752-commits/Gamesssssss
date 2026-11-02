@@ -46,6 +46,8 @@ namespace NightClass.EditorTools
                 mi.meshCompression = ModelImporterMeshCompression.Off;
                 return;
             }
+            mi.isReadable = true;   // read by the build-time mesh reduction (NCWorldModels)
+            mi.meshCompression = ModelImporterMeshCompression.Off;
             mi.animationType = ModelImporterAnimationType.None;
             mi.importAnimation = false;
             mi.importBlendShapes = false;

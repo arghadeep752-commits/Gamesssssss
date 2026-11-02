@@ -308,7 +308,7 @@ def textures():
         "rust": lambda: proc_rust(TEX, 19),
         "fabric": lambda: proc_fabric(TEX, 20),
     }
-    for name in ("paper", "chalkboard", "cork", "fabric2"):
+    for name in ("paper", "fabric2"):
         from_download(name, src("extra", name))
     for slot, gen in gens.items():
         if from_download(slot):
@@ -356,7 +356,7 @@ def paper_bg(w, h, seed, base=(232, 224, 200)):
 
 
 def board_bg(w, h, seed, base=(34, 48, 40)):
-    real = real_tex("chalkboard", w, h, seed)
+    real = real_tex("plaster", w, h, seed)
     if real is not None:
         a = np.asarray(real).astype(np.float32) / 255.0
         a = a / max(a.mean(), 1e-3) * col(base).mean() * 1.15

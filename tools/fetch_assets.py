@@ -100,8 +100,6 @@ MODEL_SLOTS = {
 # extra photo textures: name -> (Poly Haven ids, Poly Haven keywords, ambientCG search words)
 EXTRA_TEX = {
     "paper": ([], ["paper"], ["paper"]),
-    "chalkboard": ([], ["chalkboard", "blackboard"], ["chalkboard", "blackboard", "slate"]),
-    "cork": ([], ["cork"], ["cork"]),
     "fabric2": (["velour_velvet", "denim_fabric", "hessian_230"], ["velvet", "fabric"], ["fabric"]),
 }
 
