@@ -22,6 +22,7 @@ WANTED = [
 ]
 
 MODULES = [
+    "com.unity.modules.ai",
     "com.unity.modules.androidjni",
     "com.unity.modules.animation",
     "com.unity.modules.audio",

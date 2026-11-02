@@ -127,29 +127,36 @@ def main():
     for slot, (preferred, keywords) in SLOTS.items():
         if not catalog:
             break
-        aid = choose(catalog, preferred, keywords, used)
-        if not aid:
-            print(f"warning: no texture for {slot}")
-            continue
-        used.add(aid)
-        try:
-            files = get_json(f"{API}/files/{aid}")
-        except Exception as e:  # noqa: BLE001
-            print(f"warning: {aid}: {e}")
-            continue
-        got = {}
-        for kind, aliases in MAPS.items():
-            for a in aliases:
-                if a in files:
-                    p = pick(files[a], ["png", "jpg"] if kind == "nor" else ["jpg", "png"])
-                    if p:
-                        url, f = p
-                        path = os.path.join(out, slot, f"{kind}.{f}")
-                        jobs.append((url, path))
-                        got[kind] = path
-                        break
-        manifest["textures"][slot] = {"id": aid, "maps": got}
-        print(f"{slot:15s} <- {aid} ({', '.join(sorted(got))})")
+        for attempt in range(4):   # skip sets without a colour or normal map
+            aid = choose(catalog, preferred, keywords, used)
+            if not aid:
+                print(f"warning: no texture for {slot}")
+                break
+            used.add(aid)
+            try:
+                files = get_json(f"{API}/files/{aid}")
+            except Exception as e:  # noqa: BLE001
+                print(f"warning: {aid}: {e}")
+                continue
+            found = {}
+            for kind, aliases in MAPS.items():
+                for a in aliases:
+                    if a in files:
+                        p = pick(files[a], ["png", "jpg"] if kind == "nor" else ["jpg", "png"])
+                        if p:
+                            found[kind] = p
+                            break
+            if "diff" not in found or "nor" not in found:
+                print(f"{slot}: {aid} has no colour/normal map ({', '.join(sorted(files))}), trying another")
+                continue
+            got = {}
+            for kind, (url, f) in found.items():
+                path = os.path.join(out, slot, f"{kind}.{f}")
+                jobs.append((url, path))
+                got[kind] = path
+            manifest["textures"][slot] = {"id": aid, "maps": got}
+            print(f"{slot:15s} <- {aid} ({', '.join(sorted(got))})")
+            break
 
     for name, url in FONTS.items():
         path = os.path.join(out, "fonts", name)
