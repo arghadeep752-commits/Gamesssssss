@@ -48,11 +48,32 @@ while true; do
   sleep 2
 done
 
-# offscreen captures made by the game itself (true colours; the emulator washes out the screen)
-mkdir -p "$OUT/rt"
-timeout 120 adb pull "/sdcard/Android/data/$PKG/files/tour" "$OUT/rt" >/dev/null 2>&1 || true
-for f in $(find "$OUT/rt" -name "*.png" 2>/dev/null); do mv "$f" "$OUT/rt-$(basename "$f")"; done
-echo "offscreen captures: $(ls "$OUT"/rt-*.png 2>/dev/null | wc -l)"
+# offscreen captures made by the game itself (true colours; the emulator washes out the screen),
+# sent through the log as base64 JPEG chunks: "NCIMG <name> <i>/<n> <data>"
+timeout 90 adb logcat -d -s Unity:V 2>/dev/null | grep -o "NCIMG .*" > "$OUT/img.txt" || true
+python3 - "$OUT" <<'PYEOF'
+import base64, collections, os, sys
+out = sys.argv[1]
+parts, totals = collections.defaultdict(dict), {}
+for line in open(os.path.join(out, "img.txt"), errors="ignore"):
+    p = line.strip().split(" ")
+    if len(p) < 4 or "/" not in p[2]:
+        continue
+    i, n = p[2].split("/")
+    parts[p[1]][int(i)] = p[3]
+    totals[p[1]] = int(n)
+done = 0
+for name, d in parts.items():
+    if len(d) == totals[name]:
+        try:
+            data = base64.b64decode("".join(d[i] for i in range(totals[name])))
+            open(os.path.join(out, "rt-" + name + ".jpg"), "wb").write(data)
+            done += 1
+        except Exception as e:
+            print("bad capture", name, e)
+print("offscreen captures:", done)
+PYEOF
+rm -f "$OUT/img.txt"
 
 if alive; then echo "alive=yes" > "$OUT/result.txt"; else echo "alive=no" > "$OUT/result.txt"; fi
 dump

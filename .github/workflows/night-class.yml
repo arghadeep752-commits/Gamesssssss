@@ -320,7 +320,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls -la smoke || true
-          files=$(ls smoke/*.png smoke/*.txt 2>/dev/null || true)
+          files=$(ls smoke/*.png smoke/*.jpg smoke/*.txt 2>/dev/null || true)
           if [ -n "$files" ]; then
             gh release upload "${{ needs.build.outputs.release_tag }}" $files --clobber
           fi

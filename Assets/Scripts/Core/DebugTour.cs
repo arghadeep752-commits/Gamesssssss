@@ -60,7 +60,7 @@ namespace NightClass
         {
             Camera cam = Camera.main;
             if (cam == null) return;
-            int w = 1280;
+            int w = 960;
             int h = Mathf.RoundToInt(w * (float)Screen.height / Mathf.Max(1, Screen.width));
             RenderTexture rt = RenderTexture.GetTemporary(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             RenderTexture prevTarget = cam.targetTexture;
@@ -74,10 +74,16 @@ namespace NightClass
             tex.Apply();
             RenderTexture.active = prevActive;
             RenderTexture.ReleaseTemporary(rt);
-            string dir = System.IO.Path.Combine(Application.persistentDataPath, "tour");
-            System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, file + ".png"), tex.EncodeToPNG());
+            // Android blocks reading the app's files from adb, so the JPEG travels through the log
+            string b64 = System.Convert.ToBase64String(tex.EncodeToJPG(80));
             Destroy(tex);
+            const int chunk = 3000;
+            int n = (b64.Length + chunk - 1) / chunk;
+            StackTraceLogType prev = Application.GetStackTraceLogType(LogType.Log);
+            Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+            for (int i = 0; i < n; i++)
+                Debug.Log("NCIMG " + file + " " + i + "/" + n + " " + b64.Substring(i * chunk, Mathf.Min(chunk, b64.Length - i * chunk)));
+            Application.SetStackTraceLogType(LogType.Log, prev);
         }
 
         IEnumerator Start()
