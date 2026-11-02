@@ -25,9 +25,10 @@ on:
 permissions:
   contents: write
 
+# each push gets its own group so a new build never cancels the emulator screenshots of the previous one
 concurrency:
-  group: night-class
-  cancel-in-progress: true
+  group: night-class-${{ github.sha }}
+  cancel-in-progress: false
 
 env:
   UNITY_VERSION: 6000.0.85f1

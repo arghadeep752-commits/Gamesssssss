@@ -17,6 +17,7 @@ namespace NightClass.EditorTools
         static readonly Dictionary<string, int> modelUses = new Dictionary<string, int>();
         static int modelTris, modelTrisSource;
         static readonly Dictionary<string, Mesh> decimated = new Dictionary<string, Mesh>();
+        static readonly Dictionary<string, Vector2Int> slotTris = new Dictionary<string, Vector2Int>();
 
         // triangle budget per placed model (phones like the Galaxy A21s need light props)
         static readonly Dictionary<string, int> ModelBudget = new Dictionary<string, int>
@@ -55,23 +56,28 @@ namespace NightClass.EditorTools
             for (int sm = 0; sm < subs; sm++) tris[sm] = src.GetTriangles(sm);
             Bounds b = src.bounds;
             float extent = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
-            float lo = extent / 4000f, hi = extent / 3f;
             Mesh best = null;
-            for (int it = 0; it < 14; it++)
+            // first keep UV seams intact; if that can't reach the budget, merge across seams too
+            for (int pass = 0; pass < 2 && best == null; pass++)
             {
-                float cell = Mathf.Sqrt(lo * hi);
-                Mesh m = Cluster(v, uv, hasUV, tris, b.min, cell);
-                if (Tris(m) > target) lo = cell;
-                else { best = m; hi = cell; }
-                if (hi / lo < 1.08f) break;
+                bool keepSeams = hasUV && pass == 0;
+                float lo = extent / 4000f, hi = extent / 2f;
+                for (int it = 0; it < 16; it++)
+                {
+                    float cell = Mathf.Sqrt(lo * hi);
+                    Mesh m = Cluster(v, uv, hasUV, keepSeams, tris, b.min, cell);
+                    if (Tris(m) > target * 1.15f) lo = cell;
+                    else { best = m; hi = cell; }
+                    if (hi / lo < 1.08f) break;
+                }
             }
-            if (best == null) best = Cluster(v, uv, hasUV, tris, b.min, hi);
+            if (best == null) best = Cluster(v, uv, hasUV, false, tris, b.min, extent / 2f);
             best.name = src.name + "_lod";
             decimated[key] = best;
             return best;
         }
 
-        static Mesh Cluster(Vector3[] v, Vector2[] uv, bool hasUV, int[][] tris, Vector3 origin, float cell)
+        static Mesh Cluster(Vector3[] v, Vector2[] uv, bool hasUV, bool keepSeams, int[][] tris, Vector3 origin, float cell)
         {
             var map = new int[v.Length];
             var index = new Dictionary<long, int>();
@@ -84,7 +90,7 @@ namespace NightClass.EditorTools
                 Vector3 q = (v[i] - origin) * inv;
                 long x = (long)Mathf.Floor(q.x), y = (long)Mathf.Floor(q.y), z = (long)Mathf.Floor(q.z);
                 long u = 0, w = 0;
-                if (hasUV) { u = (long)Mathf.Floor(uv[i].x * 48f) & 0xFF; w = (long)Mathf.Floor(uv[i].y * 48f) & 0xFF; }
+                if (keepSeams) { u = (long)Mathf.Floor(uv[i].x * 48f) & 0xFF; w = (long)Mathf.Floor(uv[i].y * 48f) & 0xFF; }
                 long k = ((x & 0xFFFF) << 48) | ((y & 0xFFFF) << 32) | ((z & 0xFFFF) << 16) | (u << 8) | w;
                 int c;
                 if (!index.TryGetValue(k, out c))
@@ -219,6 +225,7 @@ namespace NightClass.EditorTools
             int total = 0;
             foreach (MeshFilter mf in mfs) if (mf.sharedMesh != null) total += Tris(mf.sharedMesh);
             modelTrisSource += total;
+            int after = 0;
             foreach (MeshFilter mf in mfs)
             {
                 if (mf.sharedMesh == null) continue;
@@ -230,7 +237,11 @@ namespace NightClass.EditorTools
                     catch (System.Exception e) { Log("mesh reduce failed for " + slot + ": " + e.Message); }
                 }
                 modelTris += Tris(mf.sharedMesh);
+                after += Tris(mf.sharedMesh);
             }
+            Vector2Int st;
+            slotTris.TryGetValue(slot, out st);
+            slotTris[slot] = new Vector2Int(st.x + total, st.y + after);
         }
 
         /// <summary>A loose physics prop made from a real model (boxes, buckets): rigidbody + box collider, makes noise.</summary>
@@ -278,7 +289,12 @@ namespace NightClass.EditorTools
         static void ReportModels()
         {
             var parts = new List<string>();
-            foreach (var kv in modelUses) parts.Add(kv.Key + " x" + kv.Value);
+            foreach (var kv in modelUses)
+            {
+                Vector2Int st;
+                slotTris.TryGetValue(kv.Key, out st);
+                parts.Add(kv.Key + " x" + kv.Value + " " + (st.x / Mathf.Max(1, kv.Value)) + "->" + (st.y / Mathf.Max(1, kv.Value)));
+            }
             Log("real models: " + modelUses.Count + " kinds, " + modelTris + " triangles after reduction (from " + modelTrisSource + "; " + string.Join(", ", parts.ToArray()) + ")");
         }
     }
