@@ -335,6 +335,7 @@ namespace NightClass.EditorTools
             ga.fogColor = new Color(0.03f, 0.038f, 0.05f);
             ga.fogDensity = 0.032f;
             ga.fogDensityHard = 0.075f;
+            ga.ambientColor = new Color(0.085f, 0.09f, 0.115f);
             int missingClips = 0;
             foreach (var f in typeof(GameAssets).GetFields())
                 if (f.FieldType == typeof(AudioClip) && f.GetValue(ga) == null) missingClips++;
@@ -419,10 +420,13 @@ namespace NightClass.EditorTools
 
         static void SetupLighting()
         {
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.05f, 0.06f, 0.085f);
-            RenderSettings.ambientEquatorColor = new Color(0.035f, 0.04f, 0.05f);
-            RenderSettings.ambientGroundColor = new Color(0.02f, 0.02f, 0.024f);
+            Color amb = new Color(0.085f, 0.09f, 0.115f);
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            RenderSettings.ambientLight = amb;
+            RenderSettings.ambientIntensity = 1f;
+            var sh = new SphericalHarmonicsL2();
+            sh.AddAmbientLight(amb);
+            RenderSettings.ambientProbe = sh;   // no lighting bake in batch mode: set the probe directly
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.03f, 0.038f, 0.05f);

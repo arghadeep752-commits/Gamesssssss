@@ -381,7 +381,7 @@ namespace NightClass.EditorTools
                 b.Cylinder(new Vector3(-0.6f, -0.1f, -0.06f), new Vector3(0.6f, -0.1f, -0.06f), 0.025f, 0.025f, 8);
             });
             if (off) return;
-            Light l = PointLight(go.transform, ceilingPos + Vector3.down * 0.35f, color, intensity, range);
+            Light l = SpotLight(go.transform, ceilingPos + Vector3.down * 0.14f, Quaternion.Euler(90f, 0f, 0f), color, intensity * 1.4f, range + 0.5f, 150f);
             if (flicker || broken)
             {
                 FlickerLight f = go.AddComponent<FlickerLight>();
