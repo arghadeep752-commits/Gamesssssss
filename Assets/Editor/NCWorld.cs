@@ -50,6 +50,7 @@ namespace NightClass.EditorTools
             FlushGeometry();
             SetupLighting();
             NCMats.Report();
+            ReportModels();
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
@@ -333,9 +334,9 @@ namespace NightClass.EditorTools
             ga.stepMetal = Clips("step_metal_", 3); ga.teacherSteps = Clips("teacher_step_", 3); ga.ambientOneShots = Clips("ambient_", 6);
             ga.fireMat = mFire; ga.smokeMat = mSmoke; ga.waterMat = mWater; ga.sparkMat = mSpark; ga.dustMat = mDust;
             ga.fogColor = new Color(0.03f, 0.038f, 0.05f);
-            ga.fogDensity = 0.032f;
-            ga.fogDensityHard = 0.075f;
-            ga.ambientColor = new Color(0.085f, 0.09f, 0.115f);
+            ga.fogDensity = 0.014f;
+            ga.fogDensityHard = 0.05f;
+            ga.ambientColor = new Color(0.2f, 0.21f, 0.2f);
             int missingClips = 0;
             foreach (var f in typeof(GameAssets).GetFields())
                 if (f.FieldType == typeof(AudioClip) && f.GetValue(ga) == null) missingClips++;
@@ -420,7 +421,7 @@ namespace NightClass.EditorTools
 
         static void SetupLighting()
         {
-            Color amb = new Color(0.085f, 0.09f, 0.115f);
+            Color amb = new Color(0.2f, 0.21f, 0.2f);
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = amb;
             RenderSettings.ambientIntensity = 1f;
@@ -430,7 +431,7 @@ namespace NightClass.EditorTools
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.03f, 0.038f, 0.05f);
-            RenderSettings.fogDensity = 0.032f;
+            RenderSettings.fogDensity = 0.014f;
             RenderSettings.skybox = null;
             RenderSettings.sun = null;
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;

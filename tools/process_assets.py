@@ -140,8 +140,8 @@ def write_set(slot, albedo, height=None, normal=None, rough=None, ao=None, metal
     im.save(out("Tex", f"{slot}_mask.png"))
 
 
-def from_download(slot):
-    d = src(slot)
+def from_download(slot, d=None):
+    d = d or src(slot)
     if not os.path.isdir(d):
         return False
     files = {os.path.splitext(f)[0]: os.path.join(d, f) for f in os.listdir(d) if os.path.getsize(os.path.join(d, f)) > 1000}
@@ -308,8 +308,12 @@ def textures():
         "rust": lambda: proc_rust(TEX, 19),
         "fabric": lambda: proc_fabric(TEX, 20),
     }
+    for name in ("paper", "chalkboard", "cork", "fabric2"):
+        from_download(name, src("extra", name))
     for slot, gen in gens.items():
         if from_download(slot):
+            continue
+        if slot == "fabric" and from_download("fabric", src("extra", "fabric2")):
             continue
         res = gen()
         alb, height, rough, ao = res[:4]
@@ -319,7 +323,27 @@ def textures():
 
 
 # ============================================================================ decals
+def real_tex(name, w, h, seed=0):
+    """Crop of a downloaded photo texture (Tex/<name>_albedo.jpg), or None."""
+    p = out("Tex", f"{name}_albedo.jpg")
+    if not os.path.exists(p):
+        return None
+    im = Image.open(p).convert("RGB")
+    r = np.random.default_rng(seed)
+    scale = max(w / im.width, h / im.height) * 1.05
+    im = im.resize((max(w, int(im.width * scale)), max(h, int(im.height * scale))), Image.LANCZOS)
+    x0 = int(r.uniform(0, im.width - w)) if im.width > w else 0
+    y0 = int(r.uniform(0, im.height - h)) if im.height > h else 0
+    return im.crop((x0, y0, x0 + w, y0 + h))
+
+
 def paper_bg(w, h, seed, base=(232, 224, 200)):
+    real = real_tex("paper", w, h, seed)
+    if real is not None:
+        a = np.asarray(real).astype(np.float32) / 255.0
+        lum = a.mean(axis=2, keepdims=True)
+        a = lerp(a, lum * col(base) / max(col(base).mean(), 1e-3), 0.35)
+        return Image.fromarray(np.clip(a / max(a.mean(), 1e-3) * col(base).mean() * 1.0 * 255, 0, 255).astype(np.uint8), "RGB")
     n = ndimage.gaussian_filter(np.random.default_rng(seed).random((h, w)), 3)
     n = (n - n.min()) / (n.max() - n.min())
     big = ndimage.gaussian_filter(np.random.default_rng(seed + 1).random((h, w)), 40)
@@ -332,6 +356,12 @@ def paper_bg(w, h, seed, base=(232, 224, 200)):
 
 
 def board_bg(w, h, seed, base=(34, 48, 40)):
+    real = real_tex("chalkboard", w, h, seed)
+    if real is not None:
+        a = np.asarray(real).astype(np.float32) / 255.0
+        a = a / max(a.mean(), 1e-3) * col(base).mean() * 1.15
+        a = lerp(a, a.mean(axis=2, keepdims=True) * col(base) / max(col(base).mean(), 1e-3), 0.5)
+        return Image.fromarray(np.clip(a * 255, 0, 255).astype(np.uint8), "RGB")
     r = np.random.default_rng(seed)
     n = ndimage.gaussian_filter(r.random((h, w)), 2)
     n = (n - n.min()) / (n.max() - n.min())
@@ -566,8 +596,13 @@ def fx():
     save_rgba(np.dstack([np.ones_like(spark), 0.85 + 0.15 * spark, 0.5 + 0.5 * spark, spark]), F("spark.png"))
     drop = np.clip(1 - np.sqrt(((x2 - 0.5) * 4) ** 2 + ((y2 - 0.5) * 1.3) ** 2), 0, 1) ** 1.5
     save_rgba(np.dstack([np.full_like(drop, 0.8), np.full_like(drop, 0.88), np.ones_like(drop), drop]), F("drop.png"))
-    # grime for the windows (R channel)
-    g = fbm(512, 50, ((40, 0.5), (10, 0.3), (2, 0.2)))
+    # grime for the windows (R channel): from the real concrete photo when available
+    realc = real_tex("concrete", 512, 512, 3)
+    if realc is not None:
+        g = np.asarray(realc.convert("L")).astype(np.float32) / 255.0
+        g = (g - g.min()) / max(g.max() - g.min(), 1e-6)
+    else:
+        g = fbm(512, 50, ((40, 0.5), (10, 0.3), (2, 0.2)))
     streak = ndimage.gaussian_filter(RNG.random((512, 512)), (40, 1.5), mode="wrap")
     streak = (streak - streak.min()) / (streak.max() - streak.min())
     gr = np.clip(g * 0.7 + streak * 0.5 - 0.2, 0, 1)
@@ -843,6 +878,75 @@ def teacher():
     cracked[..., :3] = np.clip(cracked[..., :3] + cr[..., None] * 0.6, 0, 1)
     cracked[..., 3] = np.clip(cracked[..., 3] + cr * 0.85, 0, 1)
     save_rgba(cracked, T("lens_crack.png"))
+
+
+def rocketbox_teacher():
+    """Realistic teacher (Microsoft Rocketbox, MIT): converts the TGA textures to PNG and grades
+    them older and paler (grey hair, sallow skin, darker suit); copies the rig and animations."""
+    sd = src("teacher")
+    fbx = os.path.join(sd, "Business_Female_02_facial.fbx")
+    if not os.path.exists(fbx) or os.path.getsize(fbx) < 100000:
+        log("teacher: Rocketbox model missing, the build uses the procedural teacher")
+        return
+    dst = os.path.join(ART, "Teacher", "Rocketbox")
+    os.makedirs(os.path.join(dst, "Textures"), exist_ok=True)
+    os.makedirs(os.path.join(dst, "Anims"), exist_ok=True)
+    shutil.copyfile(fbx, os.path.join(dst, "Business_Female_02_facial.fbx"))
+    for f in os.listdir(os.path.join(sd, "Anims")) if os.path.isdir(os.path.join(sd, "Anims")) else []:
+        if f.endswith(".fbx") and os.path.getsize(os.path.join(sd, "Anims", f)) > 10000:
+            shutil.copyfile(os.path.join(sd, "Anims", f), os.path.join(dst, "Anims", f))
+    td = os.path.join(sd, "Textures")
+    for f in sorted(os.listdir(td)) if os.path.isdir(td) else []:
+        if not f.endswith(".tga"):
+            continue
+        im = Image.open(os.path.join(td, f))
+        name = f[:-4]
+        size = 1024
+        if "glasses" in name:
+            size = 256
+        rgba = "opacity" in name
+        im = im.convert("RGBA" if rgba else "RGB").resize((size, size), Image.LANCZOS)
+        a = np.asarray(im).astype(np.float32) / 255.0
+        if name.endswith("head_color"):
+            rgb = a[..., :3]
+            mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+            sat = (mx - mn) / np.maximum(mx, 1e-4)
+            r_, g_, b_ = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+            hue = (np.degrees(np.arctan2(np.sqrt(3) * (g_ - b_), 2 * r_ - g_ - b_)) + 360) % 360
+            hair = np.clip((hue - 30) / 8, 0, 1) * np.clip((62 - hue) / 8, 0, 1) * np.clip((sat - 0.18) / 0.1, 0, 1)
+            hair = ndimage.gaussian_filter(hair, 2)[..., None]
+            lum = rgb.mean(axis=2, keepdims=True)
+            skin = lerp(rgb, lum * np.array([1.0, 0.97, 0.95]), 0.45) * 0.94 + np.array([0.02, 0.025, 0.01])
+            silver = np.clip(lerp(lum, 0.7, 0.5) * np.array([0.97, 0.97, 1.0]), 0, 1)
+            a[..., :3] = lerp(skin, silver, hair)
+        elif name.endswith("opacity_color") and "glasses" not in name:
+            lum = a[..., :3].mean(axis=2, keepdims=True)
+            a[..., :3] = np.clip(lerp(lum, 0.72, 0.55) * np.array([0.98, 0.98, 1.0]), 0, 1)   # grey-silver hair
+        elif name.endswith("body_color"):
+            lum = a[..., :3].mean(axis=2, keepdims=True)
+            a[..., :3] = lerp(a[..., :3], lum, 0.3) * 0.72
+        mode = "RGBA" if rgba else "RGB"
+        Image.fromarray(np.clip(a * 255 + 0.5, 0, 255).astype(np.uint8), mode).save(os.path.join(dst, "Textures", name + ".png"))
+    log("teacher: Rocketbox Business_Female_02 + " + str(len(os.listdir(os.path.join(dst, "Anims")))) + " animations")
+
+
+def models():
+    md = src("models")
+    if not os.path.isdir(md):
+        log("models: none downloaded")
+        return
+    n = 0
+    for slot in sorted(os.listdir(md)):
+        sdir = os.path.join(md, slot)
+        fbxs = [f for f in os.listdir(sdir) if f.lower().endswith(".fbx")]
+        if not fbxs:
+            continue
+        ddir = os.path.join(ART, "Models", slot)
+        if os.path.isdir(ddir):
+            shutil.rmtree(ddir)
+        shutil.copytree(sdir, ddir)
+        n += 1
+    log(f"models: {n} real props")
 
 
 def app_icon():
@@ -1184,6 +1288,8 @@ def main():
     fx()
     ui()
     teacher()
+    rocketbox_teacher()
+    models()
     app_icon()
     fonts()
     audio()

@@ -14,6 +14,7 @@ namespace NightClass
         public static bool HeadBob;
         public static bool Fps60;
         public static float Volume;
+        public static float Brightness;        // 0.6 .. 2.0
         static bool loaded;
 
         public static void Load()
@@ -27,6 +28,7 @@ namespace NightClass
             HeadBob = PlayerPrefs.GetInt("nc_bob", 1) == 1;
             Fps60 = PlayerPrefs.GetInt("nc_fps60", 1) == 1;
             Volume = PlayerPrefs.GetFloat("nc_vol", 1f);
+            Brightness = PlayerPrefs.GetFloat("nc_bright2", 1.15f);
             Apply();
         }
 
@@ -38,6 +40,7 @@ namespace NightClass
             PlayerPrefs.SetInt("nc_bob", HeadBob ? 1 : 0);
             PlayerPrefs.SetInt("nc_fps60", Fps60 ? 1 : 0);
             PlayerPrefs.SetFloat("nc_vol", Volume);
+            PlayerPrefs.SetFloat("nc_bright2", Brightness);
             PlayerPrefs.Save();
             GraphicsChosen = true;
             Apply();

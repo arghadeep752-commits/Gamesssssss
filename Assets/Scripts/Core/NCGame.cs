@@ -51,7 +51,7 @@ namespace NightClass
         {
             GameSettings.Load();
             if (QualityManager.I != null) QualityManager.I.Apply();
-            ApplyAmbient(GameAssets.I.ambientColor);
+            RefreshAmbient();
             ui.Build(this);
             if (navBaker != null) navBaker.Build();
             chase = Sfx.Loop(gameObject, GameAssets.I.chaseLoop, 0f, 20f, false);
@@ -122,6 +122,15 @@ namespace NightClass
 
         /// <summary>Night ambient light. Set explicitly: a scene generated in batch mode has no baked ambient probe,
         /// and Unity's default one (a bright daytime sky) would wash everything out.</summary>
+        static float ambientScale = 1f;
+
+        /// <summary>Ambient = base night ambient x difficulty x the player's brightness setting.</summary>
+        public static void RefreshAmbient()
+        {
+            if (GameAssets.I == null) return;
+            ApplyAmbient(GameAssets.I.ambientColor * ambientScale * Mathf.Clamp(GameSettings.Brightness, 0.5f, 2.5f));
+        }
+
         public static void ApplyAmbient(Color c)
         {
             RenderSettings.ambientMode = AmbientMode.Flat;
@@ -139,7 +148,8 @@ namespace NightClass
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = GameAssets.I.fogColor;
             RenderSettings.fogDensity = Diff == Difficulty.Hard ? GameAssets.I.fogDensityHard : GameAssets.I.fogDensity;
-            ApplyAmbient(GameAssets.I.ambientColor * (Diff == Difficulty.Hard ? 0.65f : 1f));
+            ambientScale = Diff == Difficulty.Hard ? 0.6f : 1f;
+            RefreshAmbient();
             if (ambient != null) ambient.volume = Diff == Difficulty.Hard ? 0f : 0.35f;
             if (teacher != null) teacher.Configure(Diff);
         }

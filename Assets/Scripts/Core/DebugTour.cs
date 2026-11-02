@@ -48,6 +48,36 @@ namespace NightClass
         {
             shot++;
             Debug.Log("[RF] TOUR shot " + shot + " " + name + " fps=" + (1f / Mathf.Max(0.0001f, Time.smoothDeltaTime)).ToString("0"));
+            try { Capture(shot.ToString("00") + "-" + name); }
+            catch (System.Exception e) { Debug.Log("[RF] capture failed: " + e.Message); }
+        }
+
+        /// <summary>
+        /// Renders the main camera into an offscreen sRGB texture and saves it as PNG. The emulator's
+        /// software GPU washes out the on-screen image; this copy shows what a real phone renders.
+        /// </summary>
+        void Capture(string file)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            int w = 1280;
+            int h = Mathf.RoundToInt(w * (float)Screen.height / Mathf.Max(1, Screen.width));
+            RenderTexture rt = RenderTexture.GetTemporary(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            RenderTexture prevTarget = cam.targetTexture;
+            cam.targetTexture = rt;
+            cam.Render();
+            cam.targetTexture = prevTarget;
+            RenderTexture prevActive = RenderTexture.active;
+            RenderTexture.active = rt;
+            var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+            tex.Apply();
+            RenderTexture.active = prevActive;
+            RenderTexture.ReleaseTemporary(rt);
+            string dir = System.IO.Path.Combine(Application.persistentDataPath, "tour");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, file + ".png"), tex.EncodeToPNG());
+            Destroy(tex);
         }
 
         IEnumerator Start()
@@ -92,7 +122,12 @@ namespace NightClass
                 FPController.I.Spawn(pos, Quaternion.LookRotation(-fwd).eulerAngles.y);
                 yield return new WaitForSecondsRealtime(3f);
                 Shot("teacher");
-                yield return new WaitForSecondsRealtime(4f);
+                yield return new WaitForSecondsRealtime(3f);
+                FPController.I.Spawn(t.transform.position + fwd * 1.5f, Quaternion.LookRotation(-fwd).eulerAngles.y);
+                if (TouchControls.I != null) TouchControls.I.AddLook(new Vector2(0f, 8f));
+                yield return new WaitForSecondsRealtime(3f);
+                Shot("teacher_close");
+                yield return new WaitForSecondsRealtime(3f);
                 NCGame.I.OnCaught();
                 yield return new WaitForSecondsRealtime(0.7f);
                 Shot("jumpscare");

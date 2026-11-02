@@ -15,6 +15,14 @@ namespace NightClass
         public Renderer[] tintable;
         public Light eyeGlow;
 
+        [Header("Realistic (animated) teacher")]
+        public Animator animator;
+        public SkinnedMeshRenderer face;
+        public Transform headBone, spineBone, armL, armR;
+        int bsJaw = -1, bsStretch = -1, bsWideL = -1, bsWideR = -1, bsBrowL = -1, bsBrowR = -1, bsFrownL = -1, bsFrownR = -1, bsBlinkL = -1, bsBlinkR = -1, bsSneerL = -1, bsSneerR = -1;
+        float blinkT = 2f, blinkW;
+        Quaternion headExtra = Quaternion.identity;
+
         [HideInInspector] public float speed;
         [HideInInspector] public bool chasing, searching;
         [HideInInspector] public Vector3? lookTarget;
@@ -28,8 +36,31 @@ namespace NightClass
         MaterialPropertyBlock mpb;
         Color[] baseColors;
 
+        static int Shape(Mesh m, string key)
+        {
+            if (m == null) return -1;
+            for (int i = 0; i < m.blendShapeCount; i++)
+                if (m.GetBlendShapeName(i).Contains(key)) return i;
+            return -1;
+        }
+
+        void SetShape(int i, float w)
+        {
+            if (i >= 0 && face != null) face.SetBlendShapeWeight(i, Mathf.Clamp(w, 0f, 100f));
+        }
+
         void Awake()
         {
+            if (face != null)
+            {
+                Mesh fm = face.sharedMesh;
+                bsJaw = Shape(fm, "JawOpen"); bsStretch = Shape(fm, "MouthStretch");
+                bsWideL = Shape(fm, "EyeWideLeft"); bsWideR = Shape(fm, "EyeWideRight");
+                bsBrowL = Shape(fm, "BrowDownLeft"); bsBrowR = Shape(fm, "BrowDownRight");
+                bsFrownL = Shape(fm, "MouthFrownLeft"); bsFrownR = Shape(fm, "MouthFrownRight");
+                bsBlinkL = Shape(fm, "EyeBlinkLeft"); bsBlinkR = Shape(fm, "EyeBlinkRight");
+                bsSneerL = Shape(fm, "MouthUpperUpLeft"); bsSneerR = Shape(fm, "MouthUpperUpRight");
+            }
             qHips = R(hips); qSpine = R(spine); qChest = R(chest); qNeck = R(neck); qHead = R(head); qJaw = R(jaw); qSkirt = R(skirt);
             qLegL = R(legL); qShinL = R(shinL); qFootL = R(footL); qLegR = R(legR); qShinR = R(shinR); qFootR = R(footR);
             qShL = R(shoulderL); qElL = R(elbowL); qHaL = R(handL); qShR = R(shoulderR); qElR = R(elbowR); qHaR = R(handR);
@@ -56,6 +87,7 @@ namespace NightClass
 
         void LateUpdate()
         {
+            if (animator != null) { AnimatedLate(); return; }
             float dt = Time.deltaTime;
             float stride = chasing ? 1.7f : 1.15f;
             phase += speed * dt * (Mathf.PI * 2f / stride);
@@ -137,6 +169,70 @@ namespace NightClass
             Set(head, qHead, headRot);
             Set(jaw, qJaw, E(attackW * 30f + chaseW * 6f + burnW * 22f + (alertT > 0f ? 10f : 0f), 0f, 0f));
 
+            if (eyeGlow != null) eyeGlow.intensity = Mathf.Lerp(0.15f, 0.9f, Mathf.Max(chaseW, attackW)) * (1f - burnW);
+            Tint(burnW);
+        }
+
+        /// <summary>Motion-captured body (Animator) + procedural head tracking, face and lunge on top.</summary>
+        void AnimatedLate()
+        {
+            float dt = Time.deltaTime;
+            float t = Time.time;
+            chaseW = Mathf.MoveTowards(chaseW, chasing ? 1f : 0f, dt * 3f);
+            attackW = Mathf.MoveTowards(attackW, attack ? 1f : 0f, dt * 6f);
+            burnW = Mathf.MoveTowards(burnW, burned ? 1f : 0f, dt * (burned ? 1.6f : 0.5f));
+            if (alertT > 0f) alertT -= dt;
+            animator.SetFloat("Speed", speed, 0.12f, dt);
+            animator.SetBool("Search", searching && !chasing && !burned);
+            animator.SetBool("Attack", attack);
+            animator.SetBool("Burn", burned);
+            animator.speed = chasing ? 1.08f : 1f;
+
+            Vector3 right = transform.right;
+            // lean into the chase; lunge with both arms reaching out for you on the catch
+            if (spineBone != null)
+                spineBone.rotation = Quaternion.AngleAxis(chaseW * 9f + attackW * 14f + burnW * 22f, right) * spineBone.rotation;
+            if (attackW > 0.01f)
+            {
+                if (armL != null) armL.rotation = Quaternion.AngleAxis(-78f * attackW, right) * Quaternion.AngleAxis(12f * attackW, transform.forward) * armL.rotation;
+                if (armR != null) armR.rotation = Quaternion.AngleAxis(-82f * attackW, right) * Quaternion.AngleAxis(-12f * attackW, transform.forward) * armR.rotation;
+            }
+
+            // head turns to keep you in sight
+            lookW = Mathf.MoveTowards(lookW, lookTarget.HasValue && burnW < 0.5f && attackW < 0.5f ? 1f : 0f, dt * 4f);
+            if (headBone != null)
+            {
+                Quaternion want = Quaternion.identity;
+                if (lookTarget.HasValue)
+                {
+                    Vector3 to = lookTarget.Value - headBone.position;
+                    Vector3 f = transform.forward;
+                    float yaw = Mathf.Clamp(Vector3.SignedAngle(Vector3.ProjectOnPlane(f, Vector3.up), Vector3.ProjectOnPlane(to, Vector3.up), Vector3.up), -70f, 70f);
+                    float pitch = Mathf.Clamp(-Mathf.Atan2(to.y, new Vector2(to.x, to.z).magnitude) * Mathf.Rad2Deg, -35f, 35f);
+                    want = Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.AngleAxis(pitch, right);
+                }
+                float jerk = alertT > 0f ? Mathf.Sin(alertT * 40f) * 4f : 0f;
+                headExtra = Quaternion.Slerp(headExtra, want, dt * 7f);
+                Quaternion shake = attackW > 0.01f ? Quaternion.Euler(Mathf.Sin(t * 47f) * 3f * attackW, Mathf.Sin(t * 31f) * 3f * attackW, Mathf.Sin(t * 23f) * 5f * attackW) : Quaternion.identity;
+                headBone.rotation = Quaternion.Slerp(Quaternion.identity, headExtra, lookW) * Quaternion.AngleAxis(jerk, right) * shake * headBone.rotation;
+            }
+
+            // face: stern frown, wide eyes in the chase, screaming mouth on the catch
+            if (face != null)
+            {
+                blinkT -= dt;
+                if (blinkT <= 0f) { blinkT = Random.Range(2.5f, 6f); blinkW = 1f; }
+                blinkW = Mathf.MoveTowards(blinkW, 0f, dt * 7f);
+                float blink = attackW > 0.3f ? 0f : blinkW * 100f;
+                float brow = Mathf.Max(45f, chaseW * 85f, attackW * 100f);
+                SetShape(bsBrowL, brow); SetShape(bsBrowR, brow);
+                SetShape(bsFrownL, 35f + chaseW * 40f); SetShape(bsFrownR, 35f + chaseW * 40f);
+                SetShape(bsSneerL, chaseW * 35f + attackW * 70f); SetShape(bsSneerR, chaseW * 35f + attackW * 70f);
+                SetShape(bsWideL, Mathf.Max(chaseW * 55f, attackW * 100f)); SetShape(bsWideR, Mathf.Max(chaseW * 55f, attackW * 100f));
+                SetShape(bsJaw, attackW * 100f + burnW * 75f + chaseW * 12f + (alertT > 0f ? 45f : 0f));
+                SetShape(bsStretch, attackW * 80f + burnW * 55f);
+                SetShape(bsBlinkL, blink + burnW * 60f); SetShape(bsBlinkR, blink + burnW * 60f);
+            }
             if (eyeGlow != null) eyeGlow.intensity = Mathf.Lerp(0.15f, 0.9f, Mathf.Max(chaseW, attackW)) * (1f - burnW);
             Tint(burnW);
         }

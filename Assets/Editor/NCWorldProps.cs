@@ -14,6 +14,13 @@ namespace NightClass.EditorTools
         // ------------------------------------------------------------------ furniture (merged per cell)
         static void Desk(Vector3 p, float yaw)
         {
+            if (HasModel("school_desk"))
+            {
+                Quaternion q = Quaternion.Euler(0f, yaw, 0f);
+                PlaceModel("school_desk", p, yaw, new Vector2(0f, 0.76f));
+                if (HasModel("school_chair")) PlaceModel("school_chair", p + q * new Vector3(0f, 0f, -0.62f), yaw, new Vector2(0f, 0.84f));
+                return;
+            }
             Matrix4x4 m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one);
             string g = Cell(p);
             Draw(g, mWood, m, b => { b.Box(new Vector3(0f, 0.74f, 0f), new Vector3(1.1f, 0.035f, 0.55f)); b.Box(new Vector3(0f, 0.62f, 0.05f), new Vector3(1.0f, 0.18f, 0.4f)); });
@@ -36,6 +43,11 @@ namespace NightClass.EditorTools
 
         static void BigDesk(Vector3 p, float yaw, Material mat)
         {
+            if (HasModel("table") && PlaceModel("table", p, yaw + 90f, new Vector2(1.7f, 0f)) != null)
+            {
+                if (HasModel("chair")) PlaceModel("chair", p + Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, 0f, -0.75f), yaw, new Vector2(0f, 0.95f));
+                return;
+            }
             Matrix4x4 m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one);
             Draw(Cell(p), mat, m, b =>
             {
@@ -62,6 +74,8 @@ namespace NightClass.EditorTools
 
         static void Shelf(Vector3 p, float yaw, float w, float h, int rows, bool books, int seed)
         {
+            string slot = books ? "shelf" : (HasModel("metal_shelf") ? "metal_shelf" : "shelf");
+            if (HasModel(slot) && PlaceModel(slot, p, yaw, h > 1.2f ? new Vector2(0f, h) : new Vector2(w, 0f)) != null) return;
             Matrix4x4 m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one);
             string g = Cell(p);
             Draw(g, mWoodDark, m, b =>
@@ -100,6 +114,7 @@ namespace NightClass.EditorTools
 
         static void Clock(Vector3 p, float yaw)
         {
+            if (HasModel("clock") && PlaceModel("clock", p + Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, -0.17f, 0f), yaw, new Vector2(0.34f, 0f), false) != null) return;
             Matrix4x4 m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one);
             Draw(Cell(p), mClock, m, b => b.Panel(new Vector3(0f, 0f, -0.035f), new Vector3(0.34f, 0.34f, 0.01f)));
             Draw(Cell(p), mMetalDark, m, b => b.Cylinder(new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, -0.03f), 0.18f, 0.18f, 18));
@@ -107,6 +122,7 @@ namespace NightClass.EditorTools
 
         static void Radiator(Vector3 p, float yaw)
         {
+            if (HasModel("radiator") && PlaceModel("radiator", p, yaw, new Vector2(1f, 0f), false) != null) return;
             Draw(Cell(p), mMetalGrey, Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one), b =>
             {
                 for (int i = 0; i < 10; i++) b.Box(new Vector3(-0.45f + i * 0.1f, 0.42f, 0f), new Vector3(0.06f, 0.6f, 0.1f));
@@ -114,8 +130,16 @@ namespace NightClass.EditorTools
             });
         }
 
-        static void Bench(Vector3 p, float yaw, float len)
+        static void Bench(Vector3 p, float yaw, float len, float face = 0f)
         {
+            if (HasModel("chair") && len > 2f)
+            {
+                Quaternion q = Quaternion.Euler(0f, yaw, 0f);
+                int n = Mathf.Max(2, Mathf.RoundToInt(len / 1.1f));
+                for (int i = 0; i < n; i++)
+                    PlaceModel("chair", p + q * new Vector3(-len * 0.5f + len * (i + 0.5f) / n, 0f, 0f), yaw + face, new Vector2(0f, 0.95f));
+                return;
+            }
             Matrix4x4 m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one);
             Draw(Cell(p), mWood, m, b => b.Box(new Vector3(0f, 0.44f, 0f), new Vector3(len, 0.05f, 0.32f)));
             Draw(Cell(p), mMetalDark, m, b => { b.Box(new Vector3(-len * 0.42f, 0.21f, 0f), new Vector3(0.04f, 0.42f, 0.28f)); b.Box(new Vector3(len * 0.42f, 0.21f, 0f), new Vector3(0.04f, 0.42f, 0.28f)); });
@@ -124,6 +148,8 @@ namespace NightClass.EditorTools
 
         static void Table(Vector3 p, float yaw, float w, float d, Material top)
         {
+            string slot = w > 2.5f && HasModel("table2") ? "table2" : "table";
+            if (HasModel(slot) && PlaceModel(slot, p, yaw + (w >= d ? 0f : 90f), new Vector2(Mathf.Max(w, d), 0f)) != null) return;
             Matrix4x4 m = Matrix4x4.TRS(p, Quaternion.Euler(0f, yaw, 0f), Vector3.one);
             Draw(Cell(p), top, m, b => b.Box(new Vector3(0f, 0.75f, 0f), new Vector3(w, 0.05f, d)));
             Draw(Cell(p), mMetalDark, m, b =>
@@ -136,6 +162,12 @@ namespace NightClass.EditorTools
 
         static void Crate(Vector3 p, float s, bool physics, int seed = 0)
         {
+            string cs = HasModel("box") ? "box" : (HasModel("crate") ? "crate" : null);
+            if (cs != null)
+            {
+                if (physics && PhysicsModel(cs, p, seed * 23f, new Vector2(0f, s), 4f) != null) return;
+                if (!physics && PlaceModel(HasModel("crate") ? "crate" : cs, p, seed * 31f, new Vector2(0f, s)) != null) return;
+            }
             if (!physics)
             {
                 SBox(mCrate, p + Vector3.up * s * 0.5f, Vector3.one * s);
@@ -152,6 +184,7 @@ namespace NightClass.EditorTools
 
         static void Bucket(Vector3 p)
         {
+            if (HasModel("bucket") && PhysicsModel("bucket", p, 0f, new Vector2(0f, 0.32f), 2f) != null) return;
             GameObject go = Obj("Bucket", null, p, Quaternion.identity);
             go.layer = LayerProp;
             Part(go.transform, "Mesh", mMetalGrey, b => b.Cylinder(new Vector3(0f, 0f, 0f), new Vector3(0f, 0.34f, 0f), 0.14f, 0.17f, 12, true));
@@ -260,6 +293,7 @@ namespace NightClass.EditorTools
                     break;
                 }
                 case ItemType.Hammer:
+                    if (AttachModel("hammer", parent, 0.32f, new Vector3(0f, 0f, 90f))) break;
                     Part(parent, "Handle", mWood, b => b.Cylinder(new Vector3(0f, -0.15f, 0f), new Vector3(0f, 0.13f, 0f), 0.014f, 0.016f, 8));
                     Part(parent, "Head", mMetalDark, b => { b.Box(new Vector3(0.02f, 0.15f, 0f), new Vector3(0.13f, 0.035f, 0.035f)); b.Box(new Vector3(-0.07f, 0.16f, 0f), new Vector3(0.05f, 0.025f, 0.03f)); });
                     break;
@@ -424,7 +458,8 @@ namespace NightClass.EditorTools
                 Chalkboard(new Vector3(boardX, 1.65f, 7f), boardYaw, mChalkboard);
                 Clock(new Vector3(boardX + (flip ? -0.02f : 0.02f), 2.75f, 7f), boardYaw);
                 BigDesk(new Vector3(flip ? x0 + 8.2f : x0 + 1.8f, 0f, 7f), flip ? -90f : 90f, mWoodDark);
-                for (int row = 0; row < 4; row++)
+                int[] rowIdx = HasModel("school_desk") ? new[] { 0, 1, 3 } : new[] { 0, 1, 2, 3 };
+                foreach (int row in rowIdx)
                     for (int col = 0; col < 3; col++)
                     {
                         float x = flip ? x0 + 6.6f - row * 1.45f : x0 + 3.4f + row * 1.45f;
@@ -454,20 +489,25 @@ namespace NightClass.EditorTools
         {
             MakeDoor(new Vector3(0f, 0f, 2f), true, mWood);
             // sofa
-            Matrix4x4 m = Matrix4x4.TRS(new Vector3(3.3f, 0f, 7f), Quaternion.Euler(0f, 90f, 0f), Vector3.one);
-            Draw(Cell(new Vector3(3.3f, 0f, 7f)), mFabric, m, b =>
+            bool realSofa = PlaceModel("sofa", new Vector3(3.35f, 0f, 7f), -90f, new Vector2(2.1f, 0f)) != null;
+            Matrix4x4 m = Matrix4x4.TRS(new Vector3(3.3f, realSofa ? -20f : 0f, 7f), Quaternion.Euler(0f, 90f, 0f), Vector3.one);
+            if (!realSofa) Draw(Cell(new Vector3(3.3f, 0f, 7f)), mFabric, m, b =>
             {
                 b.Box(new Vector3(0f, 0.25f, 0f), new Vector3(2f, 0.4f, 0.8f));
                 b.Box(new Vector3(0f, 0.6f, 0.35f), new Vector3(2f, 0.55f, 0.18f));
                 b.Box(new Vector3(-0.95f, 0.45f, 0f), new Vector3(0.18f, 0.5f, 0.8f));
                 b.Box(new Vector3(0.95f, 0.45f, 0f), new Vector3(0.18f, 0.5f, 0.8f));
             });
-            Collider(new Vector3(3.3f, 0.4f, 7f), new Vector3(0.9f, 0.8f, 2f));
-            Table(new Vector3(1.9f, 0f, 7f), 90f, 1.1f, 0.6f, mWoodDark);
+            if (!realSofa) Collider(new Vector3(3.3f, 0.4f, 7f), new Vector3(0.9f, 0.8f, 2f));
+            if (PlaceModel("coffee_table", new Vector3(1.9f, 0f, 7f), 90f, new Vector2(1.1f, 0f)) == null) Table(new Vector3(1.9f, 0f, 7f), 90f, 1.1f, 0.6f, mWoodDark);
+            PlaceModel("armchair", new Vector3(1.6f, 0f, 9.6f), 200f, new Vector2(0f, 0.95f));
+            PlaceModel("tv", new Vector3(-3.55f, 0.95f, 8.9f), 90f, new Vector2(0.7f, 0f), false);
+            PlaceModel("plant", new Vector3(3.4f, 0f, 11.3f), 0f, new Vector2(0f, 1.1f));
+            PlaceModel("plant", new Vector3(-3.4f, 0f, 11.3f), 70f, new Vector2(0f, 0.9f));
             Table(new Vector3(-1.8f, 0f, 5.5f), 0f, 1.6f, 0.9f, mWood);
             Draw(Cell(new Vector3(-3.6f, 0f, 9f)), mWoodDark, Matrix4x4.identity, b => { b.Box(new Vector3(-3.55f, 0.45f, 9.5f), new Vector3(0.6f, 0.9f, 2.4f)); b.Box(new Vector3(-3.55f, 0.93f, 9.5f), new Vector3(0.64f, 0.05f, 2.44f)); });
             Collider(new Vector3(-3.55f, 0.47f, 9.5f), new Vector3(0.6f, 0.94f, 2.4f));
-            Draw(Cell(new Vector3(-3.5f, 1f, 9f)), mMetalDark, Matrix4x4.identity, b => b.Box(new Vector3(-3.55f, 1.15f, 9.1f), new Vector3(0.3f, 0.4f, 0.3f)));
+            if (!HasModel("tv")) Draw(Cell(new Vector3(-3.5f, 1f, 9f)), mMetalDark, Matrix4x4.identity, b => b.Box(new Vector3(-3.55f, 1.15f, 9.1f), new Vector3(0.3f, 0.4f, 0.3f)));
             Poster(new Vector3(-2.2f, 1.7f, 11.87f), 0f, 3, 0.9f, 0.6f);
             HideCabinet(new Vector3(-3.62f, 0f, 3.2f), -90f, false);
             HideCabinet(new Vector3(-3.62f, 0f, 3.8f), -90f, false);
@@ -556,9 +596,15 @@ namespace NightClass.EditorTools
             // principal's office
             BigDesk(new Vector3(-30.5f, 0f, 6.6f), 180f, mWoodDark);
             Shelf(new Vector3(-35.75f, 0f, 3.4f), -90f, 2f, 2.1f, 5, true, 31);
-            for (int i = 0; i < 3; i++) SBox(mMetalGrey, new Vector3(-25f, 0.66f, 4f + i * 0.6f), new Vector3(0.55f, 1.32f, 0.5f));
+            if (PlaceModel("cabinet", new Vector3(-24.6f, 0f, 4.6f), 90f, new Vector2(0f, 1.9f)) == null)
+                for (int i = 0; i < 3; i++) SBox(mMetalGrey, new Vector3(-25f, 0.66f, 4f + i * 0.6f), new Vector3(0.55f, 1.32f, 0.5f));
+            PlaceModel("armchair", new Vector3(-33.6f, 0f, 8.6f), 150f, new Vector2(0f, 1.0f));
+            PlaceModel("plant", new Vector3(-35.3f, 0f, 9.4f), 0f, new Vector2(0f, 1.2f));
+            PlaceModel("nightstand", new Vector3(-33.2f, 0f, 2.5f), 0f, new Vector2(0f, 0.7f));
             SBox(mFabric, new Vector3(-30f, 0.005f, 5.2f), new Vector3(3f, 0.01f, 2f), false);
-            Draw(Cell(new Vector3(-31.1f, 0.8f, 6.7f)), mBrass, Matrix4x4.identity, b => { b.Cylinder(new Vector3(-31.1f, 0.79f, 6.75f), new Vector3(-31.1f, 1.2f, 6.75f), 0.012f, 0.012f, 6); b.Cylinder(new Vector3(-31.1f, 1.15f, 6.75f), new Vector3(-31.1f, 1.32f, 6.75f), 0.13f, 0.06f, 12); });
+            if (PlaceModel("desk_lamp", new Vector3(-31.1f, 0.785f, 6.75f), 160f, new Vector2(0f, 0.45f), false) == null)
+                Draw(Cell(new Vector3(-31.1f, 0.8f, 6.7f)), mBrass, Matrix4x4.identity, b => { b.Cylinder(new Vector3(-31.1f, 0.79f, 6.75f), new Vector3(-31.1f, 1.2f, 6.75f), 0.012f, 0.012f, 6); b.Cylinder(new Vector3(-31.1f, 1.15f, 6.75f), new Vector3(-31.1f, 1.32f, 6.75f), 0.13f, 0.06f, 12); });
+            PlaceModel("books", new Vector3(-29.8f, 0.785f, 6.8f), 10f, new Vector2(0.3f, 0f), false);
             PlaceItem(ItemType.CodeNote, new Vector3(-30.2f, 0.795f, 6.45f), Quaternion.Euler(90f, 20f, 0f));
             Poster(new Vector3(-24.13f, 1.8f, 6.4f), 90f, 1, 0.8f, 1f);
             patrol.Add(Point("Patrol_office", new Vector3(-29f, 0f, 4f)));
@@ -585,11 +631,13 @@ namespace NightClass.EditorTools
                 float z = -4.6f - i * 2.4f;
                 Table(new Vector3(-20f, 0f, z), 0f, 4f, 0.9f, mWood);
                 Bench(new Vector3(-20f, 0f, z - 0.75f), 0f, 3.8f);
-                Bench(new Vector3(-20f, 0f, z + 0.75f), 0f, 3.8f);
+                Bench(new Vector3(-20f, 0f, z + 0.75f), 0f, 3.8f, 180f);
             }
             // serving counter + cake
             SBox(mMetalGrey, new Vector3(-14.75f, 0.5f, -5.5f), new Vector3(0.9f, 1f, 5f));
             SBox(mMetalGrey, new Vector3(-14.75f, 1.02f, -5.5f), new Vector3(1f, 0.04f, 5.1f), false);
+            PlaceModel("cash_register", new Vector3(-14.75f, 1.04f, -7.2f), -90f, new Vector2(0.45f, 0f), false);
+            PlaceModel("trash", new Vector3(-15.6f, 0f, -11.4f), 0f, new Vector2(0f, 0.75f));
             GameObject cake = Obj("Cake", null, new Vector3(-14.75f, 1.04f, -5f), Quaternion.identity);
             GameObject slice = new GameObject("Slice");
             slice.transform.SetParent(cake.transform, false);
@@ -714,7 +762,7 @@ namespace NightClass.EditorTools
             // reception, benches, trophies, map
             BigDesk(new Vector3(2.4f, 0f, -6f), -90f, mWood);
             Bench(new Vector3(-7.6f, 0f, -8f), 90f, 2.4f);
-            Bench(new Vector3(3.6f, 0f, -11f), 90f, 2.4f);
+            Bench(new Vector3(3.6f, 0f, -11f), 90f, 2.4f, 180f);
             SBox(mWoodDark, new Vector3(-7.75f, 0.6f, -4.5f), new Vector3(0.4f, 1.2f, 1.6f));
             for (int i = 0; i < 3; i++)
             {
@@ -753,8 +801,8 @@ namespace NightClass.EditorTools
                 Draw(Cell(new Vector3(x, 3f, -6.5f)), mRed, Matrix4x4.identity, b => b.Torus(new Vector3(x + (w ? 0.62f : -0.62f), 2.95f, -6.5f), Vector3.up, 0.23f, 0.012f, 16, 5));
             }
             for (int i = 0; i < 3; i++) SBox(mMat, new Vector3(16f, 0.08f + i * 0.16f, -14.6f), new Vector3(2f, 0.15f, 1f));
-            Bench(new Vector3(12f, 0f, -2.7f), 0f, 3f);
-            Bench(new Vector3(17f, 0f, -2.7f), 0f, 3f);
+            Bench(new Vector3(12f, 0f, -2.7f), 0f, 3f, 180f);
+            Bench(new Vector3(17f, 0f, -2.7f), 0f, 3f, 180f);
             // storage room: hammer + easter egg
             MakeDoor(new Vector3(20f, 0f, -11f), true, mWood);
             Crate(new Vector3(21.5f, 0f, -14.8f), 0.8f, false);
@@ -817,7 +865,12 @@ namespace NightClass.EditorTools
             SBox(mWoodDark, new Vector3(31f, 1.6f, 5.9f), new Vector3(3f, 1.2f, 0.04f), false);
             PlaceItem(ItemType.Dynamite, new Vector3(31.3f, 0.795f, 5.3f), Quaternion.Euler(90f, 40f, 0f));
             for (int i = 0; i < 3; i++)
-                Draw(Cell(new Vector3(35f, 0f, -4f)), mRust, Matrix4x4.identity, b => b.Cylinder(new Vector3(35.2f, 0f, -4.8f + i * 0.7f), new Vector3(35.2f, 0.9f, -4.8f + i * 0.7f), 0.29f, 0.29f, 14));
+                if (PlaceModel("barrel", new Vector3(35.2f, 0f, -4.8f + i * 0.75f), i * 40f, new Vector2(0f, 0.9f)) == null)
+                    Draw(Cell(new Vector3(35f, 0f, -4f)), mRust, Matrix4x4.identity, b => b.Cylinder(new Vector3(35.2f, 0f, -4.8f + i * 0.7f), new Vector3(35.2f, 0.9f, -4.8f + i * 0.7f), 0.29f, 0.29f, 14));
+            PlaceModel("drill", new Vector3(30.2f, 0.785f, 5.35f), 120f, new Vector2(0.28f, 0f), false);
+            PlaceModel("wrench", new Vector3(32.2f, 0.785f, 5.4f), 30f, new Vector2(0.3f, 0f), false);
+            PlaceModel("toolbox", new Vector3(28.4f, 0f, 5.3f), 0f, new Vector2(0.5f, 0f));
+            PlaceModel("metal_shelf", new Vector3(35.6f, 0f, 3.6f), 90f, new Vector2(0f, 1.9f));
             patrol.Add(Point("Patrol_garage", new Vector3(29f, 0f, 3f)));
         }
 
@@ -827,6 +880,9 @@ namespace NightClass.EditorTools
             Crate(new Vector3(-13.2f, y, -11.3f), 0.8f, false);
             Crate(new Vector3(-12.3f, y, -11.4f), 0.6f, true, 4);
             Crate(new Vector3(-6f, y, -3.8f), 0.7f, false);
+            PlaceModel("barrel", new Vector3(-13.4f, y, -4f), 20f, new Vector2(0f, 0.9f));
+            PlaceModel("barrel", new Vector3(5.3f, y, -4.8f), 60f, new Vector2(0f, 0.9f));
+            PlaceModel("metal_shelf", new Vector3(-6.2f, y, -11.6f), 180f, new Vector2(0f, 1.9f));
             Shelf(new Vector3(-9f, y, -11.75f), 180f, 2.4f, 2f, 3, false, 0);
             Bucket(new Vector3(-7.5f, y, -11.2f));
             for (int i = 0; i < 2; i++) SBox(mRust, new Vector3(-8.6f, -0.55f - i * 0.18f, -9.5f - i * 0.4f), new Vector3(10.6f, 0.12f, 0.12f), false);
@@ -839,7 +895,15 @@ namespace NightClass.EditorTools
             GameObject rocks = new GameObject("Rocks");
             rocks.transform.SetParent(rub.transform, false);
             var rnd = new System.Random(3);
-            Part(rocks.transform, "Rocks", mRock, b =>
+            if (HasModel("rock"))
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    Vector3 rp = rub.transform.position + new Vector3(((float)rnd.NextDouble() - 0.5f) * 0.9f, i < 3 ? 0f : 0.7f + (i - 3) * 0.45f, -0.7f + (i % 3) * 0.7f);
+                    PlaceModel("rock", rp, (float)rnd.NextDouble() * 360f, new Vector2(1.0f - i * 0.08f, 0f), false, rocks.transform, false);
+                }
+            }
+            else Part(rocks.transform, "Rocks", mRock, b =>
             {
                 for (int i = 0; i < 16; i++)
                 {
@@ -954,6 +1018,11 @@ namespace NightClass.EditorTools
             float[] posterX = { -32.5f, -22.5f, -19f, -8.2f, 9.5f, 20f };
             for (int i = 0; i < posterX.Length; i++) Poster(new Vector3(posterX[i], 1.75f, 1.88f), 0f, i);
             Clock(new Vector3(-2f, 2.99f, -1.88f), 180f);
+            foreach (float x in new[] { -18.5f, 1.2f, 20.5f }) PlaceModel("extinguisher", new Vector3(x, 0f, 1.78f), 180f, new Vector2(0f, 0.6f));
+            PlaceModel("wet_sign", new Vector3(16.6f, 0f, 0.9f), 30f, new Vector2(0f, 0.65f));
+            foreach (float x in new[] { -8.6f, 10.8f }) PlaceModel("trash", new Vector3(x, 0f, -1.62f), 0f, new Vector2(0f, 0.7f));
+            PlaceModel("plant", new Vector3(-7.4f, 0f, -13.4f), 0f, new Vector2(0f, 1.3f));
+            PlaceModel("plant", new Vector3(3.4f, 0f, -13.4f), 90f, new Vector2(0f, 1.3f));
             GameObject info = Trigger("Info_hide", new Vector3(-11f, 1f, 0.6f), new Vector3(2f, 2f, 1.4f));
             info.AddComponent<InfoZone>().text = "Lockers! Stand in front of one and tap HIDE when she's coming.";
 

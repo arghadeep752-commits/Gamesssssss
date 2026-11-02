@@ -12,8 +12,25 @@ namespace NightClass
     {
         public static QualityManager I { get; private set; }
         public Volume volume;
+        float baseExposure = float.NaN;
 
         void Awake() { I = this; }
+
+        /// <summary>Brightness setting: post exposure + ambient light (live, from the settings slider).</summary>
+        public void ApplyBrightness()
+        {
+            float b = Mathf.Clamp(GameSettings.Brightness, 0.5f, 2.5f);
+            if (volume != null && volume.profile != null)
+            {
+                ColorAdjustments ca;
+                if (volume.profile.TryGet(out ca))
+                {
+                    if (float.IsNaN(baseExposure)) baseExposure = ca.postExposure.value;
+                    ca.postExposure.Override(baseExposure + Mathf.Log(b, 2f) * 0.8f);
+                }
+            }
+            NCGame.RefreshAmbient();
+        }
 
         public void Apply()
         {
@@ -39,6 +56,7 @@ namespace NightClass
                 if (p.TryGet(out ca)) ca.active = lvl >= 2;
             }
             GameSettings.Apply();
+            ApplyBrightness();
             Debug.Log("[RF] quality " + lvl + " (" + (lvl < QualitySettings.names.Length ? QualitySettings.names[lvl] : "?") + ") gpu=" + SystemInfo.graphicsDeviceName +
                       " mem=" + SystemInfo.systemMemorySize + " scale=" + (urp != null ? urp.renderScale.ToString("0.00") : "-"));
         }

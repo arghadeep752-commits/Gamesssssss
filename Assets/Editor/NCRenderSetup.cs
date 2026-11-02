@@ -250,17 +250,17 @@ namespace NightClass.EditorTools
             tone.mode.Override(TonemappingMode.ACES);
 
             var color = Add<ColorAdjustments>(profile);
-            color.postExposure.Override(0.85f);
-            color.contrast.Override(18f);
-            color.saturation.Override(-14f);
+            color.postExposure.Override(1.05f);
+            color.contrast.Override(10f);
+            color.saturation.Override(-8f);
 
             var wb = Add<WhiteBalance>(profile);
-            wb.temperature.Override(-8f);
-            wb.tint.Override(2f);
+            wb.temperature.Override(-2f);
+            wb.tint.Override(-9f);
 
             var split = Add<SplitToning>(profile);
-            split.shadows.Override(new Color(0.32f, 0.48f, 0.56f));
-            split.highlights.Override(new Color(0.78f, 0.6f, 0.42f));
+            split.shadows.Override(new Color(0.42f, 0.53f, 0.47f));
+            split.highlights.Override(new Color(0.62f, 0.6f, 0.47f));
             split.balance.Override(-15f);
 
             var lgg = Add<LiftGammaGain>(profile);
@@ -276,7 +276,7 @@ namespace NightClass.EditorTools
             bloom.highQualityFiltering.Override(false);
 
             var vignette = Add<Vignette>(profile);
-            vignette.intensity.Override(0.38f);
+            vignette.intensity.Override(0.28f);
             vignette.smoothness.Override(0.5f);
             vignette.color.Override(new Color(0.01f, 0.01f, 0.015f));
 

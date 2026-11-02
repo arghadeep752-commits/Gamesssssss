@@ -144,7 +144,7 @@ namespace NightClass
             settings = Panel("Settings", true);
             Text t = UIKit.Label(settings.transform, "Title", "SETTINGS", 70, UIKit.Chalk, TextAnchor.MiddleCenter, Chalk);
             t.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(1200f, 100f));
-            float y = 250f;
+            float y = 275f;
             Row("Graphics", y);
             string[] names = { "LOW", "MEDIUM", "HIGH" };
             for (int i = 0; i < 3; i++)
@@ -159,7 +159,16 @@ namespace NightClass
                 }, 32);
                 gfxButtons[i].GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-60f + i * 270f, y), new Vector2(250f, 80f));
             }
-            y -= 115f;
+            y -= 100f;
+            Row("Brightness", y);
+            Slider sb = UIKit.Slider(settings.transform, "Bright", new Vector2(520f, 54f), 0.6f, 2.2f, GameSettings.Brightness, v =>
+            {
+                GameSettings.Brightness = v;
+                GameSettings.Save();
+                if (QualityManager.I != null) QualityManager.I.ApplyBrightness();
+            });
+            sb.GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(75f, y), new Vector2(520f, 54f));
+            y -= 100f;
             Row("Frame rate", y);
             Button fps = UIKit.Btn(settings.transform, "Fps", "", new Vector2(520f, 80f), () =>
             {
@@ -169,15 +178,15 @@ namespace NightClass
             }, 32);
             fps.GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(75f, y), new Vector2(520f, 80f));
             fpsLabel = fps.GetComponentInChildren<Text>();
-            y -= 115f;
+            y -= 100f;
             Row("Look speed", y);
             Slider s1 = UIKit.Slider(settings.transform, "Sens", new Vector2(520f, 54f), 0.3f, 2.5f, GameSettings.LookSensitivity, v => { GameSettings.LookSensitivity = v; GameSettings.Save(); });
             s1.GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(75f, y), new Vector2(520f, 54f));
-            y -= 115f;
+            y -= 100f;
             Row("Field of view", y);
             Slider s2 = UIKit.Slider(settings.transform, "Fov", new Vector2(520f, 54f), 55f, 80f, GameSettings.FieldOfView, v => { GameSettings.FieldOfView = v; GameSettings.Save(); });
             s2.GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(75f, y), new Vector2(520f, 54f));
-            y -= 115f;
+            y -= 100f;
             Row("Head bob", y);
             Button bob = UIKit.Btn(settings.transform, "Bob", "", new Vector2(520f, 80f), () =>
             {
@@ -187,7 +196,7 @@ namespace NightClass
             }, 32);
             bob.GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(75f, y), new Vector2(520f, 80f));
             bobLabel = bob.GetComponentInChildren<Text>();
-            y -= 115f;
+            y -= 100f;
             Row("Volume", y);
             Slider s3 = UIKit.Slider(settings.transform, "Vol", new Vector2(520f, 54f), 0f, 1f, GameSettings.Volume, v => { GameSettings.Volume = v; GameSettings.Save(); });
             s3.GetComponent<RectTransform>().Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(75f, y), new Vector2(520f, 54f));

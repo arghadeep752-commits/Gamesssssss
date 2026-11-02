@@ -48,6 +48,12 @@ while true; do
   sleep 2
 done
 
+# offscreen captures made by the game itself (true colours; the emulator washes out the screen)
+mkdir -p "$OUT/rt"
+timeout 120 adb pull "/sdcard/Android/data/$PKG/files/tour" "$OUT/rt" >/dev/null 2>&1 || true
+for f in $(find "$OUT/rt" -name "*.png" 2>/dev/null); do mv "$f" "$OUT/rt-$(basename "$f")"; done
+echo "offscreen captures: $(ls "$OUT"/rt-*.png 2>/dev/null | wc -l)"
+
 if alive; then echo "alive=yes" > "$OUT/result.txt"; else echo "alive=no" > "$OUT/result.txt"; fi
 dump
 cat "$OUT/result.txt"

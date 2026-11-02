@@ -35,7 +35,7 @@ namespace NightClass
 
         [Header("Atmosphere")]
         public Color fogColor = new Color(0.035f, 0.045f, 0.06f);
-        public Color ambientColor = new Color(0.085f, 0.09f, 0.115f);
+        public Color ambientColor = new Color(0.2f, 0.21f, 0.2f);
         public float fogDensity = 0.03f;
         public float fogDensityHard = 0.075f;
 

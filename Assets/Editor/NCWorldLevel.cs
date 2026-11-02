@@ -381,7 +381,7 @@ namespace NightClass.EditorTools
                 b.Cylinder(new Vector3(-0.6f, -0.1f, -0.06f), new Vector3(0.6f, -0.1f, -0.06f), 0.025f, 0.025f, 8);
             });
             if (off) return;
-            Light l = SpotLight(go.transform, ceilingPos + Vector3.down * 0.14f, Quaternion.Euler(90f, 0f, 0f), color, intensity * 1.4f, range + 0.5f, 150f);
+            Light l = SpotLight(go.transform, ceilingPos + Vector3.down * 0.14f, Quaternion.Euler(90f, 0f, 0f), color, intensity * 2.6f, range + 2.5f, 155f);
             if (flicker || broken)
             {
                 FlickerLight f = go.AddComponent<FlickerLight>();
@@ -393,7 +393,7 @@ namespace NightClass.EditorTools
             Draw(Cell(ceilingPos), mShaftWarm, Matrix4x4.identity, b => b.Cylinder(ceilingPos + Vector3.down * 0.12f, ceilingPos + Vector3.down * 2.4f, 0.35f, 1.3f, 12, false));
         }
 
-        static readonly Color Cool = new Color(0.82f, 0.9f, 1f), Warm = new Color(1f, 0.82f, 0.6f), Sickly = new Color(0.8f, 1f, 0.82f);
+        static readonly Color Cool = new Color(0.88f, 1f, 0.9f), Warm = new Color(1f, 0.86f, 0.66f), Sickly = new Color(0.8f, 1f, 0.78f);   // fluorescent school light
 
         static void BuildLights()
         {

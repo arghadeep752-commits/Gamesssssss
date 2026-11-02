@@ -231,6 +231,7 @@ namespace NightClass.EditorTools
         static void BuildTeacher()
         {
             TeacherMaterials();
+            if (BuildRocketboxTeacher()) return;
             Vector3 spawnPos = teacherSpawn != null ? teacherSpawn.position : new Vector3(0.5f, 0f, 8.5f);
             var go = new GameObject("Teacher");
             go.transform.position = spawnPos;
