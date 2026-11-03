@@ -258,6 +258,7 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         await vc.dispose();
       }
     }
+    if (!mounted) return;
     final ok = await guard(context, () => repo.postMedia(file!, video: choice == 'video', caption: caption, durationMs: duration),
         success: 'Status posted');
     if (mounted) setState(() => posting = false);
@@ -968,7 +969,7 @@ class _StatusPrivacyScreenState extends ConsumerState<StatusPrivacyScreen> {
     List<String>? list;
     if (value == 'contacts_except') list = await _pick(except);
     if (value == 'only_share_with') list = await _pick(only);
-    if (value != 'contacts' && list == null) return;
+    if ((value != 'contacts' && list == null) || !mounted) return;
     setState(() => saving = true);
     final kind = value == 'contacts_except' ? 'except' : 'only';
     final members = list;

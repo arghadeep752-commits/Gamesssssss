@@ -441,7 +441,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                   trailing: PopupMenuButton<String>(
                     onSelected: (v) async {
                       if (v == 'chat') await openDirectChat(context, core, p.id);
-                      if (v == 'remove') {
+                      if (v == 'remove' && context.mounted) {
                         await guard(context, () => repo.remove(p.id));
                         if (mounted) setState(() => _future = repo.myContacts());
                       }

@@ -730,7 +730,7 @@ class _ComposerState extends State<Composer> {
 
   Future<void> _pickVideo() async {
     final x = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 5));
-    if (x == null) return;
+    if (x == null || !mounted) return;
     await guard(context, () async {
       await core.chats.sendMedia(conv, 'video', File(x.path), name: p.basename(x.path), reply: _replyPayload());
       widget.onSent();
@@ -739,7 +739,7 @@ class _ComposerState extends State<Composer> {
 
   Future<void> _pickDocument() async {
     final x = await openFile();
-    if (x == null) return;
+    if (x == null || !mounted) return;
     await guard(context, () async {
       await core.chats.sendMedia(conv, 'document', File(x.path), name: x.name, reply: _replyPayload());
       widget.onSent();
@@ -763,7 +763,7 @@ class _ComposerState extends State<Composer> {
 
   Future<void> _shareLocation() async {
     final ok = await confirm(context, title: 'Share your current location?', message: 'Your location is sent end-to-end encrypted to this chat.', confirmLabel: 'Share');
-    if (!ok) return;
+    if (!ok || !mounted) return;
     await guard(context, () async {
       if (!await Geolocator.isLocationServiceEnabled()) throw StateError('Turn on location services first.');
       var perm = await Geolocator.checkPermission();
@@ -819,6 +819,7 @@ class _ComposerState extends State<Composer> {
       return;
     }
     final wave = _downsample(_levels, 40);
+    if (!mounted) return;
     await guard(context, () async {
       await core.chats.sendMedia(conv, 'voice', File(path),
           name: 'voice.m4a', mime: 'audio/mp4', extra: {'dur': ms, 'wave': wave}, reply: _replyPayload());

@@ -25,7 +25,11 @@ Future<void> main() async {
     realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 20),
     debug: false,
   );
-  await NotificationService.instance.init();
+  try {
+    await NotificationService.instance.init();
+  } catch (e) {
+    debugPrint('Notifications unavailable: $e');
+  }
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Uncaught: $error');
     return true;

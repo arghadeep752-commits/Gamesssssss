@@ -41,6 +41,8 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && c.phase == CallPhase.active) setState(() {});
     });
+    // Opened without a call (e.g. a stale notification): leave right away.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onCall());
   }
 
   void _onCall() {

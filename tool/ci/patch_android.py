@@ -41,6 +41,8 @@ def patch_gradle():
         die("unexpected namespace; flutter create must use --org app --project-name hime")
 
     g = g.replace("minSdk = flutter.minSdkVersion", "minSdk = maxOf(flutter.minSdkVersion, 24)")
+    # permission_handler_android needs to be compiled against API 37.
+    g = g.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = maxOf(flutter.compileSdkVersion, 37)")
 
     # Java 8+ APIs used by flutter_local_notifications.
     g = re.sub(
@@ -123,6 +125,8 @@ def patch_properties():
     p = read(path)
     # Hosted CI runners have ~7 GB of RAM.
     p = re.sub(r"org\.gradle\.jvmargs=.*", "org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G -XX:+HeapDumpOnOutOfMemoryError", p)
+    if "android.suppressUnsupportedCompileSdk" not in p:
+        p += "\nandroid.suppressUnsupportedCompileSdk=37\n"
     if "org.gradle.caching" not in p:
         p += "\norg.gradle.caching=true\n"
     write(path, p)
