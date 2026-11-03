@@ -1,0 +1,46 @@
+# Exports the SQL migrations applied to the Hime Supabase project and
+# publishes them as a draft release ("hime-migrations") so they can be reviewed
+# and committed under supabase/migrations. Authenticates to the export
+# function with this run's GitHub OIDC token — no stored secrets.
+name: Hime backend export
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [hime]
+    paths: ['supabase/.export-request']
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch migrations
+        run: |
+          set -euo pipefail
+          OIDC=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=hime-export" | jq -r .value)
+          curl -fsS -H "x-github-oidc: $OIDC" https://xsoueofjwwfqhsawnoux.supabase.co/functions/v1/export-migrations -o m.json
+          mkdir -p migrations
+          python3 - <<'EOF'
+          import json
+          rows = json.load(open("m.json"))
+          for r in rows:
+              with open(f"migrations/{r['version']}_{r['name']}.sql", "w") as f:
+                  f.write(r["sql"].rstrip() + "\n")
+          print(len(rows), "migrations")
+          EOF
+          tar -czf hime-migrations.tar.gz migrations
+
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/${{ github.repository }}/releases?per_page=100" -q '.[] | select(.name=="hime-migrations") | .id'); do
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id" || true
+          done
+          gh release create "hime-migrations-${{ github.run_number }}" --repo "${{ github.repository }}" --draft \
+            --title hime-migrations --notes "Applied Supabase migrations" hime-migrations.tar.gz
