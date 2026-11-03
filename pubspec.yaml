@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.9.0
 
 dependencies:
   flutter:
@@ -13,47 +13,47 @@ dependencies:
   # State, navigation, backend
   flutter_riverpod: ^2.6.1
   go_router: ^14.6.2
-  supabase_flutter: ^2.8.0
-  http: ^1.2.2
+  supabase_flutter: ^2.18.3
+  http: ^1.6.0
 
   # Calling
-  flutter_webrtc: any
-  wakelock_plus: any
+  flutter_webrtc: ^1.6.3
+  wakelock_plus: ^1.5.2
 
   # Security
-  cryptography: ^2.7.0
+  cryptography: ^2.9.0
   crypto: ^3.0.6
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^9.2.4
 
   # Local persistence
-  sqflite: ^2.4.1
-  shared_preferences: ^2.3.2
-  path_provider: ^2.1.4
-  path: ^1.9.0
+  sqflite: ^2.4.5
+  shared_preferences: ^2.5.6
+  path_provider: ^2.1.6
+  path: ^1.9.1
 
   # Media
   cached_network_image: ^3.4.1
-  image_picker: ^1.1.2
-  file_selector: ^1.0.3
-  record: any
-  just_audio: any
-  video_player: ^2.9.2
+  image_picker: ^1.2.4
+  file_selector: ^1.1.0
+  record: ^7.1.2
+  just_audio: ^0.10.6
+  video_player: ^2.14.1
 
   # Platform services
-  flutter_local_notifications: any
-  firebase_core: any
-  firebase_messaging: any
-  permission_handler: any
-  connectivity_plus: any
-  share_plus: any
-  url_launcher: ^6.3.1
-  geolocator: any
-  flutter_contacts: ^1.1.9
-  device_info_plus: any
-  package_info_plus: any
+  flutter_local_notifications: ^22.3.3
+  firebase_core: ^5.1.0
+  firebase_messaging: ^17.0.1
+  permission_handler: ^13.0.2
+  connectivity_plus: ^7.3.1
+  share_plus: ^12.0.2
+  url_launcher: ^6.3.3
+  geolocator: ^14.0.2
+  flutter_contacts: ^1.1.9+2
+  device_info_plus: ^12.4.0
+  package_info_plus: ^9.0.1
 
   # Utilities
-  uuid: ^4.5.1
+  uuid: ^4.6.0
   intl: any
   collection: any
   qr_flutter: ^4.1.0
@@ -61,7 +61,20 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: any
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/config/
+    - assets/images/
+    - assets/sounds/
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700

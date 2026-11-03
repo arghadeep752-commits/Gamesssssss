@@ -1,0 +1,7 @@
+{
+  "supabaseUrl": "https://xsoueofjwwfqhsawnoux.supabase.co",
+  "supabasePublishableKey": "sb_publishable_yPSi1VMd5_HX4DG2jfsvnw_eDhZf0mX",
+  "authRedirectUrl": "app.hime://auth-callback",
+  "inviteBaseUrl": "app.hime://hime/join",
+  "firebase": null
+}

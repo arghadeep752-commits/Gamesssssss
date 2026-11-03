@@ -1,0 +1,152 @@
+# Builds the Hime Android app and publishes the APKs as a GitHub pre-release.
+# The android/ folder is generated here with `flutter create` and patched by
+# tool/ci/patch_android.py, so only the overlay lives in git.
+name: Hime Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [hime]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'assets/**'
+      - 'android_overlay/**'
+      - 'tool/ci/**'
+      - 'pubspec.yaml'
+      - 'analysis_options.yaml'
+      - '.github/workflows/hime-android.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hime-android
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      REPO: ${{ github.repository }}
+      BUILD: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - name: Generate and patch the Android project
+        run: |
+          mkdir -p logs
+          flutter --version | tee logs/flutter-version.txt
+          flutter create --platforms=android --org app --project-name hime --no-pub . 2>&1 | tee logs/create.txt
+          python3 tool/ci/patch_android.py 2>&1 | tee logs/patch.txt
+
+      - name: Resolve packages
+        run: flutter pub get 2>&1 | tee logs/pub-get.txt
+
+      - name: Analyze
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings > logs/analyze.txt 2>&1
+          code=$?
+          cat logs/analyze.txt | tail -n 400
+          {
+            echo "### flutter analyze (exit $code)"
+            echo '```'
+            grep -E "^\s*error" logs/analyze.txt | head -n 150
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Unit and widget tests
+        run: |
+          set +e
+          flutter test --reporter expanded > logs/test.txt 2>&1
+          code=$?
+          tail -n 120 logs/test.txt
+          echo "### flutter test exit $code" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Release signing key
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p signing
+          if gh release download hime-signing --repo "$REPO" --pattern 'hime-release.jks' --pattern 'signing.env' --dir signing 2>/dev/null; then
+            echo "Using the existing Hime signing key"
+          else
+            echo "Creating a new Hime signing key"
+            PASS=$(openssl rand -hex 24)
+            keytool -genkeypair -keystore signing/hime-release.jks -storetype PKCS12 -keyalg RSA -keysize 4096 -validity 10000 \
+              -alias hime -storepass "$PASS" -keypass "$PASS" -dname "CN=Hime, O=Hime, C=IN"
+            echo "HIME_STORE_PASS=$PASS" > signing/signing.env
+            gh release create hime-signing --repo "$REPO" --draft --title "hime-signing (private, do not publish)" \
+              --notes "Release signing key for Hime APKs. Keep this release as a draft." \
+              signing/hime-release.jks signing/signing.env
+          fi
+          source signing/signing.env
+          echo "::add-mask::$HIME_STORE_PASS"
+          cp signing/hime-release.jks android/app/hime-release.jks
+          printf 'storeFile=hime-release.jks\nstorePassword=%s\nkeyAlias=hime\nkeyPassword=%s\n' "$HIME_STORE_PASS" "$HIME_STORE_PASS" > android/key.properties
+
+      - name: Build APKs
+        run: |
+          set -o pipefail
+          flutter build apk --release --split-per-abi --build-number "$BUILD" --build-name "1.0.$BUILD" 2>&1 | tee logs/build.txt
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd build/app/outputs/flutter-apk
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            mv "app-$abi-release.apk" "Hime-1.0.$BUILD-$abi.apk"
+          done
+          sha256sum Hime-*.apk > SHA256SUMS.txt
+          cat > notes.md <<EOF
+          Hime 1.0 build $BUILD from ${GITHUB_SHA::7}.
+
+          - **Hime-1.0.$BUILD-arm64-v8a.apk** — most Android phones (2017 and newer)
+          - **Hime-1.0.$BUILD-armeabi-v7a.apk** — older 32-bit phones
+          - **Hime-1.0.$BUILD-x86_64.apk** — emulators / Chromebooks
+          EOF
+          gh release create "hime-v1.0.$BUILD" --repo "$REPO" --target "$GITHUB_SHA" --prerelease \
+            --title "Hime 1.0 (build $BUILD)" --notes-file notes.md Hime-*.apk SHA256SUMS.txt
+
+      - name: Publish logs on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/$REPO/releases?per_page=100" -q '.[] | select(.name=="hime-ci-logs") | .id'); do
+            gh api -X DELETE "repos/$REPO/releases/$id" || true
+          done
+          ls logs || true
+          gh release create "hime-ci-logs-$BUILD" --repo "$REPO" --draft --title hime-ci-logs --notes "Logs of failed build $BUILD" logs/*.txt || true
+
+      - name: Publish logs (always, for review)
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/$REPO/releases?per_page=100" -q '.[] | select(.name=="hime-ci-logs") | .id'); do
+            gh api -X DELETE "repos/$REPO/releases/$id" || true
+          done
+          gh release create "hime-ci-logs-$BUILD" --repo "$REPO" --draft --title hime-ci-logs --notes "Logs of build $BUILD" logs/*.txt || true

@@ -4,12 +4,6 @@
 name: Hime toolchain kit
 
 on:
-  push:
-    branches: [hime]
-    paths:
-      - pubspec.yaml
-      - .github/workflows/hime-kit.yml
-      - tool/ci/make_kit.py
   workflow_dispatch:
 
 permissions:
