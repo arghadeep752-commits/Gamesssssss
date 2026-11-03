@@ -1,0 +1,75 @@
+# Development aid: resolves Hime's packages on GitHub's servers and publishes
+# the sources as a draft release ("hime-kit") so the code can be analysed
+# offline. It does not build the app; see hime-android.yml for that.
+name: Hime toolchain kit
+
+on:
+  push:
+    branches: [hime]
+    paths:
+      - pubspec.yaml
+      - .github/workflows/hime-kit.yml
+      - tool/ci/make_kit.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hime-kit
+  cancel-in-progress: true
+
+jobs:
+  kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter version
+        run: |
+          flutter --version | tee flutter-version.txt
+          flutter --version --machine > flutter-version.json
+
+      - name: Generate the Android template and resolve packages
+        run: |
+          mkdir -p /tmp/gen
+          (cd /tmp/gen && flutter create --platforms=android --org in.hime --project-name hime hime_template)
+          flutter pub get 2>&1 | tee pub-get.log
+
+      - name: Collect kit
+        run: python3 tool/ci/make_kit.py
+
+      - name: Fetch fonts (Poppins by Indian Type Foundry, SIL OFL)
+        run: |
+          mkdir -p kit/fonts
+          for w in Medium SemiBold Bold; do
+            curl -fsSL -o "kit/fonts/Poppins-$w.ttf" "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-$w.ttf"
+          done
+          curl -fsSL -o kit/fonts/OFL.txt "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/OFL.txt"
+          ls -la kit/fonts
+
+      - name: Pack
+        run: |
+          tar -cJf hime-kit.tar.xz kit
+          ls -la hime-kit.tar.xz
+
+      - name: Publish as a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/${{ github.repository }}/releases?per_page=100" -q '.[] | select(.name=="hime-kit") | .id'); do
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id" || true
+          done
+          gh release create "hime-kit-${{ github.run_number }}" --draft --title hime-kit \
+            --notes "Toolchain kit for offline analysis of the Hime sources (not an app build)." \
+            hime-kit.tar.xz kit/report.txt

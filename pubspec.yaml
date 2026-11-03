@@ -1,0 +1,67 @@
+name: hime
+description: "Hime — Connect Without Limits. Private real-time messaging and calling. Made with love in India."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State, navigation, backend
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+  supabase_flutter: ^2.8.0
+  http: ^1.2.2
+
+  # Calling
+  flutter_webrtc: any
+  wakelock_plus: any
+
+  # Security
+  cryptography: ^2.7.0
+  crypto: ^3.0.6
+  flutter_secure_storage: ^9.2.2
+
+  # Local persistence
+  sqflite: ^2.4.1
+  shared_preferences: ^2.3.2
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Media
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
+  file_selector: ^1.0.3
+  record: any
+  just_audio: any
+  video_player: ^2.9.2
+
+  # Platform services
+  flutter_local_notifications: any
+  firebase_core: any
+  firebase_messaging: any
+  permission_handler: any
+  connectivity_plus: any
+  share_plus: any
+  url_launcher: ^6.3.1
+  geolocator: any
+  flutter_contacts: ^1.1.9
+  device_info_plus: any
+  package_info_plus: any
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: any
+  collection: any
+  qr_flutter: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true

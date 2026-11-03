@@ -1,0 +1,38 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+coverage/
+*.iml
+.idea/
+.vscode/
+.DS_Store
+
+# Platform folders are generated in CI by `flutter create` and patched by
+# tool/ci/patch_android.py (see docs/BUILD.md); only overlays are committed.
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+
+# Local analysis kit (see tool/dev/kit_setup.py)
+/kit/
+/hime-kit.tar.xz
+
+# Secrets never belong in git
+.env
+*.env.local
+key.properties
+google-services.json
+GoogleService-Info.plist
+
+# Build outputs
+*.apk
+*.aab
+dist/
