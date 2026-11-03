@@ -50,13 +50,18 @@ def patch_gradle():
         count=1,
     )
 
-    signing = '''
-    val keystoreProperties = java.util.Properties()
-    val keystoreFile = rootProject.file("key.properties")
-    if (keystoreFile.exists()) {
-        keystoreFile.inputStream().use { keystoreProperties.load(it) }
-    }
+    keystore = '''
+val keystoreProperties = Properties()
+val keystoreFile = rootProject.file("key.properties")
+if (keystoreFile.exists()) {
+    keystoreFile.inputStream().use { stream -> keystoreProperties.load(stream) }
+}
 
+'''
+    g = "import java.util.Properties\n\n" + g
+    g = g.replace("android {", keystore + "android {", 1)
+
+    signing = '''
     signingConfigs {
         create("release") {
             if (keystoreFile.exists()) {

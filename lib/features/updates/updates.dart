@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
@@ -970,12 +971,13 @@ class _StatusPrivacyScreenState extends ConsumerState<StatusPrivacyScreen> {
     if (value != 'contacts' && list == null) return;
     setState(() => saving = true);
     final kind = value == 'contacts_except' ? 'except' : 'only';
+    final members = list;
     final ok = await guard(context, () async {
-      if (list != null) {
+      if (members != null) {
         await core.sb.from('status_audience_list').delete().eq('user_id', core.userId).eq('list_kind', kind);
-        if (list.isNotEmpty) {
+        if (members.isNotEmpty) {
           await core.sb.from('status_audience_list').insert([
-            for (final id in list) {'user_id': core.userId, 'list_kind': kind, 'member_id': id},
+            for (final id in members) {'user_id': core.userId, 'list_kind': kind, 'member_id': id},
           ]);
         }
       }
