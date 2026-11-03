@@ -18,7 +18,14 @@ To run your own:
    ```
 4. Dashboard settings:
    - **Authentication → URL configuration**: add `app.hime://auth-callback` to the redirect URLs.
-   - **Authentication → Providers → Email**: keep "Confirm email" on. Configure a custom SMTP server for production (the built-in sender is rate limited).
+   - **Authentication → Providers → Email**: keep "Confirm email" on. Configure a custom SMTP server for production (the built-in sender only emails your own team and is limited to a few emails per hour). Gmail works for small apps: host `smtp.gmail.com`, port `465`, your Gmail address as user and sender, and a Google *App password* (needs 2-Step Verification). Then raise **Rate Limits → emails per hour**.
+   - **Authentication → Emails → Templates**: Hime signs people in with a one-time code, so the **Magic link**, **Confirm signup** and **Reset password** templates must show `{{ .Token }}` (the default templates only contain a link). Suggested subject: `{{ .Token }} is your Hime code`; body:
+     ```html
+     <h2>Your Hime code</h2>
+     <p>Enter this code in the Hime app:</p>
+     <p style="font-size:32px;font-weight:bold;letter-spacing:6px">{{ .Token }}</p>
+     <p>If you didn't request this, you can ignore this email.</p>
+     ```
    - **Authentication → Providers → Phone** (optional): enable and connect an SMS provider (Twilio, MessageBird, Vonage or Textlocal) for phone sign-in with OTP.
    - **Authentication → Multi-factor**: TOTP is enabled by default; the app enforces it when a user has turned it on.
    - **Realtime → Settings**: turn off "Allow public access" so only private, authorised channels work.
