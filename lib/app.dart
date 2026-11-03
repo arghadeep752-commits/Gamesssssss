@@ -118,7 +118,7 @@ GoRouter buildRouter(SessionController session) {
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/error', builder: (_, __) => const StartupErrorScreen()),
       _r('/welcome', (_) => const WelcomeScreen()),
-      _r('/auth/email', (s) => EmailAuthScreen(signUp: s.uri.queryParameters['mode'] == 'signup')),
+      _r('/auth/email', (s) => EmailAuthScreen(usePassword: s.uri.queryParameters['mode'] == 'password')),
       _r('/auth/phone', (_) => const PhoneAuthScreen()),
       _r('/auth/otp', (s) => OtpScreen(args: s.extra as OtpArgs)),
       _r('/auth/forgot', (_) => const ForgotPasswordScreen()),

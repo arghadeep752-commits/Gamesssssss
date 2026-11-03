@@ -134,6 +134,17 @@ String friendlyError(Object e) {
   if (e is StateError) return e.message;
   if (e is AuthException) {
     final m = e.message.toLowerCase();
+    final code = e.code ?? '';
+    final wait = RegExp(r'after (\d+) seconds').firstMatch(m);
+    if (wait != null) return 'Please wait ${wait.group(1)} seconds before asking for a new code.';
+    if (code == 'over_email_send_rate_limit' || m.contains('email rate limit')) {
+      return 'Too many emails were sent recently. Please try again later, or use the last code you received.';
+    }
+    if (code == 'email_address_not_authorized' || m.contains('not authorized')) {
+      return 'Hime can\'t email this address yet — the server\'s email sending is still in test mode.';
+    }
+    if (m.contains('error sending')) return 'Couldn\'t send the email right now. Please try again in a minute.';
+    if (code == 'otp_expired' || m.contains('token has expired')) return 'That code is wrong or has expired.';
     if (m.contains('invalid login') || m.contains('invalid credentials')) return 'Incorrect email or password.';
     if (m.contains('email not confirmed')) return 'Please verify your email first. Check your inbox.';
     if (m.contains('already registered') || m.contains('already been registered')) return 'An account with this email already exists.';

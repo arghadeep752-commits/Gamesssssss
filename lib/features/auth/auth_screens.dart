@@ -86,7 +86,7 @@ class WelcomeScreen extends StatelessWidget {
             _Feature(icon: Icons.videocam_rounded, text: 'Crystal-clear voice and video calls'),
             _Feature(icon: Icons.bolt_rounded, text: 'Fast and light, even on budget phones'),
             const Spacer(),
-            PrimaryButton(label: 'Get started', onPressed: () => context.push('/auth/email?mode=signup')),
+            PrimaryButton(label: 'Continue with email', onPressed: () => context.push('/auth/email')),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => context.push('/auth/phone'),
@@ -94,7 +94,7 @@ class WelcomeScreen extends StatelessWidget {
               label: const Text('Continue with phone'),
             ),
             const SizedBox(height: 8),
-            TextButton(onPressed: () => context.push('/auth/email'), child: const Text('I already have an account')),
+            TextButton(onPressed: () => context.push('/auth/email?mode=password'), child: const Text('Sign in with password')),
             const SizedBox(height: 6),
             Text('Made with love in India 🇮🇳', textAlign: TextAlign.center, style: context.text.labelSmall),
           ]),
@@ -120,9 +120,12 @@ class _Feature extends StatelessWidget {
       );
 }
 
+/// Email sign-in. By default Hime emails a one-time code (new accounts are
+/// created automatically); a password can be used instead for accounts that
+/// have one.
 class EmailAuthScreen extends StatefulWidget {
-  const EmailAuthScreen({super.key, this.signUp = false});
-  final bool signUp;
+  const EmailAuthScreen({super.key, this.usePassword = false});
+  final bool usePassword;
 
   @override
   State<EmailAuthScreen> createState() => _EmailAuthScreenState();
@@ -130,16 +133,14 @@ class EmailAuthScreen extends StatefulWidget {
 
 class _EmailAuthScreenState extends State<EmailAuthScreen> {
   final _form = GlobalKey<FormState>();
-  final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  late bool _signUp = widget.signUp;
+  late bool _usePassword = widget.usePassword;
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
-    _name.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -151,27 +152,25 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
       _busy = true;
       _error = null;
     });
-    final email = _email.text.trim();
+    final email = _email.text.trim().toLowerCase();
     try {
-      if (_signUp) {
-        final res = await _sb.auth.signUp(
-          email: email,
-          password: _password.text,
-          emailRedirectTo: AppConfig.instance.authRedirectUrl,
-          data: {'display_name': _name.text.trim()},
-        );
-        if (res.session == null && mounted) {
-          context.go('/auth/verify-email', extra: email);
-        }
-      } else {
+      if (_usePassword) {
         await _sb.auth.signInWithPassword(email: email, password: _password.text);
+      } else {
+        await sendEmailCode(email);
+        if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email));
       }
     } catch (e) {
       final msg = friendlyError(e);
-      if (msg.contains('verify your email') && mounted) {
-        context.push('/auth/verify-email', extra: email);
+      if (_usePassword && msg.contains('verify your email')) {
+        // Unconfirmed account: confirm it with a code instead.
+        try {
+          await sendEmailCode(email, create: false);
+          if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email));
+          return;
+        } catch (_) {}
       }
-      setState(() => _error = msg);
+      if (mounted) setState(() => _error = msg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -180,54 +179,48 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   @override
   Widget build(BuildContext context) {
     return _AuthScaffold(
-      title: _signUp ? 'Create your account' : 'Welcome back',
-      subtitle: _signUp ? 'It takes less than a minute.' : 'Sign in to continue to Hime.',
+      title: _usePassword ? 'Sign in with password' : 'Continue with email',
+      subtitle: _usePassword
+          ? 'Use the password you set for your Hime account.'
+          : 'We\'ll email you a 6-digit code. No password needed — new accounts are created automatically.',
       children: [
         Form(
           key: _form,
           child: AutofillGroup(
             child: Column(children: [
-              AnimatedSize(
-                duration: const Duration(milliseconds: 200),
-                child: _signUp
-                    ? Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: HimeField(
-                          controller: _name,
-                          label: 'Your name',
-                          prefix: const Icon(Icons.person_outline_rounded),
-                          validator: (v) => Validators.required(v, 'Name'),
-                          textCapitalization: TextCapitalization.words,
-                          textInputAction: TextInputAction.next,
-                          autofillHints: const [AutofillHints.name],
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
               HimeField(
                 controller: _email,
                 label: 'Email',
                 prefix: const Icon(Icons.alternate_email_rounded),
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.email,
-                textInputAction: TextInputAction.next,
+                textInputAction: _usePassword ? TextInputAction.next : TextInputAction.done,
+                onSubmitted: _usePassword ? null : (_) => _submit(),
                 autofillHints: const [AutofillHints.email],
+                autofocus: true,
               ),
-              const SizedBox(height: 14),
-              HimeField(
-                controller: _password,
-                label: 'Password',
-                obscure: true,
-                prefix: const Icon(Icons.lock_outline_rounded),
-                validator: _signUp ? Validators.password : (v) => Validators.required(v, 'Password'),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _submit(),
-                autofillHints: [_signUp ? AutofillHints.newPassword : AutofillHints.password],
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                child: _usePassword
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: HimeField(
+                          controller: _password,
+                          label: 'Password',
+                          obscure: true,
+                          prefix: const Icon(Icons.lock_outline_rounded),
+                          validator: (v) => Validators.required(v, 'Password'),
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _submit(),
+                          autofillHints: const [AutofillHints.password],
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
               ),
             ]),
           ),
         ),
-        if (!_signUp)
+        if (_usePassword)
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(onPressed: () => context.push('/auth/forgot'), child: const Text('Forgot password?')),
@@ -238,90 +231,57 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
             child: Text(_error!, style: TextStyle(color: context.colors.error)),
           ),
         const SizedBox(height: 20),
-        PrimaryButton(label: _signUp ? 'Create account' : 'Sign in', loading: _busy, onPressed: _submit),
+        PrimaryButton(label: _usePassword ? 'Sign in' : 'Send code', loading: _busy, onPressed: _submit),
         const SizedBox(height: 12),
         TextButton(
           onPressed: () => setState(() {
-            _signUp = !_signUp;
+            _usePassword = !_usePassword;
             _error = null;
           }),
-          child: Text(_signUp ? 'Already have an account? Sign in' : 'New to Hime? Create an account'),
+          child: Text(_usePassword ? 'Sign in with an email code instead' : 'I have a password'),
         ),
-        if (_signUp)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'By continuing you agree to Hime\'s Terms and Privacy Policy.',
-              textAlign: TextAlign.center,
-              style: context.text.labelSmall,
-            ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(
+            'By continuing you agree to Hime\'s Terms and Privacy Policy.',
+            textAlign: TextAlign.center,
+            style: context.text.labelSmall,
           ),
+        ),
       ],
     );
   }
 }
 
-class VerifyEmailScreen extends StatefulWidget {
+/// Emails a one-time sign-in code (the email may also contain a link that
+/// opens Hime — either works).
+Future<void> sendEmailCode(String email, {bool create = true}) => _sb.auth.signInWithOtp(
+      email: email,
+      shouldCreateUser: create,
+      emailRedirectTo: AppConfig.instance.authRedirectUrl,
+    );
+
+/// Verifies an emailed code. New accounts get a "confirm signup" token,
+/// existing ones a sign-in token; try both.
+Future<void> verifyEmailCode(String email, String code) async {
+  try {
+    await _sb.auth.verifyOTP(type: OtpType.email, email: email, token: code);
+  } on AuthException catch (first) {
+    try {
+      await _sb.auth.verifyOTP(type: OtpType.signup, email: email, token: code);
+    } on AuthException {
+      throw first;
+    }
+  }
+}
+
+/// Kept for links to /auth/verify-email: confirms an address with a code.
+class VerifyEmailScreen extends StatelessWidget {
   const VerifyEmailScreen({super.key, required this.email});
   final String email;
 
   @override
-  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
-}
-
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final _code = TextEditingController();
-  bool _busy = false;
-  String? _message;
-
-  Future<void> _verify() async {
-    final code = _code.text.trim();
-    if (code.length < 6) {
-      setState(() => _message = 'Enter the code from the email, or tap the link in it.');
-      return;
-    }
-    setState(() => _busy = true);
-    try {
-      await _sb.auth.verifyOTP(type: OtpType.signup, email: widget.email, token: code);
-    } catch (e) {
-      setState(() => _message = friendlyError(e));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _resend() async {
-    try {
-      await _sb.auth.resend(type: OtpType.signup, email: widget.email, emailRedirectTo: AppConfig.instance.authRedirectUrl);
-      setState(() => _message = 'We sent a new email to ${widget.email}.');
-    } catch (e) {
-      setState(() => _message = friendlyError(e));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _AuthScaffold(
-      title: 'Verify your email',
-      subtitle:
-          'We sent a confirmation email to ${widget.email}. Tap the link in it (it opens Hime), or enter the code if the email shows one.',
-      children: [
-        HimeField(
-          controller: _code,
-          label: 'Verification code',
-          keyboardType: TextInputType.number,
-          maxLength: 10,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        ),
-        if (_message != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_message!)),
-        const SizedBox(height: 20),
-        PrimaryButton(label: 'Verify', loading: _busy, onPressed: _verify),
-        const SizedBox(height: 10),
-        OutlinedButton(onPressed: () => context.go('/auth/email'), child: const Text('I verified — sign in')),
-        TextButton(onPressed: _resend, child: const Text('Resend email')),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => OtpScreen(args: OtpArgs(email: email, sendOnOpen: true));
 }
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -349,7 +309,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       await _sb.auth.resetPasswordForEmail(_email.text.trim(), redirectTo: AppConfig.instance.authRedirectUrl);
       setState(() {
         _sent = true;
-        _message = 'Check your inbox. Tap the reset link on this phone, or enter the code from the email.';
+        _message = 'We emailed a code to ${_email.text.trim()}. Enter it below to set a new password.';
       });
     } catch (e) {
       setState(() => _message = friendlyError(e));
@@ -359,6 +319,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _verify() async {
+    if (_code.text.trim().length < 6) {
+      setState(() => _message = 'Enter the code from the email.');
+      return;
+    }
     setState(() => _busy = true);
     try {
       await _sb.auth.verifyOTP(type: OtpType.recovery, email: _email.text.trim(), token: _code.text.trim());
@@ -373,7 +337,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return _AuthScaffold(
       title: 'Reset password',
-      subtitle: 'We\'ll email you a secure reset link.',
+      subtitle: 'We\'ll email you a code to reset it.',
       children: [
         HimeField(
           controller: _email,
@@ -383,12 +347,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         if (_sent) ...[
           const SizedBox(height: 14),
-          HimeField(controller: _code, label: 'Code from the email (optional)', keyboardType: TextInputType.number),
+          HimeField(
+            controller: _code,
+            label: 'Code from the email',
+            keyboardType: TextInputType.number,
+            maxLength: 10,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            autofocus: true,
+          ),
         ],
         if (_message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_message!)),
         const SizedBox(height: 20),
         PrimaryButton(
-          label: _sent ? 'Verify code' : 'Send reset link',
+          label: _sent ? 'Verify code' : 'Send code',
           loading: _busy,
           onPressed: _sent ? _verify : _send,
         ),
@@ -454,8 +425,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 }
 
 class OtpArgs {
-  const OtpArgs({required this.phone});
-  final String phone;
+  const OtpArgs({this.phone, this.email, this.sendOnOpen = false}) : assert(phone != null || email != null);
+  final String? phone;
+  final String? email;
+
+  /// Send a fresh code when the screen opens (used when confirming an address).
+  final bool sendOnOpen;
+  bool get isEmail => email != null;
 }
 
 class PhoneAuthScreen extends StatefulWidget {
@@ -605,20 +581,24 @@ class _OtpScreenState extends State<OtpScreen> {
   final _code = TextEditingController();
   bool _busy = false;
   String? _error;
-  int _seconds = 45;
+  String? _info;
+  int _seconds = 60;
   Timer? _timer;
+
+  OtpArgs get a => widget.args;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
+    if (a.sendOnOpen) WidgetsBinding.instance.addPostFrameCallback((_) => _resend());
   }
 
-  void _startTimer() {
+  void _startTimer([int seconds = 60]) {
     _timer?.cancel();
-    _seconds = 45;
+    setState(() => _seconds = seconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_seconds <= 0) {
+      if (!mounted || _seconds <= 0) {
         t.cancel();
       } else {
         setState(() => _seconds--);
@@ -634,8 +614,9 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _verify() async {
-    if (_code.text.trim().length != 6) {
-      setState(() => _error = 'Enter the 6-digit code');
+    final code = _code.text.trim();
+    if (code.length < 6) {
+      setState(() => _error = a.isEmail ? 'Enter the code from the email' : 'Enter the 6-digit code');
       return;
     }
     setState(() {
@@ -643,45 +624,67 @@ class _OtpScreenState extends State<OtpScreen> {
       _error = null;
     });
     try {
-      await _sb.auth.verifyOTP(type: OtpType.sms, phone: widget.args.phone, token: _code.text.trim());
+      if (a.isEmail) {
+        await verifyEmailCode(a.email!, code);
+      } else {
+        await _sb.auth.verifyOTP(type: OtpType.sms, phone: a.phone!, token: code);
+      }
     } catch (e) {
-      setState(() => _error = friendlyError(e));
+      if (mounted) setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _resend() async {
+    setState(() {
+      _error = null;
+      _info = null;
+    });
     try {
-      await _sb.auth.signInWithOtp(phone: widget.args.phone);
+      if (a.isEmail) {
+        await sendEmailCode(a.email!);
+      } else {
+        await _sb.auth.signInWithOtp(phone: a.phone!);
+      }
       _startTimer();
-      if (mounted) toast(context, 'Code sent again');
+      if (mounted) setState(() => _info = 'A new code is on its way.');
     } catch (e) {
-      setState(() => _error = friendlyError(e));
+      final wait = RegExp(r'after (\d+) seconds').firstMatch(e.toString());
+      if (wait != null) _startTimer(int.parse(wait.group(1)!));
+      if (mounted) setState(() => _error = friendlyError(e));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final email = a.isEmail;
     return _AuthScaffold(
-      title: 'Enter the code',
-      subtitle: 'Sent by SMS to ${widget.args.phone}',
+      title: email ? 'Check your email' : 'Enter the code',
+      subtitle: email
+          ? 'Enter the code we sent to ${a.email}. It can take a minute to arrive — check Spam or Promotions too.'
+          : 'Sent by SMS to ${a.phone}',
       children: [
         TextField(
           controller: _code,
           autofocus: true,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          maxLength: 6,
+          maxLength: email ? 10 : 6,
           autofillHints: const [AutofillHints.oneTimeCode],
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: context.text.headlineMedium?.copyWith(letterSpacing: 14),
-          decoration: const InputDecoration(counterText: '', hintText: '••••••'),
+          style: context.text.headlineMedium?.copyWith(letterSpacing: 10),
+          decoration: InputDecoration(counterText: '', hintText: email ? '••••••' : '••••••'),
           onChanged: (v) {
-            if (v.length == 6) _verify();
+            if (!email && v.length == 6) _verify();
+            if (_error != null) setState(() => _error = null);
           },
+          onSubmitted: (_) => _verify(),
         ),
-        if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: context.colors.error))),
+        if (_error != null)
+          Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: context.colors.error))),
+        if (_info != null && _error == null)
+          Padding(padding: const EdgeInsets.only(top: 12), child: Text(_info!, style: TextStyle(color: context.palette.muted))),
         const SizedBox(height: 24),
         PrimaryButton(label: 'Verify', loading: _busy, onPressed: _verify),
         const SizedBox(height: 8),
@@ -689,6 +692,15 @@ class _OtpScreenState extends State<OtpScreen> {
           onPressed: _seconds > 0 ? null : _resend,
           child: Text(_seconds > 0 ? 'Resend code in ${_seconds}s' : 'Resend code'),
         ),
+        if (email)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'If the email has a button instead of a code, tapping it on this phone signs you in too.',
+              textAlign: TextAlign.center,
+              style: context.text.labelSmall?.copyWith(color: context.palette.muted),
+            ),
+          ),
       ],
     );
   }
