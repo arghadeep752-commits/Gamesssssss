@@ -5,6 +5,9 @@ name: Hime toolchain kit
 
 on:
   workflow_dispatch:
+  push:
+    branches: [hime]
+    paths: ['tool/ci/kit.request']
 
 permissions:
   contents: write
