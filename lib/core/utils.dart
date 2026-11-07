@@ -146,7 +146,7 @@ String friendlyError(Object e) {
     if (m.contains('error sending')) return 'Couldn\'t send the email right now. Please try again in a minute.';
     if (code == 'otp_expired' || m.contains('token has expired')) return 'That code is wrong or has expired.';
     if (m.contains('invalid login') || m.contains('invalid credentials')) return 'Incorrect email or password.';
-    if (m.contains('email not confirmed')) return 'Please verify your email first. Check your inbox.';
+    if (m.contains('email not confirmed')) return 'This account hasn\'t been verified yet. Sign in with an email code to verify it.';
     if (m.contains('already registered') || m.contains('already been registered')) return 'An account with this email already exists.';
     if (m.contains('rate limit') || m.contains('too many')) return 'Too many attempts. Please wait a minute and try again.';
     if (m.contains('phone') && (m.contains('provider') || m.contains('unsupported') || m.contains('disabled'))) {

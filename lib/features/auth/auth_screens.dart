@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -86,15 +87,9 @@ class WelcomeScreen extends StatelessWidget {
             _Feature(icon: Icons.videocam_rounded, text: 'Crystal-clear voice and video calls'),
             _Feature(icon: Icons.bolt_rounded, text: 'Fast and light, even on budget phones'),
             const Spacer(),
-            PrimaryButton(label: 'Continue with email', onPressed: () => context.push('/auth/email')),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/auth/phone'),
-              icon: const Icon(Icons.phone_iphone_rounded),
-              label: const Text('Continue with phone'),
-            ),
+            PrimaryButton(label: 'Create account', onPressed: () => context.push('/auth/email?mode=signup')),
             const SizedBox(height: 8),
-            TextButton(onPressed: () => context.push('/auth/email?mode=password'), child: const Text('Sign in with password')),
+            TextButton(onPressed: () => context.push('/auth/email'), child: const Text('I already have an account')),
             const SizedBox(height: 6),
             Text('Made with love in India 🇮🇳', textAlign: TextAlign.center, style: context.text.labelSmall),
           ]),
@@ -120,12 +115,69 @@ class _Feature extends StatelessWidget {
       );
 }
 
-/// Email sign-in. By default Hime emails a one-time code (new accounts are
-/// created automatically); a password can be used instead for accounts that
-/// have one.
+/// Errors from the email-auth function, phrased for people.
+class EmailAuthError implements UserFacingException {
+  EmailAuthError(this.code, {this.seconds});
+  final String code;
+  final int? seconds;
+
+  @override
+  String toString() => switch (code) {
+        'invalid_email' => 'Enter a valid email address.',
+        'email_not_configured' => 'Email codes aren\'t switched on yet. Use your password for now.',
+        'wait' => 'Please wait ${seconds ?? 60} seconds before asking for a new code.',
+        'rate_limited' => 'Too many attempts. Please try again in a little while.',
+        'code_expired' => 'That code has expired. Ask for a new one.',
+        'invalid_code' => 'That code is wrong. Check the email and try again.',
+        'too_many_attempts' => 'Too many wrong tries. Ask for a new code.',
+        'weak_password' => 'Use at least 8 characters with letters and numbers.',
+        'email_exists' => 'An account with this email already exists. Sign in instead.',
+        'send_failed' => 'Couldn\'t send the email right now. Please try again in a minute.',
+        _ => 'Something went wrong. Please try again.',
+      };
+}
+
+Future<Map<String, dynamic>> _emailAuth(Map<String, dynamic> body) async {
+  try {
+    final res = await _sb.functions.invoke('email-auth', body: body);
+    final data = res.data;
+    return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+  } on FunctionException catch (e) {
+    var details = e.details;
+    if (details is String) {
+      try {
+        details = jsonDecode(details);
+      } catch (_) {}
+    }
+    final m = details is Map ? Map<String, dynamic>.from(details) : const <String, dynamic>{};
+    throw EmailAuthError(m['error']?.toString() ?? 'server_error', seconds: (m['seconds'] as num?)?.toInt());
+  }
+}
+
+/// Whether the server can email 6-digit codes (an email account is configured).
+Future<bool> emailCodesAvailable() async {
+  try {
+    return (await _emailAuth({'action': 'config'}))['otp'] == true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Emails a 6-digit code (always a number, never a link).
+Future<void> sendEmailCode(String email) => _emailAuth({'action': 'send_code', 'email': email});
+
+/// Checks the code and signs in. A [password] sets (or resets) the account password.
+Future<void> verifyEmailCode(String email, String code, {String? password}) async {
+  final r = await _emailAuth({'action': 'verify_code', 'email': email, 'code': code, 'password': ?password});
+  final hash = r['token_hash'] as String?;
+  if (hash == null) throw EmailAuthError('server_error');
+  await _sb.auth.verifyOTP(type: OtpType.magiclink, tokenHash: hash);
+}
+
+/// Email + password sign-in and account creation.
 class EmailAuthScreen extends StatefulWidget {
-  const EmailAuthScreen({super.key, this.usePassword = false});
-  final bool usePassword;
+  const EmailAuthScreen({super.key, this.signUp = false});
+  final bool signUp;
 
   @override
   State<EmailAuthScreen> createState() => _EmailAuthScreenState();
@@ -135,9 +187,18 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  late bool _usePassword = widget.usePassword;
+  late bool _signUp = widget.signUp;
+  bool? _codes;
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    emailCodesAvailable().then((v) {
+      if (mounted) setState(() => _codes = v);
+    });
+  }
 
   @override
   void dispose() {
@@ -146,43 +207,74 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_form.currentState!.validate()) return;
+  String get _emailValue => _email.text.trim().toLowerCase();
+
+  Future<void> _run(Future<void> Function() action) async {
     setState(() {
       _busy = true;
       _error = null;
     });
-    final email = _email.text.trim().toLowerCase();
     try {
-      if (_usePassword) {
-        await _sb.auth.signInWithPassword(email: email, password: _password.text);
-      } else {
-        await sendEmailCode(email);
-        if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email));
-      }
+      await action();
     } catch (e) {
-      final msg = friendlyError(e);
-      if (_usePassword && msg.contains('verify your email')) {
-        // Unconfirmed account: confirm it with a code instead.
-        try {
-          await sendEmailCode(email, create: false);
-          if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email));
-          return;
-        } catch (_) {}
-      }
-      if (mounted) setState(() => _error = msg);
+      if (mounted) setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  Future<void> _submit() async {
+    if (!_form.currentState!.validate()) return;
+    final email = _emailValue;
+    final password = _password.text;
+    await _run(() async {
+      if (_signUp) {
+        if (_codes ?? await emailCodesAvailable()) {
+          await sendEmailCode(email);
+          if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email, password: password));
+        } else {
+          await _emailAuth({'action': 'signup', 'email': email, 'password': password});
+          await _sb.auth.signInWithPassword(email: email, password: password);
+        }
+        return;
+      }
+      try {
+        await _sb.auth.signInWithPassword(email: email, password: password);
+      } on AuthException catch (e) {
+        final unconfirmed = e.message.toLowerCase().contains('not confirmed');
+        if (unconfirmed && (_codes ?? false)) {
+          // Older account that was never verified: verify it with a code now.
+          await sendEmailCode(email);
+          if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email, password: password));
+          return;
+        }
+        rethrow;
+      }
+    });
+  }
+
+  Future<void> _codeLogin() async {
+    final email = _emailValue;
+    if (Validators.email(email) != null) {
+      setState(() => _error = 'Enter your email first.');
+      return;
+    }
+    await _run(() async {
+      await sendEmailCode(email);
+      if (mounted) context.push('/auth/otp', extra: OtpArgs(email: email));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final codes = _codes ?? false;
     return _AuthScaffold(
-      title: _usePassword ? 'Sign in with password' : 'Continue with email',
-      subtitle: _usePassword
-          ? 'Use the password you set for your Hime account.'
-          : 'We\'ll email you a 6-digit code. No password needed — new accounts are created automatically.',
+      title: _signUp ? 'Create your account' : 'Welcome back',
+      subtitle: _signUp
+          ? (codes
+              ? 'We\'ll email you a 6-digit code to confirm it\'s you.'
+              : 'Your account is ready as soon as you tap Create account.')
+          : 'Sign in with your email and password.',
       children: [
         Form(
           key: _form,
@@ -194,36 +286,33 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                 prefix: const Icon(Icons.alternate_email_rounded),
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.email,
-                textInputAction: _usePassword ? TextInputAction.next : TextInputAction.done,
-                onSubmitted: _usePassword ? null : (_) => _submit(),
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.email],
                 autofocus: true,
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 200),
-                child: _usePassword
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 14),
-                        child: HimeField(
-                          controller: _password,
-                          label: 'Password',
-                          obscure: true,
-                          prefix: const Icon(Icons.lock_outline_rounded),
-                          validator: (v) => Validators.required(v, 'Password'),
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _submit(),
-                          autofillHints: const [AutofillHints.password],
-                        ),
-                      )
-                    : const SizedBox(width: double.infinity),
+              const SizedBox(height: 14),
+              HimeField(
+                controller: _password,
+                label: _signUp ? 'Create a password' : 'Password',
+                obscure: true,
+                prefix: const Icon(Icons.lock_outline_rounded),
+                validator: _signUp ? Validators.password : (v) => Validators.required(v, 'Password'),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+                autofillHints: [_signUp ? AutofillHints.newPassword : AutofillHints.password],
               ),
             ]),
           ),
         ),
-        if (_usePassword)
+        if (!_signUp)
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(onPressed: () => context.push('/auth/forgot'), child: const Text('Forgot password?')),
+            child: TextButton(
+              onPressed: () => codes
+                  ? context.push('/auth/forgot', extra: _emailValue)
+                  : setState(() => _error = 'Password reset by email isn\'t switched on yet.'),
+              child: const Text('Forgot password?'),
+            ),
           ),
         if (_error != null)
           Padding(
@@ -231,14 +320,22 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
             child: Text(_error!, style: TextStyle(color: context.colors.error)),
           ),
         const SizedBox(height: 20),
-        PrimaryButton(label: _usePassword ? 'Sign in' : 'Send code', loading: _busy, onPressed: _submit),
-        const SizedBox(height: 12),
+        PrimaryButton(label: _signUp ? 'Create account' : 'Sign in', loading: _busy, onPressed: _submit),
+        if (!_signUp && codes) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _codeLogin,
+            icon: const Icon(Icons.pin_outlined),
+            label: const Text('Sign in with an email code'),
+          ),
+        ],
+        const SizedBox(height: 8),
         TextButton(
           onPressed: () => setState(() {
-            _usePassword = !_usePassword;
+            _signUp = !_signUp;
             _error = null;
           }),
-          child: Text(_usePassword ? 'Sign in with an email code instead' : 'I have a password'),
+          child: Text(_signUp ? 'Already have an account? Sign in' : 'New to Hime? Create an account'),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -253,28 +350,6 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   }
 }
 
-/// Emails a one-time sign-in code (the email may also contain a link that
-/// opens Hime — either works).
-Future<void> sendEmailCode(String email, {bool create = true}) => _sb.auth.signInWithOtp(
-      email: email,
-      shouldCreateUser: create,
-      emailRedirectTo: AppConfig.instance.authRedirectUrl,
-    );
-
-/// Verifies an emailed code. New accounts get a "confirm signup" token,
-/// existing ones a sign-in token; try both.
-Future<void> verifyEmailCode(String email, String code) async {
-  try {
-    await _sb.auth.verifyOTP(type: OtpType.email, email: email, token: code);
-  } on AuthException catch (first) {
-    try {
-      await _sb.auth.verifyOTP(type: OtpType.signup, email: email, token: code);
-    } on AuthException {
-      throw first;
-    }
-  }
-}
-
 /// Kept for links to /auth/verify-email: confirms an address with a code.
 class VerifyEmailScreen extends StatelessWidget {
   const VerifyEmailScreen({super.key, required this.email});
@@ -284,50 +359,41 @@ class VerifyEmailScreen extends StatelessWidget {
   Widget build(BuildContext context) => OtpScreen(args: OtpArgs(email: email, sendOnOpen: true));
 }
 
+/// Forgot password: email a code, then choose a new password on the code screen.
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  const ForgotPasswordScreen({super.key, this.email});
+  final String? email;
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final _email = TextEditingController();
-  final _code = TextEditingController();
-  bool _sent = false;
+  late final _email = TextEditingController(text: widget.email ?? '');
   bool _busy = false;
-  String? _message;
+  String? _error;
 
-  Future<void> _send() async {
-    final err = Validators.email(_email.text);
-    if (err != null) {
-      setState(() => _message = err);
-      return;
-    }
-    setState(() => _busy = true);
-    try {
-      await _sb.auth.resetPasswordForEmail(_email.text.trim(), redirectTo: AppConfig.instance.authRedirectUrl);
-      setState(() {
-        _sent = true;
-        _message = 'We emailed a code to ${_email.text.trim()}. Enter it below to set a new password.';
-      });
-    } catch (e) {
-      setState(() => _message = friendlyError(e));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
   }
 
-  Future<void> _verify() async {
-    if (_code.text.trim().length < 6) {
-      setState(() => _message = 'Enter the code from the email.');
+  Future<void> _send() async {
+    final email = _email.text.trim().toLowerCase();
+    if (Validators.email(email) != null) {
+      setState(() => _error = 'Enter a valid email address.');
       return;
     }
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
-      await _sb.auth.verifyOTP(type: OtpType.recovery, email: _email.text.trim(), token: _code.text.trim());
+      await sendEmailCode(email);
+      if (mounted) context.pushReplacement('/auth/otp', extra: OtpArgs(email: email, reset: true));
     } catch (e) {
-      setState(() => _message = friendlyError(e));
+      if (mounted) setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -337,33 +403,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return _AuthScaffold(
       title: 'Reset password',
-      subtitle: 'We\'ll email you a code to reset it.',
+      subtitle: 'We\'ll email you a 6-digit code. Then you can choose a new password.',
       children: [
         HimeField(
           controller: _email,
           label: 'Email',
           keyboardType: TextInputType.emailAddress,
           prefix: const Icon(Icons.alternate_email_rounded),
+          autofocus: true,
+          onSubmitted: (_) => _send(),
         ),
-        if (_sent) ...[
-          const SizedBox(height: 14),
-          HimeField(
-            controller: _code,
-            label: 'Code from the email',
-            keyboardType: TextInputType.number,
-            maxLength: 10,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            autofocus: true,
-          ),
-        ],
-        if (_message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_message!)),
+        if (_error != null)
+          Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: context.colors.error))),
         const SizedBox(height: 20),
-        PrimaryButton(
-          label: _sent ? 'Verify code' : 'Send code',
-          loading: _busy,
-          onPressed: _sent ? _verify : _send,
-        ),
-        if (_sent) TextButton(onPressed: _send, child: const Text('Send again')),
+        PrimaryButton(label: 'Send code', loading: _busy, onPressed: _send),
       ],
     );
   }
@@ -425,11 +478,18 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 }
 
 class OtpArgs {
-  const OtpArgs({this.phone, this.email, this.sendOnOpen = false}) : assert(phone != null || email != null);
+  const OtpArgs({this.phone, this.email, this.password, this.reset = false, this.sendOnOpen = false})
+      : assert(phone != null || email != null);
   final String? phone;
   final String? email;
 
-  /// Send a fresh code when the screen opens (used when confirming an address).
+  /// Password to set once the code is confirmed (new accounts).
+  final String? password;
+
+  /// Ask for a new password on the code screen (forgot password).
+  final bool reset;
+
+  /// Send a fresh code when the screen opens.
   final bool sendOnOpen;
   bool get isEmail => email != null;
 }
@@ -579,6 +639,7 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   final _code = TextEditingController();
+  final _newPassword = TextEditingController();
   bool _busy = false;
   String? _error;
   String? _info;
@@ -610,14 +671,22 @@ class _OtpScreenState extends State<OtpScreen> {
   void dispose() {
     _timer?.cancel();
     _code.dispose();
+    _newPassword.dispose();
     super.dispose();
   }
 
   Future<void> _verify() async {
     final code = _code.text.trim();
-    if (code.length < 6) {
-      setState(() => _error = a.isEmail ? 'Enter the code from the email' : 'Enter the 6-digit code');
+    if (code.length != 6) {
+      setState(() => _error = 'Enter the 6-digit code');
       return;
+    }
+    if (a.reset) {
+      final weak = Validators.password(_newPassword.text);
+      if (weak != null) {
+        setState(() => _error = weak);
+        return;
+      }
     }
     setState(() {
       _busy = true;
@@ -625,7 +694,7 @@ class _OtpScreenState extends State<OtpScreen> {
     });
     try {
       if (a.isEmail) {
-        await verifyEmailCode(a.email!, code);
+        await verifyEmailCode(a.email!, code, password: a.reset ? _newPassword.text : a.password);
       } else {
         await _sb.auth.verifyOTP(type: OtpType.sms, phone: a.phone!, token: code);
       }
@@ -650,6 +719,7 @@ class _OtpScreenState extends State<OtpScreen> {
       _startTimer();
       if (mounted) setState(() => _info = 'A new code is on its way.');
     } catch (e) {
+      if (e is EmailAuthError && e.code == 'wait' && e.seconds != null) _startTimer(e.seconds!);
       final wait = RegExp(r'after (\d+) seconds').firstMatch(e.toString());
       if (wait != null) _startTimer(int.parse(wait.group(1)!));
       if (mounted) setState(() => _error = friendlyError(e));
@@ -662,7 +732,7 @@ class _OtpScreenState extends State<OtpScreen> {
     return _AuthScaffold(
       title: email ? 'Check your email' : 'Enter the code',
       subtitle: email
-          ? 'Enter the code we sent to ${a.email}. It can take a minute to arrive — check Spam or Promotions too.'
+          ? 'Enter the 6-digit code we sent to ${a.email}. It can take a minute to arrive — check Spam or Promotions too.'
           : 'Sent by SMS to ${a.phone}',
       children: [
         TextField(
@@ -670,37 +740,39 @@ class _OtpScreenState extends State<OtpScreen> {
           autofocus: true,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          maxLength: email ? 10 : 6,
+          maxLength: 6,
           autofillHints: const [AutofillHints.oneTimeCode],
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           style: context.text.headlineMedium?.copyWith(letterSpacing: 10),
           decoration: InputDecoration(counterText: '', hintText: email ? '••••••' : '••••••'),
           onChanged: (v) {
-            if (!email && v.length == 6) _verify();
+            if (v.length == 6 && !a.reset) _verify();
             if (_error != null) setState(() => _error = null);
           },
           onSubmitted: (_) => _verify(),
         ),
+        if (a.reset) ...[
+          const SizedBox(height: 16),
+          HimeField(
+            controller: _newPassword,
+            label: 'New password',
+            obscure: true,
+            prefix: const Icon(Icons.lock_outline_rounded),
+            autofillHints: const [AutofillHints.newPassword],
+            onSubmitted: (_) => _verify(),
+          ),
+        ],
         if (_error != null)
           Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: context.colors.error))),
         if (_info != null && _error == null)
           Padding(padding: const EdgeInsets.only(top: 12), child: Text(_info!, style: TextStyle(color: context.palette.muted))),
         const SizedBox(height: 24),
-        PrimaryButton(label: 'Verify', loading: _busy, onPressed: _verify),
+        PrimaryButton(label: a.reset ? 'Save new password' : 'Verify', loading: _busy, onPressed: _verify),
         const SizedBox(height: 8),
         TextButton(
           onPressed: _seconds > 0 ? null : _resend,
           child: Text(_seconds > 0 ? 'Resend code in ${_seconds}s' : 'Resend code'),
         ),
-        if (email)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              'If the email has a button instead of a code, tapping it on this phone signs you in too.',
-              textAlign: TextAlign.center,
-              style: context.text.labelSmall?.copyWith(color: context.palette.muted),
-            ),
-          ),
       ],
     );
   }
