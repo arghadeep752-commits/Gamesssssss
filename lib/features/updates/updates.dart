@@ -540,7 +540,7 @@ class _TextStatusComposerState extends ConsumerState<TextStatusComposer> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: fg,
-        systemOverlayStyle: fg == Colors.white ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        systemOverlayStyle: HimeSystemUi.of(dark: fg == Colors.white),
         actions: [
           IconButton(tooltip: 'Font', icon: const Icon(Icons.text_fields_rounded), onPressed: () => setState(() => font = (font + 1) % 5)),
           IconButton(tooltip: 'Colour', icon: const Icon(Icons.palette_outlined), onPressed: () => setState(() => color = (color + 1) % _colors.length)),
@@ -694,7 +694,7 @@ class _StatusMediaComposerState extends State<StatusMediaComposer> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        systemOverlayStyle: HimeSystemUi.onDark,
         leading: IconButton(tooltip: 'Discard', icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
         title: Text(widget.video ? 'Video status' : 'Photo status', style: const TextStyle(color: Colors.white)),
       ),
@@ -1049,7 +1049,7 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
             );
     }
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: HimeSystemUi.onDark,
       child: Scaffold(
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: true,

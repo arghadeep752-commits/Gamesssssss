@@ -26,6 +26,26 @@ class HimeColors {
   static const darkMuted = Color(0xFF9A9CA1);
 }
 
+/// Edge-to-edge system bars: the status bar and the navigation bar are fully
+/// transparent, so the app's own colours run to the edges of the screen (no
+/// grey band behind the clock and battery, no black strip behind the
+/// navigation buttons). Icons switch between dark and light with the theme.
+class HimeSystemUi {
+  static SystemUiOverlayStyle of({required bool dark}) => SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarContrastEnforced: false,
+      );
+
+  /// For full-bleed dark screens (calls, status viewer, photo/video preview).
+  static final onDark = of(dark: true);
+}
+
 class HimeSpace {
   static const xs = 4.0;
   static const sm = 8.0;
@@ -200,7 +220,7 @@ class HimeTheme {
         scrolledUnderElevation: 0.5,
         centerTitle: false,
         titleTextStyle: text.titleLarge,
-        systemOverlayStyle: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        systemOverlayStyle: HimeSystemUi.of(dark: dark),
       ),
       inputDecorationTheme: InputDecorationThemeData(
         filled: true,

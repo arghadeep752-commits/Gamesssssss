@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
@@ -110,7 +111,9 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
       );
     }
     final peer = core.profiles.cached(c.peerId);
-    return PopScope(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: HimeSystemUi.onDark,
+      child: PopScope(
       canPop: c.phase != CallPhase.incoming,
       child: Scaffold(
         backgroundColor: HimeColors.ink,
@@ -253,6 +256,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
               ),
             ),
         ]),
+      ),
       ),
     );
   }

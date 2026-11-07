@@ -7,12 +7,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config.dart';
+import 'core/theme.dart';
 import 'services/notifications.dart';
 import 'services/secure_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Draw behind transparent status and navigation bars (full-screen look).
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(HimeSystemUi.of(
+      dark: WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark));
   final config = await AppConfig.load();
   final prefs = await SharedPreferences.getInstance();
   await Supabase.initialize(

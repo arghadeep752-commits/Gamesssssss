@@ -12,7 +12,16 @@
         <item name="android:windowLightStatusBar">@bool/splash_light_bars</item>
         <item name="android:windowLightNavigationBar">@bool/splash_light_bars</item>
     </style>
+    <!-- After launch: transparent status and navigation bars (edge-to-edge). -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">@bool/splash_light_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/splash_light_bars</item>
+        <item name="android:navigationBarDividerColor">@android:color/transparent</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
     </style>
 </resources>

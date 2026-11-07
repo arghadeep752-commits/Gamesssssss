@@ -224,10 +224,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     final bg = dark ? HimeColors.darkBackground : Colors.white;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
-        statusBarColor: Colors.transparent,
-        systemNavigationBarColor: bg,
-      ),
+      value: HimeSystemUi.of(dark: dark),
       child: Scaffold(
         backgroundColor: bg,
         body: Stack(children: [

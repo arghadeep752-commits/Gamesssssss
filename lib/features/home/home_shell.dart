@@ -133,7 +133,11 @@ class _HimeNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // The bar's colour also fills the area behind the (transparent) system
+    // navigation bar, so the bottom of the screen looks like one piece.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.2,
+      child: Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.palette.border)),
@@ -193,12 +197,22 @@ class _HimeNavBar extends StatelessWidget {
                         ),
                     ]),
                     const SizedBox(height: 4),
-                    Text(
-                      _items[i].$3,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: i == index ? FontWeight.w700 : FontWeight.w500,
-                        color: i == index ? context.colors.onSurface : context.palette.muted,
+                    // One line always ("Communities" used to wrap on narrow
+                    // phones or with large system fonts).
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _items[i].$3,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: i == index ? FontWeight.w700 : FontWeight.w500,
+                            color: i == index ? context.colors.onSurface : context.palette.muted,
+                          ),
+                        ),
                       ),
                     ),
                   ]),
@@ -206,6 +220,7 @@ class _HimeNavBar extends StatelessWidget {
               ),
           ]),
         ),
+      ),
       ),
     );
   }

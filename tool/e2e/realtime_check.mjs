@@ -184,7 +184,7 @@ async function main() {
     check("own online presence channel", own.ok, own.error);
     const watch = await probe(await freshClient(A), `presence:${B.id}`, { listen: true });
     for (let i = 0; i < 60 && watch.ok && !watch.online; i++) await sleep(100);
-    check("online status is visible live to a chat partner", watch.ok && watch.online, watch.error || (watch.ok ? "joined but no presence state" : ""));
+    check("online status is visible live to a chat partner", watch.ok && watch.online, watch.error || (watch.ok && !watch.online ? "joined but no presence state" : ""));
     const plain = await probe(await freshClient(A), `presence:${B.id}`);
     console.log(`info  presence topic joined without presence listeners: ${plain.ok ? "allowed" : plain.error}`);
   } catch (e) {
@@ -272,6 +272,21 @@ async function main() {
   if (call?.id) {
     // realtime.send adds its own "id" to payloads, so calls are matched by call_id.
     await expectEvent("callee rings live", B, "call", (d) => d.call_id === call.id && d.status === "ringing");
+    // WebRTC signalling runs over the private call:<id> topic (offer/answer/ICE).
+    try {
+      const sigA = A.client.channel(`call:${call.id}`, { config: { private: true } });
+      const sigB = B.client.channel(`call:${call.id}`, { config: { private: true } });
+      let offer = null;
+      sigB.on("broadcast", { event: "signal" }, (m) => { offer = m.payload; });
+      await Promise.all([subscribed(sigA), subscribed(sigB)]);
+      await sigA.send({ type: "broadcast", event: "signal", payload: { type: "offer", sdp: "v=0", from: A.id } });
+      for (let i = 0; i < 50 && !offer; i++) await sleep(100);
+      check("call signalling (offer) reaches the callee", offer?.type === "offer");
+      await A.client.removeChannel(sigA);
+      await B.client.removeChannel(sigB);
+    } catch (e) {
+      check("call signalling (offer) reaches the callee", false, e.message);
+    }
     const { error: c2 } = await B.client.rpc("answer_call", { p_call_id: call.id });
     check("answer the call", !c2, c2?.message);
     await expectEvent("caller sees the answer live", A, "call", (d) => d.call_id === call.id && d.status === "active");
