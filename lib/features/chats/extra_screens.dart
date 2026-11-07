@@ -186,11 +186,39 @@ class _ChatInfoScreenState extends ConsumerState<ChatInfoScreen> {
   int mediaCount = 0;
   bool loading = true;
   Object? error;
+  final _subs = <StreamSubscription<Map<String, dynamic>>>[];
+  Timer? _reload;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Group name/photo/settings, members and roles, and the other person's
+    // profile update while this screen is open.
+    _subs.add(core.realtime.conversations
+        .where((e) => e['conversation_id'] == widget.conversationId)
+        .listen((_) => _scheduleReload(refreshList: true)));
+    _subs.add(core.realtime.profileChanges.listen((e) {
+      final id = e['user_id'];
+      if (id != null && (id == chat?.otherUserId || members.any((m) => m['user_id'] == id))) _scheduleReload();
+    }));
+  }
+
+  void _scheduleReload({bool refreshList = false}) {
+    _reload?.cancel();
+    _reload = Timer(const Duration(milliseconds: 700), () async {
+      if (refreshList) await core.chatList.refresh();
+      if (mounted) await _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _reload?.cancel();
+    for (final s in _subs) {
+      s.cancel();
+    }
+    super.dispose();
   }
 
   Future<void> _load() async {

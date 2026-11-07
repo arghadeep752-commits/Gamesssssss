@@ -23,11 +23,25 @@ class _CommunitiesScreenState extends ConsumerState<CommunitiesScreen> {
   late final HimeCore core = ref.read(coreProvider);
   List<Map<String, dynamic>>? list;
   Object? error;
+  StreamSubscription<Map<String, dynamic>>? _live;
+  Timer? _reload;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Joining, leaving or being added to community groups shows up live.
+    _live = core.realtime.conversations.listen((_) {
+      _reload?.cancel();
+      _reload = Timer(const Duration(milliseconds: 800), _load);
+    });
+  }
+
+  @override
+  void dispose() {
+    _reload?.cancel();
+    _live?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -170,11 +184,24 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   late final HimeCore core = ref.read(coreProvider);
   Map<String, dynamic>? data;
   Object? error;
+  StreamSubscription<Map<String, dynamic>>? _live;
+  Timer? _reload;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _live = core.realtime.conversations.listen((_) {
+      _reload?.cancel();
+      _reload = Timer(const Duration(milliseconds: 800), _load);
+    });
+  }
+
+  @override
+  void dispose() {
+    _reload?.cancel();
+    _live?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {

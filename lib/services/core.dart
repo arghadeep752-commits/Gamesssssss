@@ -367,7 +367,14 @@ class _Watch {
       }
     }
 
-    ch.onPresenceSync(sync).onPresenceJoin(sync).onPresenceLeave(sync).subscribe();
+    ch.onPresenceSync(sync).onPresenceJoin(sync).onPresenceLeave(sync).subscribe((status, _) {
+      // Not allowed to see this person's online status (their privacy
+      // settings): stop re-joining and rely on the privacy-filtered lookup.
+      if (status == RealtimeSubscribeStatus.channelError && _ch == ch) {
+        _ch = null;
+        unawaited(core.sb.removeChannel(ch));
+      }
+    });
     _ch = ch;
   }
 

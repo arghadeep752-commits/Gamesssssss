@@ -60,24 +60,34 @@ async function makeUser(tag) {
   return { tag, email, client, id, device, events: [] };
 }
 
+/** Subscribes a channel, failing (instead of hanging) on error or after 15 s. */
+function subscribed(ch, onSubscribed) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`subscribe timeout on ${ch.topic}`)), 15000);
+    ch.subscribe(async (status, err) => {
+      if (status === "SUBSCRIBED") {
+        clearTimeout(t);
+        try {
+          if (onSubscribed) await onSubscribed();
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        clearTimeout(t);
+        reject(new Error(`${ch.topic}: ${status} ${err?.message ?? ""}`));
+      }
+    });
+  });
+}
+
 /** Subscribes to the private user:<id> topic and records every event. */
 async function listen(u) {
   const ch = u.client.channel(`user:${u.id}`, { config: { private: true } });
   for (const ev of ["message", "receipt", "reaction", "conversation", "pins", "call", "status", "status_view", "profile"]) {
     ch.on("broadcast", { event: ev }, (msg) => u.events.push({ ev, data: msg.payload?.payload ?? msg.payload }));
   }
-  await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("subscribe timeout")), 15000);
-    ch.subscribe((status, err) => {
-      if (status === "SUBSCRIBED") {
-        clearTimeout(t);
-        resolve();
-      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        clearTimeout(t);
-        reject(err ?? new Error(status));
-      }
-    });
-  });
+  await subscribed(ch);
   return ch;
 }
 
@@ -129,20 +139,52 @@ async function main() {
   const convB = B.client.channel(`conv:${conv}`, { config: { private: true } });
   let typingSeen = false;
   convB.on("broadcast", { event: "typing" }, () => (typingSeen = true));
-  await Promise.all([convA, convB].map((ch) => new Promise((res) => ch.subscribe((s) => s === "SUBSCRIBED" && res()))));
-  await convA.send({ type: "broadcast", event: "typing", payload: { user_id: A.id, stop: false } });
-  for (let i = 0; i < 50 && !typingSeen; i++) await sleep(100);
-  check("typing indicator reaches the other person", typingSeen);
+  try {
+    await Promise.all([subscribed(convA), subscribed(convB)]);
+    await convA.send({ type: "broadcast", event: "typing", payload: { user_id: A.id, stop: false } });
+    for (let i = 0; i < 50 && !typingSeen; i++) await sleep(100);
+    check("typing indicator reaches the other person", typingSeen);
+  } catch (e) {
+    check("typing indicator reaches the other person", false, e.message);
+  }
 
-  // presence (online indicator)
-  const own = B.client.channel(`presence:${B.id}`, { config: { private: true, presence: { key: "self" } } });
-  await new Promise((res) => own.subscribe(async (s) => { if (s === "SUBSCRIBED") { await own.track({ at: new Date().toISOString() }); res(); } }));
-  const watch = A.client.channel(`presence:${B.id}`, { config: { private: true } });
-  let online = false;
-  watch.on("presence", { event: "sync" }, () => { online = Object.keys(watch.presenceState()).length > 0; });
-  await new Promise((res) => watch.subscribe((s) => s === "SUBSCRIBED" && res()));
-  for (let i = 0; i < 60 && !online; i++) await sleep(100);
-  check("online status is visible live", online);
+  // presence (online indicator) respects privacy: B's "last seen" defaults to
+  // contacts, so A may not see B online until B has chatted with A.
+  try {
+    const peek = A.client.channel(`presence:${B.id}`, { config: { private: true } });
+    let denied = false;
+    try {
+      await subscribed(peek);
+    } catch {
+      denied = true;
+    }
+    await A.client.removeChannel(peek);
+    check("online status stays hidden from a stranger", denied);
+  } catch (e) {
+    check("online status stays hidden from a stranger", false, e.message);
+  }
+
+  // B replies, which makes A one of B's contacts.
+  const r1 = randomUUID();
+  const { error: eR } = await B.client.rpc("send_message", {
+    p_id: r1, p_conversation_id: conv, p_kind: "text", p_ciphertext: b64(40), p_nonce: b64(12), p_eph_key: b64(32),
+    p_keys: keys, p_device_id: B.device,
+  });
+  check("reply", !eR, eR?.message);
+  await expectEvent("sender gets the reply live", A, "message", (d) => d.id === r1);
+
+  try {
+    const own = B.client.channel(`presence:${B.id}`, { config: { private: true, presence: { key: "self" } } });
+    await subscribed(own, () => own.track({ at: new Date().toISOString() }));
+    const watch = A.client.channel(`presence:${B.id}`, { config: { private: true } });
+    let online = false;
+    watch.on("presence", { event: "sync" }, () => { online = Object.keys(watch.presenceState()).length > 0; });
+    await subscribed(watch);
+    for (let i = 0; i < 60 && !online; i++) await sleep(100);
+    check("online status is visible live once they chat", online);
+  } catch (e) {
+    check("online status is visible live once they chat", false, e.message);
+  }
 
   // receipts
   const now = new Date().toISOString();
@@ -241,7 +283,12 @@ async function main() {
 }
 
 try {
-  await main();
+  await Promise.race([
+    main(),
+    sleep(240000).then(() => {
+      throw new Error("timed out after 4 minutes");
+    }),
+  ]);
 } catch (e) {
   check("run", false, e.message);
 } finally {
