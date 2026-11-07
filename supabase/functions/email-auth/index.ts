@@ -13,14 +13,34 @@ import { adminClient, corsHeaders, json } from "../_shared/http.ts";
 
 const admin = adminClient();
 
-const smtp = {
-  host: Deno.env.get("SMTP_HOST") ?? "smtp.gmail.com",
-  port: Number(Deno.env.get("SMTP_PORT") ?? "465"),
-  user: (Deno.env.get("SMTP_USER") ?? "").trim(),
-  pass: (Deno.env.get("SMTP_PASS") ?? "").replace(/\s+/g, ""),
-  name: Deno.env.get("SMTP_SENDER_NAME") ?? "Hime",
-};
-const smtpReady = () => smtp.user.includes("@") && smtp.pass.length >= 8;
+// SMTP settings come from the function secrets (SMTP_USER / SMTP_PASS / ...) or,
+// if those are not set, from the service-role-only app_secrets table.
+type Smtp = { host: string; port: number; user: string; pass: string; name: string };
+let smtpCache: { at: number; value: Smtp } | null = null;
+async function smtpConfig(): Promise<Smtp> {
+  if (smtpCache && Date.now() - smtpCache.at < 60_000) return smtpCache.value;
+  const env = (k: string) => (Deno.env.get(k) ?? "").trim();
+  const value: Smtp = {
+    host: env("SMTP_HOST") || "smtp.gmail.com",
+    port: Number(env("SMTP_PORT") || "465"),
+    user: env("SMTP_USER"),
+    pass: env("SMTP_PASS").replace(/\s+/g, ""),
+    name: env("SMTP_SENDER_NAME") || "Hime",
+  };
+  if (!value.user || !value.pass) {
+    const { data } = await admin.from("app_secrets").select("key, value")
+      .in("key", ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_sender_name"]);
+    const db = Object.fromEntries((data ?? []).map((r) => [r.key as string, String(r.value ?? "").trim()]));
+    value.host = db.smtp_host || value.host;
+    value.port = Number(db.smtp_port || value.port);
+    value.user = db.smtp_user || value.user;
+    value.pass = (db.smtp_pass || value.pass).replace(/\s+/g, "");
+    value.name = db.smtp_sender_name || value.name;
+  }
+  smtpCache = { at: Date.now(), value };
+  return value;
+}
+const smtpReady = (c: Smtp) => c.user.includes("@") && c.pass.length >= 8;
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const RESEND_AFTER_MS = 60 * 1000;
@@ -76,7 +96,7 @@ async function allow(bucket: string, limit: number, windowSec: number): Promise<
 }
 
 // ------------------------------------------------------------------ SMTP (implicit TLS, port 465)
-async function sendMail(to: string, subject: string, text: string, html: string): Promise<void> {
+async function sendMail(smtp: Smtp, to: string, subject: string, text: string, html: string): Promise<void> {
   const conn = await Deno.connectTls({ hostname: smtp.host, port: smtp.port });
   const enc = new TextEncoder();
   const dec = new TextDecoder();
@@ -172,7 +192,8 @@ function codeEmail(code: string): { subject: string; text: string; html: string 
 async function sendCode(body: Record<string, unknown>, ip: string): Promise<Response> {
   const email = normEmail(body.email);
   if (!email) return json({ error: "invalid_email" }, 400);
-  if (!smtpReady()) return json({ error: "email_not_configured" }, 503);
+  const smtp = await smtpConfig();
+  if (!smtpReady(smtp)) return json({ error: "email_not_configured" }, 503);
 
   const { data: last } = await admin.from("auth_email_codes").select("created_at")
     .eq("email", email).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -195,7 +216,7 @@ async function sendCode(body: Record<string, unknown>, ip: string): Promise<Resp
 
   const mail = codeEmail(code);
   try {
-    await sendMail(email, mail.subject, mail.text, mail.html);
+    await sendMail(smtp, email, mail.subject, mail.text, mail.html);
   } catch (e) {
     console.error("send failed", e);
     return json({ error: "send_failed" }, 502);
@@ -252,7 +273,7 @@ async function verifyCode(body: Record<string, unknown>): Promise<Response> {
 }
 
 async function signup(body: Record<string, unknown>, ip: string): Promise<Response> {
-  if (smtpReady()) return json({ error: "verification_required" }, 400);
+  if (smtpReady(await smtpConfig())) return json({ error: "verification_required" }, 400);
   const email = normEmail(body.email);
   const password = String(body.password ?? "");
   if (!email) return json({ error: "invalid_email" }, 400);
@@ -281,7 +302,7 @@ Deno.serve(async (req) => {
   try {
     switch (body.action) {
       case "config":
-        return json({ otp: smtpReady() });
+        return json({ otp: smtpReady(await smtpConfig()) });
       case "send_code":
         return await sendCode(body, ip);
       case "verify_code":
