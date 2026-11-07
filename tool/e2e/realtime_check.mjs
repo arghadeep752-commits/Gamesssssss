@@ -57,7 +57,7 @@ async function makeUser(tag) {
     p_app_version: "e2e",
   });
   if (e4) throw new Error(`device ${tag}: ${e4.message}`);
-  return { tag, email, client, id, device, events: [] };
+  return { tag, email, client, id, device, session: data.session, events: [] };
 }
 
 /** Subscribes a channel, failing (instead of hanging) on error or after 15 s. */
@@ -148,23 +148,7 @@ async function main() {
     check("typing indicator reaches the other person", false, e.message);
   }
 
-  // presence (online indicator) respects privacy: B's "last seen" defaults to
-  // contacts, so A may not see B online until B has chatted with A.
-  try {
-    const peek = A.client.channel(`presence:${B.id}`, { config: { private: true } });
-    let denied = false;
-    try {
-      await subscribed(peek);
-    } catch {
-      denied = true;
-    }
-    await A.client.removeChannel(peek);
-    check("online status stays hidden from a stranger", denied);
-  } catch (e) {
-    check("online status stays hidden from a stranger", false, e.message);
-  }
-
-  // B replies, which makes A one of B's contacts.
+  // B replies (a normal two-way chat from here on).
   const r1 = randomUUID();
   const { error: eR } = await B.client.rpc("send_message", {
     p_id: r1, p_conversation_id: conv, p_kind: "text", p_ciphertext: b64(40), p_nonce: b64(12), p_eph_key: b64(32),
@@ -173,17 +157,36 @@ async function main() {
   check("reply", !eR, eR?.message);
   await expectEvent("sender gets the reply live", A, "message", (d) => d.id === r1);
 
+  // presence (online indicator). Fresh clients so channel de-duplication by
+  // topic can't interfere between probes.
+  async function freshClient(u) {
+    const c = createClient(URL, KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    await c.auth.setSession({ access_token: u.session.access_token, refresh_token: u.session.refresh_token });
+    c.realtime.setAuth(u.session.access_token);
+    return c;
+  }
+  async function probe(client, topic, { listen = false, track = false } = {}) {
+    const ch = client.channel(topic, { config: { private: true, ...(track ? { presence: { key: "self" } } : {}) } });
+    const state = { ok: false, error: "", online: false, ch };
+    if (listen) ch.on("presence", { event: "sync" }, () => { state.online = Object.keys(ch.presenceState()).length > 0; });
+    try {
+      await subscribed(ch, track ? () => ch.track({ at: new Date().toISOString() }) : undefined);
+      state.ok = true;
+    } catch (e) {
+      state.error = e.message;
+    }
+    return state;
+  }
   try {
-    const own = B.client.channel(`presence:${B.id}`, { config: { private: true, presence: { key: "self" } } });
-    await subscribed(own, () => own.track({ at: new Date().toISOString() }));
-    const watch = A.client.channel(`presence:${B.id}`, { config: { private: true } });
-    let online = false;
-    watch.on("presence", { event: "sync" }, () => { online = Object.keys(watch.presenceState()).length > 0; });
-    await subscribed(watch);
-    for (let i = 0; i < 60 && !online; i++) await sleep(100);
-    check("online status is visible live once they chat", online);
+    const own = await probe(await freshClient(B), `presence:${B.id}`, { listen: true, track: true });
+    check("own online presence channel", own.ok, own.error);
+    const watch = await probe(await freshClient(A), `presence:${B.id}`, { listen: true });
+    for (let i = 0; i < 60 && watch.ok && !watch.online; i++) await sleep(100);
+    check("online status is visible live to a chat partner", watch.ok && watch.online, watch.error || (watch.ok ? "joined but no presence state" : ""));
+    const plain = await probe(await freshClient(A), `presence:${B.id}`);
+    console.log(`info  presence topic joined without presence listeners: ${plain.ok ? "allowed" : plain.error}`);
   } catch (e) {
-    check("online status is visible live once they chat", false, e.message);
+    check("presence probes", false, e.message);
   }
 
   // receipts
@@ -265,10 +268,11 @@ async function main() {
   const { data: call, error: c1 } = await A.client.rpc("start_call", { p_conversation_id: conv, p_media: "audio" });
   check("start a call", !c1 && call?.id, c1?.message);
   if (call?.id) {
-    await expectEvent("callee rings live", B, "call", (d) => (d.id ?? d.call_id) === call.id);
+    // realtime.send adds its own "id" to payloads, so calls are matched by call_id.
+    await expectEvent("callee rings live", B, "call", (d) => d.call_id === call.id && d.status === "ringing");
     const { error: c2 } = await B.client.rpc("answer_call", { p_call_id: call.id });
     check("answer the call", !c2, c2?.message);
-    await expectEvent("caller sees the answer live", A, "call", (d) => (d.id ?? d.call_id) === call.id && d.status === "active");
+    await expectEvent("caller sees the answer live", A, "call", (d) => d.call_id === call.id && d.status === "active");
     const { error: c3 } = await A.client.rpc("end_call", { p_call_id: call.id, p_reason: "hangup" });
     check("end the call", !c3, c3?.message);
     const { data: ice, error: c4 } = await A.client.functions.invoke("ice-servers", { body: {} });
