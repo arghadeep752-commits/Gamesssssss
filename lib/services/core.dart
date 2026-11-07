@@ -270,7 +270,10 @@ class PresenceService {
     unawaited(_beat());
     _heartbeat = Timer.periodic(const Duration(seconds: 40), (_) => _beat());
     if (_own == null) {
-      final ch = core.sb.channel('presence:${core.userId}', opts: const RealtimeChannelConfig(private: true, key: 'self'));
+      // `enabled: true` turns presence on for this channel even though it has
+      // no presence listeners; without it the server only checks broadcast
+      // access, rejects the join, and nobody ever sees this user online live.
+      final ch = core.sb.channel('presence:${core.userId}', opts: const RealtimeChannelConfig(private: true, key: 'self', enabled: true));
       ch.subscribe((status, _) async {
         if (status == RealtimeSubscribeStatus.subscribed) {
           await ch.track({'at': DateTime.now().toUtc().toIso8601String()});

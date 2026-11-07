@@ -166,7 +166,9 @@ async function main() {
     return c;
   }
   async function probe(client, topic, { listen = false, track = false } = {}) {
-    const ch = client.channel(topic, { config: { private: true, ...(track ? { presence: { key: "self" } } : {}) } });
+    // Like the app: presence must be switched on explicitly (`enabled`), or the
+    // server only checks broadcast access for the join.
+    const ch = client.channel(topic, { config: { private: true, presence: { key: track ? "self" : "", enabled: listen || track } } });
     const state = { ok: false, error: "", online: false, ch };
     if (listen) ch.on("presence", { event: "sync" }, () => { state.online = Object.keys(ch.presenceState()).length > 0; });
     try {
