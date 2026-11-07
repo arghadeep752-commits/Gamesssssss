@@ -36,3 +36,6 @@ GoogleService-Info.plist
 *.apk
 *.aab
 dist/
+
+__pycache__/
+node_modules/
