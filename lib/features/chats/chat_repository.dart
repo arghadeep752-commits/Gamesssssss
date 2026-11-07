@@ -213,7 +213,7 @@ class ChatRepository {
           }
           if (rows.isNotEmpty) {
             cursor = rows.last['updated_at'] as String;
-            await db.setKv('sync_cursor', cursor!);
+            await db.setKv('sync_cursor', cursor);
           }
           if (rows.length < 300) break;
         }

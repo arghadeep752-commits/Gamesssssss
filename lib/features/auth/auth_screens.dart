@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/config.dart';
 import '../../core/countries.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
