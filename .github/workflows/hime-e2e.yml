@@ -1,0 +1,53 @@
+# Live end-to-end check of the Hime backend: two throwaway accounts exchange
+# messages, receipts, reactions, statuses, profile changes, group and call
+# events through the real APIs and private realtime topics, then delete
+# themselves. The report is attached to the draft release "hime-e2e-logs".
+name: Hime backend E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [hime]
+    paths:
+      - 'tool/e2e/**'
+      - 'supabase/migrations/**'
+      - '.github/workflows/hime-e2e.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hime-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the Supabase client
+        run: npm install --no-save --no-audit --no-fund @supabase/supabase-js@2.49.4
+
+      - name: Run the live check
+        run: |
+          set -o pipefail
+          node tool/e2e/realtime_check.mjs 2>&1 | tee e2e-report.txt
+
+      - name: Publish the report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/$REPO/releases?per_page=100" -q '.[] | select(.name=="hime-e2e-logs") | .id'); do
+            gh api -X DELETE "repos/$REPO/releases/$id" || true
+          done
+          gh release create "hime-e2e-${{ github.run_number }}" --repo "$REPO" --draft --title hime-e2e-logs \
+            --notes "Backend E2E report from ${GITHUB_SHA::7}" e2e-report.txt || true

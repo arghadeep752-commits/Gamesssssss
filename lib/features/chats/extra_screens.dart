@@ -143,7 +143,6 @@ Future<void> showReportSheet(BuildContext context, HimeCore core,
       : null;
   await guard(context, () async {
     await core.sb.from('reports').insert({
-      'reporter_id': core.userId,
       'reported_user_id': ?userId,
       'conversation_id': ?conversationId,
       'reason': reason,

@@ -3,4 +3,6 @@
     <color name="ic_launcher_background">#F5D547</color>
     <color name="hime_yellow">#F5D547</color>
     <color name="hime_ink">#202124</color>
+    <!-- Launch screen background (white in light mode, see values-night). -->
+    <color name="splash_background">#FFFFFF</color>
 </resources>

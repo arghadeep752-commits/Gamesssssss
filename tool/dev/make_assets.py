@@ -86,7 +86,6 @@ def make_icons() -> None:
         save(launcher(int(48 * scale), True), RES / f"mipmap-{name}" / "ic_launcher_round.png")
         save(adaptive_foreground(int(108 * scale)), RES / f"drawable-{name}" / "ic_launcher_foreground.png")
         save(notification_icon(int(24 * scale)), RES / f"drawable-{name}" / "ic_stat_hime.png")
-        save(glyph(int(96 * scale), hole=YELLOW), RES / f"drawable-{name}" / "launch_mark.png")
     adaptive = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'

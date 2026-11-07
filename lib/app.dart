@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -186,18 +189,76 @@ GoRouter buildRouter(SessionController session) {
   );
 }
 
-class SplashScreen extends StatelessWidget {
+/// WhatsApp-style launch screen: the Hime logo in the middle and
+/// "from ARGHADEEP DAS" at the bottom. Matches the native Android launch
+/// screen exactly so the hand-over to Flutter is seamless.
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  Timer? _slowTimer;
+  bool _slow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only if start-up takes a while (slow network) show that work is happening.
+    _slowTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _slow = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _slowTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: HimeColors.yellow,
-      body: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Image.asset('assets/images/hime_mark.png', width: 96, height: 96),
-          const SizedBox(height: 28),
-          const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: HimeColors.ink)),
+    // The native splash follows the system setting, so this does too.
+    final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final bg = dark ? HimeColors.darkBackground : Colors.white;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: bg,
+      ),
+      child: Scaffold(
+        backgroundColor: bg,
+        body: Stack(children: [
+          Center(child: Image.asset('assets/images/hime_icon.png', width: 96, height: 96, semanticLabel: 'Hime')),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 96 + 72),
+              child: AnimatedOpacity(
+                opacity: _slow ? 1 : 0,
+                duration: const Duration(milliseconds: 400),
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.4, color: dark ? HimeColors.yellow : HimeColors.yellowDeep),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 60,
+            child: Center(
+              child: Image.asset(
+                dark ? 'assets/images/splash_branding_dark.png' : 'assets/images/splash_branding_light.png',
+                width: 200,
+                height: 80,
+                semanticLabel: 'from ARGHADEEP DAS',
+              ),
+            ),
+          ),
         ]),
       ),
     );

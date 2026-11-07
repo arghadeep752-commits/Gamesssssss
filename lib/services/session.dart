@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/widgets.dart';
@@ -98,6 +100,7 @@ class SessionController extends ChangeNotifier {
           await _teardown();
           final c = await HimeCore.create(_sb, session.user.id);
           core = c;
+          c.profiles.onSelfChanged = () => unawaited(refreshProfile().catchError((_) {}));
           _lifecycle = CoreLifecycle(c)..attach();
           await c.start();
           unawaited(NotificationService.instance.requestPermission());
@@ -120,10 +123,31 @@ class SessionController extends ChangeNotifier {
 
   Future<void> retry() => _evaluate();
 
+  /// Loads the signed-in user's profile. Falls back to the copy saved on this
+  /// device when offline, so the app still opens without a connection.
   Future<void> refreshProfile() async {
     final uid = _sb.auth.currentUser?.id;
     if (uid == null) return;
-    final row = await _sb.from('profiles').select().eq('id', uid).maybeSingle();
+    final key = 'hime_profile_$uid';
+    Map<String, dynamic>? row;
+    try {
+      row = await _sb.from('profiles').select().eq('id', uid).maybeSingle().timeout(const Duration(seconds: 12));
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (row == null) {
+          await prefs.remove(key);
+        } else {
+          await prefs.setString(key, jsonEncode(row));
+        }
+      } catch (_) {}
+    } catch (e) {
+      String? cached;
+      try {
+        cached = (await SharedPreferences.getInstance()).getString(key);
+      } catch (_) {}
+      if (cached == null) rethrow;
+      row = Map<String, dynamic>.from(jsonDecode(cached) as Map);
+    }
     profile = row == null ? null : MyProfile(row);
     notifyListeners();
   }

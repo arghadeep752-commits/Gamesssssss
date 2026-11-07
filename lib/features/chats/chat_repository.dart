@@ -563,12 +563,21 @@ class ChatRepository {
     if (emoji == null) {
       await sb.from('message_reactions').delete().eq('message_id', m.id).eq('user_id', core.userId);
     } else {
-      await sb.from('message_reactions').upsert({
-        'message_id': m.id,
-        'conversation_id': m.conversationId,
-        'user_id': core.userId,
-        'emoji': emoji,
-      });
+      // Only the emoji column may be updated, so change-or-insert instead of an upsert.
+      final changed = await sb
+          .from('message_reactions')
+          .update({'emoji': emoji})
+          .eq('message_id', m.id)
+          .eq('user_id', core.userId)
+          .select('message_id');
+      if (changed.isEmpty) {
+        await sb.from('message_reactions').insert({
+          'message_id': m.id,
+          'conversation_id': m.conversationId,
+          'user_id': core.userId,
+          'emoji': emoji,
+        });
+      }
     }
     await db.setReaction(m.conversationId, m.id, core.userId, emoji);
   }
@@ -589,7 +598,8 @@ class ChatRepository {
 
   Future<void> setStarred(ChatMessage m, bool starred) async {
     if (starred) {
-      await sb.from('message_stars').upsert({'user_id': core.userId, 'message_id': m.id, 'conversation_id': m.conversationId});
+      await sb.from('message_stars').upsert({'user_id': core.userId, 'message_id': m.id, 'conversation_id': m.conversationId},
+          onConflict: 'user_id,message_id', ignoreDuplicates: true);
     } else {
       await sb.from('message_stars').delete().eq('user_id', core.userId).eq('message_id', m.id);
     }

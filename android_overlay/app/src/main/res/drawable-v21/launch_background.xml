@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Launch screen before Android 12 (and the window background behind Flutter's first frame). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/hime_yellow" />
-    <item>
-        <bitmap android:gravity="center" android:src="@drawable/launch_mark" />
-    </item>
+    <item android:drawable="@color/splash_background" />
+    <item
+        android:width="96dp"
+        android:height="96dp"
+        android:drawable="@drawable/splash_logo"
+        android:gravity="center" />
+    <item
+        android:width="200dp"
+        android:height="80dp"
+        android:bottom="60dp"
+        android:drawable="@drawable/splash_branding"
+        android:gravity="bottom|center_horizontal" />
 </layer-list>

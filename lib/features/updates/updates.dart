@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -97,6 +98,38 @@ Color hexColor(String hex) {
 String colorHex(Color c) =>
     '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
 
+/// Matches the size limit of the "status" storage bucket.
+const maxStatusBytes = 30 * 1024 * 1024;
+
+/// Longest status video the server accepts.
+const maxStatusVideo = Duration(seconds: 60);
+
+/// Reads the real media type from a file's first bytes.
+({String mime, String ext})? sniffMediaType(List<int> b, {required bool video}) {
+  bool at(int offset, List<int> sig) {
+    if (b.length < offset + sig.length) return false;
+    for (var i = 0; i < sig.length; i++) {
+      if (b[offset + i] != sig[i]) return false;
+    }
+    return true;
+  }
+
+  if (video) {
+    if (at(4, const [0x66, 0x74, 0x79, 0x70])) {
+      final brand = b.length >= 12 ? String.fromCharCodes(b.sublist(8, 12)) : '';
+      if (brand.startsWith('qt')) return (mime: 'video/quicktime', ext: 'mov');
+      if (brand.startsWith('3g')) return (mime: 'video/3gpp', ext: '3gp');
+      return (mime: 'video/mp4', ext: 'mp4');
+    }
+    if (at(0, const [0x1A, 0x45, 0xDF, 0xA3])) return (mime: 'video/webm', ext: 'webm');
+    return null;
+  }
+  if (at(0, const [0xFF, 0xD8, 0xFF])) return (mime: 'image/jpeg', ext: 'jpg');
+  if (at(0, const [0x89, 0x50, 0x4E, 0x47])) return (mime: 'image/png', ext: 'png');
+  if (at(0, const [0x52, 0x49, 0x46, 0x46]) && at(8, const [0x57, 0x45, 0x42, 0x50])) return (mime: 'image/webp', ext: 'webp');
+  return null;
+}
+
 TextStyle statusFont(int font) {
   switch (font) {
     case 1:
@@ -145,22 +178,38 @@ class StatusRepo {
   }
 
   Future<void> postText(String body, String background, int font) =>
-      core.sb.from('statuses').insert({'user_id': core.userId, 'kind': 'text', 'body': body, 'background': background, 'font': font});
+      core.sb.from('statuses').insert({'kind': 'text', 'body': body, 'background': background, 'font': font});
 
+  /// Uploads a photo or video and posts it as a status. The file type is read
+  /// from the file itself so PNG/WebP photos and MOV/3GP/WebM videos keep the
+  /// right content type.
   Future<void> postMedia(XFile file, {required bool video, String? caption, int? durationMs}) async {
-    final ext = video ? 'mp4' : 'jpg';
-    final path = '${core.userId}/${_uuid.v4()}.$ext';
     final bytes = await file.readAsBytes();
-    if (bytes.length > 16 * 1024 * 1024) throw StateError('Status files can be up to 16 MB.');
-    await core.sb.storage.from('status').uploadBinary(path, bytes,
-        fileOptions: FileOptions(contentType: video ? 'video/mp4' : 'image/jpeg', upsert: false));
-    await core.sb.from('statuses').insert({
-      'user_id': core.userId,
-      'kind': video ? 'video' : 'image',
-      'media_path': path,
-      if (caption != null && caption.isNotEmpty) 'caption': caption,
-      'duration_ms': ?durationMs,
-    });
+    if (bytes.isEmpty) throw StateError('That file is empty.');
+    if (bytes.length > maxStatusBytes) {
+      throw StateError('Status files can be up to ${maxStatusBytes ~/ (1024 * 1024)} MB. Pick a shorter or smaller ${video ? 'video' : 'photo'}.');
+    }
+    final type = sniffMediaType(bytes, video: video);
+    if (type == null) {
+      throw StateError(video ? 'This video format isn\'t supported. Use an MP4 video.' : 'This photo format isn\'t supported. Use a JPEG or PNG photo.');
+    }
+    final path = '${core.userId}/${_uuid.v4()}.${type.ext}';
+    await core.sb.storage.from('status').uploadBinary(path, bytes, fileOptions: FileOptions(contentType: type.mime, upsert: false));
+    try {
+      // user_id is filled in by the database (auth.uid()).
+      await core.sb.from('statuses').insert({
+        'kind': video ? 'video' : 'image',
+        'media_path': path,
+        if (caption != null && caption.isNotEmpty) 'caption': caption,
+        if (durationMs != null) 'duration_ms': math.max(0, math.min(durationMs, maxStatusVideo.inMilliseconds)),
+      });
+    } catch (_) {
+      // Don't leave an orphaned upload behind.
+      try {
+        await core.sb.storage.from('status').remove([path]);
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   Future<void> delete(StatusItem s) async {
@@ -174,8 +223,7 @@ class StatusRepo {
 
   Future<void> setMuted(String userId, bool muted) async {
     if (muted) {
-      await core.sb.from('status_mutes').upsert({'user_id': core.userId, 'muted_user_id': userId},
-          onConflict: 'user_id,muted_user_id', ignoreDuplicates: true);
+      await core.sb.from('status_mutes').upsert({'muted_user_id': userId}, onConflict: 'user_id,muted_user_id', ignoreDuplicates: true);
     } else {
       await core.sb.from('status_mutes').delete().eq('user_id', core.userId).eq('muted_user_id', userId);
     }
@@ -200,10 +248,25 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
   bool posting = false;
   bool showMuted = false;
 
+  StreamSubscription<Map<String, dynamic>>? _live;
+  Timer? _reload;
+
   @override
   void initState() {
     super.initState();
     _load();
+    // New or deleted statuses from contacts show up without pulling to refresh.
+    _live = core.realtime.statuses.listen((_) {
+      _reload?.cancel();
+      _reload = Timer(const Duration(milliseconds: 400), _load);
+    });
+  }
+
+  @override
+  void dispose() {
+    _reload?.cancel();
+    _live?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -229,37 +292,34 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(leading: const Icon(Icons.photo_camera_rounded), title: const Text('Take photo'), onTap: () => Navigator.pop(ctx, 'camera')),
           ListTile(leading: const Icon(Icons.photo_library_rounded), title: const Text('Photo from gallery'), onTap: () => Navigator.pop(ctx, 'gallery')),
-          ListTile(leading: const Icon(Icons.videocam_rounded), title: const Text('Video (up to 30 s)'), onTap: () => Navigator.pop(ctx, 'video')),
+          ListTile(leading: const Icon(Icons.videocam_rounded), title: const Text('Record video (up to 60 s)'), onTap: () => Navigator.pop(ctx, 'record')),
+          ListTile(leading: const Icon(Icons.video_library_rounded), title: const Text('Video from gallery'), onTap: () => Navigator.pop(ctx, 'video')),
         ]),
       ),
     );
-    if (choice == null) return;
+    if (choice == null || !mounted) return;
+    final video = choice == 'video' || choice == 'record';
     final picker = ImagePicker();
     XFile? file;
-    if (choice == 'video') {
-      file = await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 30));
-    } else {
-      file = await picker.pickImage(
-          source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery, maxWidth: 1440, maxHeight: 1440, imageQuality: 82);
+    try {
+      if (video) {
+        file = await picker.pickVideo(source: choice == 'record' ? ImageSource.camera : ImageSource.gallery, maxDuration: maxStatusVideo);
+      } else {
+        file = await picker.pickImage(
+            source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery, maxWidth: 1600, maxHeight: 1600, imageQuality: 85);
+      }
+    } catch (e) {
+      if (mounted) toast(context, friendlyError(e));
+      return;
     }
     if (file == null || !mounted) return;
-    final caption = await promptText(context, title: 'Add a caption', hint: 'Optional', maxLength: 700, maxLines: 3);
-    if (caption == null || !mounted) return;
+    final picked = file;
+    final result = await Navigator.of(context).push<StatusDraft>(
+      MaterialPageRoute(fullscreenDialog: true, builder: (_) => StatusMediaComposer(file: picked, video: video)),
+    );
+    if (result == null || !mounted) return;
     setState(() => posting = true);
-    int? duration;
-    if (choice == 'video') {
-      final vc = VideoPlayerController.file(File(file.path));
-      try {
-        await vc.initialize();
-        duration = math.min(vc.value.duration.inMilliseconds, 30000);
-      } catch (_) {
-        duration = 30000;
-      } finally {
-        await vc.dispose();
-      }
-    }
-    if (!mounted) return;
-    final ok = await guard(context, () => repo.postMedia(file!, video: choice == 'video', caption: caption, durationMs: duration),
+    final ok = await guard(context, () => repo.postMedia(picked, video: video, caption: result.caption, durationMs: result.durationMs),
         success: 'Status posted');
     if (mounted) setState(() => posting = false);
     if (ok) await _load();
@@ -335,7 +395,11 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
                         ]),
                       ),
                       title: const Text('My status', style: TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(mine.isEmpty ? 'Tap to add a status update' : '${mine.length} update(s) · ${Fmt.chatTime(mine.last.createdAt)}'),
+                      subtitle: Text(posting
+                          ? 'Sending…'
+                          : mine.isEmpty
+                              ? 'Tap to add a status update'
+                              : '${mine.length} ${mine.length == 1 ? 'update' : 'updates'} · ${Fmt.chatTime(mine.last.createdAt)}'),
                       onTap: _openMine,
                     ),
                     if (recent.isEmpty && viewed.isEmpty && muted.isEmpty)
@@ -460,7 +524,8 @@ class _TextStatusComposerState extends ConsumerState<TextStatusComposer> {
     final body = _text.text.trim();
     if (body.isEmpty) return;
     setState(() => posting = true);
-    final ok = await guard(context, () => StatusRepo(ref.read(coreProvider)).postText(body, colorHex(_colors[color]), font));
+    final ok = await guard(context, () => StatusRepo(ref.read(coreProvider)).postText(body, colorHex(_colors[color]), font),
+        success: 'Status posted');
     if (!mounted) return;
     setState(() => posting = false);
     if (ok) context.pop();
@@ -475,6 +540,7 @@ class _TextStatusComposerState extends ConsumerState<TextStatusComposer> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: fg,
+        systemOverlayStyle: fg == Colors.white ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         actions: [
           IconButton(tooltip: 'Font', icon: const Icon(Icons.text_fields_rounded), onPressed: () => setState(() => font = (font + 1) % 5)),
           IconButton(tooltip: 'Colour', icon: const Icon(Icons.palette_outlined), onPressed: () => setState(() => color = (color + 1) % _colors.length)),
@@ -515,6 +581,174 @@ class _TextStatusComposerState extends ConsumerState<TextStatusComposer> {
 
 // ---------------------------------------------------------------- viewer
 
+/// What the media composer hands back when the user taps send.
+class StatusDraft {
+  const StatusDraft({required this.caption, this.durationMs});
+  final String caption;
+  final int? durationMs;
+}
+
+/// Full-screen preview of a picked photo or video with a caption box,
+/// shown before a media status is posted.
+class StatusMediaComposer extends StatefulWidget {
+  const StatusMediaComposer({super.key, required this.file, required this.video});
+  final XFile file;
+  final bool video;
+
+  @override
+  State<StatusMediaComposer> createState() => _StatusMediaComposerState();
+}
+
+class _StatusMediaComposerState extends State<StatusMediaComposer> {
+  final _caption = TextEditingController();
+  VideoPlayerController? _vc;
+  String? _problem;
+  bool _videoReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+    if (widget.video) {
+      final vc = VideoPlayerController.file(File(widget.file.path));
+      _vc = vc;
+      vc.initialize().then((_) {
+        if (!mounted) return;
+        final d = vc.value.duration;
+        setState(() {
+          _videoReady = true;
+          if (d > maxStatusVideo + const Duration(milliseconds: 900)) {
+            _problem = 'This video is ${d.inSeconds} s long. Status videos can be up to ${maxStatusVideo.inSeconds} s — trim it in your gallery first.';
+          }
+        });
+        vc.setLooping(true);
+        vc.play();
+      }).catchError((_) {
+        if (mounted) setState(() => _problem = 'This video can\'t be played on this phone, so it can\'t be posted.');
+      });
+    }
+  }
+
+  Future<void> _check() async {
+    try {
+      final size = await widget.file.length();
+      if (size > maxStatusBytes && mounted) {
+        setState(() => _problem =
+            'This ${widget.video ? 'video' : 'photo'} is ${(size / (1024 * 1024)).toStringAsFixed(1)} MB. Status files can be up to ${maxStatusBytes ~/ (1024 * 1024)} MB.');
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _vc?.dispose();
+    _caption.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    if (_problem != null) return;
+    if (widget.video && !_videoReady) return;
+    final ms = _vc?.value.duration.inMilliseconds;
+    Navigator.of(context).pop(StatusDraft(
+      caption: _caption.text.trim(),
+      durationMs: widget.video && ms != null && ms > 0 ? math.min(ms, maxStatusVideo.inMilliseconds) : null,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vc = _vc;
+    Widget media;
+    if (!widget.video) {
+      media = Image.file(File(widget.file.path), fit: BoxFit.contain, errorBuilder: (_, __, ___) {
+        return const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 64);
+      });
+    } else if (vc != null && _videoReady) {
+      media = GestureDetector(
+        onTap: () {
+          if (vc.value.isPlaying) {
+            vc.pause();
+          } else {
+            vc.play();
+          }
+        },
+        child: Stack(alignment: Alignment.center, children: [
+          AspectRatio(aspectRatio: vc.value.aspectRatio, child: VideoPlayer(vc)),
+          ValueListenableBuilder<VideoPlayerValue>(
+            valueListenable: vc,
+            builder: (_, v, __) => v.isPlaying
+                ? const SizedBox.shrink()
+                : const Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 72),
+          ),
+        ]),
+      );
+    } else if (_problem != null) {
+      media = const Icon(Icons.videocam_off_outlined, color: Colors.white54, size: 64);
+    } else {
+      media = const CircularProgressIndicator(color: Colors.white);
+    }
+    final canSend = _problem == null && (!widget.video || _videoReady);
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        leading: IconButton(tooltip: 'Discard', icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
+        title: Text(widget.video ? 'Video status' : 'Photo status', style: const TextStyle(color: Colors.white)),
+      ),
+      body: Column(children: [
+        Expanded(child: Center(child: media)),
+        if (_problem != null)
+          Container(
+            width: double.infinity,
+            color: Colors.red.shade900.withValues(alpha: 0.85),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Text(_problem!, style: const TextStyle(color: Colors.white)),
+          ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Expanded(
+                child: TextField(
+                  controller: _caption,
+                  enabled: _problem == null,
+                  minLines: 1,
+                  maxLines: 4,
+                  maxLength: 700,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: 'Add a caption…',
+                    hintStyle: const TextStyle(color: Colors.white60),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FloatingActionButton(
+                heroTag: 'status-send',
+                tooltip: 'Post status',
+                backgroundColor: canSend ? HimeColors.yellow : Colors.white24,
+                foregroundColor: HimeColors.ink,
+                onPressed: canSend ? _send : null,
+                child: const Icon(Icons.send_rounded),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
 class StatusViewerScreen extends ConsumerStatefulWidget {
   const StatusViewerScreen({super.key, required this.args});
   final StatusViewerArgs args;
@@ -535,6 +769,9 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
   bool _loadScheduled = false;
   final _reply = TextEditingController();
   final _replyFocus = FocusNode();
+  final _viewCounts = <String, int>{};
+  StreamSubscription<Map<String, dynamic>>? _viewSub;
+  bool _closing = false;
 
   StatusUser get user => widget.args.users[userIndex];
   StatusItem get item => user.items[itemIndex];
@@ -554,13 +791,36 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
     });
     final firstUnseen = user.items.indexWhere((i) => !i.viewed);
     itemIndex = user.mine || firstUnseen < 0 ? 0 : firstUnseen;
+    if (widget.args.users.any((u) => u.mine)) {
+      // Viewer counts on your own statuses update live.
+      _viewSub = core.realtime.statusViews.listen((e) {
+        final id = e['status_id'] as String?;
+        if (id != null && user.mine && user.items.any((i) => i.id == id)) unawaited(_loadViewCount(id));
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _show();
     });
   }
 
+  Future<void> _loadViewCount(String statusId) async {
+    try {
+      final rows = await core.sb.rpc('get_status_viewers', params: {'p_status_id': statusId}) as List<dynamic>;
+      if (mounted) setState(() => _viewCounts[statusId] = rows.length);
+    } catch (_) {}
+  }
+
+  void _close() {
+    if (_closing || !mounted) return;
+    _closing = true;
+    _progress.stop();
+    _video?.pause();
+    context.pop();
+  }
+
   @override
   void dispose() {
+    _viewSub?.cancel();
     _progress.dispose();
     _video?.dispose();
     _reply.dispose();
@@ -580,6 +840,7 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
       _imageUrl = null;
     });
     final s = item;
+    if (user.mine) unawaited(_loadViewCount(s.id));
     if (!user.mine && !s.viewed) {
       s.viewed = true;
       unawaited(core.sb.rpc('mark_status_viewed', params: {'p_status_id': s.id}).then((_) {}, onError: (_) {}));
@@ -648,7 +909,7 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
       itemIndex = firstUnseen < 0 ? 0 : firstUnseen;
       _show();
     } else {
-      context.pop();
+      _close();
     }
   }
 
@@ -741,7 +1002,7 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
     }
     user.items.remove(s);
     if (user.items.isEmpty) {
-      context.pop();
+      _close();
       return;
     }
     if (itemIndex >= user.items.length) itemIndex = user.items.length - 1;
@@ -787,14 +1048,16 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
               },
             );
     }
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onLongPressStart: (_) => _pause(),
         onLongPressEnd: (_) => _resume(),
         onVerticalDragEnd: (d) {
-          if ((d.primaryVelocity ?? 0) > 300) context.pop();
+          if ((d.primaryVelocity ?? 0) > 300) _close();
         },
         onTapUp: (d) {
           final w = MediaQuery.of(context).size.width;
@@ -850,15 +1113,21 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
                 subtitle: Text(Fmt.chatTime(s.createdAt), style: const TextStyle(color: Colors.white70)),
                 trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                   if (u.mine) IconButton(color: Colors.white, icon: const Icon(Icons.delete_outline_rounded), onPressed: _delete),
-                  IconButton(color: Colors.white, icon: const Icon(Icons.close_rounded), onPressed: () => context.pop()),
+                  IconButton(color: Colors.white, icon: const Icon(Icons.close_rounded), onPressed: _close),
                 ]),
               ),
               const Spacer(),
               if (u.mine)
-                TextButton.icon(
-                  onPressed: _viewers,
-                  icon: const Icon(Icons.visibility_outlined, color: Colors.white),
-                  label: const Text('Viewers', style: TextStyle(color: Colors.white)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextButton.icon(
+                    onPressed: _viewers,
+                    icon: const Icon(Icons.visibility_outlined, color: Colors.white),
+                    label: Text(
+                      _viewCounts[s.id] == null ? 'Viewers' : '${_viewCounts[s.id]} ${_viewCounts[s.id] == 1 ? 'view' : 'views'}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
                 )
               else
                 Padding(
@@ -903,6 +1172,7 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen> with Si
             ]),
           ),
         ]),
+      ),
       ),
     );
   }

@@ -49,8 +49,25 @@ class HimeCore {
     final vault = await LocalVault.load(userId);
     final db = await LocalDb.open(userId, vault);
     final core = HimeCore._(sb, userId, e2ee, db);
-    await core.registerDevice();
+    try {
+      await core.registerDevice().timeout(const Duration(seconds: 12));
+    } catch (e) {
+      // Offline start on a device that registered before: open from the local
+      // cache and register again once the connection is back.
+      if (e2ee.deviceId.isEmpty) rethrow;
+      core._needsRegister = true;
+    }
     return core;
+  }
+
+  bool _needsRegister = false;
+
+  Future<void> _retryRegister() async {
+    if (!_needsRegister || _disposed) return;
+    try {
+      await registerDevice();
+      _needsRegister = false;
+    } catch (_) {}
   }
 
   /// Registers (or refreshes) this installation and its public identity key.
@@ -81,6 +98,7 @@ class HimeCore {
     _connSub = Connectivity().onConnectivityChanged.listen((r) {
       final now = !r.contains(ConnectivityResult.none);
       if (now && !online.value) {
+        unawaited(_retryRegister());
         unawaited(chats.sync());
         unawaited(chats.flushOutbox());
         unawaited(chatList.refresh());
@@ -88,6 +106,7 @@ class HimeCore {
       online.value = now;
     });
     await chatList.loadCached();
+    profiles.startLive();
     realtime.start();
     presence.start();
     unawaited(chatList.refresh());
@@ -95,11 +114,15 @@ class HimeCore {
     unawaited(NotificationService.instance.registerPushToken(this));
     // Safety net in case a realtime event is missed while the app is open.
     _syncTimer = Timer.periodic(const Duration(seconds: 45), (_) {
-      if (online.value && !_disposed) unawaited(chats.sync());
+      if (online.value && !_disposed) {
+        unawaited(_retryRegister());
+        unawaited(chats.sync());
+      }
     });
   }
 
   void onResumed() {
+    unawaited(_retryRegister());
     presence.goOnline();
     unawaited(chats.sync().then((_) => chats.flushOutbox()));
     unawaited(chatList.refresh());
@@ -114,6 +137,7 @@ class HimeCore {
     await _connSub?.cancel();
     await calls.endIfActive();
     presence.stop();
+    profiles.stopLive();
     await realtime.stop();
     chatList.dispose();
     await db.close();
@@ -137,6 +161,18 @@ class RealtimeHub {
   final _conversation = StreamController<Map<String, dynamic>>.broadcast();
   final _pins = StreamController<Map<String, dynamic>>.broadcast();
   final _call = StreamController<Map<String, dynamic>>.broadcast();
+  final _status = StreamController<Map<String, dynamic>>.broadcast();
+  final _statusView = StreamController<Map<String, dynamic>>.broadcast();
+  final _profile = StreamController<Map<String, dynamic>>.broadcast();
+
+  /// A contact posted or deleted a status (or this account did, on another device).
+  Stream<Map<String, dynamic>> get statuses => _status.stream;
+
+  /// Someone viewed or reacted to one of this account's statuses.
+  Stream<Map<String, dynamic>> get statusViews => _statusView.stream;
+
+  /// Someone this account chats with changed their name, about or photo.
+  Stream<Map<String, dynamic>> get profileChanges => _profile.stream;
 
   Stream<Map<String, dynamic>> get receipts => _receipt.stream;
   Stream<Map<String, dynamic>> get reactions => _reaction.stream;
@@ -171,6 +207,9 @@ class RealtimeHub {
         .onBroadcast(event: 'conversation', callback: (p) => _conversation.add(_unwrap(p)))
         .onBroadcast(event: 'pins', callback: (p) => _pins.add(_unwrap(p)))
         .onBroadcast(event: 'call', callback: (p) => _call.add(_unwrap(p)))
+        .onBroadcast(event: 'status', callback: (p) => _status.add(_unwrap(p)))
+        .onBroadcast(event: 'status_view', callback: (p) => _statusView.add(_unwrap(p)))
+        .onBroadcast(event: 'profile', callback: (p) => _profile.add(_unwrap(p)))
         .subscribe((status, error) {
       if (status == RealtimeSubscribeStatus.subscribed) {
         _attempt = 0;
@@ -356,6 +395,33 @@ class _Watch {
 class ProfileStore extends ChangeNotifier {
   ProfileStore(this.core);
   final HimeCore core;
+  StreamSubscription<Map<String, dynamic>>? _liveSub;
+  Timer? _listRefresh;
+
+  /// Keeps cached profiles (and chat titles/photos) in step with live changes.
+  void startLive() {
+    _liveSub ??= core.realtime.profileChanges.listen((e) {
+      final id = e['user_id'] as String?;
+      if (id == null) return;
+      if (id == core.userId) {
+        onSelfChanged?.call();
+      } else {
+        unawaited(ensure([id], force: true));
+      }
+      _listRefresh?.cancel();
+      _listRefresh = Timer(const Duration(milliseconds: 600), () => unawaited(core.chatList.refresh()));
+    });
+  }
+
+  /// Set by the session to reload the signed-in user's own profile.
+  VoidCallback? onSelfChanged;
+
+  void stopLive() {
+    _listRefresh?.cancel();
+    final sub = _liveSub;
+    _liveSub = null;
+    if (sub != null) unawaited(sub.cancel());
+  }
   final _cache = <String, Profile>{};
   final _pending = <String>{};
   Timer? _batch;

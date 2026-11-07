@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,10 +19,20 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
+  StreamSubscription<Map<String, dynamic>>? _statusSub;
+
+  /// Dot on the Updates tab when a contact posts while you're elsewhere.
+  final _newStatus = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
     final core = ref.read(coreProvider);
+    _statusSub = core.realtime.statuses.listen((e) {
+      if (e['op'] == 'insert' && e['user_id'] != core.userId && widget.shell.currentIndex != 1) {
+        _newStatus.value = true;
+      }
+    });
     core.calls.presentCallScreen = () {
       if (!mounted || CallScreen.isOpen) return;
       GoRouter.of(context).push('/call');
@@ -47,6 +59,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   void dispose() {
+    _statusSub?.cancel();
+    _newStatus.dispose();
     NotificationService.instance.pendingRoute.removeListener(_openPending);
     super.dispose();
   }
@@ -87,11 +101,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ),
       ]),
       bottomNavigationBar: ListenableBuilder(
-        listenable: core.chatList,
+        listenable: Listenable.merge([core.chatList, _newStatus]),
         builder: (context, _) => _HimeNavBar(
           index: widget.shell.currentIndex,
           unreadChats: core.chatList.unreadChats,
-          onTap: (i) => widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex),
+          newStatus: _newStatus.value && widget.shell.currentIndex != 1,
+          onTap: (i) {
+            if (i == 1) _newStatus.value = false;
+            widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex);
+          },
         ),
       ),
     );
@@ -99,10 +117,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 }
 
 class _HimeNavBar extends StatelessWidget {
-  const _HimeNavBar({required this.index, required this.onTap, required this.unreadChats});
+  const _HimeNavBar({required this.index, required this.onTap, required this.unreadChats, this.newStatus = false});
   final int index;
   final ValueChanged<int> onTap;
   final int unreadChats;
+  final bool newStatus;
 
   static const _items = [
     (Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'Chats'),
@@ -156,6 +175,20 @@ class _HimeNavBar extends StatelessWidget {
                             ),
                             child: Text('$unreadChats',
                                 style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      if (i == 1 && newStatus)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: HimeColors.online,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: context.colors.surface, width: 1.5),
+                            ),
                           ),
                         ),
                     ]),
