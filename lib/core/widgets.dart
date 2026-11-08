@@ -214,6 +214,12 @@ class SignedUrls {
     }();
   }
 
+  /// The cached URL, if there is a fresh one (no waiting, no network).
+  static String? peek(String bucket, String path) {
+    final hit = _cache['$bucket/$path'];
+    return hit != null && hit.$2.isAfter(DateTime.now()) ? hit.$1 : null;
+  }
+
   static void clear() => _cache.clear();
 }
 
@@ -263,27 +269,28 @@ class HimeAvatar extends StatelessWidget {
     );
     Widget child = fallback;
     if (path != null && path!.isNotEmpty) {
-      child = FutureBuilder<String?>(
-        future: SignedUrls.get(bucket, path!),
-        builder: (context, snap) {
-          final url = snap.data;
-          if (url == null) return fallback;
-          final px = (size * MediaQuery.devicePixelRatioOf(context)).round();
-          return ClipOval(
+      Widget image(String url) => ClipOval(
             child: CachedNetworkImage(
               imageUrl: url,
               cacheKey: '$bucket/$path?v=$version',
               width: size,
               height: size,
               fit: BoxFit.cover,
-              memCacheWidth: px,
-              fadeInDuration: const Duration(milliseconds: 150),
+              memCacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+              fadeInDuration: const Duration(milliseconds: 120),
               placeholder: (_, __) => fallback,
               errorWidget: (_, __, ___) => fallback,
             ),
           );
-        },
-      );
+      // Known URL: draw the photo straight away instead of flashing the
+      // initials for a frame (noticeable while scrolling lists).
+      final known = SignedUrls.peek(bucket, path!);
+      child = known != null
+          ? image(known)
+          : FutureBuilder<String?>(
+              future: SignedUrls.get(bucket, path!),
+              builder: (context, snap) => snap.data == null ? fallback : image(snap.data!),
+            );
     }
     return SizedBox(
       width: size,

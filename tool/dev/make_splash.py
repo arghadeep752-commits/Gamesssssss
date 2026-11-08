@@ -63,14 +63,15 @@ def branding(theme: str, scale: float) -> Image.Image:
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     from_col, g0, g1 = THEMES[theme]
 
-    small = ImageFont.truetype(str(FONTS / "Poppins-Medium.ttf"), round(13 * k))
-    big = ImageFont.truetype(str(FONTS / "Poppins-Bold.ttf"), round(16 * k))
+    # Small and understated, like WhatsApp's "from Meta".
+    small = ImageFont.truetype(str(FONTS / "Poppins-Medium.ttf"), round(10.5 * k))
+    big = ImageFont.truetype(str(FONTS / "Poppins-SemiBold.ttf"), round(12.5 * k))
 
-    name_mask, _ = spaced_text(None, "ARGHADEEP DAS", big, 2.2 * k)
-    from_mask, _ = spaced_text(None, "from", small, 0.4 * k)
+    name_mask, _ = spaced_text(None, "ARGHADEEP DAS", big, 1.5 * k)
+    from_mask, _ = spaced_text(None, "from", small, 0.3 * k)
 
-    gap = round(5 * k)
-    bottom_pad = round(8 * k)
+    gap = round(3 * k)
+    bottom_pad = round(10 * k)
     name_y = H - bottom_pad - name_mask.height
     from_y = name_y - gap - from_mask.height
 

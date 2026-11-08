@@ -46,6 +46,30 @@ class HimeSystemUi {
   static final onDark = of(dark: true);
 }
 
+/// Quick WhatsApp-style slide: the new screen comes in from the right while
+/// the old one moves a little to the left. Transforms only (no full-screen
+/// fades), which keeps navigation smooth on low-end phones.
+Widget himeSlideTransition(Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+  final enter = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+  final exit = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+  return SlideTransition(
+    position: Tween<Offset>(begin: Offset.zero, end: const Offset(-0.2, 0)).animate(exit),
+    child: SlideTransition(
+      position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(enter),
+      child: child,
+    ),
+  );
+}
+
+class HimePageTransitionsBuilder extends PageTransitionsBuilder {
+  const HimePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
+          Animation<double> secondaryAnimation, Widget child) =>
+      himeSlideTransition(animation, secondaryAnimation, child);
+}
+
 class HimeSpace {
   static const xs = 4.0;
   static const sm = 8.0;
@@ -208,7 +232,9 @@ class HimeTheme {
       scaffoldBackgroundColor: background,
       canvasColor: background,
       textTheme: text,
-      splashFactory: InkSparkle.splashFactory,
+      // InkRipple is much lighter than the shader-based InkSparkle on
+      // budget phones, so taps feel instant.
+      splashFactory: InkRipple.splashFactory,
       visualDensity: VisualDensity.standard,
       extensions: [palette],
       dividerTheme: DividerThemeData(color: palette.border, thickness: 1, space: 1),
@@ -312,7 +338,7 @@ class HimeTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
-        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.android: HimePageTransitionsBuilder(),
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       }),
     );

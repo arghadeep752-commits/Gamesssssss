@@ -49,25 +49,37 @@ class HimeCore {
     final vault = await LocalVault.load(userId);
     final db = await LocalDb.open(userId, vault);
     final core = HimeCore._(sb, userId, e2ee, db);
-    try {
+    if (e2ee.deviceId.isEmpty) {
+      // First start on this phone: the device must exist before anything else.
       await core.registerDevice().timeout(const Duration(seconds: 12));
-    } catch (e) {
-      // Offline start on a device that registered before: open from the local
-      // cache and register again once the connection is back.
-      if (e2ee.deviceId.isEmpty) rethrow;
+    } else {
+      // Registered before: open straight from the local cache (no waiting on
+      // the network) and refresh the registration in the background.
       core._needsRegister = true;
+      unawaited(core._retryRegister());
     }
     return core;
   }
 
   bool _needsRegister = false;
+  bool _registering = false;
 
   Future<void> _retryRegister() async {
-    if (!_needsRegister || _disposed) return;
+    if (!_needsRegister || _disposed || _registering) return;
+    _registering = true;
+    final before = deviceId;
     try {
       await registerDevice();
       _needsRegister = false;
-    } catch (_) {}
+      if (deviceId != before && !_disposed) {
+        // The server gave this phone a new device id: reload with it.
+        unawaited(chatList.refresh());
+        unawaited(chats.sync());
+      }
+    } catch (_) {
+    } finally {
+      _registering = false;
+    }
   }
 
   /// Registers (or refreshes) this installation and its public identity key.
@@ -252,6 +264,13 @@ class PresenceInfo {
   const PresenceInfo({this.online = false, this.lastSeen});
   final bool online;
   final DateTime? lastSeen;
+
+  // Value equality so unchanged lookups don't rebuild the UI.
+  @override
+  bool operator ==(Object other) => other is PresenceInfo && other.online == online && other.lastSeen == lastSeen;
+
+  @override
+  int get hashCode => Object.hash(online, lastSeen);
 }
 
 /// Own online state (tracked on "presence:<me>") plus watching others.

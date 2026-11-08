@@ -40,6 +40,8 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObserver {
   late final HimeCore core = ref.read(coreProvider);
   late final ChatController c = ChatController(core, widget.conversationId);
+  // Created once (not on every build) so listeners aren't re-attached each frame.
+  late final Listenable _changes = Listenable.merge([c, core.profiles]);
   final _scroll = ScrollController();
   ValueNotifier<PresenceInfo>? _presence;
   String? _presenceUser;
@@ -256,7 +258,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([c, core.profiles]),
+      listenable: _changes,
       builder: (context, _) {
         final s = c.summary;
         final title = s?.title ?? '';

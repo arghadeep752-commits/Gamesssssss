@@ -70,18 +70,9 @@ const _authPaths = {'/welcome', '/auth/email', '/auth/phone', '/auth/otp', '/aut
 CustomTransitionPage<void> _page(GoRouterState state, Widget child) => CustomTransitionPage<void>(
       key: state.pageKey,
       child: child,
-      transitionDuration: const Duration(milliseconds: 260),
-      reverseTransitionDuration: const Duration(milliseconds: 220),
-      transitionsBuilder: (context, animation, secondary, child) {
-        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween(begin: const Offset(0.06, 0), end: Offset.zero).animate(curved),
-            child: child,
-          ),
-        );
-      },
+      transitionDuration: const Duration(milliseconds: 240),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      transitionsBuilder: (context, animation, secondary, child) => himeSlideTransition(animation, secondary, child),
     );
 
 GoRoute _r(String path, Widget Function(GoRouterState s) build) =>
@@ -118,8 +109,8 @@ GoRouter buildRouter(SessionController session) {
     },
     routes: [
       GoRoute(path: '/', redirect: (_, __) => '/chats'),
-      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/error', builder: (_, __) => const StartupErrorScreen()),
+      GoRoute(path: '/splash', pageBuilder: (_, s) => NoTransitionPage<void>(key: s.pageKey, child: const SplashScreen())),
+      GoRoute(path: '/error', pageBuilder: (_, s) => NoTransitionPage<void>(key: s.pageKey, child: const StartupErrorScreen())),
       _r('/welcome', (_) => const WelcomeScreen()),
       _r('/auth/email', (s) => EmailAuthScreen(signUp: s.uri.queryParameters['mode'] == 'signup')),
       _r('/auth/phone', (_) => const PhoneAuthScreen()),
@@ -130,7 +121,16 @@ GoRouter buildRouter(SessionController session) {
       _r('/auth/reset-password', (_) => const ResetPasswordScreen()),
       _r('/onboarding', (_) => const OnboardingScreen()),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => HomeShell(shell: shell),
+        // Shows up instantly after the splash/sign-in (no animation), and
+        // slides a little to the left when a chat opens on top of it.
+        pageBuilder: (context, state, shell) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          child: HomeShell(shell: shell),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondary, child) =>
+              himeSlideTransition(kAlwaysCompleteAnimation, secondary, child),
+        ),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/chats', builder: (_, __) => const ChatListScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen())]),

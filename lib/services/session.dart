@@ -90,7 +90,7 @@ class SessionController extends ChangeNotifier {
           notifyListeners();
           continue;
         }
-        await refreshProfile();
+        await refreshProfile(preferCache: true);
         if (profile == null || !profile!.onboarded) {
           stage = SessionStage.needsOnboarding;
           notifyListeners();
@@ -125,10 +125,26 @@ class SessionController extends ChangeNotifier {
 
   /// Loads the signed-in user's profile. Falls back to the copy saved on this
   /// device when offline, so the app still opens without a connection.
-  Future<void> refreshProfile() async {
+  Future<void> refreshProfile({bool preferCache = false}) async {
     final uid = _sb.auth.currentUser?.id;
     if (uid == null) return;
     final key = 'hime_profile_$uid';
+    if (preferCache && profile == null) {
+      // Cold start: open with the copy saved on this phone right away and
+      // update it from the server in the background.
+      String? saved;
+      try {
+        saved = (await SharedPreferences.getInstance()).getString(key);
+      } catch (_) {}
+      if (saved != null) {
+        try {
+          profile = MyProfile(Map<String, dynamic>.from(jsonDecode(saved) as Map));
+          notifyListeners();
+          unawaited(refreshProfile().catchError((_) {}));
+          return;
+        } catch (_) {}
+      }
+    }
     Map<String, dynamic>? row;
     try {
       row = await _sb.from('profiles').select().eq('id', uid).maybeSingle().timeout(const Duration(seconds: 12));

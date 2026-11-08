@@ -23,6 +23,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   /// Dot on the Updates tab when a contact posts while you're elsewhere.
   final _newStatus = ValueNotifier<bool>(false);
+  late final Listenable _navChanges = Listenable.merge([ref.read(coreProvider).chatList, _newStatus]);
 
   @override
   void initState() {
@@ -101,7 +102,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ),
       ]),
       bottomNavigationBar: ListenableBuilder(
-        listenable: Listenable.merge([core.chatList, _newStatus]),
+        listenable: _navChanges,
         builder: (context, _) => _HimeNavBar(
           index: widget.shell.currentIndex,
           unreadChats: core.chatList.unreadChats,
