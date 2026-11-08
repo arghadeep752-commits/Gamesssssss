@@ -116,7 +116,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: map
-          path: assets/map
+          path: map_dl
+      - name: Map files into the project (the .blend stays outside it)
+        run: |
+          mkdir -p assets/map build && touch build/.gdignore
+          cp map_dl/maze.glb map_dl/meta.json map_dl/layout.json assets/map/
+          [ -f map_dl/chaya_map.blend ] && mv map_dl/chaya_map.blend build/chaya_map.blend
+          rm -rf map_dl
+          ls -la assets/map build
       - name: Godot and export templates
         run: |
           mkdir -p ~/godot build && touch build/.gdignore
@@ -192,7 +199,7 @@ jobs:
           sed -i 's/^          //' notes.md
           { echo "# Chaya - credits and licences"; echo; echo "Game by mxyan games."; echo; cat build/CREDITS_AUTO.md; } > CREDITS.md
           ASSETS="build/Chaya-v${GITHUB_RUN_NUMBER}.apk CREDITS.md"
-          [ -f assets/map/chaya_map.blend ] && ASSETS="$ASSETS assets/map/chaya_map.blend"
+          [ -f build/chaya_map.blend ] && ASSETS="$ASSETS build/chaya_map.blend"
           gh --version | head -1
           # Create the (published) release first, then attach the files - the same calls the CI-log release uses.
           set +e

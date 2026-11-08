@@ -16,7 +16,7 @@ const TABLE := {
 	"door_wood": {"slot": "wood_door", "tint": Color(0.55, 0.46, 0.38), "rough": 0.85, "color": Color(0.2, 0.12, 0.07)},
 	"brass": {"slot": "brass", "tint": Color(1.0, 0.82, 0.5), "rough": 0.45, "metal": 0.9, "color": Color(0.8, 0.6, 0.2)},
 	"stone_altar": {"slot": "stone_floor", "tint": Color(0.75, 0.7, 0.66), "rough": 0.8, "color": Color(0.5, 0.45, 0.4)},
-	"red_cloth": {"slot": "cloth", "tint": Color(0.85, 0.12, 0.1), "rough": 1.0, "color": Color(0.6, 0.05, 0.05)},
+	"red_cloth": {"slot": "fiber", "tint": Color(0.8, 0.1, 0.08), "rough": 1.0, "color": Color(0.6, 0.05, 0.05)},
 	"clay": {"slot": "clay", "tint": Color(0.9, 0.55, 0.4), "rough": 1.0, "color": Color(0.55, 0.28, 0.16)},
 	"coconut": {"slot": "fiber", "tint": Color(0.75, 0.55, 0.38), "rough": 1.0, "color": Color(0.32, 0.2, 0.1)},
 	"kumkum_red": {"slot": "", "tint": Color(1, 1, 1), "rough": 1.0, "color": Color(0.8, 0.04, 0.03)},
