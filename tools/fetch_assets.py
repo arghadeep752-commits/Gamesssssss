@@ -306,8 +306,8 @@ SOUNDS = {
                           req=["wind", "ambien", "night", "atmos", "drone", "room"], ban=["music", "song", "voice", "speech"], dur=(15, 600), out=45, loop=True, gain=-4),
     "heartbeat":     dict(q=["heartbeat sound", "heartbeat", "heart beat", "human heartbeat recording", "stethoscope heartbeat", "heart sounds"],
                           req=["heartbeat", "heart beat", "heart_beat", "herzschlag", "heart sound"], ban=["act", "protection", "music", "song", "ecg", "monitor", "bill", "law", "rokita"], dur=(4, 300), out=12, loop=True),
-    "footstep":      dict(q=["footsteps wooden floor", "footsteps on wood", "walking on wooden floor", "footsteps", "footstep"],
-                          req=["foot", "step", "walk"], ban=["music", "song", "snow", "gravel", "grass", "stairs", "scream", "growl", "creepy", "run", "horse"], dur=(2, 300), out=0.55, steps=5),
+    "footstep":      dict(q=["footsteps wooden floor", "footsteps on wood", "walking on wooden floor", "footsteps indoors", "footsteps", "footstep", "walking"],
+                          req=["foot", "step", "walk"], ban=["music", "song", "snow", "gravel", "grass", "stairs", "scream", "growl", "creepy", "run", "horse", "rain", "thunder", "storm"], dur=(2, 300), out=0.55, steps=5),
     "door_open":     dict(q=["door creak", "door creaking", "creaky door", "door opening", "wooden door open"], req=["door", "creak"], ban=["music", "song", "bell", "slam", "knock"], dur=(0.8, 60), out=3.5),
     "door_close":    dict(q=["door close", "door closing", "door slam", "wooden door shut"], req=["door"], ban=["music", "song", "bell", "knock"], dur=(0.3, 60), out=2.0),
     "door_locked":   dict(q=["locked door handle", "door handle rattle", "door knob rattle", "door locked", "door handle"], req=["door", "handle", "knob", "lock", "rattle"], ban=["music", "song", "bell", "slam"], dur=(0.3, 60), out=2.0),
@@ -315,12 +315,10 @@ SOUNDS = {
     "knock":         dict(q=["knock on door", "knocking on wood", "door knock", "knocking"], req=["knock"], ban=["music", "song"], dur=(0.5, 60), out=3.0),
     "whisper_far":   dict(q=["whisper", "whispering", "whispers", "woman whispering"], req=["whisper"], ban=["music", "song"], dur=(1, 120), out=6.0, gain=-3),
     "distant_cry":   dict(q=["woman crying", "crying", "weeping", "sobbing", "female scream distant", "scream"], req=["cry", "weep", "sob", "scream", "wail"], ban=["music", "song", "baby", "child", "kid"], dur=(1, 120), out=6.0),
-    "ghost_whisper": dict(q=["whispering", "whispers", "whisper crowd", "murmur voices", "whisper"], req=["whisper", "murmur"], ban=["music", "song", "woodward", "only whispering"], dur=(8, 600), out=30, loop=True, gain=-6),
-    "jumpscare":     dict(q=["woman screaming", "female scream", "scream", "screaming woman", "horror scream", "shriek"], req=["scream", "shriek", "yell"], ban=["music", "song", "baby", "child", "kid", "man ", "uvb", "radio"], dur=(0.6, 60), out=3.0, gain=2),
-    "spotted":       dict(q=["gasp", "gasping", "sharp breath", "female gasp", "gasp of fear", "shriek"], req=["gasp", "inhale", "shriek", "breath"], ban=["music", "song", "baby", "child", "gasper"], dur=(0.3, 30), out=1.6),
+    "jumpscare":     dict(q=["woman screaming", "female scream", "scream", "screaming woman", "horror scream", "shriek"], req=["scream", "shriek", "yell"], ban=["music", "song", "baby", "child", "kid", " male", "boy", "uvb", "radio", "scratch"], dur=(0.6, 60), out=3.0, gain=2),
     "pickup":        dict(q=["singing bowl", "tingsha", "small bell", "hand bell", "bell chime", "tibetan bell"], req=["bell", "chime", "bowl", "tingsha"], ban=["music", "song", "church", "tower", "alarm", "bicycle", "bike", "door", "school", "cow"], dur=(0.5, 60), out=2.4, gain=-2),
-    "bell":          dict(q=["Hindu temple bell", "temple bell India", "ghanta", "puja bell", "aarti bell", "brass bell", "hand bell ringing"], req=["bell", "ghant", "ganta"],
-                          ban=["music", "song", "church", "alarm", "protestant", "cathedral", "carillon", "chime", "tower", "bicycle", "school", "cow", "door"], dur=(1, 120), out=5.0),
+    "bell":          dict(q=["Hindu temple bell", "temple bell India", "mandir bell", "aarti", "puja", "ghanta", "temple bells"], req=["temple", "hindu", "india", "puja", "pooja", "aarti", "arati", "ghanta", "ghanti", "mandir"],
+                          ban=["music", "song", "church", "alarm", "protestant", "cathedral", "carillon", "chime", "tower", "bicycle", "school", "cow", "door", "pope", "vito", "kirche", "glocke"], dur=(1, 120), out=5.0),
     "ritual_chant":  dict(q=["Om chanting", "Hindu chanting", "mantra chanting", "Vedic chant", "Gayatri mantra", "bhajan", "Sanskrit chant", "Hare Krishna chant", "chanting"],
                           req=["chant", "mantra", "om ", "om_", "vedic", "gayatri", "sloka", "shloka", "stotra", "bhajan", "kirtan", "aarti", "arati", "hymn"], ban=["gregorian", "christian"], dur=(10, 900), out=40, loop=True, gain=-2),
     "ritual_end":    dict(q=["thunder", "thunderclap", "thunder crack", "explosion distant", "whoosh"], req=["thunder", "explosion", "whoosh", "blast", "boom"], ban=["music", "song"], dur=(1, 120), out=6.0),
@@ -461,86 +459,105 @@ def layer_whispers(x, out_path, seconds=24.0, layers=9):
     encode(normalise(bed, -6.0), out_path)
 
 
-def sounds():
-    tmp = tempfile.mkdtemp(prefix="chaya_snd_")
-    report = []
-    for name, spec in SOUNDS.items():
-        done = False
-        tried = set()
-        for q in spec["q"]:
-            if done:
-                break
-            try:
-                res = commons_search(q)
-            except Exception as e:      # noqa: BLE001
-                log("search failed", q, e)
-                continue
-            for r in res:
-                if done:
-                    break
-                t = r["title"].lower()
-                if r["url"] in tried:
-                    continue
-                if not OK_LICENSE.match(r["lic"] or ""):
-                    continue
-                if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]) or GLOBAL_BAN.search(t):
-                    continue
-                if not (6000 < r["size"] < 25_000_000) or r["mime"] not in ("audio/ogg", "audio/wav", "audio/x-wav", "audio/flac", "audio/mpeg", "application/ogg", "audio/x-flac", "audio/mp3"):
-                    continue
-                tried.add(r["url"])
-                try:
-                    src = os.path.join(tmp, "src_" + re.sub(r"\W", "_", name) + os.path.splitext(r["url"])[1])
-                    save(src, http(r["url"]))
-                    x = decode(src)
-                except Exception as e:      # noqa: BLE001
-                    log("  skip", r["title"], e)
-                    continue
-                dur = len(x) / SR
-                lo, hi = spec["dur"]
-                if dur < lo or dur > hi or float(np.max(np.abs(x)) if len(x) else 0) < 0.01:
-                    continue
-                x = trim_silence(x) if not spec.get("loop") else x
-                gain = spec.get("gain", 0.0)
-                outlen = int(spec["out"] * SR)
-                if spec.get("steps"):
-                    clips = cut_steps(x, spec["steps"], spec["out"])
-                    if len(clips) < 3:
-                        continue
-                    for i, c in enumerate(clips, 1):
-                        encode(normalise(c, -3.0), os.path.join(OUT_SND, "%s_%d.ogg" % (name, i)))
-                else:
-                    if spec.get("loop"):
-                        x = make_loop(loudest_window(x, outlen + SR) if len(x) > outlen + SR else x)
-                    else:
-                        x = loudest_window(x, outlen) if len(x) > outlen else x
-                        fo = min(len(x) // 4, int(0.25 * SR))
-                        x[-fo:] *= np.linspace(1, 0, fo).astype(np.float32)
-                        x[:64] *= np.linspace(0, 1, 64).astype(np.float32)
-                    encode(normalise(x, gain), os.path.join(OUT_SND, name + ".ogg"))
-                done = True
-                line = "%-14s <- %s | %s | %s | %.1fs | q='%s'" % (name, r["title"], r["lic"], r["author"], dur, q)
-                report.append(line)
-                log("sound", line)
-                CREDITS.append("- Sound '%s': %s - %s - %s (%s)" % (name, r["title"].replace("File:", ""), r["author"] or "unknown author", r["lic"], r["page"]))
-        if not done:
-            report.append("%-14s <- NOTHING FOUND" % name)
-            log("sound", name, "NOTHING FOUND")
-    gw, wf = os.path.join(OUT_SND, "ghost_whisper.ogg"), os.path.join(OUT_SND, "whisper_far.ogg")
-    if not os.path.exists(gw) and os.path.exists(wf):
+def fetch_sound(name, spec, tmp):
+    """Search Commons for one sound, process the first recording that passes the filters. -> (report, credit)"""
+    tried = set()
+    for q in spec["q"]:
         try:
-            layer_whispers(decode(wf), gw)
+            res = commons_search(q)
+        except Exception as e:      # noqa: BLE001
+            log("search failed", q, e)
+            continue
+        for r in res:
+            t = r["title"].lower()
+            if r["url"] in tried:
+                continue
+            if not OK_LICENSE.match(r["lic"] or ""):
+                continue
+            if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]) or GLOBAL_BAN.search(t):
+                continue
+            if not (6000 < r["size"] < 15_000_000) or r["mime"] not in ("audio/ogg", "audio/wav", "audio/x-wav", "audio/flac", "audio/mpeg", "application/ogg", "audio/x-flac", "audio/mp3"):
+                continue
+            tried.add(r["url"])
+            try:
+                src = os.path.join(tmp, "src_" + re.sub(r"\W", "_", name) + os.path.splitext(r["url"])[1])
+                save(src, http(r["url"]))
+                x = decode(src)
+            except Exception as e:      # noqa: BLE001
+                log("  skip", r["title"], e)
+                continue
+            dur = len(x) / SR
+            lo, hi = spec["dur"]
+            if dur < lo or dur > hi or float(np.max(np.abs(x)) if len(x) else 0) < 0.01:
+                continue
+            x = trim_silence(x) if not spec.get("loop") else x
+            gain = spec.get("gain", 0.0)
+            outlen = int(spec["out"] * SR)
+            if spec.get("steps"):
+                clips = cut_steps(x, spec["steps"], spec["out"])
+                if len(clips) < 3:
+                    continue
+                for i, c in enumerate(clips, 1):
+                    encode(normalise(c, -3.0), os.path.join(OUT_SND, "%s_%d.ogg" % (name, i)))
+            else:
+                if spec.get("loop"):
+                    x = make_loop(loudest_window(x, outlen + SR) if len(x) > outlen + SR else x)
+                else:
+                    x = loudest_window(x, outlen) if len(x) > outlen else x
+                    fo = min(len(x) // 4, int(0.25 * SR))
+                    x[-fo:] *= np.linspace(1, 0, fo).astype(np.float32)
+                    x[:64] *= np.linspace(0, 1, 64).astype(np.float32)
+                encode(normalise(x, gain), os.path.join(OUT_SND, name + ".ogg"))
+            line = "%-14s <- %s | %s | %s | %.1fs | q='%s'" % (name, r["title"], r["lic"], r["author"], dur, q)
+            credit = "- Sound '%s': %s - %s - %s (%s)" % (name, r["title"].replace("File:", ""), r["author"] or "unknown author", r["lic"], r["page"])
+            log("sound", line)
+            return line, credit
+    log("sound", name, "NOTHING FOUND")
+    return "%-14s <- NOTHING FOUND" % name, None
+
+
+def distant_shriek(x, out_path):
+    """'Spotted' sting: the start of the real scream recording, pitched down a little, with a room echo."""
+    x = trim_silence(x)[: int(1.4 * SR)]
+    idx = np.arange(0, len(x) - 1, 0.86)
+    y = np.interp(idx, np.arange(len(x)), x).astype(np.float32)
+    y = np.concatenate([y, np.zeros(int(0.8 * SR), np.float32)])
+    for d, g in ((int(0.11 * SR), 0.5), (int(0.27 * SR), 0.32), (int(0.52 * SR), 0.18)):
+        y[d:] += y[:-d] * g
+    fo = int(0.3 * SR)
+    y[-fo:] *= np.linspace(1, 0, fo).astype(np.float32)
+    encode(normalise(y, -1.0), out_path)
+
+
+def sounds():
+    from concurrent.futures import ThreadPoolExecutor
+    tmp = tempfile.mkdtemp(prefix="chaya_snd_")
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        results = list(ex.map(lambda kv: fetch_sound(kv[0], kv[1], tmp), SOUNDS.items()))
+    report = [r for r, _ in results]
+    CREDITS.extend(c for _, c in results if c)
+    snd = lambda n: os.path.join(OUT_SND, n + ".ogg")      # noqa: E731
+    # derived sounds - made only from the real recordings above
+    if os.path.exists(snd("whisper_far")):
+        try:
+            layer_whispers(decode(snd("whisper_far")), snd("ghost_whisper"))
             report.append("ghost_whisper  <- layered from the whisper_far recording")
         except Exception as e:      # noqa: BLE001
             log("layering failed", e)
+    if os.path.exists(snd("jumpscare")):
+        try:
+            distant_shriek(decode(snd("jumpscare")), snd("spotted"))
+            report.append("spotted        <- the jumpscare scream, pitched down with an echo")
+        except Exception as e:      # noqa: BLE001
+            log("shriek failed", e)
     open(os.path.join(BUILD, "sounds_report.txt"), "w").write("\n".join(report) + "\n")
     # fall backs so the game is never silent for something important
-    for a, b in (("door_locked", "door_close"), ("spotted", "jumpscare"), ("menu_sting", "spotted"), ("whisper_far", "ghost_whisper"),
+    for a, b in (("door_locked", "door_close"), ("spotted", "jumpscare"), ("whisper_far", "ghost_whisper"),
                  ("distant_cry", "jumpscare"), ("knock", "door_close"), ("creak", "door_open"), ("bell", "pickup")):
-        pa, pb = os.path.join(OUT_SND, a + ".ogg"), os.path.join(OUT_SND, b + ".ogg")
-        if not os.path.exists(pa) and os.path.exists(pb) and a != "menu_sting":
-            shutil.copy(pb, pa)
-    if not os.path.exists(os.path.join(OUT_SND, "menu_sting.ogg")) and os.path.exists(os.path.join(OUT_SND, "spotted.ogg")):
-        shutil.copy(os.path.join(OUT_SND, "spotted.ogg"), os.path.join(OUT_SND, "menu_sting.ogg"))
+        if not os.path.exists(snd(a)) and os.path.exists(snd(b)):
+            shutil.copy(snd(b), snd(a))
+    if not os.path.exists(snd("menu_sting")) and os.path.exists(snd("spotted")):
+        shutil.copy(snd("spotted"), snd("menu_sting"))
     shutil.rmtree(tmp, ignore_errors=True)
 
 

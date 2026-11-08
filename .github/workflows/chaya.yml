@@ -144,6 +144,17 @@ jobs:
           python3 tools/patch_imports.py assets/downloaded
           godot --headless --path . --import 2>&1 | tail -5 || true
           godot --headless --path . --quit 2>&1 | grep -E "SCRIPT ERROR|Parse Error|ERROR" | head -20 || true
+          # never publish an APK without the house or Chaya
+          ok=1
+          for f in maze.glb Medical_Female_01.fbx walk.fbx run.fbx idle.fbx; do
+            ls .godot/imported | grep -q "^$f-" && echo "imported: $f" || { echo "::error::$f was not imported"; ok=0; }
+          done
+          [ $ok = 1 ]
+      - name: Restore the signing key (the same key for every build, so updates install over the old version)
+        uses: actions/cache@v4
+        with:
+          path: ~/.chaya-signing
+          key: chaya-signing-key-1
       - name: Android SDK and signing key
         run: |
           export SDK=${ANDROID_HOME:-/usr/local/lib/android/sdk}
@@ -160,12 +171,34 @@ jobs:
           EOT
           sed -i 's/^          //' ~/.config/godot/editor_settings-4.6.tres
           cat ~/.config/godot/editor_settings-4.6.tres
-          if [ -n "$KEYSTORE_B64" ]; then echo "$KEYSTORE_B64" | base64 -d > $RUNNER_TEMP/chaya.keystore; else
-            $JAVA_HOME_17_X64/bin/keytool -genkeypair -keystore $RUNNER_TEMP/chaya.keystore -alias chaya -keyalg RSA -keysize 2048 \
-              -validity 36500 -storepass chayamxyan -keypass chayamxyan -dname "CN=mxyan games, O=mxyan games, C=IN"
+          KS=~/.chaya-signing/chaya.keystore
+          mkdir -p ~/.chaya-signing
+          if [ ! -s "$KS" ]; then
+            # the key is also kept in a private draft release (drafts are visible only to the repo owner and collaborators)
+            id=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-signing") | .assets[] | select(.name=="chaya.keystore") | .id' 2>/dev/null | head -1 || true)
+            if [ -n "$id" ]; then
+              gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$id" > "$KS" || rm -f "$KS"
+              echo "signing key restored from the private draft release"
+            fi
+          else
+            echo "signing key restored from the cache"
           fi
-        env:
-          KEYSTORE_B64: ${{ secrets.CHAYA_KEYSTORE_B64 }}
+          if [ ! -s "$KS" ]; then
+            echo "creating a new signing key"
+            $JAVA_HOME_17_X64/bin/keytool -genkeypair -keystore "$KS" -alias chaya -keyalg RSA -keysize 2048 \
+              -validity 36500 -storepass chayamxyan -keypass chayamxyan -dname "CN=mxyan games, O=mxyan games, C=IN"
+            rid=$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name=chaya-signing -f name="Chaya signing key (private draft - do not publish)" \
+                  -F draft=true -f body="Keeps the APK signing key so new Chaya builds install over older ones." --jq .id 2>/dev/null || true)
+            if [ -n "$rid" ]; then
+              curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" --data-binary @"$KS" \
+                "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$rid/assets?name=chaya.keystore" >/dev/null \
+                && echo "signing key stored in a private draft release" || echo "::warning::could not store the signing key in a draft release"
+            else
+              echo "::warning::could not create the private draft release for the signing key (it stays in the cache)"
+            fi
+          fi
+          $JAVA_HOME_17_X64/bin/keytool -list -keystore "$KS" -storepass chayamxyan | grep -i fingerprint || true
+          cp "$KS" $RUNNER_TEMP/chaya.keystore
       - name: Export APK
         run: |
           sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/; s/^version\/name=.*/version\/name=\"1.${GITHUB_RUN_NUMBER}\"/" export_presets.cfg

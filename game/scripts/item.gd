@@ -8,10 +8,10 @@ var player: Node3D
 var _t := randf() * 6.0
 var _light: OmniLight3D
 var _base_y := 0.0
+var _have_base := false
 var _done := false
 
 func _ready() -> void:
-	_base_y = position.y
 	_light = OmniLight3D.new()
 	_light.light_color = Color(1.0, 0.78, 0.4)
 	_light.light_energy = 1.3
@@ -49,6 +49,9 @@ func _process(dt: float) -> void:
 	if _done:
 		return
 	_t += dt
+	if not _have_base:
+		_base_y = position.y
+		_have_base = true
 	position.y = _base_y + sin(_t * 1.7) * 0.012
 	rotation.y += dt * 0.55
 	_light.light_energy = 1.2 + 0.25 * sin(_t * 7.3) * sin(_t * 3.1)

@@ -111,8 +111,8 @@ func _build_map() -> void:
 		pk.set_script(ItemScript)
 		pk.item_id = it["id"]
 		pk.player = player
+		pk.position = Vector3(it["pos"][0], it["pos"][1], it["pos"][2])      # before add_child: item.gd keeps this height
 		add_child(pk)
-		pk.global_position = Vector3(it["pos"][0], it["pos"][1], it["pos"][2])
 		node.get_parent().remove_child(node)
 		pk.add_child(node)
 		node.transform = Transform3D.IDENTITY
