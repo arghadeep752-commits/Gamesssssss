@@ -14,10 +14,10 @@ namespace GridProto
         public Transform viewer;
         public Renderer[] dynamicRenderers;
         public ReflectionProbe[] probes;
-        public float key = 0.42f;
+        public float key = 0.5f;
         public float minExposure = 0.85f;
-        public float maxExposure = 3.6f;
-        public float probeExposure = 2.4f;
+        public float maxExposure = 6.5f;
+        public float probeExposure = 3.2f;
         public float shScale = 0.72f;
 
         static readonly int ExposureId = Shader.PropertyToID("_HouseExposure");

@@ -108,14 +108,14 @@ namespace GridProto
 
             // the hooded man in the living room: spotted, chased
             e.perceptionEnabled = true;
-            e.DebugWarp(new Vector3(5.4f, 0.3f, 5.0f), 180f);
-            p.Teleport(new Vector3(5.4f, 0.33f, 1.3f), 0f, 3f);
-            yield return new WaitForSeconds(0.5f);
+            e.DebugWarp(new Vector3(4.6f, 0.3f, 7.6f), 180f);
+            p.Teleport(new Vector3(4.6f, 0.33f, 0.9f), 0f, 3f);
+            yield return new WaitForSeconds(0.4f);
             yield return Snap(shot.ToString("00") + "-enemy"); shot++;
             t = 0f;
             while (e.Current != EnemyAI.State.Chase && t < 6f) { t += Time.deltaTime; yield return null; }
             Debug.Log("[PROTO-TEST] enemy state after seeing the player: " + e.Current);
-            yield return new WaitForSeconds(0.6f);
+            yield return new WaitForSeconds(0.35f);
             yield return Snap(shot.ToString("00") + "-chase"); shot++;
 
             // the player escapes to the far corner of the garden: the enemy gets confused

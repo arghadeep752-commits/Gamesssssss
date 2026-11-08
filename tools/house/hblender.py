@@ -347,6 +347,8 @@ def finish_probes(centers, L, xs, ys, zs):
         ok = ok | fill
     # reorder to Unity axes: +X -X +Y(up) -Y +Z(north) -Z
     u = grid[..., [0, 1, 4, 5, 2, 3], :]
+    # Unity indexes ((z * ny + y) * nx + x) with Unity z = Blender y and Unity y = the floor levels
+    u = u.transpose(1, 0, 2, 3, 4)
     data = np.round(u.reshape(-1), 4).tolist()
     org = H.to_unity((xs[0], ys[0], zs[0]))
     spacing = [float(xs[1] - xs[0]) if nx > 1 else 1.0, float(zs[1] - zs[0]) if nz > 1 else 1.0, float(ys[1] - ys[0]) if ny > 1 else 1.0]
@@ -422,7 +424,16 @@ def run(objects, sun_dir, samples=192, quick=False):
     H.log("blender scene ready: %d meshes, %d lamps, %d probes (%.1f s)" % (len(bobjs), lamps, len(centers), time.time() - t0))
 
     bake_ids = [oi for oi in bobjs if objects[oi]["bake"]]
+    # Cycles' diffuse bake ignores fully metallic surfaces: bake every surface as a dielectric
+    metal = {}
+    for name, mt in bmats.items():
+        b = mt.node_tree.nodes.get("Principled BSDF")
+        if b is not None and b.inputs["Metallic"].default_value > 0:
+            metal[name] = b.inputs["Metallic"].default_value
+            b.inputs["Metallic"].default_value = 0.0
     bake([bobjs[oi] for oi in bake_ids] + [probes], samples if not quick else 32)
+    for name, v in metal.items():
+        bmats[name].node_tree.nodes.get("Principled BSDF").inputs["Metallic"].default_value = v
 
     light = {}
     stats = {}

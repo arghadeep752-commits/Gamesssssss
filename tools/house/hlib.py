@@ -945,7 +945,7 @@ def triangulate(sizes):
     return tri[order], fac[order]
 
 
-def smooth_light(P, N, L, sizes, iterations=2, sigma=0.35):
+def smooth_light(P, N, L, sizes, iterations=1, sigma=0.12):
     """Merges the bake samples of corners that share a position and normal, then an edge-preserving blur
     over the surface removes the remaining sampling noise."""
     key = np.concatenate([np.round(P * 500.0), np.round(N * 20.0)], 1).astype(np.int64)
@@ -970,6 +970,8 @@ def smooth_light(P, N, L, sizes, iterations=2, sigma=0.35):
     eb = np.concatenate(eb)
     ok = (ea != eb) & (np.sum(gn[ea] * gn[eb], 1) > 0.9)
     ea, eb = ea[ok], eb[ok]
+    pairs = np.unique(np.stack([np.minimum(ea, eb), np.maximum(ea, eb)], 1), axis=0)
+    ea, eb = pairs[:, 0], pairs[:, 1]
     for _ in range(iterations):
         la = val[ea].mean(1)
         lb = val[eb].mean(1)

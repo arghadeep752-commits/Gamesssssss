@@ -560,6 +560,8 @@ namespace GridProto.EditorTools
             sun.shadows = LightShadows.None;           // all house lighting is baked; the sun only drives the sky
             sun.cullingMask = 1 << 31;
             RenderSettings.fogDensity = 0.0042f;
+            RenderSettings.skybox.SetFloat("_Exposure", 1.45f);
+            RenderSettings.skybox.SetFloat("_AtmosphereThickness", 0.75f);
             RenderSettings.fogColor = new Color(0.76f, 0.82f, 0.9f);
             RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Skybox;
 
