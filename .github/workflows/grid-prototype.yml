@@ -1,0 +1,204 @@
+# Builds "Grid Prototype" (Unity 6 first-person prototype) into an Android APK in the cloud - no PC needed.
+#
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   UNITY_EMAIL     Unity account email
+#   UNITY_PASSWORD  Unity account password (two-step verification off)
+#
+# Every push to the grid-prototype branch: installs Unity 6 with Android support, activates a free
+# Personal license, generates the level and builds the APK, publishes it as a GitHub release
+# (grid-prototype-build-<n>), then plays an emulator build and attaches screenshots to the release.
+
+name: Grid Prototype APK
+
+on:
+  push:
+    branches: [grid-prototype]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: grid-prototype
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 6000.0.85f1
+  APK_NAME: GridPrototype
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        id: unity
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: false
+
+      - name: Match package versions to the editor
+        run: |
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > ProjectSettings/ProjectVersion.txt
+
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Restore the signing key (keeps updates installable over older builds)
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: grid-prototype-keystore-v1
+
+      - name: Create the signing key (first build only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/gridprototype.keystore -alias gridprototype \
+            -keyalg RSA -keysize 2048 -validity 10000 -storepass gridprototype -keypass gridprototype \
+            -dname "CN=Grid Prototype, O=Grid Prototype"
+
+      - name: Build the APK with Unity
+        env:
+          PROTO_KEYSTORE: ${{ github.workspace }}/ci-keystore/gridprototype.keystore
+          PROTO_KEYSTORE_PASS: gridprototype
+          PROTO_KEY_ALIAS: gridprototype
+        run: |
+          mkdir -p Logs Build
+          set +e
+          # UNITY_THISISABUILDMACHINE would point Unity 6's Gradle build at Unity's private Maven mirrors
+          env -u UNITY_THISISABUILDMACHINE timeout 100m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android \
+            -executeMethod GridProto.EditorTools.ProtoBuild.BuildAndroid \
+            -buildNumber ${{ github.run_number }} \
+            -testApk "Build/${APK_NAME}-emulator.apk" \
+            -logFile "$GITHUB_WORKSPACE/Logs/build.log"
+          status=$?
+          echo "Unity exited with code $status"
+          grep -E "\[PROTO" Logs/build.log | tail -n 80 || true
+          if [ $status -ne 0 ]; then
+            echo "---------------- errors ----------------"
+            grep -nE "error CS[0-9]+|Shader error|BuildFailedException|CommandInvokationFailure|FAILURE:|What went wrong|Exception:|executeMethod" Logs/build.log | head -n 80 || true
+            echo "---------------- end of log ----------------"
+            tail -n 60 Logs/build.log || true
+          fi
+          exit $status
+
+      - name: Upload the Unity log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build-log
+          path: Logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Check the APK
+        run: |
+          ls -la Build
+          test -f "Build/${APK_NAME}.apk"
+          unzip -l "Build/${APK_NAME}.apk" | grep -E "lib/arm64|libil2cpp|data.unity3d" | head -n 10 || true
+
+      - name: Keep the emulator APK for the test job
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: Build/${{ env.APK_NAME }}-emulator.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
+
+      - name: Publish the APK as a GitHub release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="grid-prototype-build-${{ github.run_number }}"
+          APK="${APK_NAME}-${{ github.run_number }}.apk"
+          cp "Build/${APK_NAME}.apk" "$APK"
+          printf 'Grid Prototype build %s (Unity %s, commit %s).\n\nOpen this page on your Android phone, download the APK below and tap it to install.\n\nControls: left thumb anywhere = joystick (push all the way forward to run), right side = look, JUMP / CROUCH buttons, the OPEN button appears next to the door.\n' \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Grid Prototype build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+  emulator-test:
+    name: Play it in an Android emulator
+    needs: build
+    if: needs.build.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download the emulator APK
+        uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: smoke
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the game in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+
+      - name: Attach screenshots and the log to the release
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(smoke/out/autotest/*.png smoke/out/*.png smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          ls -la smoke/out smoke/out/autotest 2>/dev/null || true
+          if [ ${#files[@]} -gt 0 ]; then
+            gh release upload "${{ needs.build.outputs.tag }}" "${files[@]}" --clobber
+          fi
