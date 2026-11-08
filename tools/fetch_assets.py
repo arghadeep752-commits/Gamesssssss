@@ -306,8 +306,10 @@ SOUNDS = {
                           req=["wind", "ambien", "night", "atmos", "drone", "room"], ban=["music", "song", "voice", "speech"], dur=(15, 600), out=45, loop=True, gain=-4),
     "heartbeat":     dict(q=["heartbeat sound", "heartbeat", "heart beat", "human heartbeat recording", "stethoscope heartbeat", "heart sounds"],
                           req=["heartbeat", "heart beat", "heart_beat", "herzschlag", "heart sound"], ban=["act", "protection", "music", "song", "ecg", "monitor", "bill", "law", "rokita"], dur=(4, 300), out=12, loop=True),
-    "footstep":      dict(q=["footsteps wooden floor", "footsteps on wood", "walking on wooden floor", "footsteps indoors", "footsteps", "footstep", "walking"],
-                          req=["foot", "step", "walk"], ban=["music", "song", "snow", "gravel", "grass", "stairs", "scream", "growl", "creepy", "run", "horse", "rain", "thunder", "storm"], dur=(2, 300), out=0.55, steps=5),
+    "footstep":      dict(q=["footsteps wooden floor", "footsteps on wood", "footsteps on wooden floor", "walking on wooden floor", "footsteps indoors", "footsteps"],
+                          req=["footstep", "foot step", "walking on", "steps on"],
+                          ban=["music", "song", "snow", "gravel", "grass", "stairs", "scream", "growl", "creepy", "run", "horse", "rain", "thunder", "storm",
+                               "march", "club", "anthem", "football", "foot-ball", "band", "parade", "soldier", "military"], dur=(2, 300), out=0.55, steps=5),
     "door_open":     dict(q=["door creak", "door creaking", "creaky door", "door opening", "wooden door open"], req=["door", "creak"], ban=["music", "song", "bell", "slam", "knock"], dur=(0.8, 60), out=3.5),
     "door_close":    dict(q=["door close", "door closing", "door slam", "wooden door shut"], req=["door"], ban=["music", "song", "bell", "knock"], dur=(0.3, 60), out=2.0),
     "door_locked":   dict(q=["locked door handle", "door handle rattle", "door knob rattle", "door locked", "door handle"], req=["door", "handle", "knob", "lock", "rattle"], ban=["music", "song", "bell", "slam"], dur=(0.3, 60), out=2.0),
@@ -529,6 +531,25 @@ def distant_shriek(x, out_path):
     encode(normalise(y, -1.0), out_path)
 
 
+def derive_steps(x, out_base, count=5):
+    """Footsteps on old floorboards made from a real knock-on-wood recording: single knocks, pitched down and muffled."""
+    clips = cut_steps(x, count, 0.4) or [trim_silence(x)[: int(0.4 * SR)]]
+    rng = np.random.default_rng(3)
+    for i in range(count):
+        c = clips[i % len(clips)]
+        rate = rng.uniform(0.62, 0.8)
+        idx = np.arange(0, len(c) - 1, rate)
+        y = np.interp(idx, np.arange(len(c)), c).astype(np.float32)
+        out = np.empty_like(y)
+        acc = 0.0
+        for k in range(len(y)):
+            acc += 0.22 * (float(y[k]) - acc)
+            out[k] = acc
+        fo = min(len(out) // 3, int(0.08 * SR))
+        out[-fo:] *= np.linspace(1, 0, fo).astype(np.float32)
+        encode(normalise(out, -4.0), "%s_%d.ogg" % (out_base, i + 1))
+
+
 def sounds():
     from concurrent.futures import ThreadPoolExecutor
     tmp = tempfile.mkdtemp(prefix="chaya_snd_")
@@ -544,6 +565,19 @@ def sounds():
             report.append("ghost_whisper  <- layered from the whisper_far recording")
         except Exception as e:      # noqa: BLE001
             log("layering failed", e)
+    if not os.path.exists(snd("footstep_3")):
+        src = snd("knock") if os.path.exists(snd("knock")) else snd("door_close")
+        if os.path.exists(src):
+            try:
+                for k in range(1, 10):
+                    if os.path.exists(snd("footstep_%d" % k)):
+                        os.remove(snd("footstep_%d" % k))
+                derive_steps(decode(src), os.path.join(OUT_SND, "footstep"))
+                report = [r for r in report if not r.startswith("footstep")]
+                CREDITS[:] = [c for c in CREDITS if "Sound 'footstep'" not in c]
+                report.append("footstep       <- single knocks from the '%s' recording, pitched down and muffled" % os.path.basename(src))
+            except Exception as e:      # noqa: BLE001
+                log("footsteps failed", e)
     if os.path.exists(snd("jumpscare")):
         try:
             distant_shriek(decode(snd("jumpscare")), snd("spotted"))
