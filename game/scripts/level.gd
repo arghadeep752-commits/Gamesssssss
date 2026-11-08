@@ -115,7 +115,7 @@ func _build_map() -> void:
 		add_child(pk)
 		node.get_parent().remove_child(node)
 		pk.add_child(node)
-		node.transform = Transform3D.IDENTITY
+		node.transform = Transform3D.IDENTITY.scaled(Vector3.ONE * 1.25)      # a little bigger: easier to spot in the dark
 		item_models[it["id"]] = node.duplicate()
 		pk.collected.connect(_on_item_collected)
 		pickups.append(pk)

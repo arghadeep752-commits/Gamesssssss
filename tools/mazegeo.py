@@ -23,9 +23,10 @@ SPLIT_H = 1.05       # wooden wainscot below, plaster above
 
 
 class Obj:
-    def __init__(self, name, origin=(0.0, 0.0, 0.0)):
+    def __init__(self, name, origin=(0.0, 0.0, 0.0), local=False):
         self.name = name
         self.origin = np.array(origin, float)
+        self.local = local          # geometry already built around (0, 0, 0)
         self.acc = {}
 
     def add(self, mat, P, N, UV, I):
@@ -39,7 +40,8 @@ class Obj:
     def finish(self):
         self.prims = {}
         for mat, (P, N, UV, I, _) in self.acc.items():
-            self.prims[mat] = (np.concatenate(P) - self.origin, np.concatenate(N), np.concatenate(UV),
+            off = np.zeros(3) if self.local else self.origin
+            self.prims[mat] = (np.concatenate(P) - off, np.concatenate(N), np.concatenate(UV),
                                np.concatenate(I).astype(np.int32))
         return self
 
@@ -347,7 +349,7 @@ def build(L):
             for lz in (-0.23, 0.23):
                 B.box((x + lx - 0.03, 0, z + lz - 0.03), (x + lx + 0.03, top - 0.05, z + lz + 0.03), "trim_wood", obj=ped, cell=10.0)
         B.box((x - 0.23, 0.25, z - 0.23), (x + 0.23, 0.29, z + 0.23), "trim_wood", obj=ped, cell=10.0)
-        o = Obj("item_" + it["id"], (x, top, z))
+        o = Obj("item_" + it["id"], (x, top, z), local=True)
         add_item(B, o, it["id"])
         B.objs.append(o)
         items.append(dict(id=it["id"], name=o.name, pos=[x, top, z]))
