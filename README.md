@@ -3,8 +3,12 @@
 A realistic first-person prototype for Android phones made with **Unity 6 (6000.0 LTS)**, built entirely in
 the cloud with GitHub Actions — no PC needed.
 
-No map yet: a white grid prototype landscape with blocks, stairs, pushable physics cubes and a small test
-room with a door you can open.
+The map is a **modern two-storey house modelled in Blender**: open living room with a TV feature wall,
+dining area, a modular kitchen (island with waterfall quartz top, gas hob and chimney, built-in oven and
+microwave, French-door fridge, wall cabinets with under-cabinet lights), powder room and guest bedroom
+downstairs; master bedroom with balcony and en-suite, study, second bedroom, bathroom and a family lounge
+upstairs, joined by a glass-railed staircase. Around it: a garden plot with lawn, deck, porch, car porch,
+trees, hedges and a compound wall with gates. Every door in the house opens with the OPEN button.
 
 ## Get the APK
 
@@ -42,6 +46,16 @@ A hooded man in a wooden mask (your Red Hooded Hollow model, rigged and animated
 - Seamless 4 m prototype grid texture with 1 m lines and subtle grooves (normal map), aligned to the world
 - Movement with momentum, head bob, footsteps, landing dip, sprint FOV, crouch, door sounds and wind
 
+## How the house is made
+
+`tools/house/build_house.py` runs inside **Blender 4.2** in the cloud build. It models the house (walls with
+window and door openings, frames, glass, stairs, furniture, kitchen modules, fittings), generates the
+textures (marble, oak, walnut, fabrics, tiles, stone, grass), and bakes realistic lighting with **Cycles**
+(sun, sky, ceiling lights and bounced light) into the meshes, plus a grid of light probes that lights the
+enemy. It also renders preview images that are attached to each release (`blender_*.png`). Unity then
+imports the result (`Assets/Editor/HouseBuilder.cs`) with colliders, working doors, reflection probes and
+automatic eye adaptation when walking between the bright garden and the rooms.
+
 ## Project layout
 
 - `Assets/Editor/` — build script: generates the textures, materials, meshes and the level, then builds the APK
@@ -49,6 +63,7 @@ A hooded man in a wooden mask (your Red Hooded Hollow model, rigged and animated
 - `Assets/Scripts/` — the game: player, touch controls, HUD, door, sounds, settings
 - `Assets/Shaders/` — contact shadow shader
 - `.github/workflows/grid-prototype.yml` — cloud build, release and emulator test
+- `tools/house/` — the Blender house generator (run by the cloud build)
 - `ci/` — helper scripts for the cloud build
 
 ## One-time setup
