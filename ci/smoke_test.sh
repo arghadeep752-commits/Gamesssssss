@@ -22,7 +22,7 @@ adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 
 result="TIMEOUT"
 captured=" "
-for _ in $(seq 1 220); do
+for _ in $(seq 1 300); do
   sleep 1
   ulog="$(adb logcat -d -s Unity 2>/dev/null)"
   # the game freezes for 3 s after each "SNAP <name>" line: take the screenshot now

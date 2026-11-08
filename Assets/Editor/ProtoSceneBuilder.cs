@@ -40,6 +40,14 @@ namespace GridProto.EditorTools
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             contactShadows = new MeshBuilder();
 
+            if (HouseBuilder.Available)
+            {
+                BuildHouseScene();
+                EditorSceneManager.SaveScene(scene, ScenePath);
+                AssetDatabase.SaveAssets();
+                return ScenePath;
+            }
+
             Light sun = CreateLighting();
             BuildGround();
             Door door = BuildRoom();
@@ -50,8 +58,8 @@ namespace GridProto.EditorTools
             ReflectionProbe probe = CreateReflectionProbe();
             Camera cam;
             Light faceLight;
-            PlayerController player = CreatePlayer(out cam, out faceLight);
-            NavMeshData navMesh = BuildNavMesh();
+            PlayerController player = CreatePlayer(new Vector3(0f, 0.05f, -6f), 0f, out cam, out faceLight);
+            NavMeshData navMesh = BuildNavMesh(new Bounds(new Vector3(0f, 2f, 6f), new Vector3(130f, 14f, 130f)));
             // the enemy starts behind the test room, facing away, and patrols until it notices the player
             EnemyAI enemy = EnemyBuilder.Create(Gen, new Vector3(8f, 0f, 26f), 20f);
             CreateGameRoot(player, cam, sun, probe, door, enemy, navMesh, faceLight);
@@ -407,11 +415,10 @@ namespace GridProto.EditorTools
         // ------------------------------------------------------------------ player and game
 
         /// <summary>Walkable-area map for the enemy: the floor, block tops and stairs, through the doorway.</summary>
-        static NavMeshData BuildNavMesh()
+        static NavMeshData BuildNavMesh(Bounds bounds)
         {
             var sources = new List<NavMeshBuildSource>();
             var markups = new List<NavMeshBuildMarkup>();
-            var bounds = new Bounds(new Vector3(0f, 2f, 6f), new Vector3(130f, 14f, 130f));
             int mask = ~((1 << 2) | (1 << EnemyBuilder.EnemyLayer) | (1 << EnemyBuilder.EnemyVisualLayer));
             UnityEngine.AI.NavMeshBuilder.CollectSources(bounds, mask, NavMeshCollectGeometry.PhysicsColliders, 0, markups, sources);
             // things that move are not floor or walls: the physics cubes and the door (its hinge has a Rigidbody)
@@ -433,11 +440,12 @@ namespace GridProto.EditorTools
             return data;
         }
 
-        static PlayerController CreatePlayer(out Camera cam, out Light faceLight)
+        static PlayerController CreatePlayer(Vector3 position, float yaw, out Camera cam, out Light faceLight)
         {
             var go = new GameObject("Player");
             go.layer = 2;   // "Ignore Raycast": keeps the player out of its own physics checks
-            go.transform.position = new Vector3(0f, 0.05f, -6f);
+            go.transform.position = position;
+            go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             var controller = go.AddComponent<CharacterController>();
             controller.height = 1.8f;
             controller.radius = 0.35f;
@@ -539,6 +547,82 @@ namespace GridProto.EditorTools
             enemy.door = door;
             root.enemy = enemy;
             root.jumpscare = jumpscare;
+        }
+
+        // ------------------------------------------------------------------ the Blender house map
+
+        /// <summary>The level made in Blender: a furnished two-storey house with a modular kitchen on a garden plot.</summary>
+        static void BuildHouseScene()
+        {
+            HouseBuilder.Result house = HouseBuilder.Build();
+            Light sun = CreateLighting();
+            sun.transform.rotation = Quaternion.LookRotation(-house.sunDir);
+            sun.shadows = LightShadows.None;           // all house lighting is baked; the sun only drives the sky
+            sun.cullingMask = 1 << 31;
+            RenderSettings.fogDensity = 0.0042f;
+            RenderSettings.fogColor = new Color(0.76f, 0.82f, 0.9f);
+            RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Skybox;
+
+            Camera cam;
+            Light faceLight;
+            PlayerController player = CreatePlayer(house.spawn, house.spawnYaw, out cam, out faceLight);
+            cam.farClipPlane = 400f;
+            NavMeshData navMesh = BuildNavMesh(house.navBounds);
+            EnemyAI enemy = EnemyBuilder.Create(Gen, house.enemySpawn, house.enemyYaw);
+            enemy.patrolPoints = house.patrol;
+            enemy.patrolCenter = house.enemySpawn;
+            enemy.giveUpDistance = house.giveUp;
+            var skins = enemy.GetComponentsInChildren<SkinnedMeshRenderer>();
+            foreach (var sk in skins) { sk.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; sk.receiveShadows = false; }
+            AddBlobShadow(enemy.transform);
+            CreateGameRoot(player, cam, sun, null, house.mainDoor, enemy, navMesh, faceLight);
+
+            var game = Object.FindFirstObjectByType<GameRoot>();
+            var lighting = game.gameObject.AddComponent<HouseLighting>();
+            lighting.data = house.data;
+            lighting.viewer = cam.transform;
+            lighting.dynamicRenderers = skins;
+            lighting.probes = house.probes;
+            Debug.Log("[PROTO] house scene built");
+        }
+
+        static void AddBlobShadow(Transform enemy)
+        {
+            string tex = Gen + "/Textures/blob_shadow.png";
+            var img = new Texture2D(64, 64, TextureFormat.RGBA32, false);
+            for (int y = 0; y < 64; y++)
+                for (int x = 0; x < 64; x++)
+                {
+                    float dx = (x + 0.5f) / 32f - 1f, dy = (y + 0.5f) / 32f - 1f;
+                    float d = Mathf.Sqrt(dx * dx + dy * dy);
+                    float v = Mathf.Clamp01(1f - d);
+                    v = v * v * (3f - 2f * v);
+                    img.SetPixel(x, y, new Color(v, v, v, 1f));
+                }
+            System.IO.File.WriteAllBytes(tex, img.EncodeToPNG());
+            Texture2D mask = ProtoTextures.Import(tex, false, false, false, 1);
+            var mat = new Material(Shader.Find("GridProto/ContactShadow"));
+            mat.SetTexture("_MainTex", mask);
+            Save(mat, "BlobShadow");
+            var mesh = new Mesh { name = "blob" };
+            mesh.vertices = new[] { new Vector3(-0.5f, 0f, -0.5f), new Vector3(-0.5f, 0f, 0.5f), new Vector3(0.5f, 0f, 0.5f), new Vector3(0.5f, 0f, -0.5f) };
+            mesh.uv = new[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0) };
+            mesh.colors = new[] { new Color(1, 1, 1, 0.62f), new Color(1, 1, 1, 0.62f), new Color(1, 1, 1, 0.62f), new Color(1, 1, 1, 0.62f) };
+            mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            SaveMesh(mesh);
+            var blob = new GameObject("Enemy Blob Shadow");
+            blob.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = blob.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            r.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+            var follow = enemy.gameObject.AddComponent<BlobShadow>();
+            follow.target = enemy;
+            follow.blob = blob.transform;
         }
 
         // ------------------------------------------------------------------ helpers

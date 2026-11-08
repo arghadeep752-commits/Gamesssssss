@@ -26,6 +26,7 @@ namespace GridProto
         public AudioSource drone;       // tension drone during a chase (2D)
 
         public Vector3 patrolCenter = new Vector3(0f, 0f, 4f);
+        public Vector3[] patrolPoints;            // rooms to walk through (both floors); empty = random points
         public float patrolRadius = 26f;
         public float walkSpeed = 1.45f;
         public float alertSpeed = 2.7f;
@@ -54,7 +55,7 @@ namespace GridProto
         void Start()
         {
             agent = GetComponent<NavMeshAgent>();
-            sightMask = ~((1 << 2) | (1 << gameObject.layer) | (1 << 10));
+            sightMask = ~((1 << 1) | (1 << 2) | (1 << gameObject.layer) | (1 << 10));   // sees through glass
             NavMeshHit hit;
             if (NavMesh.SamplePosition(transform.position, out hit, 6f, NavMesh.AllAreas)) transform.position = hit.position;
             agent.enabled = true;
@@ -192,7 +193,7 @@ namespace GridProto
                 if (waitTimer <= 0f)
                 {
                     lookingAround = false;
-                    Go(RandomPoint(patrolCenter, patrolRadius));
+                    Go(NextPatrolPoint());
                 }
                 return;
             }
@@ -315,20 +316,39 @@ namespace GridProto
                 return;
             }
             anim.reachWeight = Mathf.MoveTowards(anim.reachWeight, 0f, dt * 4f);
-            if (door == null || door.IsOpen || !agent.isOnNavMesh || !agent.hasPath) return;
-            Vector3 toDoor = door.FocusPosition - transform.position;
-            toDoor.y = 0f;
-            if (toDoor.magnitude > 1.7f) return;
+            if (!agent.isOnNavMesh || !agent.hasPath) return;
             Vector3 heading = agent.desiredVelocity;
             heading.y = 0f;
-            if (Vector3.Dot(toDoor, heading) <= 0f) return;
-            // the path leads through the closed door: grab the handle and push it open
-            door.OpenAwayFrom(transform.position);
+            Door best = null;
+            float bestDist = 1.7f;
+            foreach (Interactable it in Interactable.All)
+            {
+                Door d = it as Door;
+                if (d == null || d.IsOpen) continue;
+                Vector3 toDoor = d.FocusPosition - transform.position;
+                if (Mathf.Abs(toDoor.y) > 1.6f) continue;
+                toDoor.y = 0f;
+                float dist = toDoor.magnitude;
+                if (dist > bestDist || Vector3.Dot(toDoor, heading) <= 0f) continue;
+                best = d;
+                bestDist = dist;
+            }
+            if (best == null) return;
+            // the path leads through a closed door: grab the handle and push it open
+            best.OpenAwayFrom(transform.position);
             doorPause = 0.5f;
             agent.isStopped = true;
-            Vector3 side = transform.position - door.FocusPosition;
+            Vector3 side = transform.position - best.FocusPosition;
             side.y = 0f;
-            anim.reachTarget = door.FocusPosition + Vector3.down * 0.1f + (side.sqrMagnitude > 0.0001f ? side.normalized * 0.15f : Vector3.zero);
+            anim.reachTarget = best.FocusPosition + Vector3.down * 0.1f + (side.sqrMagnitude > 0.0001f ? side.normalized * 0.15f : Vector3.zero);
+        }
+
+        Vector3 NextPatrolPoint()
+        {
+            if (patrolPoints == null || patrolPoints.Length == 0) return RandomPoint(patrolCenter, patrolRadius);
+            Vector3 p = patrolPoints[Random.Range(0, patrolPoints.Length)];
+            Vector3 q = RandomPoint(p, 2.5f);
+            return q;
         }
 
         // ------------------------------------------------------------------ animation and sound

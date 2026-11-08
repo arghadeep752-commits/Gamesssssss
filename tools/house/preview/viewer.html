@@ -1,0 +1,149 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>House preview</title>
+<style>html,body{margin:0;background:#888}canvas{display:block}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script>
+// Renders House.bytes (Unity coordinates, Unity winding) like the game would, for local checks.
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl2', {antialias: true, preserveDrawingBuffer: true});
+const params = new URLSearchParams(location.search);
+const MODE = params.get('mode') || 'baked';   // 'baked' uses the light attribute, 'fake' a simple sun+sky
+const EXPOSURE = parseFloat(params.get('exposure') || '1.0');
+
+function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s); return s; }
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, `#version 300 es
+in vec3 aPos; in vec3 aNrm; in vec2 aUv; in vec3 aLight;
+uniform mat4 uVP; uniform vec3 uOrigin;
+out vec3 vN; out vec2 vUv; out vec3 vL; out vec3 vP;
+void main(){ vec3 p = aPos + uOrigin; vP = p; vN = aNrm; vUv = aUv; vL = aLight; gl_Position = uVP * vec4(p, 1.0); }`));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `#version 300 es
+precision highp float;
+in vec3 vN; in vec2 vUv; in vec3 vL; in vec3 vP;
+uniform sampler2D uTex; uniform float uHasTex; uniform vec3 uColor; uniform float uTile;
+uniform vec3 uEmis; uniform float uAlpha; uniform int uMode; uniform vec3 uSun; uniform float uExposure;
+uniform vec3 uEye; uniform float uSmooth; uniform float uMetal;
+out vec4 o;
+vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
+void main(){
+  vec3 n = normalize(vN);
+  vec3 alb = uHasTex > 0.5 ? texture(uTex, vUv / uTile).rgb : uColor;
+  alb = lin(alb);
+  vec3 light;
+  if (uMode == 0) light = vL;
+  else { float hemi = 0.7 + 0.3 * abs(n.y); light = vec3(0.62, 0.66, 0.72) * hemi + vec3(1.0, 0.95, 0.86) * max(0.0, dot(n, uSun)) * 0.9; }
+  vec3 v = normalize(uEye - vP);
+  float f = pow(1.0 - max(0.0, dot(n, v)), 5.0);
+  vec3 F0 = mix(vec3(0.04), alb, uMetal);
+  vec3 spec = (F0 + (1.0 - F0) * f) * uSmooth * mix(vec3(0.55, 0.6, 0.65), vec3(1.0), 0.0) * 0.6;
+  vec3 c = alb * light * (1.0 - uMetal * 0.8) + spec * (0.35 + 0.65 * clamp(dot(light, vec3(0.33)), 0.0, 1.0)) + uEmis;
+  c *= uExposure;
+  c = c / (1.0 + c * 0.25);                // gentle tone curve
+  o = vec4(pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)), uAlpha);
+}`));
+gl.bindAttribLocation(prog, 0, 'aPos'); gl.bindAttribLocation(prog, 1, 'aNrm');
+gl.bindAttribLocation(prog, 2, 'aUv'); gl.bindAttribLocation(prog, 3, 'aLight');
+gl.linkProgram(prog); gl.useProgram(prog);
+const U = n => gl.getUniformLocation(prog, n);
+
+function readStr(dv, o) { const n = dv.getInt32(o, true); const s = new TextDecoder().decode(new Uint8Array(dv.buffer, o + 4, n)); return [s, o + 4 + n]; }
+
+async function load() {
+  const [bin, man] = await Promise.all([fetch('House.bytes').then(r => r.arrayBuffer()), fetch('house.json').then(r => r.json())]);
+  const dv = new DataView(bin);
+  let o = 4; const ver = dv.getInt32(o, true); o += 4; const count = dv.getInt32(o, true); o += 4;
+  const objs = [];
+  for (let i = 0; i < count; i++) {
+    let name, group; [name, o] = readStr(dv, o); [group, o] = readStr(dv, o);
+    const flags = dv.getInt32(o, true); o += 4;
+    const origin = [dv.getFloat32(o, true), dv.getFloat32(o + 4, true), dv.getFloat32(o + 8, true)]; o += 12;
+    const nv = dv.getInt32(o, true); o += 4;
+    const pos = new Float32Array(bin.slice(o, o + nv * 12)); o += nv * 12;
+    const nrm = new Float32Array(bin.slice(o, o + nv * 12)); o += nv * 12;
+    const uv = new Float32Array(bin.slice(o, o + nv * 8)); o += nv * 8;
+    const lt = new Float32Array(bin.slice(o, o + nv * 12)); o += nv * 12;
+    const ns = dv.getInt32(o, true); o += 4;
+    const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+    [[pos, 3], [nrm, 3], [uv, 2], [lt, 3]].forEach(([arr, k], a) => {
+      const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, k, gl.FLOAT, false, 0, 0); });
+    const subs = [];
+    for (let s = 0; s < ns; s++) {
+      let mat; [mat, o] = readStr(dv, o);
+      const ni = dv.getInt32(o, true); o += 4;
+      const idx = new Uint32Array(bin.slice(o, o + ni * 4)); o += ni * 4;
+      const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+      subs.push({mat, ib, n: ni});
+    }
+    objs.push({name, group, flags, origin, vao, subs});
+  }
+  const mats = {}; const texCache = {};
+  for (const m of man.materials) {
+    mats[m.name] = m;
+    if (m.albedo && !texCache[m.albedo]) {
+      const img = new Image(); img.src = 'Textures/' + m.albedo + '.png'; await img.decode();
+      const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      const ext = gl.getExtension('EXT_texture_filter_anisotropic'); if (ext) gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 8);
+      texCache[m.albedo] = t;
+    }
+  }
+  return {objs, mats, texCache, man};
+}
+
+function perspective(fovy, aspect, n, f) { const t = 1 / Math.tan(fovy / 2);
+  return [t / aspect, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]; }
+function mul(a, b) { const r = new Array(16).fill(0); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) r[j * 4 + i] += a[k * 4 + i] * b[j * 4 + k]; return r; }
+function view(eye, yaw, pitch) {
+  const y = yaw * Math.PI / 180, p = pitch * Math.PI / 180;
+  const f = [Math.sin(y) * Math.cos(p), -Math.sin(p), Math.cos(y) * Math.cos(p)];
+  const up = [0, 1, 0];
+  let r = [up[1] * f[2] - up[2] * f[1], up[2] * f[0] - up[0] * f[2], up[0] * f[1] - up[1] * f[0]];   // cross(up, f): Unity's right
+  const rl = Math.hypot(...r); r = r.map(v => v / rl);
+  const u = [f[1] * r[2] - f[2] * r[1], f[2] * r[0] - f[0] * r[2], f[0] * r[1] - f[1] * r[0]];
+  const d = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  return [r[0], u[0], -f[0], 0, r[1], u[1], -f[1], 0, r[2], u[2], -f[2], 0, -d(r, eye), -d(u, eye), d(f, eye), 1];
+}
+
+let S = null;
+async function render(viewName) {
+  if (!S) S = await load();
+  const v = S.man.views.find(x => x.name === viewName) || S.man.views[0];
+  gl.viewport(0, 0, cv.width, cv.height);
+  gl.clearColor(0.62, 0.74, 0.88, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.frontFace(gl.CW); gl.cullFace(gl.BACK);
+  const vp = mul(perspective((v.fov || 62) * Math.PI / 180, cv.width / cv.height, 0.05, 400), view(v.pos, v.yaw, v.pitch));
+  gl.uniformMatrix4fv(U('uVP'), false, new Float32Array(vp));
+  gl.uniform1i(U('uMode'), MODE === 'baked' ? 0 : 1);
+  const sd = S.man.sunDir || [-0.5, 0.6, -0.6]; gl.uniform3fv(U('uSun'), sd);
+  gl.uniform1f(U('uExposure'), EXPOSURE); gl.uniform3fv(U('uEye'), v.pos);
+  for (const pass of [0, 1]) {
+    if (pass === 1) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.disable(gl.CULL_FACE); }
+    for (const ob of S.objs) {
+      if (!(ob.flags & 4)) continue;
+      gl.bindVertexArray(ob.vao); gl.uniform3fv(U('uOrigin'), ob.origin);
+      for (const s of ob.subs) {
+        const m = S.mats[s.mat] || {color: [1, 0, 1], tile: 1, alpha: 1, emission: [0, 0, 0], emissionStrength: 0, kind: 'opaque', smoothness: 0, metallic: 0};
+        const isGlass = m.kind === 'glass';
+        if ((pass === 1) !== isGlass) continue;
+        const t = m.albedo ? S.texCache[m.albedo] : null;
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(U('uTex'), 0);
+        gl.uniform1f(U('uHasTex'), t ? 1 : 0); gl.uniform3fv(U('uColor'), m.color); gl.uniform1f(U('uTile'), m.tile || 1);
+        const es = (m.emissionStrength || 0) * 0.25;
+        gl.uniform3fv(U('uEmis'), m.emission.map(c => Math.pow(c, 2.2) * es));
+        gl.uniform1f(U('uAlpha'), isGlass ? m.alpha : 1); gl.uniform1f(U('uSmooth'), m.smoothness || 0); gl.uniform1f(U('uMetal'), m.metallic || 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.ib); gl.drawElements(gl.TRIANGLES, s.n, gl.UNSIGNED_INT, 0);
+      }
+    }
+    gl.depthMask(true); gl.disable(gl.BLEND);
+  }
+  gl.finish();
+  return true;
+}
+window.renderView = render;
+window.viewNames = async () => { if (!S) S = await load(); return S.man.views.map(v => v.name); };
+</script></body></html>

@@ -27,8 +27,82 @@ env:
   APK_NAME: GridPrototype
 
 jobs:
+  house:
+    name: Model the house in Blender
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Reuse the house if the Blender scripts did not change
+        id: house-cache
+        uses: actions/cache@v4
+        with:
+          path: house_out
+          key: house-${{ hashFiles('tools/house/**') }}
+
+      - name: Restore Blender
+        if: steps.house-cache.outputs.cache-hit != 'true'
+        id: blender-cache
+        uses: actions/cache@v4
+        with:
+          path: blender
+          key: blender-4.2-lts-linux-x64-v1
+
+      - name: Download Blender 4.2 LTS
+        if: steps.house-cache.outputs.cache-hit != 'true' && steps.blender-cache.outputs.cache-hit != 'true'
+        run: |
+          for v in 4.2.3 4.2.2 4.2.1 4.2.0; do
+            if curl -fsSL --retry 3 -o blender.tar.xz "https://download.blender.org/release/Blender4.2/blender-$v-linux-x64.tar.xz"; then
+              echo "downloaded Blender $v"; break
+            fi
+          done
+          mkdir -p blender
+          tar -xf blender.tar.xz -C blender --strip-components=1
+          rm -f blender.tar.xz
+
+      - name: Install Blender's system libraries
+        if: steps.house-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 libgl1 libegl1 > /dev/null
+
+      - name: Build the house in Blender (model, textures, Cycles light bake, renders)
+        if: steps.house-cache.outputs.cache-hit != 'true'
+        run: |
+          set -o pipefail
+          ./blender/blender --version | head -n 1
+          ./blender/blender -b --factory-startup -noaudio --python-exit-code 1 \
+            -P tools/house/build_house.py -- house_out --samples 160 2>&1 | tee house.log
+          cp house.log house_out/house.log
+          ls -la house_out house_out/Renders || true
+          test -f house_out/House.bytes && test -f house_out/house.json
+
+      - name: Hand the house to the Unity build
+        uses: actions/upload-artifact@v4
+        with:
+          name: house
+          path: |
+            house_out/House.bytes
+            house_out/house.json
+            house_out/Textures/
+          retention-days: 5
+
+      - name: Keep the Blender renders
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: house-renders
+          path: |
+            house_out/Renders/
+            house_out/house.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   build:
     name: Build APK
+    needs: house
+    if: ${{ !contains(github.event.head_commit.message, '[house-only]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     outputs:
@@ -42,6 +116,12 @@ jobs:
           df -h /
 
       - uses: actions/checkout@v5
+
+      - name: Get the house made in Blender
+        uses: actions/download-artifact@v4
+        with:
+          name: house
+          path: Assets/House
 
       - name: Check Unity login secrets
         env:
@@ -151,13 +231,32 @@ jobs:
           TAG="grid-prototype-build-${{ github.run_number }}"
           APK="${APK_NAME}-${{ github.run_number }}.apk"
           cp "Build/${APK_NAME}.apk" "$APK"
-          printf 'Grid Prototype build %s (Unity %s, commit %s).\n\nOpen this page on your Android phone, download the APK below and tap it to install.\n\nControls: left thumb anywhere = joystick (push all the way forward to run), right side = look, JUMP / CROUCH buttons, the OPEN button appears next to the door.\n' \
+          printf 'Grid Prototype build %s (Unity %s, commit %s).\n\nMap: a two-storey modern house with a modular kitchen, modelled and light-baked in Blender. The blender_*.png images below are Blender renders, baked_*.png show the baked lighting.\n\nOpen this page on your Android phone, download the APK below and tap it to install.\n\nControls: left thumb anywhere = joystick (push all the way forward to run), right side = look, JUMP / CROUCH buttons, the OPEN button appears next to every door.\n' \
             "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" > notes.md
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "Grid Prototype build ${{ github.run_number }}" --notes-file notes.md
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Get the Blender renders
+        if: steps.publish.outputs.tag != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: house-renders
+          path: house-renders
+
+      - name: Attach the Blender renders to the release
+        if: steps.publish.outputs.tag != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(house-renders/Renders/*.png house-renders/house.log)
+          ls -R house-renders | head -n 40
+          if [ ${#files[@]} -gt 0 ]; then gh release upload "${{ steps.publish.outputs.tag }}" "${files[@]}" --clobber; fi
 
   emulator-test:
     name: Play it in an Android emulator

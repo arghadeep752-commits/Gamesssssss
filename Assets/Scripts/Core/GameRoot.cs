@@ -89,6 +89,14 @@ namespace GridProto
             QualitySettings.realtimeReflectionProbes = true;
             QualitySettings.lodBias = 2f;
             QualitySettings.skinWeights = SkinWeights.FourBones;
+            if (GetComponent<HouseLighting>() != null)
+            {
+                // the house map has its lighting baked in Blender: no real-time shadows needed at all
+                QualitySettings.shadows = UnityEngine.ShadowQuality.Disable;
+                QualitySettings.pixelLightCount = 1;
+                if (sun != null) sun.shadows = LightShadows.None;
+                return;
+            }
             if (sun != null) sun.shadows = high ? LightShadows.Soft : LightShadows.Hard;
             if (enemy != null && enemy.body != null)
                 enemy.body.shadowCastingMode = high ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
