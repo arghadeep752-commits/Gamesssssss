@@ -35,10 +35,12 @@ fi
 
 echo "Unity Hub executable: $hub ($(file -b "$hub" 2>/dev/null | cut -c1-60))"
 if head -c 2 "$hub" 2>/dev/null | grep -q '#!'; then head -n 20 "$hub"; fi
-if [ ! -e /opt/unityhub/unityhub ]; then
-  sudo mkdir -p /opt/unityhub
-  sudo ln -sf "$hub" /opt/unityhub/unityhub
-  echo "linked /opt/unityhub/unityhub -> $hub"
+# Hub 3.22+ installs to /usr/lib/unityhub; tools still look in /opt/unityhub (executable + resources/app.asar)
+real_dir="$(dirname "$hub")"
+if [ ! -e /opt/unityhub/resources ]; then
+  sudo rm -rf /opt/unityhub
+  sudo ln -sfn "$real_dir" /opt/unityhub
+  echo "linked /opt/unityhub -> $real_dir"
 fi
-echo "UNITY_HUB_PATH=/opt/unityhub/unityhub" >> "${GITHUB_ENV:-/dev/null}"
-ls -la /opt/unityhub/unityhub
+echo "UNITY_HUB_PATH=$hub" >> "${GITHUB_ENV:-/dev/null}"
+ls -la /opt/unityhub/ | head -n 20
