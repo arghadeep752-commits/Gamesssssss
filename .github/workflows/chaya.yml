@@ -167,6 +167,11 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=chayamxyan
           godot --headless --path . --export-release Android build/Chaya.apk 2>&1 | tee build/export-log.txt | tail -40
           ls -la build/Chaya.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chaya-apk
+          path: build/Chaya.apk
+          if-no-files-found: error
       - name: Publish release
         run: |
           TAG=chaya-v${GITHUB_RUN_NUMBER}
@@ -188,8 +193,32 @@ jobs:
           { echo "# Chaya - credits and licences"; echo; echo "Game by mxyan games."; echo; cat build/CREDITS_AUTO.md; } > CREDITS.md
           ASSETS="build/Chaya-v${GITHUB_RUN_NUMBER}.apk CREDITS.md"
           [ -f assets/map/chaya_map.blend ] && ASSETS="$ASSETS assets/map/chaya_map.blend"
-          gh release create "$TAG" $ASSETS -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Chaya v1.${GITHUB_RUN_NUMBER}" --notes-file notes.md
-          echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+          gh --version | head -1
+          # Create the (published) release first, then attach the files - the same calls the CI-log release uses.
+          set +e
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Chaya v1.${GITHUB_RUN_NUMBER}" --notes-file notes.md
+          ok=$?
+          if [ $ok -ne 0 ]; then
+            echo "::warning::gh release create failed - trying the REST API"
+            gh api -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" \
+              -f name="Chaya v1.${GITHUB_RUN_NUMBER}" -F body=@notes.md -F draft=false -F prerelease=false --jq .html_url
+            ok=$?
+          fi
+          if [ $ok -ne 0 ]; then
+            echo "::warning::REST create failed - pushing the tag with git, then creating the release on it"
+            git tag -f "$TAG" "$GITHUB_SHA" && git push -f origin "refs/tags/$TAG" && \
+              gh release create "$TAG" -R "$GITHUB_REPOSITORY" --verify-tag --title "Chaya v1.${GITHUB_RUN_NUMBER}" --notes-file notes.md
+            ok=$?
+          fi
+          set -e
+          if [ $ok -eq 0 ]; then
+            gh release upload "$TAG" $ASSETS -R "$GITHUB_REPOSITORY" --clobber
+            echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+          else
+            echo "::error::could not create the release - the APK is attached to the chaya-ci release instead"
+            gh release upload chaya-ci $ASSETS -R "$GITHUB_REPOSITORY" --clobber
+            exit 1
+          fi
       - name: Preview screenshots (software GL, for the release page)
         continue-on-error: true
         run: |
