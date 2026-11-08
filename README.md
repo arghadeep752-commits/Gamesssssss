@@ -12,6 +12,20 @@ Every push to this branch builds a new APK and publishes it on the repository's 
 `grid-prototype-build-<number>`. Open the release on your phone, download the `.apk` and tap it to install.
 Emulator screenshots of each build are attached to the same release.
 
+## The enemy
+
+A hooded man in a wooden mask (your Red Hooded Hollow model, rigged and animated in code) hunts you:
+
+- **Patrols** the area, stopping to look around now and then
+- **Sees** you inside his view cone when nothing blocks the line of sight (harder to spot you when crouching)
+- **Hears** you: running footsteps, landing from a jump and the door give you away; crouch-walking is quiet
+- **Chases** at a sprint with a realistic run cycle, aiming where you are heading and pathing around blocks;
+  he even opens the door if you hide in the room
+- **Gets confused** when you get very far away: stops, looks left and right, scratches his head, then
+  searches the last place he saw you before going back to patrolling
+- **Catches** you: grabs you by the throat, lifts you up and punches you in the face three times — then
+  "YOU WERE CAUGHT" and TRY AGAIN
+
 ## Controls
 
 - **Left side**: floating joystick — touch anywhere on the left half; push all the way forward to run

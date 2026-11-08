@@ -1,79 +1,100 @@
 #if PROTO_AUTOTEST
 using System.Collections;
-using System.IO;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace GridProto
 {
     /// <summary>
-    /// Only compiled into the emulator test build (never into the phone APK): walks through the level,
-    /// opens the door and saves screenshots so the cloud build can check the game really works.
+    /// Only compiled into the emulator test build (never into the phone APK). Plays through the enemy
+    /// encounter: spotted -> chased -> player far away (enemy confused) -> caught (grab, punches, caught
+    /// screen), freezing the game at each moment so the cloud test can take a screenshot.
     /// </summary>
     public class AutoTest : MonoBehaviour
     {
-        string folder;
-
         IEnumerator Start()
         {
             GameRoot root = GetComponent<GameRoot>();
-            folder = Path.Combine(Application.persistentDataPath, "autotest");
-            Directory.CreateDirectory(folder);
             Debug.Log("[PROTO-TEST] start " + Screen.width + "x" + Screen.height
                       + " gpu=" + SystemInfo.graphicsDeviceName + " api=" + SystemInfo.graphicsDeviceType
-                      + " msaa=" + QualitySettings.antiAliasing + " dir=" + folder);
-
-            yield return new WaitForSeconds(4f);
-            yield return Shot("01-start");
-
+                      + " msaa=" + QualitySettings.antiAliasing);
             PlayerController p = root.player;
-            p.Teleport(new Vector3(12f, 0.05f, -12f), -34f, 4f);
-            yield return new WaitForSeconds(1.5f);
-            yield return Shot("02-cubes");
+            EnemyAI e = root.enemy;
+            Jumpscare js = root.jumpscare;
+            if (p == null || e == null || js == null)
+            {
+                Debug.Log("[PROTO-TEST] missing references, player=" + (p != null) + " enemy=" + (e != null) + " jumpscare=" + (js != null));
+                Debug.Log("[PROTO-TEST] DONE");
+                yield break;
+            }
 
-            p.Teleport(new Vector3(-18f, 0.05f, -2f), 24f, 0f);
-            yield return new WaitForSeconds(1.5f);
-            yield return Shot("03-stairs-side");
+            yield return new WaitForSeconds(3f);
+            Debug.Log("[PROTO-TEST] enemy on navmesh: " + e.GetComponent<NavMeshAgent>().isOnNavMesh + ", state " + e.Current);
+            yield return Snap("01-start");
 
-            p.Teleport(new Vector3(0f, 0.05f, 6.7f), 0f, 3f);
-            yield return new WaitForSeconds(1.5f);
-            bool buttonShown = root.player.GetComponent<PlayerInteractor>().Current != null;
-            Debug.Log("[PROTO-TEST] interact button near door: " + (buttonShown ? "SHOWN" : "MISSING"));
-            yield return Shot("04-near-door");
+            // meet the enemy in the open, 9 m apart, facing each other
+            e.DebugWarp(new Vector3(0f, 0f, -20f), 0f);
+            p.Teleport(new Vector3(0f, 0.05f, -11f), 180f, 2f);
+            yield return new WaitForSeconds(0.4f);
+            yield return Snap("02-enemy");
+            float t = 0f;
+            while (e.Current != EnemyAI.State.Chase && t < 6f) { t += Time.deltaTime; yield return null; }
+            Debug.Log("[PROTO-TEST] enemy state after seeing the player: " + e.Current);
+            yield return new WaitForSeconds(0.7f);
+            yield return Snap("03-chase");
 
-            TouchState.InteractPressed = true;
-            yield return new WaitForSeconds(2f);
-            Debug.Log("[PROTO-TEST] door open after interact: " + (root.door != null && root.door.IsOpen));
-            yield return Shot("05-door-open");
+            // the player gets very far away: the enemy stops, confused
+            p.Teleport(new Vector3(0f, 0.05f, 45f), 180f, 0f);
+            t = 0f;
+            while (e.Current != EnemyAI.State.Confused && t < 4f) { t += Time.deltaTime; yield return null; }
+            Debug.Log("[PROTO-TEST] enemy state when the player is far away: " + e.Current);
+            e.perceptionEnabled = false;   // watch it without being noticed
+            if (e.Current != EnemyAI.State.Confused) e.DebugConfuse();
+            Vector3 front = e.transform.position + e.transform.forward * 5f;
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(front, out hit, 3f, NavMesh.AllAreas)) front = hit.position;
+            p.Teleport(front + Vector3.up * 0.05f, YawTowards(front, e.transform.position), 4f);
+            yield return new WaitForSeconds(1.4f);
+            yield return Snap("04-confused");
 
-            p.Teleport(new Vector3(0.6f, 0.1f, 9.4f), 20f, -2f);
-            yield return new WaitForSeconds(1.5f);
-            yield return Shot("06-inside");
-
-            p.Teleport(new Vector3(1.2f, 0.1f, 14.2f), 195f, 2f);
-            yield return new WaitForSeconds(1.5f);
-            yield return Shot("07-doorway-from-inside");
-
-            root.hud.SetPaused(true);
-            yield return new WaitForSecondsRealtime(1f);
-            yield return Shot("08-pause-menu");
-            root.hud.SetPaused(false);
-
+            // caught
+            e.perceptionEnabled = true;
+            Vector3 close = e.transform.position + e.transform.forward * 1f;
+            p.Teleport(close + Vector3.up * 0.05f, YawTowards(close, e.transform.position), 0f);
+            t = 0f;
+            while (!js.Active && t < 5f) { t += Time.deltaTime; yield return null; }
+            Debug.Log("[PROTO-TEST] jumpscare started: " + js.Active);
+            t = 0f;
+            while (js.GrabProgress < 0.95f && t < 3f) { t += Time.deltaTime; yield return null; }
+            yield return new WaitForSeconds(0.15f);
+            yield return Snap("05-grab");
+            t = 0f;
+            while (js.Impacts < 1 && t < 5f) { t += Time.deltaTime; yield return null; }
+            yield return Snap("06-punch");
+            t = 0f;
+            while (!js.Finished && t < 8f) { t += Time.deltaTime; yield return null; }
+            yield return new WaitForSeconds(0.3f);
+            yield return Snap("07-caught");
+            Debug.Log("[PROTO-TEST] punches landed: " + js.Impacts + ", caught screen: " + js.Finished);
             Debug.Log("[PROTO-TEST] DONE");
         }
 
-        IEnumerator Shot(string name)
+        static float YawTowards(Vector3 from, Vector3 to)
         {
-            yield return new WaitForEndOfFrame();
-            Texture2D tex = ScreenCapture.CaptureScreenshotAsTexture();
-            if (tex == null)
-            {
-                Debug.Log("[PROTO-TEST] shot " + name + " failed");
-                yield break;
-            }
-            byte[] png = tex.EncodeToPNG();
-            Destroy(tex);
-            File.WriteAllBytes(Path.Combine(folder, name + ".png"), png);
-            Debug.Log("[PROTO-TEST] shot " + name + " " + png.Length + " bytes");
+            Vector3 d = to - from;
+            d.y = 0f;
+            return Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        }
+
+        // freezes the game for a moment so the test script can screenshot exactly this frame
+        IEnumerator Snap(string name)
+        {
+            float scale = Time.timeScale;
+            Time.timeScale = 0f;
+            yield return null;
+            Debug.Log("[PROTO-TEST] SNAP " + name);
+            yield return new WaitForSecondsRealtime(3f);
+            Time.timeScale = scale;
         }
     }
 }

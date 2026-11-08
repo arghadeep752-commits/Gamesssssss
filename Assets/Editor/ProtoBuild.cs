@@ -164,6 +164,7 @@ namespace GridProto.EditorTools
                 QualitySettings.vSyncCount = 0;
                 QualitySettings.lodBias = 2f;
                 QualitySettings.softParticles = false;
+                QualitySettings.skinWeights = SkinWeights.FourBones;
             }
             QualitySettings.SetQualityLevel(current, false);
             Debug.Log("[PROTO] quality levels: " + string.Join(", ", names) + " (current " + current + ")");

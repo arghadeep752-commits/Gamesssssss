@@ -21,11 +21,19 @@ adb logcat -c || true
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 
 result="TIMEOUT"
-for _ in $(seq 1 100); do
-  sleep 3
-  log="$(adb logcat -d 2>/dev/null)"
-  if echo "$log" | grep -q "\[PROTO-TEST\] DONE"; then result="DONE"; break; fi
-  if echo "$log" | grep -qE "Fatal signal|Process $PKG .*has died|ANR in $PKG"; then result="CRASH"; break; fi
+captured=" "
+for _ in $(seq 1 220); do
+  sleep 1
+  ulog="$(adb logcat -d -s Unity 2>/dev/null)"
+  # the game freezes for 3 s after each "SNAP <name>" line: take the screenshot now
+  for name in $(echo "$ulog" | grep -o "\[PROTO-TEST\] SNAP [A-Za-z0-9_-]*" | awk '{print $3}'); do
+    case "$captured" in
+      *" $name "*) ;;
+      *) adb exec-out screencap -p > "$OUT/$name.png" 2>/dev/null; captured="$captured$name "; echo "captured $name";;
+    esac
+  done
+  if echo "$ulog" | grep -q "\[PROTO-TEST\] DONE"; then result="DONE"; break; fi
+  if adb logcat -d 2>/dev/null | grep -qE "Fatal signal|Process $PKG .*has died|ANR in $PKG"; then result="CRASH"; break; fi
 done
 sleep 2
 
@@ -34,7 +42,6 @@ grep -E "Unity|PROTO|GridProto|AndroidRuntime|DEBUG|libc|$PKG" "$OUT/logcat-full
 grep "PROTO-TEST" "$OUT/logcat-full.log" > "$OUT/test-result.txt" || true
 echo "RESULT: $result" >> "$OUT/test-result.txt"
 
-adb pull "/sdcard/Android/data/$PKG/files/autotest" "$OUT/" || echo "could not pull the in-game screenshots"
 adb exec-out screencap -p > "$OUT/zz-emulator-screen.png" 2>/dev/null || true
 
 cat "$OUT/test-result.txt"

@@ -50,14 +50,29 @@ namespace GridProto
 
         public bool IsCrouching { get { return crouching; } }
         public bool IsRunning { get; private set; }
+        public bool ControlEnabled { get; private set; }
+        /// <summary>Horizontal velocity in m/s.</summary>
+        public Vector3 Velocity { get { return new Vector3(velocity.x, 0f, velocity.z); } }
+        public Vector3 HeadPosition { get { return playerCamera.transform.position; } }
+        public float EyeHeight { get { return height - eyeBelowTop; } }
 
         void Awake()
         {
             controller = GetComponent<CharacterController>();
+            ControlEnabled = true;
             yaw = transform.eulerAngles.y;
             height = standHeight;
             fov = baseFov;
             ApplyHeight(height);
+        }
+
+        /// <summary>Turns the player's controls (and camera control) off, e.g. while the enemy has them.</summary>
+        public void SetControlEnabled(bool enabled)
+        {
+            ControlEnabled = enabled;
+            velocity = Vector3.zero;
+            IsRunning = false;
+            TouchState.Clear();
         }
 
         public void Teleport(Vector3 position, float newYaw, float newPitch)
@@ -85,7 +100,7 @@ namespace GridProto
             ReadKeyboardAndMouse(ref move, ref look, ref jump, ref crouchToggle);
 #endif
             float dt = Time.deltaTime;
-            if (dt <= 0f) return;
+            if (dt <= 0f || !ControlEnabled) return;
 
             // look
             float degreesPerPixel = lookDegreesPerScreen * GameSettings.Sensitivity / Mathf.Max(1f, Screen.height);
@@ -160,6 +175,7 @@ namespace GridProto
                 {
                     dipVelocity -= Mathf.Min(fallSpeed * 0.08f, 1f);
                     PlayFoot(ProtoAudio.Thump, Mathf.Clamp01(fallSpeed / 9f) * 0.8f);
+                    NoiseSystem.Emit(transform.position, 10f);
                 }
                 fallSpeed = 0f;
             }
@@ -185,6 +201,8 @@ namespace GridProto
                     stepIndex++;
                     float volume = crouching ? 0.2f : (IsRunning ? 0.6f : 0.42f);
                     PlayFoot(ProtoAudio.Footstep(stepIndex + Random.Range(0, 3)), volume);
+                    // the enemy can hear footsteps: running is loud, sneaking (crouched) is almost silent
+                    NoiseSystem.Emit(transform.position, crouching ? 1.2f : (IsRunning ? 15f : 6f));
                 }
             }
             float ampY = crouching ? 0.018f : (IsRunning ? 0.05f : 0.032f);

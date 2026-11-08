@@ -15,6 +15,8 @@ namespace GridProto
         public AudioSource ambience;
         public Door door;
         public Hud hud;
+        public EnemyAI enemy;
+        public Jumpscare jumpscare;
 
         public Color ambientSky = new Color(0.66f, 0.73f, 0.82f);
         public Color ambientEquator = new Color(0.56f, 0.58f, 0.61f);
@@ -86,7 +88,10 @@ namespace GridProto
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             QualitySettings.realtimeReflectionProbes = true;
             QualitySettings.lodBias = 2f;
+            QualitySettings.skinWeights = SkinWeights.FourBones;
             if (sun != null) sun.shadows = high ? LightShadows.Soft : LightShadows.Hard;
+            if (enemy != null && enemy.body != null)
+                enemy.body.shadowCastingMode = high ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
         }
     }
 }

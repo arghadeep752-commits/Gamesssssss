@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace GridProto.EditorTools
 {
@@ -48,8 +49,12 @@ namespace GridProto.EditorTools
             FinishContactShadows();
             ReflectionProbe probe = CreateReflectionProbe();
             Camera cam;
-            PlayerController player = CreatePlayer(out cam);
-            CreateGameRoot(player, cam, sun, probe, door);
+            Light faceLight;
+            PlayerController player = CreatePlayer(out cam, out faceLight);
+            NavMeshData navMesh = BuildNavMesh();
+            // the enemy starts behind the test room, facing away, and patrols until it notices the player
+            EnemyAI enemy = EnemyBuilder.Create(Gen, new Vector3(8f, 0f, 26f), 20f);
+            CreateGameRoot(player, cam, sun, probe, door, enemy, navMesh, faceLight);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
@@ -380,6 +385,10 @@ namespace GridProto.EditorTools
                 var body = go.AddComponent<Rigidbody>();
                 body.mass = 12f;
                 body.interpolation = RigidbodyInterpolation.Interpolate;
+                var obstacle = go.AddComponent<NavMeshObstacle>();   // the enemy steers around them
+                obstacle.shape = NavMeshObstacleShape.Box;
+                obstacle.size = size;
+                obstacle.carving = false;
             }
         }
 
@@ -397,7 +406,34 @@ namespace GridProto.EditorTools
 
         // ------------------------------------------------------------------ player and game
 
-        static PlayerController CreatePlayer(out Camera cam)
+        /// <summary>Walkable-area map for the enemy: the floor, block tops and stairs, through the doorway.</summary>
+        static NavMeshData BuildNavMesh()
+        {
+            var sources = new List<NavMeshBuildSource>();
+            var markups = new List<NavMeshBuildMarkup>();
+            var bounds = new Bounds(new Vector3(0f, 2f, 6f), new Vector3(130f, 14f, 130f));
+            int mask = ~((1 << 2) | (1 << EnemyBuilder.EnemyLayer) | (1 << EnemyBuilder.EnemyVisualLayer));
+            UnityEngine.AI.NavMeshBuilder.CollectSources(bounds, mask, NavMeshCollectGeometry.PhysicsColliders, 0, markups, sources);
+            // things that move are not floor or walls: the physics cubes and the door (its hinge has a Rigidbody)
+            sources.RemoveAll(s => s.component != null && s.component.GetComponentInParent<Rigidbody>() != null);
+            NavMeshBuildSettings settings = NavMesh.GetSettingsByID(0);
+            settings.agentRadius = 0.3f;
+            settings.agentHeight = 1.9f;
+            settings.agentClimb = 0.45f;
+            settings.agentSlope = 46f;
+            settings.overrideVoxelSize = true;
+            settings.voxelSize = 0.1f;
+            NavMeshData data = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(settings, sources, bounds, Vector3.zero, Quaternion.identity);
+            if (data == null) throw new System.Exception("NavMesh build failed");
+            data.name = "NavMesh";
+            string path = Gen + "/NavMesh.asset";
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(data, path);
+            Debug.Log("[PROTO] navmesh built from " + sources.Count + " sources");
+            return data;
+        }
+
+        static PlayerController CreatePlayer(out Camera cam, out Light faceLight)
         {
             var go = new GameObject("Player");
             go.layer = 2;   // "Ignore Raycast": keeps the player out of its own physics checks
@@ -428,6 +464,21 @@ namespace GridProto.EditorTools
             cam.useOcclusionCulling = false;
             camGo.AddComponent<AudioListener>();
 
+            // only lights the enemy's face during the jumpscare
+            var lightGo = new GameObject("Jumpscare Light");
+            lightGo.transform.SetParent(camGo.transform, false);
+            lightGo.transform.localPosition = new Vector3(0f, 0.3f, 0.05f);
+            faceLight = lightGo.AddComponent<Light>();
+            faceLight.type = LightType.Point;
+            faceLight.range = 3f;
+            faceLight.intensity = 1.6f;
+            faceLight.color = new Color(1f, 0.9f, 0.82f);
+            faceLight.cullingMask = 1 << EnemyBuilder.EnemyVisualLayer;
+            faceLight.shadows = LightShadows.None;
+            faceLight.renderMode = LightRenderMode.ForcePixel;
+            faceLight.lightmapBakeType = LightmapBakeType.Realtime;
+            faceLight.enabled = false;
+
             var feet = go.AddComponent<AudioSource>();
             feet.playOnAwake = false;
             feet.spatialBlend = 0f;
@@ -443,7 +494,8 @@ namespace GridProto.EditorTools
             return player;
         }
 
-        static void CreateGameRoot(PlayerController player, Camera cam, Light sun, ReflectionProbe probe, Door door)
+        static void CreateGameRoot(PlayerController player, Camera cam, Light sun, ReflectionProbe probe, Door door,
+                                   EnemyAI enemy, NavMeshData navMesh, Light faceLight)
         {
             var go = new GameObject("Game");
             var ambience = go.AddComponent<AudioSource>();
@@ -468,6 +520,25 @@ namespace GridProto.EditorTools
             hud.interactor = player.GetComponent<PlayerInteractor>();
             hud.root = root;
             root.hud = hud;
+
+            var loader = go.AddComponent<NavMeshLoader>();
+            loader.data = navMesh;
+
+            var sfx = go.AddComponent<AudioSource>();
+            sfx.playOnAwake = false;
+            sfx.spatialBlend = 0f;
+            sfx.ignoreListenerPause = true;
+            var jumpscare = go.AddComponent<Jumpscare>();
+            jumpscare.player = player;
+            jumpscare.hud = hud;
+            jumpscare.faceLight = faceLight;
+            jumpscare.sfx = sfx;
+
+            enemy.player = player;
+            enemy.jumpscare = jumpscare;
+            enemy.door = door;
+            root.enemy = enemy;
+            root.jumpscare = jumpscare;
         }
 
         // ------------------------------------------------------------------ helpers

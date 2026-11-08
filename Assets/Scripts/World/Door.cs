@@ -32,11 +32,23 @@ namespace GridProto
 
         public override void Interact(PlayerController player)
         {
+            Toggle(player.transform.position);
+            NoiseSystem.Emit(FocusPosition, 14f);   // the enemy hears the door
+        }
+
+        /// <summary>Used by the enemy: pushes the door open, away from whoever is opening it.</summary>
+        public void OpenAwayFrom(Vector3 position)
+        {
+            if (!open) Toggle(position);
+        }
+
+        void Toggle(Vector3 actorPosition)
+        {
             if (!open)
             {
-                Vector3 toPlayer = player.transform.position - FocusPosition;
-                bool playerOutside = Vector3.Dot(toPlayer, outsideDirection) > 0f;
-                targetAngle = (playerOutside ? -outsideSwingSign : outsideSwingSign) * openAngle;   // away from the player
+                Vector3 toActor = actorPosition - FocusPosition;
+                bool actorOutside = Vector3.Dot(toActor, outsideDirection) > 0f;
+                targetAngle = (actorOutside ? -outsideSwingSign : outsideSwingSign) * openAngle;   // away from them
                 open = true;
                 shutPending = false;
                 Play(ProtoAudio.DoorOpen, 0.9f);

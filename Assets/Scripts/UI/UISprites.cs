@@ -17,6 +17,34 @@ namespace GridProto
         public static Sprite CrouchIcon { get { if (crouch == null) crouch = Make(128, (x, y) => JumpSdf(x, -y), 0); return crouch; } }
         public static Sprite DoorIcon { get { if (door == null) door = Make(128, DoorSdf, 0); return door; } }
         public static Sprite PauseIcon { get { if (pause == null) pause = Make(128, PauseSdf, 0); return pause; } }
+        public static Sprite Vignette { get { if (vignette == null) vignette = MakeVignette(256); return vignette; } }
+
+        static Sprite vignette;
+
+        // transparent centre fading to opaque at the screen edges
+        static Sprite MakeVignette(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
+            tex.name = "ui_vignette";
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Trilinear;
+            var pixels = new Color32[size * size];
+            for (int j = 0; j < size; j++)
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    float x = ((i + 0.5f) / size - 0.5f) * 2f;
+                    float y = ((j + 0.5f) / size - 0.5f) * 2f;
+                    float r = Mathf.Sqrt(x * x * 0.8f + y * y * 1.1f);
+                    float a = Mathf.Clamp01((r - 0.55f) / 0.6f);
+                    a = a * a * (3f - 2f * a);
+                    pixels[j * size + i] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
+                }
+            }
+            tex.SetPixels32(pixels);
+            tex.Apply(true, true);
+            return Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+        }
 
         static float JumpSdf(float x, float y)
         {

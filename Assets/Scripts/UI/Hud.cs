@@ -22,7 +22,12 @@ namespace GridProto
         static readonly Color ResumeColor = new Color(0.96f, 0.55f, 0.24f, 1f);
 
         Font font;
-        RectTransform canvasRect, safe;
+        RectTransform canvasRect, safe, controlsRoot;
+        Image vignette, flash, fade;
+        GameObject caughtPanel;
+        Color flashColor;
+        float flashAlpha, fadeTarget, fadeSpeed = 1f;
+        bool gameOver;
         RectTransform interactWrap;
         CanvasGroup interactGroup;
         Text interactLabel;
@@ -48,6 +53,7 @@ namespace GridProto
             EnsureEventSystem();
             BuildHud();
             BuildPauseMenu();
+            BuildOverlays();
             pauseMenu.SetActive(false);
             interactWrap.gameObject.SetActive(false);
         }
@@ -77,12 +83,23 @@ namespace GridProto
             canvasGo.AddComponent<GraphicRaycaster>();
             canvasRect = (RectTransform)canvasGo.transform;
 
+            // red screen edges while the enemy is hunting you (drawn under the controls)
+            RectTransform vignetteRect = Stretch("Danger", canvasRect, Vector2.zero, Vector2.one);
+            vignette = vignetteRect.gameObject.AddComponent<Image>();
+            vignette.sprite = UISprites.Vignette;
+            vignette.color = new Color(0.75f, 0f, 0f, 0f);
+            vignette.raycastTarget = false;
+            vignette.enabled = false;
+
+            // everything the player touches lives under one root, hidden while the enemy has them
+            controlsRoot = Stretch("Controls", canvasRect, Vector2.zero, Vector2.one);
+
             // touch areas first, so every button is drawn and hit-tested on top of them
-            RectTransform lookZone = Stretch("Look Area", canvasRect, new Vector2(0.42f, 0f), Vector2.one);
+            RectTransform lookZone = Stretch("Look Area", controlsRoot, new Vector2(0.42f, 0f), Vector2.one);
             lookZone.gameObject.AddComponent<RaycastArea>();
             lookZone.gameObject.AddComponent<TouchLookArea>();
 
-            RectTransform moveZone = NewRect("Move Area", canvasRect);
+            RectTransform moveZone = NewRect("Move Area", controlsRoot);
             moveZone.pivot = Vector2.zero;
             moveZone.anchorMin = Vector2.zero;
             moveZone.anchorMax = new Vector2(0.42f, 1f);
@@ -110,10 +127,10 @@ namespace GridProto
             joystick.radius = 120f;
             joystick.restPosition = rest;
 
-            RectTransform cross = Box("Crosshair", canvasRect, Center, Vector2.zero, new Vector2(9f, 9f));
+            RectTransform cross = Box("Crosshair", controlsRoot, Center, Vector2.zero, new Vector2(9f, 9f));
             AddImage(cross, UISprites.Dot, new Color(1f, 1f, 1f, 0.8f), false);
 
-            safe = Stretch("Safe Area", canvasRect, Vector2.zero, Vector2.one);
+            safe = Stretch("Safe Area", controlsRoot, Vector2.zero, Vector2.one);
             safe.gameObject.AddComponent<SafeArea>();
 
             infoText = MakeText("Info", safe, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(36f, -40f),
@@ -171,9 +188,95 @@ namespace GridProto
             RefreshMenu();
         }
 
+        void BuildOverlays()
+        {
+            RectTransform flashRect = Stretch("Flash", canvasRect, Vector2.zero, Vector2.one);
+            flash = flashRect.gameObject.AddComponent<Image>();
+            flash.color = new Color(1f, 1f, 1f, 0f);
+            flash.raycastTarget = false;
+            flash.enabled = false;
+
+            RectTransform fadeRect = Stretch("Fade", canvasRect, Vector2.zero, Vector2.one);
+            fade = fadeRect.gameObject.AddComponent<Image>();
+            fade.color = new Color(0f, 0f, 0f, 0f);
+            fade.raycastTarget = false;
+            fade.enabled = false;
+
+            RectTransform panel = Stretch("Caught", canvasRect, Vector2.zero, Vector2.one);
+            var block = panel.gameObject.AddComponent<Image>();
+            block.color = new Color(0f, 0f, 0f, 0.2f);
+            block.raycastTarget = true;
+            caughtPanel = panel.gameObject;
+            MakeText("Title", panel, Center, Center, new Vector2(0f, 140f), new Vector2(1400f, 120f), 84,
+                     TextAnchor.MiddleCenter, new Color(0.85f, 0.08f, 0.06f, 1f)).text = "YOU WERE CAUGHT";
+            MakeText("Subtitle", panel, Center, Center, new Vector2(0f, 40f), new Vector2(1400f, 60f), 34,
+                     TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f)).text = "The hooded man got you.";
+            RectTransform button = Box("Try Again", panel, Center, new Vector2(0f, -110f), new Vector2(460f, 104f));
+            Image image = AddImage(button, UISprites.Rounded, ResumeColor, true);
+            image.type = Image.Type.Sliced;
+            var tryAgain = button.gameObject.AddComponent<Button>();
+            tryAgain.targetGraphic = image;
+            tryAgain.onClick.AddListener(() => { Click(); Restart(); });
+            MakeText("Text", button, Center, Center, Vector2.zero, new Vector2(460f, 104f), 40, TextAnchor.MiddleCenter, Color.white).text = "TRY AGAIN";
+            caughtPanel.SetActive(false);
+        }
+
+        /// <summary>Shows or hides every on-screen control (used during the jumpscare).</summary>
+        public void SetControlsVisible(bool visible)
+        {
+            if (controlsRoot != null) controlsRoot.gameObject.SetActive(visible);
+            if (!visible) TouchState.Clear();
+        }
+
+        public void Flash(Color color)
+        {
+            flashColor = color;
+            flashAlpha = color.a;
+            flash.color = color;
+            flash.enabled = true;
+        }
+
+        public void FadeToBlack(float seconds)
+        {
+            fadeTarget = 1f;
+            fadeSpeed = 1f / Mathf.Max(0.05f, seconds);
+            fade.enabled = true;
+        }
+
+        public void ShowCaught()
+        {
+            gameOver = true;
+            caughtPanel.SetActive(true);
+        }
+
+        void Restart()
+        {
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+            TouchState.Clear();
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
+
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape)) SetPaused(!paused);   // Android back button
+            if (Input.GetKeyDown(KeyCode.Escape) && !gameOver && controlsRoot.gameObject.activeSelf) SetPaused(!paused);   // Android back button
+
+            // danger: red screen edges, pulsing faster as the enemy closes in
+            float threat = root != null && root.enemy != null ? root.enemy.Threat : 0f;
+            float pulse = 0.8f + 0.2f * Mathf.Sin(Time.unscaledTime * Mathf.Lerp(5f, 9f, threat));
+            float vignetteAlpha = threat * 0.55f * pulse;
+            if (Mathf.Abs(vignette.color.a - vignetteAlpha) > 0.004f) vignette.color = new Color(0.75f, 0f, 0f, vignetteAlpha);
+            vignette.enabled = vignetteAlpha > 0.01f;
+
+            // punch flashes fade out; the blackout fades in
+            if (flashAlpha > 0f)
+            {
+                flashAlpha = Mathf.MoveTowards(flashAlpha, 0f, Time.unscaledDeltaTime * 2.2f);
+                flash.color = new Color(flashColor.r, flashColor.g, flashColor.b, flashAlpha);
+                flash.enabled = flashAlpha > 0.003f;
+            }
+            if (fade.enabled && !Mathf.Approximately(fade.color.a, fadeTarget))
+                fade.color = new Color(0f, 0f, 0f, Mathf.MoveTowards(fade.color.a, fadeTarget, Time.unscaledDeltaTime * fadeSpeed));
 
             // interact button pops in when close to the door, and out again when walking away
             Interactable current = (!paused && interactor != null) ? interactor.Current : null;
