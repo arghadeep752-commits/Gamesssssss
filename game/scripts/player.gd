@@ -46,7 +46,7 @@ func _ready() -> void:
 	flashlight.light_energy = 3.2
 	flashlight.spot_range = 17.0
 	flashlight.spot_angle = 34.0
-	flashlight.spot_angle_attenuation = 0.7
+	flashlight.spot_angle_attenuation = 1.9
 	flashlight.spot_attenuation = 0.8
 	flashlight.shadow_enabled = true
 	flashlight.shadow_bias = 0.04

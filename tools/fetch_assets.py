@@ -132,13 +132,13 @@ TEX_SLOTS = {
     "wood_door": dict(ids=["wood_planks_worn", "old_planks", "wood_door", "wooden_planks", "weathered_planks"],
                       must=["wood", "plank", "door"], prefer=["old", "worn", "weathered", "door", "plank", "rough"],
                       avoid=["painted", "white", "tile", "parquet", "floor"], acg=["old wooden door", "weathered wood", "planks"]),
-    "brass": dict(ids=["brass_pan_01", "scratched_metal", "metal_plate", "rusty_metal_02", "brushed_metal"],
+    "brass": dict(ids=["brass_pan_01", "scratched_metal", "brushed_metal"],
                   must=["metal", "brass", "iron", "steel", "copper", "bronze", "plate"], prefer=["brass", "scratched", "brushed", "old", "worn", "gold", "bronze"],
-                  avoid=["floor", "rust_", "corrugated", "mesh", "grid", "wire"], acg=["brass", "bronze", "scratched metal"]),
-    "copper": dict(ids=["copper", "metal_plate", "rusty_metal", "oxidized_copper", "scratched_metal"],
+                  avoid=["floor", "rust_", "corrugated", "mesh", "grid", "wire", "diamond", "plate"], acg=["brass", "bronze", "gold", "scratched metal"], acg_first=True),
+    "copper": dict(ids=["copper", "oxidized_copper", "scratched_metal"],
                    must=["metal", "copper", "bronze", "iron", "steel", "plate"], prefer=["copper", "bronze", "old", "worn", "oxid", "scratched"],
-                   avoid=["floor", "mesh", "grid", "wire", "corrugated"], acg=["copper", "oxidized metal", "metal plates"]),
-    "cloth": dict(ids=["fabric_pattern_07", "fabric_leather_01", "denim_fabric", "cotton", "red_fabric", "fabric_pattern_05", "curtain_fabric"],
+                   avoid=["floor", "mesh", "grid", "wire", "corrugated", "diamond"], acg=["copper", "bronze", "oxidized metal"], acg_first=True),
+    "cloth": dict(ids=["fabric_pattern_07", "cotton", "red_fabric", "fabric_pattern_05", "curtain_fabric", "fabric_pattern_01"],
                   must=["fabric", "cloth", "cotton", "linen", "curtain", "canvas", "burlap", "wool", "woven"], prefer=["fabric", "cotton", "linen", "woven", "cloth", "pattern", "curtain"],
                   avoid=["leather", "carpet", "rug", "denim", "metal", "stone"], acg=["fabric cotton", "woven fabric", "cloth"]),
     "clay": dict(ids=["terracotta", "clay_plaster", "rough_clay", "brown_mud", "mud_cracked_dry_03", "sandy_gravel"],
@@ -247,8 +247,14 @@ def textures():
         dest = os.path.join(OUT_DL, "tex", slot)
         shutil.rmtree(dest, ignore_errors=True)
         got = None
-        if assets:
-            for aid in ph_pick(slot, spec, assets, used):
+        if spec.get("acg_first"):
+            got = acg_download(spec["acg"], dest, spec, used)
+            if got:
+                used.add(got.split(":")[1])
+        if assets and not got:
+            cands = ph_pick(slot, spec, assets, used)
+            log("  candidates", slot, cands)
+            for aid in cands:
                 try:
                     if ph_download(aid, dest):
                         got = "polyhaven:" + aid
@@ -356,6 +362,7 @@ def decode(path):
 def encode(x, out_path, stereo=False):
     x = np.clip(x, -1.0, 1.0)
     pcm = (x * 32767).astype("<i2")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
     tmp = out_path + ".tmp.wav"
     with wave.open(tmp, "wb") as w:
         w.setnchannels(1)

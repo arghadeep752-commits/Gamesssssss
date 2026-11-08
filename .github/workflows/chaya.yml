@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    shell: bash
+
 env:
   GODOT_VERSION: 4.6.2-stable
   GH_TOKEN: ${{ github.token }}
@@ -76,7 +80,7 @@ jobs:
       - name: Blender
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq blender
+          sudo apt-get install -y -qq blender python3-numpy
           blender --version | head -2
       - name: Layout and Blender build
         run: |

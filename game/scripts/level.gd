@@ -68,7 +68,7 @@ func _build_environment() -> void:
 	env.background_color = Color(0, 0, 0)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.32, 0.26, 0.24)
-	env.ambient_light_energy = 0.22
+	env.ambient_light_energy = 0.3
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.03, 0.025, 0.025)
 	env.fog_density = 0.05
