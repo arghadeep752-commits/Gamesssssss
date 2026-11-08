@@ -1,0 +1,11 @@
+.godot/
+build/*
+!build/.gdignore
+assets/downloaded/
+assets/sounds/
+assets/map/
+*.apk
+*.aab
+*.keystore
+__pycache__/
+*.import

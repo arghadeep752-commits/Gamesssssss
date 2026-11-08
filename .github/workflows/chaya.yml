@@ -1,0 +1,201 @@
+name: Chaya - build APK
+
+on:
+  push:
+    branches: [chaya]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.6.2-stable
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  init:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Rolling CI release (logs and previews, not the game)
+        run: |
+          gh release view chaya-ci -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create chaya-ci -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "CI logs and previews (not the game)" --notes "Build logs of the latest Chaya build."
+
+  # ---------------------------------------------------------------- third-party assets (textures, sounds, fonts, avatar)
+  assets:
+    needs: init
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache downloaded assets
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            assets/downloaded
+            assets/sounds
+            build/CREDITS_AUTO.md
+            build/textures_contact.jpg
+            build/sounds_report.txt
+            build/textures_chosen.json
+          key: chaya-assets-${{ hashFiles('tools/fetch_assets.py') }}
+      - name: Tools
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg python3-numpy python3-pil
+      - name: Download assets
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p build && touch build/.gdignore
+          python3 tools/fetch_assets.py all 2>&1 | tee build/assets-log.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assets
+          path: |
+            assets/downloaded
+            assets/sounds
+            build/CREDITS_AUTO.md
+          if-no-files-found: error
+      - name: Publish reports
+        if: always()
+        run: |
+          mkdir -p build
+          for f in build/assets-log.txt build/textures_contact.jpg build/sounds_report.txt build/textures_chosen.json; do
+            [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+          ls -la assets/sounds assets/downloaded/tex 2>/dev/null | head -80
+
+  # ---------------------------------------------------------------- the house, built in Blender
+  map:
+    needs: init
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender
+          blender --version | head -2
+      - name: Layout and Blender build
+        run: |
+          mkdir -p build map_out
+          python3 tools/maze.py map_out/layout.json 11
+          blender -b -noaudio -P tools/build_map.py -- map_out/layout.json map_out 2>&1 | tee build/map-log.txt
+          ls -la map_out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: map
+          path: |
+            map_out/maze.glb
+            map_out/meta.json
+            map_out/layout.json
+            map_out/chaya_map.blend
+          if-no-files-found: error
+      - name: Publish log
+        if: always()
+        run: |
+          [ -f build/map-log.txt ] && gh release upload chaya-ci build/map-log.txt -R "$GITHUB_REPOSITORY" --clobber || true
+
+  # ---------------------------------------------------------------- Godot import, preview shots, Android export, release
+  apk:
+    needs: [assets, map]
+    if: ${{ !contains(github.event.head_commit.message, '[probe]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: assets
+          path: .
+      - uses: actions/download-artifact@v4
+        with:
+          name: map
+          path: assets/map
+      - name: Godot and export templates
+        run: |
+          mkdir -p ~/godot build && touch build/.gdignore
+          cd ~/godot
+          B=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}
+          curl -fsSL -o godot.zip $B/Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          curl -fsSL -o tpz.zip $B/Godot_v${GODOT_VERSION}_export_templates.tpz
+          unzip -q godot.zip && chmod +x Godot_v${GODOT_VERSION}_linux.x86_64
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION/-/.}
+          unzip -q tpz.zip && mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION/-/.}/
+          ln -sf ~/godot/Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot 2>/dev/null || sudo ln -sf ~/godot/Godot_v${GODOT_VERSION}_linux.x86_64 /usr/local/bin/godot
+          ls ~/.local/share/godot/export_templates/*/ | head -30
+      - name: Import project (twice, VRAM-compress the textures in between)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1 libegl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxrandr2 libxi6 libasound2t64 libfontconfig1 libpulse0 python3-pil
+          godot --headless --path . --import 2>&1 | tail -5 || true
+          python3 tools/patch_imports.py assets/downloaded
+          godot --headless --path . --import 2>&1 | tail -5 || true
+          godot --headless --path . --quit 2>&1 | grep -E "SCRIPT ERROR|Parse Error|ERROR" | head -20 || true
+      - name: Preview screenshots (software GL, for the release page)
+        continue-on-error: true
+        run: |
+          mkdir -p shots
+          export CHAYA_SHOTS=$PWD/shots
+          timeout 420 xvfb-run -a -s "-screen 0 1600x720x24" godot --rendering-driver opengl3 --resolution 1600x720 --path . game/game.tscn 2>&1 | tee build/shots-log.txt | grep -E "SCRIPT ERROR|ERROR: .*gd|Parse Error|Invalid|Nonexistent" | head -40 || true
+          ls -la shots
+          for f in shots/*.png; do [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
+      - name: Android SDK and signing key
+        run: |
+          export SDK=${ANDROID_HOME:-/usr/local/lib/android/sdk}
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
+          $SDK/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;35.0.1" "platforms;android-35" >/dev/null 2>&1 || true
+          ls $SDK/build-tools $SDK/platforms
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.6.tres <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$SDK"
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          EOT
+          sed -i 's/^          //' ~/.config/godot/editor_settings-4.6.tres
+          cat ~/.config/godot/editor_settings-4.6.tres
+          if [ -n "$KEYSTORE_B64" ]; then echo "$KEYSTORE_B64" | base64 -d > $RUNNER_TEMP/chaya.keystore; else
+            $JAVA_HOME_17_X64/bin/keytool -genkeypair -keystore $RUNNER_TEMP/chaya.keystore -alias chaya -keyalg RSA -keysize 2048 \
+              -validity 36500 -storepass chayamxyan -keypass chayamxyan -dname "CN=mxyan games, O=mxyan games, C=IN"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.CHAYA_KEYSTORE_B64 }}
+      - name: Export APK
+        run: |
+          sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/; s/^version\/name=.*/version\/name=\"1.${GITHUB_RUN_NUMBER}\"/" export_presets.cfg
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/chaya.keystore
+          export GODOT_ANDROID_KEYSTORE_RELEASE_USER=chaya
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=chayamxyan
+          godot --headless --path . --export-release Android build/Chaya.apk 2>&1 | tee build/export-log.txt | tail -40
+          ls -la build/Chaya.apk
+      - name: Publish release
+        run: |
+          TAG=chaya-v${GITHUB_RUN_NUMBER}
+          cp build/Chaya.apk build/Chaya-v${GITHUB_RUN_NUMBER}.apk
+          cat > notes.md <<EOT
+          # Chaya (build ${GITHUB_RUN_NUMBER}) - by mxyan games
+
+          Download **Chaya-v${GITHUB_RUN_NUMBER}.apk** below and install it on your Android phone (allow "install unknown apps" once).
+
+          - Controls: joystick (left), run button (right), drag the right side of the screen to look.
+          - Find all six pooja items - kalash, diya, coconut, kumkum, kapoor, gangajal - and place them on the altar in the pooja room to destroy Chaya for good.
+          - Sensitivity can be changed in Settings.
+
+          ## Credits
+          Every sound is a real recording (nothing is AI generated); textures are photographic CC0 scans.
+          Full list: CREDITS.md attached to this release.
+          EOT
+          sed -i 's/^          //' notes.md
+          { echo "# Chaya - credits and licences"; echo; echo "Game by mxyan games."; echo; cat build/CREDITS_AUTO.md; } > CREDITS.md
+          ASSETS="build/Chaya-v${GITHUB_RUN_NUMBER}.apk CREDITS.md"
+          [ -f assets/map/chaya_map.blend ] && ASSETS="$ASSETS assets/map/chaya_map.blend"
+          for f in shots/*.png; do [ -f "$f" ] && ASSETS="$ASSETS $f"; done
+          gh release create "$TAG" $ASSETS -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Chaya v1.${GITHUB_RUN_NUMBER}" --notes-file notes.md
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+      - name: Publish logs
+        if: always()
+        run: |
+          for f in build/export-log.txt build/shots-log.txt; do [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
