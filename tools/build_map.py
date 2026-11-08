@@ -135,7 +135,7 @@ if DO_BAKE:
             pass
         try:
             scene.world = bpy.data.worlds.new("w")
-            scene.world.light_settings.distance = 1.8
+            scene.world.light_settings.distance = 0.9
         except Exception as e:      # noqa: BLE001
             print("AO distance not set:", e)
         for ob in blender_objs:
@@ -167,7 +167,7 @@ if baked:
         attr.data.foreach_get("color", arr)
         arr = arr.reshape(-1, 4)
         ao = np.clip(arr[:, :3].mean(axis=1), 0.0, 1.0)
-        ao = 0.25 + 0.75 * ao ** 0.8
+        ao = 0.42 + 0.58 * ao ** 0.7
         arr[:, 0] = arr[:, 1] = arr[:, 2] = ao
         arr[:, 3] = 1.0
         attr.data.foreach_set("color", arr.reshape(-1))

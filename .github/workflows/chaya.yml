@@ -137,14 +137,6 @@ jobs:
           python3 tools/patch_imports.py assets/downloaded
           godot --headless --path . --import 2>&1 | tail -5 || true
           godot --headless --path . --quit 2>&1 | grep -E "SCRIPT ERROR|Parse Error|ERROR" | head -20 || true
-      - name: Preview screenshots (software GL, for the release page)
-        continue-on-error: true
-        run: |
-          mkdir -p shots
-          export CHAYA_SHOTS=$PWD/shots
-          timeout 420 xvfb-run -a -s "-screen 0 1600x720x24" godot --rendering-driver opengl3 --resolution 1600x720 --path . game/game.tscn 2>&1 | tee build/shots-log.txt | grep -E "SCRIPT ERROR|ERROR: .*gd|Parse Error|Invalid|Nonexistent" | head -40 || true
-          ls -la shots
-          for f in shots/*.png; do [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
       - name: Android SDK and signing key
         run: |
           export SDK=${ANDROID_HOME:-/usr/local/lib/android/sdk}
@@ -196,9 +188,16 @@ jobs:
           { echo "# Chaya - credits and licences"; echo; echo "Game by mxyan games."; echo; cat build/CREDITS_AUTO.md; } > CREDITS.md
           ASSETS="build/Chaya-v${GITHUB_RUN_NUMBER}.apk CREDITS.md"
           [ -f assets/map/chaya_map.blend ] && ASSETS="$ASSETS assets/map/chaya_map.blend"
-          for f in shots/*.png; do [ -f "$f" ] && ASSETS="$ASSETS $f"; done
           gh release create "$TAG" $ASSETS -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Chaya v1.${GITHUB_RUN_NUMBER}" --notes-file notes.md
           echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+      - name: Preview screenshots (software GL, for the release page)
+        continue-on-error: true
+        run: |
+          mkdir -p shots
+          export CHAYA_SHOTS=$PWD/shots
+          timeout 300 xvfb-run -a -s "-screen 0 1600x720x24" godot --rendering-driver opengl3 --resolution 1600x720 --path . game/game.tscn 2>&1 | tee build/shots-log.txt | grep -E "SCRIPT ERROR|ERROR: .*gd|Parse Error|Invalid|Nonexistent" | head -40 || true
+          ls -la shots
+          for f in shots/*.png; do [ -f "$f" ] && gh release upload "chaya-v${GITHUB_RUN_NUMBER}" "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
       - name: Publish logs
         if: always()
         run: |
