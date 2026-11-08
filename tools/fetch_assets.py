@@ -304,9 +304,10 @@ OK_LICENSE = re.compile(r"^(cc0|cc[- ]zero|public domain|pd|cc[- ]by(?![- ]nc)|c
 SOUNDS = {
     "ambient":       dict(q=["wind ambience", "night ambience", "wind howling", "wind blowing", "empty room tone", "atmosphere ambience"],
                           req=["wind", "ambien", "night", "atmos", "drone", "room"], ban=["music", "song", "voice", "speech"], dur=(15, 600), out=45, loop=True, gain=-4),
-    "heartbeat":     dict(q=["heartbeat", "human heartbeat", "heart beat sound"], req=["heart"], ban=["music", "song", "ecg", "monitor"], dur=(4, 300), out=12, loop=True),
+    "heartbeat":     dict(q=["heartbeat sound", "heartbeat", "heart beat", "human heartbeat recording", "stethoscope heartbeat", "heart sounds"],
+                          req=["heartbeat", "heart beat", "heart_beat", "herzschlag", "heart sound"], ban=["act", "protection", "music", "song", "ecg", "monitor", "bill", "law", "rokita"], dur=(4, 300), out=12, loop=True),
     "footstep":      dict(q=["footsteps wooden floor", "footsteps on wood", "walking on wooden floor", "footsteps", "footstep"],
-                          req=["foot", "step", "walk"], ban=["music", "song", "snow", "gravel", "grass", "stairs"], dur=(2, 300), out=0.55, steps=5),
+                          req=["foot", "step", "walk"], ban=["music", "song", "snow", "gravel", "grass", "stairs", "scream", "growl", "creepy", "run", "horse"], dur=(2, 300), out=0.55, steps=5),
     "door_open":     dict(q=["door creak", "door creaking", "creaky door", "door opening", "wooden door open"], req=["door", "creak"], ban=["music", "song", "bell", "slam", "knock"], dur=(0.8, 60), out=3.5),
     "door_close":    dict(q=["door close", "door closing", "door slam", "wooden door shut"], req=["door"], ban=["music", "song", "bell", "knock"], dur=(0.3, 60), out=2.0),
     "door_locked":   dict(q=["locked door handle", "door handle rattle", "door knob rattle", "door locked", "door handle"], req=["door", "handle", "knob", "lock", "rattle"], ban=["music", "song", "bell", "slam"], dur=(0.3, 60), out=2.0),
@@ -314,20 +315,22 @@ SOUNDS = {
     "knock":         dict(q=["knock on door", "knocking on wood", "door knock", "knocking"], req=["knock"], ban=["music", "song"], dur=(0.5, 60), out=3.0),
     "whisper_far":   dict(q=["whisper", "whispering", "whispers", "woman whispering"], req=["whisper"], ban=["music", "song"], dur=(1, 120), out=6.0, gain=-3),
     "distant_cry":   dict(q=["woman crying", "crying", "weeping", "sobbing", "female scream distant", "scream"], req=["cry", "weep", "sob", "scream", "wail"], ban=["music", "song", "baby", "child", "kid"], dur=(1, 120), out=6.0),
-    "ghost_whisper": dict(q=["whispering", "whispers", "whisper crowd", "murmur voices", "whisper"], req=["whisper", "murmur"], ban=["music", "song"], dur=(8, 600), out=30, loop=True, gain=-6),
-    "jumpscare":     dict(q=["woman screaming", "female scream", "scream", "screaming woman", "horror scream"], req=["scream", "shriek", "yell"], ban=["music", "song", "baby", "child", "kid", "man "], dur=(0.6, 60), out=3.0, gain=2),
-    "spotted":       dict(q=["gasp", "sharp inhale", "scream short", "female gasp", "shriek"], req=["gasp", "inhale", "scream", "shriek", "breath"], ban=["music", "song", "baby", "child"], dur=(0.3, 30), out=1.6),
-    "pickup":        dict(q=["small bell", "hand bell", "bell ring", "bell chime", "singing bowl", "tibetan bell"], req=["bell", "chime", "bowl"], ban=["music", "song", "church", "tower", "alarm"], dur=(0.5, 60), out=2.4, gain=-2),
-    "bell":          dict(q=["temple bell", "Indian temple bell", "ghanta bell", "puja bell", "hand bell ringing", "bell"], req=["bell", "ghant", "gong"], ban=["music", "song", "church", "alarm"], dur=(1, 120), out=5.0),
+    "ghost_whisper": dict(q=["whispering", "whispers", "whisper crowd", "murmur voices", "whisper"], req=["whisper", "murmur"], ban=["music", "song", "woodward", "only whispering"], dur=(8, 600), out=30, loop=True, gain=-6),
+    "jumpscare":     dict(q=["woman screaming", "female scream", "scream", "screaming woman", "horror scream", "shriek"], req=["scream", "shriek", "yell"], ban=["music", "song", "baby", "child", "kid", "man ", "uvb", "radio"], dur=(0.6, 60), out=3.0, gain=2),
+    "spotted":       dict(q=["gasp", "gasping", "sharp breath", "female gasp", "gasp of fear", "shriek"], req=["gasp", "inhale", "shriek", "breath"], ban=["music", "song", "baby", "child", "gasper"], dur=(0.3, 30), out=1.6),
+    "pickup":        dict(q=["singing bowl", "tingsha", "small bell", "hand bell", "bell chime", "tibetan bell"], req=["bell", "chime", "bowl", "tingsha"], ban=["music", "song", "church", "tower", "alarm", "bicycle", "bike", "door", "school", "cow"], dur=(0.5, 60), out=2.4, gain=-2),
+    "bell":          dict(q=["Hindu temple bell", "temple bell India", "ghanta", "puja bell", "aarti bell", "brass bell", "hand bell ringing"], req=["bell", "ghant", "ganta"],
+                          ban=["music", "song", "church", "alarm", "protestant", "cathedral", "carillon", "chime", "tower", "bicycle", "school", "cow", "door"], dur=(1, 120), out=5.0),
     "ritual_chant":  dict(q=["Om chanting", "Hindu chanting", "mantra chanting", "Vedic chant", "Gayatri mantra", "bhajan", "Sanskrit chant", "Hare Krishna chant", "chanting"],
                           req=["chant", "mantra", "om ", "om_", "vedic", "gayatri", "sloka", "shloka", "stotra", "bhajan", "kirtan", "aarti", "arati", "hymn"], ban=["gregorian", "christian"], dur=(10, 900), out=40, loop=True, gain=-2),
     "ritual_end":    dict(q=["thunder", "thunderclap", "thunder crack", "explosion distant", "whoosh"], req=["thunder", "explosion", "whoosh", "blast", "boom"], ban=["music", "song"], dur=(1, 120), out=6.0),
-    "fire":          dict(q=["fire crackling", "campfire", "fireplace", "burning wood", "fire"], req=["fire", "flame", "burn", "crackl"], ban=["music", "song", "alarm", "truck", "engine", "siren"], dur=(8, 900), out=25, loop=True, gain=-4),
+    "fire":          dict(q=["fire crackling", "campfire", "fireplace", "burning wood", "fire"], req=["fire", "flame", "burn", "crackl"], ban=["music", "song", "alarm", "truck", "engine", "siren", "bones", "ice", "breaking", "gun"], dur=(8, 900), out=25, loop=True, gain=-4),
     "menu_music":    dict(q=["tanpura", "tambura drone", "dark ambient drone", "drone", "sitar"], req=["tanpura", "tambura", "drone", "sitar", "ambient"], ban=["song"], dur=(15, 900), out=50, loop=True, gain=-3),
     "menu_start":    dict(q=["gong", "temple gong", "door slam heavy", "big gong"], req=["gong", "slam"], ban=["music", "song"], dur=(1, 60), out=4.0),
-    "ui_click":      dict(q=["button click", "click", "switch click", "mouse click", "light switch"], req=["click", "switch", "button", "tick"], ban=["music", "song", "double"], dur=(0.05, 5), out=0.4),
+    "ui_click":      dict(q=["click sound", "button click", "switch click", "light switch", "mouse click", "click"], req=["click", "switch"], ban=["music", "song", "double", "kragen"], dur=(0.05, 5), out=0.4),
 }
 SR = 44100
+GLOBAL_BAN = re.compile(r"^file:(ll-|[a-z]{2,3}(-[a-z]{2,4})?-)|speech|interview|lecture|podcast|senator|congress|c-span|parliament|news|uvb|album| - 0\d|pronunciation", re.I)
 
 
 def commons_search(q, limit=40):
@@ -430,6 +433,34 @@ def cut_steps(x, count, length):
     return out
 
 
+def layer_whispers(x, out_path, seconds=24.0, layers=9):
+    """A dense, distant whisper bed made only from the real whisper recording: time-shifted, slightly re-pitched
+    copies, low-passed and smeared with a simple room echo."""
+    rng = np.random.default_rng(7)
+    n = int(seconds * SR)
+    bed = np.zeros(n + SR * 4, np.float32)
+    x = trim_silence(x)
+    for k in range(layers):
+        rate = rng.uniform(0.82, 1.08)
+        idx = np.arange(0, len(x) - 1, rate)
+        y = np.interp(idx, np.arange(len(x)), x).astype(np.float32)
+        if rng.random() < 0.5:
+            y = y[::-1].copy()      # reversed copies blur the words
+        for _ in range(3):
+            start = int(rng.uniform(0, n))
+            seg = y * rng.uniform(0.25, 0.8)
+            end = min(len(bed), start + len(seg))
+            bed[start:end] += seg[: end - start]
+    # one-pole low-pass + a couple of echoes
+    a = 0.18
+    for i in range(1, len(bed)):
+        bed[i] = bed[i - 1] + a * (bed[i] - bed[i - 1])
+    for d, g in ((int(0.083 * SR), 0.45), (int(0.21 * SR), 0.3), (int(0.47 * SR), 0.18)):
+        bed[d:] += bed[:-d] * g
+    bed = make_loop(bed[: n + SR], 1.0)
+    encode(normalise(bed, -6.0), out_path)
+
+
 def sounds():
     tmp = tempfile.mkdtemp(prefix="chaya_snd_")
     report = []
@@ -452,7 +483,7 @@ def sounds():
                     continue
                 if not OK_LICENSE.match(r["lic"] or ""):
                     continue
-                if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]):
+                if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]) or GLOBAL_BAN.search(t):
                     continue
                 if not (6000 < r["size"] < 25_000_000) or r["mime"] not in ("audio/ogg", "audio/wav", "audio/x-wav", "audio/flac", "audio/mpeg", "application/ogg", "audio/x-flac", "audio/mp3"):
                     continue
@@ -494,6 +525,13 @@ def sounds():
         if not done:
             report.append("%-14s <- NOTHING FOUND" % name)
             log("sound", name, "NOTHING FOUND")
+    gw, wf = os.path.join(OUT_SND, "ghost_whisper.ogg"), os.path.join(OUT_SND, "whisper_far.ogg")
+    if not os.path.exists(gw) and os.path.exists(wf):
+        try:
+            layer_whispers(decode(wf), gw)
+            report.append("ghost_whisper  <- layered from the whisper_far recording")
+        except Exception as e:      # noqa: BLE001
+            log("layering failed", e)
     open(os.path.join(BUILD, "sounds_report.txt"), "w").write("\n".join(report) + "\n")
     # fall backs so the game is never silent for something important
     for a, b in (("door_locked", "door_close"), ("spotted", "jumpscare"), ("menu_sting", "spotted"), ("whisper_far", "ghost_whisper"),
