@@ -362,8 +362,14 @@ def decode(path):
     return np.frombuffer(raw, dtype=np.float32).copy()
 
 
+LEVELS = {}
+
+
 def encode(x, out_path, stereo=False):
     x = np.clip(x, -1.0, 1.0)
+    if len(x):
+        LEVELS[os.path.basename(out_path)] = (20 * np.log10(float(np.sqrt(np.mean(x.astype(np.float64) ** 2))) + 1e-9),
+                                              20 * np.log10(float(np.max(np.abs(x))) + 1e-9), len(x) / SR)
     pcm = (x * 32767).astype("<i2")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     tmp = out_path + ".tmp.wav"
@@ -403,10 +409,22 @@ def make_loop(x, cross=1.0):
     return head
 
 
-def normalise(x, gain_db=0.0, peak=0.89):
-    m = float(np.max(np.abs(x)) or 1.0)
-    x = x / m * peak
-    return x * (10 ** (gain_db / 20.0))
+def normalise(x, gain_db=0.0, target_db=-16.0):
+    """Loudness-normalise (RMS of the active 50 ms windows) and softly limit the peaks, so every sound is clearly
+    audible on a phone speaker. gain_db is relative to the -16 dBFS target."""
+    x = np.asarray(x, dtype=np.float32)
+    if len(x) == 0:
+        return x
+    w = int(0.05 * SR)
+    n = len(x) // w
+    if n >= 2:
+        e = (x[: n * w].astype(np.float64) ** 2).reshape(n, w).mean(axis=1)
+        keep = e >= max(float(np.percentile(e, 30)), float(e.max()) * 1e-5)
+        rms = float(np.sqrt(np.median(e[keep])))      # typical loudness: one loud bang can't make the rest quiet
+    else:
+        rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
+    y = x * (10 ** ((target_db + gain_db) / 20.0) / (rms + 1e-9))
+    return (np.tanh(y / 0.9) * 0.9).astype(np.float32)
 
 
 def cut_steps(x, count, length):
@@ -584,6 +602,8 @@ def sounds():
             report.append("spotted        <- the jumpscare scream, pitched down with an echo")
         except Exception as e:      # noqa: BLE001
             log("shriek failed", e)
+    report.append("")
+    report += ["%-22s rms %6.1f dBFS  peak %5.1f dBFS  %5.1fs" % (k, *v) for k, v in sorted(LEVELS.items())]
     open(os.path.join(BUILD, "sounds_report.txt"), "w").write("\n".join(report) + "\n")
     # fall backs so the game is never silent for something important
     for a, b in (("door_locked", "door_close"), ("spotted", "jumpscare"), ("whisper_far", "ghost_whisper"),

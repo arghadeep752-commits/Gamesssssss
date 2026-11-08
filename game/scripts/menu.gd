@@ -28,7 +28,9 @@ func _ready() -> void:
 	font = load(FONT_TITLE) if ResourceLoader.exists(FONT_TITLE) else ThemeDB.fallback_font
 	_build_scene()
 	_build_ui()
-	Sfx.loop_on("menu_music", self, -4.0) if Sfx.has("menu_music") else Sfx.loop_on("ambient", self, -6.0)
+	# a drone plus the real night ambience (the drone alone is too deep for phone speakers)
+	Sfx.loop_on("menu_music", self, -2.0)
+	Sfx.loop_on("ambient", self, -6.0)
 
 func _tiled(mat_name: String, tile: float) -> StandardMaterial3D:
 	var m := Mats.get_material(mat_name).duplicate() as StandardMaterial3D
