@@ -250,13 +250,13 @@ namespace GridProto.EditorTools
             // the door: a panel on a hinge at the left edge of the opening (seen from outside)
             Transform hinge = new GameObject("Door Hinge").transform;
             hinge.SetParent(room, false);
-            hinge.position = new Vector3(-doorHalf + 0.02f, 0.012f, zf);
+            hinge.position = new Vector3(-doorHalf + 0.02f, 0.05f, zf);   // just above the threshold and the floor slab
             hinge.gameObject.layer = L;
             var hingeBody = hinge.gameObject.AddComponent<Rigidbody>();
             hingeBody.isKinematic = true;
             hingeBody.useGravity = false;
 
-            const float panelW = 1.06f, panelH = 2.17f, panelT = 0.045f;
+            const float panelW = 1.06f, panelH = 2.12f, panelT = 0.045f;
             Mesh panelMesh = SaveMesh(MeshGen.Box("door_panel", new Vector3(panelW, panelH, panelT), Vector3.zero, 1f));
             GameObject panel = MakeRenderer("Door", panelMesh, matDoor, Vector3.zero, 0f, hinge);
             panel.transform.localPosition = new Vector3(panelW * 0.5f, panelH * 0.5f, 0f);

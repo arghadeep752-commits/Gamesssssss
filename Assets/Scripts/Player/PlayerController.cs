@@ -175,7 +175,7 @@ namespace GridProto
             bobWeight = Mathf.Lerp(bobWeight, targetWeight, 1f - Mathf.Exp(-9f * dt));
 
             // one footstep every half bob cycle; stride length sets the rhythm
-            float stride = crouching ? 0.55f : (IsRunning ? 1.05f : 0.78f);
+            float stride = crouching ? 0.75f : (IsRunning ? 1.75f : 1.25f);   // ~2.5 steps/s walking, ~3.2 running
             if (grounded && speed > 0.15f)
             {
                 float before = bobPhase;
