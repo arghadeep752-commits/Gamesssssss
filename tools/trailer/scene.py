@@ -1071,8 +1071,8 @@ for k, (fl, li) in enumerate(flames3):
 for f in range(f0, f1 + 1):
     t = (f - f0) / (f1 - f0)
     a = math.radians(212 + 64 * t)
-    rad = 2.15 - 0.3 * t
-    pos = altar + Vector((math.cos(a) * rad, math.sin(a) * rad, 0.5 + 0.3 * t))
+    rad = 2.0 - 0.3 * t
+    pos = altar + Vector((math.cos(a) * rad, math.sin(a) * rad, 1.0 + 0.3 * t))
     tgt = altar + Vector((0, 0.05, 0.16))
     aim(c3, f, pos, tgt)
     key_focus(c3, f, (tgt - pos).length)
@@ -1224,8 +1224,8 @@ bpy.ops.mesh.primitive_plane_add(size=14, location=TT + Vector((0, 0, 0.69)))
 bpy.context.active_object.data.materials.append(flat("title_floor", (0.018, 0.013, 0.011), 0.3))
 bpy.ops.mesh.primitive_plane_add(size=14, location=TT + Vector((0, 3.0, 4.0)), rotation=(math.radians(90), 0, 0))
 bpy.context.active_object.data.materials.append(flat("title_back", (0.01, 0.008, 0.008), 0.9))
-for k, (dx, e_) in enumerate(((-1.0, 30.0), (1.0, 30.0), (0.0, 20.0))):
-    flo = point("fire_%d" % k, TT + Vector((dx, -0.6, 0.75)), e_, (1.0, 0.42, 0.12), 0.25)
+for k, (dx, e_) in enumerate(((-1.1, 34.0), (1.1, 34.0), (0.0, 22.0))):        # off-screen fire, low in front
+    flo = point("fire_%d" % k, TT + Vector((dx, -0.9, 1.25)), e_, (1.0, 0.42, 0.12), 0.1)
     r_ = random.Random(90 + k)
     key_energy(flo, f0 - 1, 0.0)
     for f in range(f0, f1 + 1):
@@ -1299,10 +1299,10 @@ rs_.image_settings.color_depth = "8"
 rs_.filepath = "//frames/f_"
 cy = scene.cycles
 cy.device = "CPU"
-cy.samples = 24
+cy.samples = 20
 cy.use_adaptive_sampling = True
 cy.adaptive_threshold = 0.06
-cy.adaptive_min_samples = 10
+cy.adaptive_min_samples = 8
 cy.use_denoising = True
 for k_, v_ in (("denoiser", "OPENIMAGEDENOISE"), ("denoising_input_passes", "RGB_ALBEDO_NORMAL"), ("denoising_prefilter", "ACCURATE")):
     try:
