@@ -375,24 +375,67 @@ func _on_caught() -> void:
 	caught_flag = true
 	player.frozen = true
 	hud.reset_touches()
-	var to := ghost.global_position + Vector3(0, 1.55, 0) - (player.global_position + Vector3(0, player.EYE_HEIGHT, 0))
-	var yaw := rad_to_deg(atan2(-to.x, -to.z))
-	var pitch := rad_to_deg(atan2(to.y, Vector2(to.x, to.z).length()))
-	player.face(yaw, pitch)
-	player.flashlight.light_energy = 6.0
-	player.add_shake(3.0)
-	Sfx.play("jumpscare", 4.0)
-	hud.flash = 0.0
-	var tw := create_tween()
-	tw.tween_property(player.camera, "fov", 44.0, 0.25)
+	hud.hide_controls()
+	# 1. she is suddenly right in your face
+	var dir := ghost.global_position - player.global_position
+	dir.y = 0.0
+	if dir.length() < 0.05:
+		dir = -player.global_transform.basis.z
+	dir = dir.normalized()
+	ghost.global_position = player.global_position + dir * 0.95
+	ghost.jumpscare_mode(player.global_position)
+	await get_tree().process_frame
+	var eye := player.global_position + Vector3(0, player.EYE_HEIGHT, 0)
+	player.blackout = true                                  # the candle goes out
+	for l in lamps:
+		l["flick"] = 3.0                                    # every lamp in the house stutters
+	Sfx.play("jumpscare", 6.0)
+	Sfx.play("ritual_end", 4.0, 0.55)                       # deep boom under the scream
+	Sfx.play("spotted", 1.0, 0.75)
+	# harsh light from below her face, flashing
+	var scare := OmniLight3D.new()
+	scare.light_color = Color(1.0, 0.86, 0.8)
+	scare.omni_range = 2.2
+	scare.light_energy = 5.0
+	add_child(scare)
+	player.add_shake(4.5)
 	hud.danger = 1.0
-	await get_tree().create_timer(0.1).timeout
-	player.flicker_light(2.0)
-	await get_tree().create_timer(1.7).timeout
-	var tf := create_tween()
-	tf.tween_property(hud, "fade", 1.0, 0.7)
-	await tf.finished
-	await get_tree().create_timer(0.5).timeout
+	var zoom := create_tween()
+	zoom.tween_property(player.camera, "fov", 46.0, 0.17).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	var base_yaw: float = ghost.rotation.y
+	var t := 0.0
+	var next := 0.0
+	var on := true
+	while t < 1.6:
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		t += dt
+		# the lunge: keep HER FACE (not her feet) on a line to the eye, rushing from 0.95 m to 0.33 m
+		var k := clampf(t / 0.17, 0.0, 1.0)
+		var d := lerpf(0.95, 0.33, 1.0 - pow(1.0 - k, 4.0))
+		var off: Vector3 = ghost.face_center() - ghost.global_position
+		off.y = 0.0
+		ghost.global_position = player.global_position + dir * d - off
+		var face: Vector3 = ghost.face_center()
+		var to: Vector3 = face - eye
+		player.face(rad_to_deg(atan2(-to.x, -to.z)), rad_to_deg(atan2(to.y, Vector2(to.x, to.z).length())))
+		player.add_shake(3.0)
+		scare.global_position = face + (eye - face).normalized() * 0.2 + Vector3(0, -0.18, 0)
+		next -= dt
+		if next <= 0.0:
+			# strobe: her face flashes in and out of the dark, head jerking
+			on = not on if randf() > 0.15 else true
+			next = randf_range(0.035, 0.09)
+			scare.light_energy = randf_range(4.5, 7.0) if on else 0.0
+			ghost.rotation.y = base_yaw + randf_range(-0.12, 0.12)
+			ghost.rotation.z = randf_range(-0.07, 0.07)
+			hud.flash = randf_range(0.12, 0.3) if (on and randf() > 0.7) else 0.0
+	# 3. black
+	scare.light_energy = 0.0
+	hud.flash = 0.0
+	hud.fade = 1.0
+	Sfx.play("heartbeat", -2.0)
+	await get_tree().create_timer(1.6).timeout
 	get_tree().change_scene_to_file(MENU)
 
 # ------------------------------------------------------------------------------------------ the ritual

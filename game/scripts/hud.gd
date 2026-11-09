@@ -96,6 +96,9 @@ func _set_fade(v: float) -> void:
 	fade = v
 	if _fx_mat: _fx_mat.set_shader_parameter("fade", v)
 
+func hide_controls() -> void:
+	_layer.visible = false
+
 func reset_touches() -> void:
 	_joy_touch = -1
 	_run_touch = -1
@@ -149,13 +152,11 @@ func _update_joy(p: Vector2) -> void:
 
 func _draw_controls() -> void:
 	var active := _joy_touch != -1
-	# joystick: the orange ring and knob (player-supplied art) over a soft dark disc
-	_layer.draw_circle(_joy_base, JOY_R * 0.93, Color(0.0, 0.0, 0.0, 0.22))
-	var ring_a := 1.0 if active else 0.72
+	# joystick: the orange ring and knob (player-supplied art), see-through
+	var ring_a := 0.62 if active else 0.38
 	_layer.draw_texture_rect(_tex_ring, Rect2(_joy_base - Vector2(JOY_R, JOY_R), Vector2(JOY_R, JOY_R) * 2.0), false, Color(1, 1, 1, ring_a))
 	var kr := KNOB_R * (1.06 if active else 1.0)
-	_layer.draw_texture_rect(_tex_knob, Rect2(_joy_knob - Vector2(kr, kr), Vector2(kr, kr) * 2.0), false, Color(1, 1, 1, 1.0 if active else 0.85))
+	_layer.draw_texture_rect(_tex_knob, Rect2(_joy_knob - Vector2(kr, kr), Vector2(kr, kr) * 2.0), false, Color(1, 1, 1, 0.72 if active else 0.45))
 	# run button: the running woman in a saree
 	var rr := RUN_R * (0.93 if run_held else 1.0)
-	_layer.draw_circle(_run_center, rr * 0.95, Color(0.0, 0.0, 0.0, 0.38 if run_held else 0.24))
-	_layer.draw_texture_rect(_tex_run, Rect2(_run_center - Vector2(rr, rr), Vector2(rr, rr) * 2.0), false, Color(1, 1, 1, 1.0 if run_held else 0.8))
+	_layer.draw_texture_rect(_tex_run, Rect2(_run_center - Vector2(rr, rr), Vector2(rr, rr) * 2.0), false, Color(1, 1, 1, 0.7 if run_held else 0.42))

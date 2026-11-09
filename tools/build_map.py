@@ -219,23 +219,39 @@ def p_torus(parent, name, R, r, loc, material, rot=(0.0, 0.0, 0.0), seg=(32, 10)
 
 
 def p_lathe(parent, name, profile, loc, material, segments=40):
-    """Turned shape: profile = [(radius, z), ...] bottom to top, capped at both ends."""
-    verts, faces = [], []
+    """Turned shape: profile = [(radius, z), ...] bottom to top; triangle-fan caps and cylindrical UVs (so the
+    exporter can compute tangents)."""
+    verts, faces, uvs = [], [], []
     n = len(profile)
+    S1 = segments + 1                                    # one extra column so the UV seam is clean
     for (r, z) in profile:
-        for k in range(segments):
-            a = 2.0 * math.pi * k / segments
+        for k in range(S1):
+            a = 2.0 * math.pi * (k % segments) / segments
             verts.append((r * math.cos(a), r * math.sin(a), z))
     for i in range(n - 1):
         for k in range(segments):
-            k2 = (k + 1) % segments
-            faces.append((i * segments + k, i * segments + k2, (i + 1) * segments + k2, (i + 1) * segments + k))
-    faces.append(tuple(reversed(range(segments))))
-    faces.append(tuple(range((n - 1) * segments, n * segments)))
+            faces.append((i * S1 + k, i * S1 + k + 1, (i + 1) * S1 + k + 1, (i + 1) * S1 + k))
+    cb = len(verts)
+    verts.append((0.0, 0.0, profile[0][1]))
+    ct = len(verts)
+    verts.append((0.0, 0.0, profile[-1][1]))
+    for k in range(segments):
+        faces.append((cb, k + 1, k))
+        faces.append((ct, (n - 1) * S1 + k, (n - 1) * S1 + k + 1))
     me = bpy.data.meshes.new(name)
     me.from_pydata(verts, [], faces)
     me.update()
-    me.uv_layers.new(name="UVMap")
+    uv = me.uv_layers.new(name="UVMap")
+    circ = 2.0 * math.pi * max(r for r, _ in profile)
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            vi = me.loops[li].vertex_index
+            if vi >= cb:
+                uv.data[li].uv = (0.5, 0.5)
+            else:
+                k = vi % S1
+                uv.data[li].uv = (k / segments * circ * 2.0, verts[vi][2] * 2.0)
+    me.validate()
     ob = bpy.data.objects.new(name, me)
     ob.location = loc
     scene.collection.objects.link(ob)

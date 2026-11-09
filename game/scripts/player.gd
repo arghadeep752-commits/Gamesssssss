@@ -19,6 +19,8 @@ var candle_light: OmniLight3D
 var candle: Node3D
 var _candle_base := Vector3(0.2, -0.205, -0.38)
 var _t := 0.0
+var blackout := false                 # jumpscare: the candle is snuffed out
+var _flame_nodes: Array = []
 const CANDLE_E := 1.7
 const SPOT_E := 1.25
 const CANDLE_GLB := "res://assets/map/candle.glb"
@@ -136,6 +138,7 @@ func _build_candle() -> void:
 	flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	flame.position = anchor_pos
 	candle.add_child(flame)
+	_flame_nodes.append(flame)
 	var glow := MeshInstance3D.new()
 	var gq := QuadMesh.new()
 	gq.size = Vector2(0.12, 0.12)
@@ -147,6 +150,7 @@ func _build_candle() -> void:
 	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	glow.position = anchor_pos
 	candle.add_child(glow)
+	_flame_nodes.append(glow)
 	candle_light = OmniLight3D.new()
 	candle_light.light_color = Color(1.0, 0.6, 0.28)
 	candle_light.light_energy = CANDLE_E
@@ -264,6 +268,10 @@ func _physics_process(dt: float) -> void:
 	if _flicker > 0.0:
 		_flicker -= dt
 		gust = 0.25 + 0.75 * float(randf() > 0.4)
+	if blackout:
+		gust = 0.0
+	for f in _flame_nodes:
+		(f as Node3D).visible = not blackout
 	candle_light.light_energy = lerpf(candle_light.light_energy, CANDLE_E * fl * gust, clampf(dt * 18.0, 0.0, 1.0))
 	flashlight.light_energy = lerpf(flashlight.light_energy, SPOT_E * (0.92 + 0.08 * fl) * gust, clampf(dt * 18.0, 0.0, 1.0))
 	candle.position = _candle_base + Vector3(sin(_bob * 0.5) * 0.007, absf(sin(_bob)) * 0.009 - 0.004, 0.0)

@@ -8,6 +8,8 @@ const FONT_TITLE := "res://assets/downloaded/fonts/RozhaOne-Regular.ttf"       #
 const FONT_UI := "res://assets/downloaded/fonts/Rajdhani-Bold.ttf"              # Indian Type Foundry
 const FONT_UI_LIGHT := "res://assets/downloaded/fonts/Rajdhani-SemiBold.ttf"
 const FONT_DEV := "res://assets/downloaded/fonts/RozhaOne-Regular.ttf"
+const FONT_GAME := "res://assets/fonts/TheFriendlyIndians.ttf"                 # the game's own font (player-supplied)
+const LOGO := "res://assets/ui/logo_chaya.png"                                  # CHAYA drawn in Biro Script (image only)
 const FONT_FALLBACK := "res://assets/downloaded/fonts/Creepster-Regular.ttf"
 
 var cam: Camera3D
@@ -33,16 +35,20 @@ func _ready() -> void:
 	font = _font(FONT_TITLE, _font(FONT_FALLBACK, ThemeDB.fallback_font))
 	font_ui = _font(FONT_UI, font)
 	font_ui_light = _font(FONT_UI_LIGHT, font_ui)
-	# a little tracking makes the Rajdhani capitals look finished
-	var fv := FontVariation.new()
-	fv.base_font = font_ui
-	fv.spacing_glyph = 7
-	font_ui = fv
+	# The Friendly Indians is the game font; Rajdhani only fills in glyphs it lacks (like %)
+	if ResourceLoader.exists(FONT_GAME):
+		var ff = load(FONT_GAME)
+		if ff is FontFile:
+			(ff as FontFile).fallbacks = [font_ui]
+			var fv := FontVariation.new()
+			fv.base_font = ff
+			fv.spacing_glyph = 3
+			font = fv
+			font_ui = fv
+			font_ui_light = fv
 	_build_scene()
 	_build_ui()
-	# a drone plus the real night ambience (the drone alone is too deep for phone speakers)
-	Sfx.loop_on("menu_music", self, -2.0)
-	Sfx.loop_on("ambient", self, -11.0)
+	# no menu music (player request) - only the stings when the lights flicker
 	if OS.get_environment("CHAYA_MENU_SHOT") != "":
 		_menu_shots(OS.get_environment("CHAYA_MENU_SHOT"))
 
@@ -156,7 +162,7 @@ func _style(col: Color, border: Color, bw := 4) -> StyleBoxFlat:
 	s.content_margin_bottom = 14
 	return s
 
-func _button(text: String, size := 70) -> Button:
+func _button(text: String, size := 84) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(560, 124)
@@ -204,11 +210,16 @@ func _build_ui() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 22)
 	mm.add_child(col)
-	var title := _label("CHAYA", 210, RED)
-	col.add_child(title)
-	if ResourceLoader.exists(FONT_DEV):
-		var dv := _label("छाया", 80, Color(0.6, 0.02, 0.02), load(FONT_DEV))
-		col.add_child(dv)
+	if ResourceLoader.exists(LOGO):
+		var logo := TextureRect.new()
+		logo.texture = load(LOGO)
+		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		logo.custom_minimum_size = Vector2(800, 298)
+		logo.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		col.add_child(logo)
+	else:
+		col.add_child(_label("CHAYA", 210, RED))
 	var sp := Control.new()
 	sp.custom_minimum_size = Vector2(0, 14)
 	col.add_child(sp)
@@ -221,7 +232,7 @@ func _build_ui() -> void:
 	var fill := Control.new()
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(fill)
-	var dev := _label("mxyan games", 46, Color(0.75, 0.08, 0.08), font_ui_light)
+	var dev := _label("MXYAN GAMES", 50, Color(0.75, 0.08, 0.08), font_ui_light)
 	col.add_child(dev)
 
 	# settings panel
@@ -312,7 +323,7 @@ func _grabber_icon() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 func _update_sens_label() -> void:
-	_sens_label.text = "%d%%" % int(round(Settings.sensitivity * 100.0))
+	_sens_label.text = "%d" % int(round(Settings.sensitivity * 100.0))
 
 func _on_slider(v: float) -> void:
 	Settings.sensitivity = v
@@ -324,7 +335,7 @@ func _bump(d: float) -> void:
 	_slider.value = clampf(_slider.value + d, Settings.SENS_MIN, Settings.SENS_MAX)
 
 func _click() -> void:
-	Sfx.play("ui_click", -4.0)
+	pass          # buttons are silent (player request)
 
 func _on_settings() -> void:
 	_click()
@@ -341,7 +352,6 @@ func _on_start() -> void:
 		return
 	_starting = true
 	_click()
-	Sfx.play("menu_start", -2.0)
 	var tw := create_tween()
 	tw.tween_property(fade, "color:a", 1.0, 0.9)
 	await tw.finished
@@ -360,13 +370,13 @@ func _process(dt: float) -> void:
 		_flick -= dt
 	_next_event -= dt
 	if _next_event <= 0.0:
-		_next_event = randf_range(8.0, 14.0)
+		_next_event = randf_range(12.0, 20.0)
 		_flick = 0.9
 		_step = (_step + 1) % 6
 		# every flicker she is a little closer
 		var z := -10.0 + float(_step) * 1.5
 		get_tree().create_timer(0.7).timeout.connect(func(): ghost.global_position = Vector3(0, 0, z))
-		Sfx.play("menu_sting", -8.0)
+		Sfx.play("menu_sting", -12.0)
 
 func _menu_shots(dir: String) -> void:
 	# build check only: screenshots of the menu and the settings screen

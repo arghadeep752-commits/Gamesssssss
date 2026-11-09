@@ -445,6 +445,28 @@ func show_only() -> void:
 func enrage() -> void:
 	enraged = true
 
+func jumpscare_mode(face_point: Vector3) -> void:
+	# stop, turn to the player, eyes blazing
+	active = false
+	velocity = Vector3.ZERO
+	var d := face_point - global_position
+	_yaw = atan2(-d.x, -d.z)
+	rotation.y = _yaw
+	for e in _eye_glow:
+		(e as Node3D).visible = true
+		(e as Node3D).scale = Vector3.ONE * 1.8
+	for m in _body_mats:
+		(m as ShaderMaterial).set_shader_parameter("rim_power", 1.3)
+	_play("idle", 1.6)          # upright pose: her face stays where we frame it
+
+func face_center() -> Vector3:
+	if _eye_glow.size() > 0:
+		var c := Vector3.ZERO
+		for e in _eye_glow:
+			c += (e as Node3D).global_position
+		return c / float(_eye_glow.size())
+	return global_position + Vector3(0, 1.55, 0)
+
 # ------------------------------------------------------------------------------------------ AI
 
 func _eye_pos() -> Vector3:
