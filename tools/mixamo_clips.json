@@ -1,0 +1,11 @@
+{
+  "about": "Chaya's Mixamo clips. key = the name the game uses; names = Mixamo animation names to try, in order; inplace = tick Mixamo's 'In Place'. character: Mixamo character id to export with (empty = the account's current character, else Y Bot).",
+  "character": "",
+  "clips": [
+    {"key": "idle", "names": ["Zombie Idle"], "inplace": false},
+    {"key": "walk", "names": ["Zombie Walk"], "inplace": true},
+    {"key": "run", "names": ["Zombie Running", "Zombie Run"], "inplace": true},
+    {"key": "scream", "names": ["Zombie Scream"], "inplace": false},
+    {"key": "attack", "names": ["Zombie Attack", "Zombie Neck Bite", "Zombie Punching"], "inplace": false}
+  ]
+}

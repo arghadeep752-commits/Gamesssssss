@@ -1,0 +1,31 @@
+name: Chaya - Mixamo clips
+
+# Downloads Chaya's animations from Mixamo with the developer's own (short-lived) Mixamo token, keeps them in a
+# private draft release and starts the game build, which fits them onto Chaya. See tools/mixamo_fetch.py.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chaya]
+    paths:
+      - "tools/mixamo_fetch.py"
+      - "tools/mixamo_clips.json"
+      - ".github/workflows/chaya-mixamo.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MIXAMO_TOKEN: ${{ secrets.MIXAMO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the clips from Mixamo
+        run: python3 tools/mixamo_fetch.py mixamo_out
+      - name: Show what was fetched
+        if: always()
+        run: ls -la mixamo_out 2>/dev/null; cat mixamo_out/clips.json 2>/dev/null || true

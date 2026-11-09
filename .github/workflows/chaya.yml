@@ -8,6 +8,9 @@ on:
       - ".github/workflows/chaya-logo.yml"
       - "tools/trailer/**"
       - ".github/workflows/chaya-trailer.yml"
+      - "tools/mixamo_fetch.py"
+      - "tools/mixamo_clips.json"
+      - ".github/workflows/chaya-mixamo.yml"
   workflow_dispatch:
 
 permissions:
