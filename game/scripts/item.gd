@@ -17,6 +17,9 @@ func _ready() -> void:
 	_light.light_energy = 1.3
 	_light.omni_range = 3.4
 	_light.omni_attenuation = 1.4
+	_light.distance_fade_enabled = true
+	_light.distance_fade_begin = 10.0
+	_light.distance_fade_length = 2.0
 	_light.position = Vector3(0, 0.35, 0)
 	add_child(_light)
 	var p := CPUParticles3D.new()

@@ -67,13 +67,13 @@ func _build_environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0, 0, 0)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.32, 0.26, 0.24)
-	env.ambient_light_energy = 0.3
+	env.ambient_light_color = Color(0.36, 0.29, 0.25)
+	env.ambient_light_energy = 0.45      # a little brighter (player request)
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.03, 0.025, 0.025)
-	env.fog_density = 0.05
+	env.fog_density = 0.038
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.0
+	env.tonemap_exposure = 1.1
 	env.adjustment_enabled = true
 	env.adjustment_contrast = 1.1
 	env.adjustment_saturation = 0.88
@@ -97,6 +97,7 @@ func _build_map() -> void:
 	map = ps.instantiate()
 	add_child(map)
 	_apply_mats(map)
+	_setup_props(map)
 	# doors
 	for info in meta["doors"]:
 		var node := map.find_child(info["name"], true, false)
@@ -162,11 +163,42 @@ func _box(parent: StaticBody3D, center: Vector3, size: Vector3) -> void:
 	cs.position = center
 	parent.add_child(cs)
 
+func _setup_props(map: Node) -> void:
+	# Blender-made furniture: textured wood/clay/brass with world-space (triplanar) mapping
+	var tri := {}
+	for node in map.get_children():
+		if not String(node.name).begins_with("prop_"):
+			continue
+		for n in node.find_children("*", "MeshInstance3D", true, false):
+			var mi := n as MeshInstance3D
+			for i in range(mi.mesh.get_surface_count()):
+				var m = mi.get_surface_override_material(i)
+				if m is StandardMaterial3D and (m as StandardMaterial3D).albedo_texture != null:
+					var key: int = m.get_instance_id()
+					if not tri.has(key):
+						var t := (m as StandardMaterial3D).duplicate() as StandardMaterial3D
+						t.uv1_triplanar = true
+						t.uv1_world_triplanar = true
+						t.uv1_scale = Vector3.ONE * 1.4
+						t.vertex_color_use_as_albedo = false
+						tri[key] = t
+					mi.set_surface_override_material(i, tri[key])
+
 func _build_collisions() -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
 	add_child(body)
+	# furniture (props stand against walls, rotated in 90 degree steps)
+	for pr in meta.get("props", []):
+		var yaw := deg_to_rad(float(pr["yaw"]))
+		var w := float(pr["size"][0])
+		var d := float(pr["size"][1])
+		var h := float(pr["h"])
+		var back := float(pr.get("back", 0.45))
+		var c := Vector3(float(pr["pos"][0]), 0.0, float(pr["pos"][1])) + Basis(Vector3.UP, yaw) * Vector3(0.0, h / 2.0, d / 2.0 - back)
+		var sz := Vector3(w, h, d) if absf(sin(yaw)) < 0.5 else Vector3(d, h, w)
+		_box(body, c, sz)
 	var T := float(L["wall_t"])
 	var H := float(L["wall_h"])
 	var S := float(L["cell"])
@@ -205,12 +237,15 @@ func _build_lights() -> void:
 	for l in L["lights"]:
 		var o := OmniLight3D.new()
 		o.light_color = Color(1.0, 0.62, 0.3)
-		o.light_energy = 1.7
-		o.omni_range = 4.8
+		o.light_energy = 2.3
+		o.omni_range = 5.6
 		o.omni_attenuation = 1.25
+		o.distance_fade_enabled = true      # far lanterns are hidden by the fog anyway: skip them (phone GPU)
+		o.distance_fade_begin = 13.0
+		o.distance_fade_length = 3.0
 		o.position = Vector3(l["pos"][0], l["pos"][1], l["pos"][2])
 		add_child(o)
-		lamps.append({"node": o, "base": 1.7, "ph": randf() * 20.0})
+		lamps.append({"node": o, "base": 2.3, "ph": randf() * 20.0})
 
 func _spawn_player() -> void:
 	player = CharacterBody3D.new()

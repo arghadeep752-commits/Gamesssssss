@@ -91,6 +91,9 @@ def fonts():
     d = os.path.join(OUT_DL, "fonts")
     for name, urls in {
         "Creepster-Regular.ttf": ["https://raw.githubusercontent.com/google/fonts/main/ofl/creepster/Creepster-Regular.ttf"],
+        "RozhaOne-Regular.ttf": ["https://raw.githubusercontent.com/google/fonts/main/ofl/rozhaone/RozhaOne-Regular.ttf"],
+        "Rajdhani-Bold.ttf": ["https://raw.githubusercontent.com/google/fonts/main/ofl/rajdhani/Rajdhani-Bold.ttf"],
+        "Rajdhani-SemiBold.ttf": ["https://raw.githubusercontent.com/google/fonts/main/ofl/rajdhani/Rajdhani-SemiBold.ttf"],
         "NotoSansDevanagari.ttf": [
             "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf",
             "https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSansDevanagari/hinted/ttf/NotoSansDevanagari-Bold.ttf",
@@ -105,7 +108,8 @@ def fonts():
                     break
             except Exception as e:      # noqa: BLE001
                 log("font failed", u, e)
-    CREDITS.append("- Fonts: Creepster (SIL OFL, Sideshow), Noto Sans Devanagari (SIL OFL, Google).")
+    CREDITS.append("- Fonts: Rozha One (SIL OFL, Indian Type Foundry), Rajdhani (SIL OFL, Indian Type Foundry), "
+                   "Noto Sans Devanagari (SIL OFL, Google), Creepster (SIL OFL, Sideshow).")
 
 
 # ============================================================================================= textures
@@ -325,7 +329,14 @@ SOUNDS = {
                           req=["chant", "mantra", "om ", "om_", "vedic", "gayatri", "sloka", "shloka", "stotra", "bhajan", "kirtan", "aarti", "arati", "hymn"], ban=["gregorian", "christian"], dur=(10, 900), out=40, loop=True, gain=-2),
     "ritual_end":    dict(q=["thunder", "thunderclap", "thunder crack", "explosion distant", "whoosh"], req=["thunder", "explosion", "whoosh", "blast", "boom"], ban=["music", "song"], dur=(1, 120), out=6.0),
     "fire":          dict(q=["fire crackling", "campfire", "fireplace", "burning wood", "fire"], req=["fire", "flame", "burn", "crackl"], ban=["music", "song", "alarm", "truck", "engine", "siren", "bones", "ice", "breaking", "gun"], dur=(8, 900), out=25, loop=True, gain=-4),
-    "menu_music":    dict(q=["tanpura", "tambura drone", "dark ambient drone", "drone", "sitar"], req=["tanpura", "tambura", "drone", "sitar", "ambient"], ban=["song"], dur=(15, 900), out=50, loop=True, gain=-3),
+    "menu_drone":    dict(q=["tanpura", "tambura drone", "dark ambient drone", "drone", "sitar"], req=["tanpura", "tambura", "drone", "sitar", "ambient"], ban=["song"], dur=(15, 900), out=60, loop=True, gain=-3),
+    "menu_folk":     dict(q=["oppari", "Indian lament", "Indian lullaby", "lori lullaby", "ravanahatha", "Rajasthani folk", "sarangi", "Baul song", "ektara",
+                             "Kumaoni folk song", "Garhwali folk song", "Bhatiali", "Kalbelia", "Indian folk song", "folk song India", "Indian folk music"],
+                          req=["oppari", "lament", "lullaby", "lori", "ravan", "rajasth", "sarangi", "baul", "ektara", "kumao", "garhwal", "bhatiali",
+                               "kalbelia", "pahari", "folk"],
+                          ban=["remix", " dj", "rock", "pop", "bollywood", "film", "edm", "dance", "bhangra", "metal", "english", "irish", "scottish",
+                               "american", "russian", "polish", "swedish", "ukrain", "hungar", "chinese", "japan", "korea", "african", "brazil"],
+                          dur=(20, 1500), out=70, raw=True),
     "menu_start":    dict(q=["gong", "temple gong", "door slam heavy", "big gong"], req=["gong", "slam"], ban=["music", "song"], dur=(1, 60), out=4.0),
     "ui_click":      dict(q=["click sound", "button click", "switch click", "light switch", "mouse click", "click"], req=["click", "switch"], ban=["music", "song", "double", "kragen"], dur=(0.05, 5), out=0.4),
 }
@@ -513,7 +524,10 @@ def fetch_sound(name, spec, tmp):
             x = trim_silence(x) if not spec.get("loop") else x
             gain = spec.get("gain", 0.0)
             outlen = int(spec["out"] * SR)
-            if spec.get("steps"):
+            if spec.get("raw"):
+                x = loudest_window(x, outlen) if len(x) > outlen else x
+                encode(normalise(x, gain), os.path.join(OUT_SND, name + ".ogg"))
+            elif spec.get("steps"):
                 clips = cut_steps(x, spec["steps"], spec["out"])
                 if len(clips) < 3:
                     continue
@@ -547,6 +561,31 @@ def distant_shriek(x, out_path):
     fo = int(0.3 * SR)
     y[-fo:] *= np.linspace(1, 0, fo).astype(np.float32)
     encode(normalise(y, -1.0), out_path)
+
+
+def folk_horror(folk, drone, out_path, seconds=60.0):
+    """Menu music: the real Indian folk recording slowed and lowered a little, washed in a long echo and laid over the
+    real drone recording - nothing synthesised."""
+    n = int(seconds * SR)
+    rate = 0.86
+    idx = np.arange(0, len(folk) - 1, rate)
+    f = np.interp(idx, np.arange(len(folk)), folk).astype(np.float32)
+    if len(f) < n + SR:
+        f = np.tile(f, int((n + SR) / max(1, len(f))) + 1)
+    f = f[: n + SR]
+    acc = 0.0
+    lp = np.empty_like(f)
+    for k in range(len(f)):                 # gentle low-pass: an old, distant recording
+        acc += 0.35 * (float(f[k]) - acc)
+        lp[k] = acc
+    wet = lp.copy()
+    for d, g in ((int(0.19 * SR), 0.42), (int(0.43 * SR), 0.3), (int(0.77 * SR), 0.2), (int(1.31 * SR), 0.12)):
+        wet[d:] += lp[:-d] * g
+    mix = normalise(wet, -2.0)
+    if drone is not None and len(drone) > SR:
+        dr = np.tile(drone, int((n + SR) / len(drone)) + 1)[: n + SR]
+        mix = mix + normalise(dr, -9.0)
+    encode(normalise(make_loop(mix, 2.0), -2.0), out_path)
 
 
 def derive_steps(x, out_base, count=5):
@@ -583,6 +622,16 @@ def sounds():
             report.append("ghost_whisper  <- layered from the whisper_far recording")
         except Exception as e:      # noqa: BLE001
             log("layering failed", e)
+    try:
+        drone = decode(snd("menu_drone")) if os.path.exists(snd("menu_drone")) else None
+        if os.path.exists(snd("menu_folk")):
+            folk_horror(decode(snd("menu_folk")), drone, snd("menu_music"))
+            report.append("menu_music     <- the menu_folk recording slowed, low-passed and echoed, over the menu_drone recording")
+        elif drone is not None:
+            shutil.copy(snd("menu_drone"), snd("menu_music"))
+            report.append("menu_music     <- menu_drone (no folk recording found)")
+    except Exception as e:      # noqa: BLE001
+        log("menu music failed", e)
     if not os.path.exists(snd("footstep_3")):
         src = snd("knock") if os.path.exists(snd("knock")) else snd("door_close")
         if os.path.exists(src):

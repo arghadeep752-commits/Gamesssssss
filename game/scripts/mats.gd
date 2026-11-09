@@ -25,6 +25,13 @@ const TABLE := {
 	"leaf_green": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.7, "color": Color(0.14, 0.32, 0.1), "double": true},
 	"lantern_metal": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.6, "metal": 0.8, "color": Color(0.1, 0.09, 0.08)},
 	"lantern_glow": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.5, "color": Color(1.0, 0.6, 0.25), "emit": 2.2},
+	"rope": {"slot": "fiber", "tint": Color(0.85, 0.72, 0.52), "rough": 1.0, "color": Color(0.45, 0.35, 0.22)},
+	"sack": {"slot": "fiber", "tint": Color(0.9, 0.8, 0.62), "rough": 1.0, "color": Color(0.55, 0.45, 0.3)},
+	"iron": {"slot": "copper", "tint": Color(0.32, 0.3, 0.28), "rough": 0.7, "metal": 0.6, "color": Color(0.12, 0.11, 0.1)},
+	"wood_old": {"slot": "wood_dark", "tint": Color(0.62, 0.52, 0.42), "rough": 0.85, "color": Color(0.25, 0.16, 0.1)},
+	"candle_wax": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.45, "color": Color(0.93, 0.87, 0.74)},
+	"wick": {"slot": "", "tint": Color(1, 1, 1), "rough": 1.0, "color": Color(0.04, 0.035, 0.03)},
+	"wick_ember": {"slot": "", "tint": Color(1, 1, 1), "rough": 1.0, "color": Color(1.0, 0.35, 0.08), "emit": 3.0},
 }
 
 static var _cache := {}

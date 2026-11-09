@@ -16,11 +16,15 @@ var _fx_mat: ShaderMaterial
 var _joy_touch := -1
 var _joy_base := Vector2.ZERO
 var _joy_knob := Vector2.ZERO
-const JOY_R := 130.0
+const JOY_R := 180.0          # bigger joystick (canvas is 1080 px tall)
+const KNOB_R := 82.0
 # run
 var _run_touch := -1
 var _run_center := Vector2.ZERO
-const RUN_R := 92.0
+const RUN_R := 128.0
+var _tex_ring: Texture2D = preload("res://assets/ui/joy_ring.png")
+var _tex_knob: Texture2D = preload("res://assets/ui/joy_knob.png")
+var _tex_run: Texture2D = preload("res://assets/ui/run_button.png")
 # look
 var _look_touch := -1
 
@@ -74,9 +78,9 @@ func _ready() -> void:
 
 func _layout() -> void:
 	_size = get_viewport().get_visible_rect().size
-	_run_center = Vector2(_size.x - 230.0, _size.y - 230.0)
+	_run_center = Vector2(_size.x - 270.0, _size.y - 260.0)
 	if _joy_touch == -1:
-		_joy_base = Vector2(260.0, _size.y - 250.0)
+		_joy_base = Vector2(300.0, _size.y - 290.0)
 		_joy_knob = _joy_base
 	_layer.queue_redraw()
 
@@ -121,7 +125,7 @@ func _input(event: InputEvent) -> void:
 			elif e.index == _joy_touch:
 				_joy_touch = -1
 				move_vec = Vector2.ZERO
-				_joy_base = Vector2(260.0, _size.y - 250.0)
+				_joy_base = Vector2(300.0, _size.y - 290.0)
 				_joy_knob = _joy_base
 			elif e.index == _look_touch:
 				_look_touch = -1
@@ -135,24 +139,23 @@ func _input(event: InputEvent) -> void:
 		_layer.queue_redraw()
 
 func _update_joy(p: Vector2) -> void:
+	var travel := JOY_R * 0.62          # the knob stays inside the ring
 	var off := p - _joy_base
-	if off.length() > JOY_R:
-		off = off.normalized() * JOY_R
+	if off.length() > travel:
+		off = off.normalized() * travel
 	_joy_knob = _joy_base + off
-	var v := off / JOY_R
+	var v := off / travel
 	move_vec = v if v.length() > 0.12 else Vector2.ZERO
 
 func _draw_controls() -> void:
 	var active := _joy_touch != -1
-	var a := 0.55 if active else 0.28
-	_layer.draw_circle(_joy_base, JOY_R, Color(0.0, 0.0, 0.0, 0.28))
-	_layer.draw_arc(_joy_base, JOY_R, 0.0, TAU, 64, Color(0.9, 0.9, 0.9, a), 3.0, true)
-	_layer.draw_circle(_joy_knob, 56.0, Color(0.9, 0.9, 0.9, a * 0.9))
-	# run button: ring with a double chevron
-	var ra := 0.7 if run_held else 0.32
-	_layer.draw_circle(_run_center, RUN_R, Color(0.45, 0.0, 0.0, 0.4 if run_held else 0.22))
-	_layer.draw_arc(_run_center, RUN_R, 0.0, TAU, 64, Color(0.95, 0.9, 0.9, ra), 4.0, true)
-	for k in range(2):
-		var cx := _run_center.x - 14.0 + k * 34.0
-		var pts := PackedVector2Array([Vector2(cx - 16.0, _run_center.y - 34.0), Vector2(cx + 14.0, _run_center.y), Vector2(cx - 16.0, _run_center.y + 34.0)])
-		_layer.draw_polyline(pts, Color(0.95, 0.9, 0.9, ra + 0.12), 9.0, true)
+	# joystick: the orange ring and knob (player-supplied art) over a soft dark disc
+	_layer.draw_circle(_joy_base, JOY_R * 0.93, Color(0.0, 0.0, 0.0, 0.22))
+	var ring_a := 1.0 if active else 0.72
+	_layer.draw_texture_rect(_tex_ring, Rect2(_joy_base - Vector2(JOY_R, JOY_R), Vector2(JOY_R, JOY_R) * 2.0), false, Color(1, 1, 1, ring_a))
+	var kr := KNOB_R * (1.06 if active else 1.0)
+	_layer.draw_texture_rect(_tex_knob, Rect2(_joy_knob - Vector2(kr, kr), Vector2(kr, kr) * 2.0), false, Color(1, 1, 1, 1.0 if active else 0.85))
+	# run button: the running woman in a saree
+	var rr := RUN_R * (0.93 if run_held else 1.0)
+	_layer.draw_circle(_run_center, rr * 0.95, Color(0.0, 0.0, 0.0, 0.38 if run_held else 0.24))
+	_layer.draw_texture_rect(_tex_run, Rect2(_run_center - Vector2(rr, rr), Vector2(rr, rr) * 2.0), false, Color(1, 1, 1, 1.0 if run_held else 0.8))

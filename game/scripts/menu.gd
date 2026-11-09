@@ -4,8 +4,11 @@ extends Node3D
 const GhostScript := preload("res://game/scripts/ghost.gd")
 const GAME := "res://game/game.tscn"
 const RED := Color(0.86, 0.02, 0.02)
-const FONT_TITLE := "res://assets/downloaded/fonts/Creepster-Regular.ttf"
-const FONT_DEV := "res://assets/downloaded/fonts/NotoSansDevanagari.ttf"
+const FONT_TITLE := "res://assets/downloaded/fonts/RozhaOne-Regular.ttf"       # Indian display serif (Latin + Devanagari)
+const FONT_UI := "res://assets/downloaded/fonts/Rajdhani-Bold.ttf"              # Indian Type Foundry
+const FONT_UI_LIGHT := "res://assets/downloaded/fonts/Rajdhani-SemiBold.ttf"
+const FONT_DEV := "res://assets/downloaded/fonts/RozhaOne-Regular.ttf"
+const FONT_FALLBACK := "res://assets/downloaded/fonts/Creepster-Regular.ttf"
 
 var cam: Camera3D
 var ghost: CharacterBody3D
@@ -15,6 +18,8 @@ var _flick := 0.0
 var _next_event := 9.0
 var _step := 0
 var font: Font
+var font_ui: Font
+var font_ui_light: Font
 var root_ui: Control
 var main_box: Control
 var settings_box: Control
@@ -25,12 +30,21 @@ var _slider: HSlider
 
 func _ready() -> void:
 	randomize()
-	font = load(FONT_TITLE) if ResourceLoader.exists(FONT_TITLE) else ThemeDB.fallback_font
+	font = _font(FONT_TITLE, _font(FONT_FALLBACK, ThemeDB.fallback_font))
+	font_ui = _font(FONT_UI, font)
+	font_ui_light = _font(FONT_UI_LIGHT, font_ui)
+	# a little tracking makes the Rajdhani capitals look finished
+	var fv := FontVariation.new()
+	fv.base_font = font_ui
+	fv.spacing_glyph = 7
+	font_ui = fv
 	_build_scene()
 	_build_ui()
 	# a drone plus the real night ambience (the drone alone is too deep for phone speakers)
 	Sfx.loop_on("menu_music", self, -2.0)
-	Sfx.loop_on("ambient", self, -6.0)
+	Sfx.loop_on("ambient", self, -11.0)
+	if OS.get_environment("CHAYA_MENU_SHOT") != "":
+		_menu_shots(OS.get_environment("CHAYA_MENU_SHOT"))
 
 func _tiled(mat_name: String, tile: float) -> StandardMaterial3D:
 	var m := Mats.get_material(mat_name).duplicate() as StandardMaterial3D
@@ -112,6 +126,9 @@ func _build_scene() -> void:
 	ghost.rotation.y = PI
 	ghost._play("idle")
 
+func _font(path: String, fallback: Font) -> Font:
+	return load(path) if ResourceLoader.exists(path) else fallback
+
 func _label(text: String, size: int, color: Color, fnt: Font = null) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -144,7 +161,7 @@ func _button(text: String, size := 70) -> Button:
 	b.text = text
 	b.custom_minimum_size = Vector2(560, 124)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	b.add_theme_font_override("font", font)
+	b.add_theme_font_override("font", font_ui)
 	b.add_theme_font_size_override("font_size", size)
 	b.add_theme_color_override("font_color", RED)
 	b.add_theme_color_override("font_hover_color", Color(1.0, 0.12, 0.12))
@@ -187,7 +204,7 @@ func _build_ui() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 22)
 	mm.add_child(col)
-	var title := _label("CHAYA", 230, RED)
+	var title := _label("CHAYA", 210, RED)
 	col.add_child(title)
 	if ResourceLoader.exists(FONT_DEV):
 		var dv := _label("छाया", 80, Color(0.6, 0.02, 0.02), load(FONT_DEV))
@@ -204,7 +221,7 @@ func _build_ui() -> void:
 	var fill := Control.new()
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(fill)
-	var dev := _label("mxyan games", 44, Color(0.75, 0.08, 0.08))
+	var dev := _label("mxyan games", 46, Color(0.75, 0.08, 0.08), font_ui_light)
 	col.add_child(dev)
 
 	# settings panel
@@ -226,7 +243,7 @@ func _build_ui() -> void:
 	var st := _label("SETTINGS", 130, RED)
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sc.add_child(st)
-	var sl := _label("SENSITIVITY", 64, Color(0.85, 0.1, 0.1))
+	var sl := _label("SENSITIVITY", 64, Color(0.85, 0.1, 0.1), font_ui)
 	sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sc.add_child(sl)
 	var row := HBoxContainer.new()
@@ -265,7 +282,7 @@ func _build_ui() -> void:
 	plus.custom_minimum_size = Vector2(130, 124)
 	plus.pressed.connect(func(): _bump(0.1))
 	row.add_child(plus)
-	_sens_label = _label("", 54, Color(0.85, 0.1, 0.1))
+	_sens_label = _label("", 58, Color(0.85, 0.1, 0.1), font_ui)
 	_sens_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sc.add_child(_sens_label)
 	var back := _button("BACK")
@@ -350,3 +367,16 @@ func _process(dt: float) -> void:
 		var z := -10.0 + float(_step) * 1.5
 		get_tree().create_timer(0.7).timeout.connect(func(): ghost.global_position = Vector3(0, 0, z))
 		Sfx.play("menu_sting", -8.0)
+
+func _menu_shots(dir: String) -> void:
+	# build check only: screenshots of the menu and the settings screen
+	await get_tree().create_timer(3.0).timeout
+	DirAccess.make_dir_recursive_absolute(dir)
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(dir.path_join("00_menu.png"))
+	_on_settings()
+	await get_tree().create_timer(0.6).timeout
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(dir.path_join("00_settings.png"))
+	print("[CHAYA-TEST] menu shots saved")
+	get_tree().quit()
