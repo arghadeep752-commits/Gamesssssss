@@ -1,0 +1,45 @@
+name: Chaya - icon render (Blender)
+
+on:
+  push:
+    branches: [chaya]
+    paths:
+      - "tools/logo/**"
+      - ".github/workflows/chaya-logo.yml"
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  icon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender and tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender python3-numpy python3-pil
+          blender --version | head -1
+      - name: Chaya model (Microsoft Rocketbox, MIT) and her baked look
+        run: |
+          mkdir -p build && touch build/.gdignore
+          python3 tools/fetch_assets.py rocketbox
+          python3 tools/logo/chaya_tex.py assets/downloaded/chaya/tex logo_work
+      - name: Model, light and render the icon in Blender
+        run: |
+          mkdir -p logo_out
+          blender -b -noaudio -P tools/logo/make_icon.py -- assets/downloaded/chaya logo_work assets/fonts/TheFriendlyIndians.ttf logo_out/chaya_icon.png 1024 2>&1 | tee build/icon-log.txt | grep -vE "^(Fra:|Saved:)" | tail -60
+          ls -la logo_out
+      - name: Publish
+        if: always()
+        run: |
+          gh release view chaya-ci -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create chaya-ci -R "$GITHUB_REPOSITORY" --prerelease --title "CI logs and previews (not the game)" --notes "Build logs."
+          for f in logo_out/chaya_icon.png logo_out/chaya_icon.blend build/icon-log.txt; do [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done

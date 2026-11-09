@@ -3,6 +3,9 @@ name: Chaya - build APK
 on:
   push:
     branches: [chaya]
+    paths-ignore:
+      - "tools/logo/**"
+      - ".github/workflows/chaya-logo.yml"
   workflow_dispatch:
 
 permissions:
