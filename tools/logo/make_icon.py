@@ -166,10 +166,10 @@ for poly in me.polygons:
             if p.z > E.z - 0.11:
                 pts.append(p)
 ev.to_mesh_clear()
-xs, ys, zs = [p.x for p in pts], [p.y for p in pts], [p.z for p in pts]
-H = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, E.z + 0.025))
-H = H - F * max(0.0, (H - E).dot(F))          # keep the skull centre behind the eyes
-R_HEAD = max(max(xs) - min(xs), max(ys) - min(ys)) / 2 * 0.92
+# skull from the eyes (the head mesh also carries a bun, which would skew a bounding box)
+k_scale = E.z / 1.612
+H = E - F * (0.064 * k_scale) + U * (0.024 * k_scale)
+R_HEAD = 0.088 * k_scale
 print("head centre", tuple(round(c, 3) for c in H), "radius", round(R_HEAD, 3))
 
 # ------------------------------------------------------------------------------------------------ glowing eyes
@@ -432,13 +432,18 @@ scene.cycles.device = "CPU"
 scene.render.resolution_x = SIZE
 scene.render.resolution_y = SIZE
 scene.render.resolution_percentage = 100
-scene.cycles.samples = 160
+# this Blender build has no OpenImageDenoise: more samples, adaptive sampling stops early where it is clean
+scene.cycles.use_denoising = False
+scene.cycles.samples = 520
 try:
-    scene.cycles.use_denoising = True
-    scene.cycles.denoiser = "OPENIMAGEDENOISE"
-except Exception as ex:     # noqa: BLE001
-    print("denoiser:", ex)
-    scene.cycles.samples = 320
+    scene.cycles.use_adaptive_sampling = True
+    scene.cycles.adaptive_threshold = 0.015
+except Exception:       # noqa: BLE001
+    pass
+try:
+    scene.cycles.filter_width = 1.7
+except Exception:       # noqa: BLE001
+    pass
 scene.cycles.max_bounces = 6
 scene.cycles.transparent_max_bounces = 16
 for vt, look in (("AgX", "AgX - Punchy"), ("AgX", "None"), ("Filmic", "High Contrast"), ("Filmic", "None")):
