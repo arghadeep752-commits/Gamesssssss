@@ -192,7 +192,7 @@ print("head radii up %.3f back %.3f side %.3f front %.3f" % (R_UP, R_BACK, R_SID
 print("head centre", tuple(round(c, 3) for c in H), "radius", round(R_HEAD, 3))
 
 # ------------------------------------------------------------------------------------------------ glowing eyes
-eye_mat = flat_material("eye_glow", (1.0, 0.03, 0.01), 0.4, (1.0, 0.03, 0.01), 14.0)
+eye_mat = flat_material("eye_glow", (1.0, 0.03, 0.01), 0.4, (1.0, 0.03, 0.01), 10.0)
 for p in (eye_r, eye_l):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=0.0118, location=p + F * 0.004)
     o = bpy.context.active_object
@@ -238,7 +238,7 @@ def hairline(phi_deg):
 
 
 strands = []
-N = 9000
+N = 15000
 for i in range(N):
     z = 1 - 2 * (i + 0.5) / N
     phi = (i * 2.399963) % (2 * math.pi)
@@ -274,6 +274,29 @@ for i in range(N):
         pts_s.append(clear_face(p))
     strands.append(pts_s)
 print("hair strands", len(strands))
+cap_v, cap_f = [], []
+NPH, NEL = 72, 26
+grid = {}
+for a in range(NPH):
+    ph = -math.pi + 2 * math.pi * a / NPH
+    for b in range(NEL):
+        el = math.radians(-50 + 140 * b / (NEL - 1))
+        if math.degrees(el) >= hairline(math.degrees(ph)) - 3:
+            grid[(a, b)] = len(cap_v)
+            cap_v.append(tuple(sph(ph, el, R_HEAD + 0.0025)))
+for a in range(NPH):
+    for b in range(NEL - 1):
+        q = [(a, b), ((a + 1) % NPH, b), ((a + 1) % NPH, b + 1), (a, b + 1)]
+        if all(k in grid for k in q):
+            cap_f.append(tuple(grid[k] for k in q))
+cap_me = bpy.data.meshes.new("scalp_cap")
+cap_me.from_pydata(cap_v, [], cap_f)
+cap_me.update()
+cap_ob = bpy.data.objects.new("scalp_cap", cap_me)
+scene.collection.objects.link(cap_ob)
+for poly in cap_me.polygons:
+    poly.use_smooth = True
+cap_me.materials.append(flat_material("scalp", (0.006, 0.005, 0.005), 0.6))
 hair_mat = bpy.data.materials.new("hair")
 hair_mat.use_nodes = True
 hn = hair_mat.node_tree
@@ -283,10 +306,12 @@ for n in list(hn.nodes):
 try:
     hb = hn.nodes.new("ShaderNodeBsdfHairPrincipled")
     try:
-        hb.parametrization = "MELANIN"
+        hb.parametrization = "COLOR"
     except Exception:       # noqa: BLE001
         pass
-    for key, val in (("Melanin", 1.0), ("Melanin Redness", 0.05), ("Roughness", 0.28), ("Radial Roughness", 0.35), ("Coat", 0.1)):
+    if "Color" in hb.inputs:
+        hb.inputs["Color"].default_value = (0.0035, 0.0028, 0.0028, 1.0)
+    for key, val in (("Melanin", 1.0), ("Melanin Redness", 0.0), ("Roughness", 0.32), ("Radial Roughness", 0.4), ("Coat", 0.0)):
         if key in hb.inputs:
             hb.inputs[key].default_value = val
     hn.links.new(hb.outputs[0], hn.nodes["Material Output"].inputs["Surface"])
@@ -337,8 +362,8 @@ sp = cu.splines.new("POLY")
 n = 14
 sp.points.add(n - 1)
 for k in range(n):
-    el = math.radians(34 + 46 * k / (n - 1))
-    p = sph(0.0, el, R_HEAD + 0.006)
+    el = math.radians(34 + 34 * k / (n - 1))
+    p = sph(0.0, el, R_HEAD + 0.0045)
     sp.points[k].co = (p.x, p.y, p.z, 1.0)
 cu.materials.append(sind)
 scene.collection.objects.link(bpy.data.objects.new("sindoor", cu))
@@ -430,7 +455,7 @@ world.color = (0.0, 0.0, 0.0)
 scene.world = world
 
 # ------------------------------------------------------------------------------------------------ orange MX
-mx_mat = flat_material("mx_orange", (1.0, 0.3, 0.0), 0.35, (1.0, 0.28, 0.0), 0.35)
+mx_mat = flat_material("mx_orange", (1.0, 0.33, 0.0), 0.32)
 fc = bpy.data.curves.new("MX", "FONT")
 fc.body = "MX"
 try:
@@ -448,7 +473,18 @@ mx = bpy.data.objects.new("MX", fc)
 scene.collection.objects.link(mx)
 d_mx = 0.5
 half = d_mx * math.tan(math.atan(18.0 / 85.0))
-mx.matrix_world = Matrix.Translation(cam.location + cam_fwd * d_mx + cam_right * (0.70 * half) + cam_up * (-0.72 * half)) @ cam.matrix_world.to_3x3().to_4x4()
+mx_pos = cam.location + cam_fwd * d_mx + cam_right * (0.70 * half) + cam_up * (-0.72 * half)
+mx.matrix_world = Matrix.Translation(mx_pos) @ cam.matrix_world.to_3x3().to_4x4()
+oc = fc.copy()
+oc.bevel_depth = 0.0042
+oc.extrude = 0.001
+oc.materials.clear()
+oc.materials.append(flat_material("mx_outline", (0.0, 0.0, 0.0), 0.8))
+mxo = bpy.data.objects.new("MX_outline", oc)
+scene.collection.objects.link(mxo)
+mxo.matrix_world = Matrix.Translation(mx_pos - cam_fwd * (-0.006)) @ cam.matrix_world.to_3x3().to_4x4()
+# its own soft light so the orange reads clearly
+area("mx_light", mx_pos + cam_fwd * (-0.12) + cam_up * 0.05, mx_pos, 0.15, 0.6, (1.0, 0.85, 0.7))
 
 # ------------------------------------------------------------------------------------------------ render
 scene.render.engine = "CYCLES"
