@@ -278,13 +278,13 @@ for i in range(N):
     strands.append(pts_s)
 print("hair strands", len(strands))
 cap_v, cap_f = [], []
-NPH, NEL = 72, 26
+NPH, NEL = 160, 64
 grid = {}
 for a in range(NPH):
     ph = -math.pi + 2 * math.pi * a / NPH
     for b in range(NEL):
         el = math.radians(-50 + 140 * b / (NEL - 1))
-        if math.degrees(el) >= hairline(math.degrees(ph)) - 3:
+        if math.degrees(el) >= hairline(math.degrees(ph)) + 5:
             grid[(a, b)] = len(cap_v)
             cap_v.append(tuple(sph(ph, el, R_HEAD + 0.0025)))
 for a in range(NPH):
@@ -331,6 +331,7 @@ except Exception as ex:     # noqa: BLE001
     hn.links.new(pb_.outputs[0], hn.nodes["Material Output"].inputs["Surface"])
 made = False
 try:
+    raise RuntimeError("classic curves: material assignment is certain")
     hc = bpy.data.hair_curves.new("ChayaHair")
     hc.add_curves([len(s) for s in strands])
     flat = [c for s in strands for p in s for c in (p.x, p.y, p.z)]
@@ -351,21 +352,27 @@ except Exception as ex:     # noqa: BLE001
 if not made:
     cu = bpy.data.curves.new("ChayaHair", "CURVE")
     cu.dimensions = "3D"
-    cu.bevel_depth = 0.0005
-    cu.bevel_resolution = 1
-    for s in strands[::2]:
+    cu.bevel_depth = 0.00055
+    cu.bevel_resolution = 0
+    cu.use_fill_caps = False
+    for s in strands:
         sp = cu.splines.new("POLY")
         sp.points.add(len(s) - 1)
+        n_ = len(s)
         for k, p in enumerate(s):
             sp.points[k].co = (p.x, p.y, p.z, 1.0)
+            sp.points[k].radius = 1.0 - 0.6 * k / (n_ - 1)
     cu.materials.append(hair_mat)
-    scene.collection.objects.link(bpy.data.objects.new("ChayaHair", cu))
+    hob = bpy.data.objects.new("ChayaHair", cu)
+    scene.collection.objects.link(hob)
+    hob.active_material = hair_mat
+    print("hair: bevelled curves,", len(strands), "strands, material", hob.active_material.name)
 
 # ------------------------------------------------------------------------------------------------ sindoor and bindi
 sind = flat_material("sindoor", (0.62, 0.0, 0.02), 0.6, (0.5, 0.0, 0.01), 0.4)
 cu = bpy.data.curves.new("sindoor", "CURVE")
 cu.dimensions = "3D"
-cu.bevel_depth = 0.0016
+cu.bevel_depth = 0.0012
 sp = cu.splines.new("POLY")
 n = 14
 sp.points.add(n - 1)
@@ -463,7 +470,7 @@ world.color = (0.0, 0.0, 0.0)
 scene.world = world
 
 # ------------------------------------------------------------------------------------------------ orange MX
-mx_mat = flat_material("mx_orange", (0.22, 0.05, 0.0), 0.35, (1.0, 0.3, 0.0), 0.9)
+mx_mat = flat_material("mx_orange", (0.2, 0.04, 0.0), 0.35, (1.0, 0.25, 0.0), 1.0)
 fc = bpy.data.curves.new("MX", "FONT")
 fc.body = "MX"
 try:
