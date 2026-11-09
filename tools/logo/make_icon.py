@@ -321,14 +321,18 @@ try:
     hn.links.new(hb.outputs[0], hn.nodes["Material Output"].inputs["Surface"])
 except Exception as ex:     # noqa: BLE001
     print("hair BSDF fallback:", ex)
-    pb_ = hn.nodes.new("ShaderNodeBsdfPrincipled")
-    pb_.inputs["Base Color"].default_value = (0.006, 0.005, 0.005, 1)
-    pb_.inputs["Roughness"].default_value = 0.38
-    for key in ("Specular IOR Level", "Specular"):
-        if key in pb_.inputs:
-            pb_.inputs[key].default_value = 0.35
-            break
-    hn.links.new(pb_.outputs[0], hn.nodes["Material Output"].inputs["Surface"])
+    # thin dielectric strands turn light at grazing angles (Fresnel on thousands of edges), so: a black diffuse base
+    # with a controlled, dark glossy sheen
+    dif = hn.nodes.new("ShaderNodeBsdfDiffuse")
+    dif.inputs["Color"].default_value = (0.004, 0.0035, 0.0035, 1)
+    glo = hn.nodes.new("ShaderNodeBsdfGlossy")
+    glo.inputs["Color"].default_value = (0.09, 0.075, 0.075, 1)
+    glo.inputs["Roughness"].default_value = 0.3
+    mixs = hn.nodes.new("ShaderNodeMixShader")
+    mixs.inputs["Fac"].default_value = 0.22
+    hn.links.new(dif.outputs[0], mixs.inputs[1])
+    hn.links.new(glo.outputs[0], mixs.inputs[2])
+    hn.links.new(mixs.outputs[0], hn.nodes["Material Output"].inputs["Surface"])
 made = False
 try:
     raise RuntimeError("classic curves: material assignment is certain")
