@@ -325,9 +325,18 @@ except Exception as ex:     # noqa: BLE001
     # with a controlled, dark glossy sheen
     dif = hn.nodes.new("ShaderNodeBsdfDiffuse")
     dif.inputs["Color"].default_value = (0.004, 0.0035, 0.0035, 1)
-    glo = hn.nodes.new("ShaderNodeBsdfGlossy")
+    glo = None
+    for idn in ("ShaderNodeBsdfGlossy", "ShaderNodeBsdfAnisotropic"):
+        try:
+            glo = hn.nodes.new(idn)
+            break
+        except Exception:       # noqa: BLE001
+            continue
+    if glo is None:
+        glo = hn.nodes.new("ShaderNodeBsdfDiffuse")
     glo.inputs["Color"].default_value = (0.09, 0.075, 0.075, 1)
-    glo.inputs["Roughness"].default_value = 0.3
+    if "Roughness" in glo.inputs:
+        glo.inputs["Roughness"].default_value = 0.3
     mixs = hn.nodes.new("ShaderNodeMixShader")
     mixs.inputs["Fac"].default_value = 0.22
     hn.links.new(dif.outputs[0], mixs.inputs[1])
