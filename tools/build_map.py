@@ -122,6 +122,39 @@ for o in objs:
 
 print("blender objects: %d (%.1fs)" % (len(blender_objs), time.time() - t0))
 
+# ----------------------------------------------------------------------------------------------- hero ritual items
+# The six items are remodelled in detail in Blender (tools/hero_items.py) and take the place of the simple lathe
+# versions under the same names, so the game picks them up unchanged.
+for _n, _c in {"coir": (0.45, 0.3, 0.16), "coconut_dark": (0.1, 0.06, 0.035), "thread_red": (0.7, 0.04, 0.03),
+               "thread_yellow": (0.9, 0.65, 0.1), "oil": (0.3, 0.19, 0.04), "water": (0.06, 0.09, 0.1),
+               "wick_cotton": (0.9, 0.86, 0.76), "rice": (0.95, 0.93, 0.86), "wick": (0.04, 0.035, 0.03),
+               "wick_ember": (1.0, 0.35, 0.08)}.items():
+    BASE_COLOR.setdefault(_n, _c)
+try:
+    import hero_items
+    hero = hero_items.build_all(get_material, collection, [it["id"] for it in meta["items"]])
+    for it in meta["items"]:
+        old = bpy.data.objects.get(it["name"])
+        if it["id"] not in hero or old is None:
+            continue
+        loc = old.location.copy()
+        if old in blender_objs:
+            blender_objs.remove(old)
+        bpy.data.objects.remove(old, do_unlink=True)
+        hob, extras = hero[it["id"]]
+        hob.name = it["name"]
+        hob.location = loc
+        for ename, epos in extras.items():
+            em = bpy.data.objects.new(ename, None)
+            collection.objects.link(em)
+            em.parent = hob
+            em.location = epos
+    print("hero items in place: %s (%.1fs)" % (", ".join(sorted(hero)), time.time() - t0))
+except Exception as ex:     # noqa: BLE001
+    import traceback
+    traceback.print_exc()
+    print("HERO ITEMS FAILED:", ex)
+
 # ----------------------------------------------------------------------------------------------- hand-modelled props
 # Furniture for the rooms and the player's candle, modelled here in Blender (bevelled wood, turned legs, clay pots,
 # brass ware, a dripping wax candle in a brass chamberstick). Each prop is an Empty with its parts as children.

@@ -465,24 +465,40 @@ func _start_ritual() -> void:
 		m.global_position = p
 		await get_tree().create_timer(0.35).timeout
 		Sfx.play("pickup", -6.0, 0.8 + 0.05 * k)
-	# the lamp is lit
+	# the lamp is lit, at the tip of its cotton wick
+	var fpos := diya_pos + Vector3(0, 0.09, 0)
+	if item_models.has("diya"):
+		var fa := (item_models["diya"] as Node3D).find_child("diya_flame_anchor", true, false) as Node3D
+		if fa != null:
+			fpos = fa.global_position
 	var flame := MeshInstance3D.new()
-	var fm := SphereMesh.new()
-	fm.radius = 0.022
-	fm.height = 0.08
-	flame.mesh = fm
-	var fmat := StandardMaterial3D.new()
-	fmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	fmat.albedo_color = Color(1.0, 0.75, 0.25)
+	var fq := QuadMesh.new()
+	fq.size = Vector2(0.026, 0.062)
+	flame.mesh = fq
+	var fmat := ShaderMaterial.new()
+	fmat.shader = Shader.new()
+	fmat.shader.code = PlayerScript.FLAME_SHADER
 	flame.material_override = fmat
+	flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(flame)
-	flame.global_position = diya_pos + Vector3(0, 0.09, 0)
+	flame.global_position = fpos + Vector3(0, 0.026, 0)
+	var glow := MeshInstance3D.new()
+	var gq := QuadMesh.new()
+	gq.size = Vector2(0.17, 0.17)
+	glow.mesh = gq
+	var gmat := ShaderMaterial.new()
+	gmat.shader = fmat.shader
+	gmat.set_shader_parameter("glow", 1.0)
+	glow.material_override = gmat
+	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(glow)
+	glow.global_position = fpos + Vector3(0, 0.02, 0)
 	var fl := OmniLight3D.new()
 	fl.light_color = Color(1.0, 0.7, 0.35)
 	fl.light_energy = 2.4
 	fl.omni_range = 6.0
 	add_child(fl)
-	fl.global_position = diya_pos + Vector3(0, 0.35, 0)
+	fl.global_position = fpos + Vector3(0, 0.25, 0)
 	Sfx.loop_on("fire", self, -6.0)
 	await get_tree().create_timer(2.5).timeout
 	# Chaya comes to stop the ritual
@@ -560,18 +576,21 @@ func _shots_tour() -> void:
 			break
 		_place(maze.cell_center(s[0]) + Vector3(0, 0.05, 0), s[1])
 		await _snap("%02d_cell_%d_%d" % [n, s[0].x, s[0].y]); n += 1
-	# an item on its pedestal
-	if meta["items"].size() > 0 and not only_ghost:
-		var it: Dictionary = meta["items"][0]
-		var p := Vector3(it["pos"][0], 0.05, it["pos"][2])
-		var best := Vector3.ZERO
-		for off in [Vector3(1.4, 0, 0), Vector3(-1.4, 0, 0), Vector3(0, 0, 1.4), Vector3(0, 0, -1.4)]:
-			if maze.world_to_cell(p + off) == maze.world_to_cell(p):
-				best = off
-				break
-		var yaw := rad_to_deg(atan2(best.x, best.z))
-		_place(p + best, yaw, -22.0)
-		await _snap("%02d_item" % n); n += 1
+	# every ritual item on its pedestal, close up (the tour must not pick them up)
+	for pk in pickups:
+		pk.player = null
+	if not only_ghost:
+		for it in meta["items"]:
+			var p := Vector3(it["pos"][0], 0.05, it["pos"][2])
+			var best := Vector3.ZERO
+			for off in [Vector3(0.85, 0, 0), Vector3(-0.85, 0, 0), Vector3(0, 0, 0.85), Vector3(0, 0, -0.85)]:
+				if maze.world_to_cell(p + off) == maze.world_to_cell(p):
+					best = off
+					break
+			var yaw := rad_to_deg(atan2(best.x, best.z))
+			var drop: float = float(it["pos"][1]) + 0.22 - (0.05 + player.EYE_HEIGHT)
+			_place(p + best, yaw, rad_to_deg(atan2(drop, maxf(0.3, best.length()))))
+			await _snap("%02d_item_%s" % [n, it["id"]]); n += 1
 	# Chaya in front of the camera
 	var base := maze.cell_center(Vector2i(7, 8))
 	_place(base + Vector3(0, 0.05, 0), 0.0)

@@ -32,6 +32,15 @@ const TABLE := {
 	"candle_wax": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.45, "color": Color(0.93, 0.87, 0.74)},
 	"wick": {"slot": "", "tint": Color(1, 1, 1), "rough": 1.0, "color": Color(0.04, 0.035, 0.03)},
 	"wick_ember": {"slot": "", "tint": Color(1, 1, 1), "rough": 1.0, "color": Color(1.0, 0.35, 0.08), "emit": 3.0},
+	# the detailed ritual items (tools/hero_items.py)
+	"coir": {"slot": "fiber", "tint": Color(0.82, 0.6, 0.38), "rough": 1.0, "color": Color(0.45, 0.3, 0.16), "double": true},
+	"coconut_dark": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.9, "color": Color(0.1, 0.06, 0.035)},
+	"thread_red": {"slot": "fiber", "tint": Color(0.9, 0.1, 0.07), "rough": 0.95, "color": Color(0.7, 0.04, 0.03)},
+	"thread_yellow": {"slot": "fiber", "tint": Color(1.0, 0.78, 0.2), "rough": 0.95, "color": Color(0.9, 0.65, 0.1)},
+	"oil": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.06, "color": Color(0.3, 0.19, 0.04)},
+	"water": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.04, "color": Color(0.06, 0.09, 0.1)},
+	"wick_cotton": {"slot": "fiber", "tint": Color(1.0, 0.96, 0.88), "rough": 1.0, "color": Color(0.9, 0.86, 0.76)},
+	"rice": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.55, "color": Color(0.95, 0.93, 0.86)},
 }
 
 static var _cache := {}
