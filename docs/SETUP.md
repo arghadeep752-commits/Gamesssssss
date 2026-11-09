@@ -105,7 +105,9 @@ SIM, using the SIM's SMS pack (most Indian plans include 100 free SMS a day).
 3. Keep that phone online (allow the app to run in the background / ignore battery optimisation).
 
 Settings in `app_secrets`: `sms_allowed_prefixes` (default `+91`; `*` for all countries — international
-SMS is not free), `sms_daily_cap` (default 90 texts/day). Limits per number: 1 code/minute, 5/hour, 10/day;
+SMS is not free), `sms_daily_cap` (default 90 texts/day), `sms_sim_number` (1 or 2: which SIM sends on a
+dual-SIM phone). Codes are queued with a 10-minute expiry and high priority; if the gateway phone hasn't
+picked a text up within ~7 seconds the function logs it as queued (phone asleep or offline). Limits per number: 1 code/minute, 5/hour, 10/day;
 codes expire after 10 minutes and allow 5 tries.
 
 Phone-only accounts get a private placeholder address (`p<number>-<random>@phone.hime.invalid`) because

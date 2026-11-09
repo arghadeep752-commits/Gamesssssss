@@ -17,13 +17,13 @@ import { adminClient, corsHeaders, HttpError, json, requireUser } from "../_shar
 
 const admin = adminClient();
 
-type Gateway = { url: string; user: string; pass: string; prefixes: string[]; dailyCap: number };
+type Gateway = { url: string; user: string; pass: string; prefixes: string[]; dailyCap: number; sim: number | null };
 let gwCache: { at: number; value: Gateway } | null = null;
 async function gateway(): Promise<Gateway> {
   if (gwCache && Date.now() - gwCache.at < 60_000) return gwCache.value;
   const env = (k: string) => (Deno.env.get(k) ?? "").trim();
   const { data } = await admin.from("app_secrets").select("key, value")
-    .in("key", ["sms_gateway_url", "sms_gateway_user", "sms_gateway_pass", "sms_allowed_prefixes", "sms_daily_cap"]);
+    .in("key", ["sms_gateway_url", "sms_gateway_user", "sms_gateway_pass", "sms_allowed_prefixes", "sms_daily_cap", "sms_sim_number"]);
   const db = Object.fromEntries((data ?? []).map((r) => [r.key as string, String(r.value ?? "").trim()]));
   const value: Gateway = {
     url: (env("SMS_GATEWAY_URL") || db.sms_gateway_url || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, ""),
@@ -31,6 +31,8 @@ async function gateway(): Promise<Gateway> {
     pass: env("SMS_GATEWAY_PASS") || db.sms_gateway_pass || "",
     prefixes: (env("SMS_ALLOWED_PREFIXES") || db.sms_allowed_prefixes || "+91").split(",").map((s) => s.trim()).filter(Boolean),
     dailyCap: Number(env("SMS_DAILY_CAP") || db.sms_daily_cap || "90") || 90,
+    // Which SIM sends the texts on a dual-SIM phone (1 or 2); empty = the phone's default.
+    sim: Number(env("SMS_SIM_NUMBER") || db.sms_sim_number || "0") || null,
   };
   gwCache = { at: Date.now(), value };
   return value;
@@ -100,14 +102,43 @@ async function allow(bucket: string, limit: number, windowSec: number): Promise<
   return true;
 }
 
-async function sendSms(g: Gateway, to: string, text: string): Promise<void> {
+const gwHeaders = (g: Gateway) => ({ "Content-Type": "application/json", Authorization: "Basic " + btoa(`${g.user}:${g.pass}`) });
+
+/**
+ * Queues the SMS on the gateway, then watches it for a few seconds.
+ * Returns "sent" once the phone has picked it up, "queued" if the phone hasn't
+ * fetched it yet (offline / asleep), and throws if the phone reports a failure.
+ */
+async function sendSms(g: Gateway, to: string, text: string): Promise<"sent" | "queued"> {
   const res = await fetch(`${g.url}/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Basic " + btoa(`${g.user}:${g.pass}`) },
-    body: JSON.stringify({ textMessage: { text }, phoneNumbers: [to] }),
+    headers: gwHeaders(g),
+    body: JSON.stringify({
+      textMessage: { text },
+      phoneNumbers: [to],
+      ...(g.sim ? { simNumber: g.sim } : {}),
+      ttl: 600, // a code is useless after 10 minutes: don't send it late
+      priority: 100, // send right away, skipping the app's send delays
+    }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const id = ((await res.json().catch(() => ({}))) as { id?: string }).id;
+  if (!id) return "queued";
+  for (let i = 0; i < 5; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const st = await fetch(`${g.url}/messages/${encodeURIComponent(id)}`, { headers: gwHeaders(g), signal: AbortSignal.timeout(5000) });
+      if (!st.ok) continue;
+      const m = (await st.json()) as { state?: string; recipients?: { state?: string; error?: string }[] };
+      const state = m.recipients?.[0]?.state ?? m.state ?? "Pending";
+      if (state === "Failed") throw new Error(`phone failed to send: ${m.recipients?.[0]?.error ?? "unknown"}`);
+      if (state !== "Pending") return "sent";
+    } catch (e) {
+      if (String(e).includes("phone failed")) throw e;
+    }
+  }
+  return "queued";
 }
 
 // ------------------------------------------------------------------ actions
@@ -143,18 +174,20 @@ async function sendCode(body: Record<string, unknown>, ip: string): Promise<Resp
   });
   if (error) throw error;
 
+  let delivery: "sent" | "queued";
   try {
-    await sendSms(g, phone, `${code} is your Hime verification code. Don't share it with anyone.`);
+    delivery = await sendSms(g, phone, `${code} is your Hime verification code. Don't share it with anyone.`);
   } catch (e) {
     console.error("sms send failed", e);
     return json({ error: "send_failed" }, 502);
   }
+  if (delivery === "queued") console.warn("sms queued: the gateway phone hasn't picked it up yet");
 
   // Housekeeping: drop day-old codes and limiter rows.
   const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   await admin.from("auth_phone_codes").delete().lt("created_at", dayAgo);
   await admin.from("auth_rate_events").delete().lt("created_at", new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString());
-  return json({ ok: true, expires_in: CODE_TTL_MS / 1000 });
+  return json({ ok: true, expires_in: CODE_TTL_MS / 1000, queued: delivery === "queued" });
 }
 
 /** Checks a code; returns an error response, or null when the code is right. */
