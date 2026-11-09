@@ -212,13 +212,16 @@ for p in (eye_r, eye_l):
 
 # ------------------------------------------------------------------------------------------------ long black hair
 def sph(phi, elev, r):
-    """A point on the measured head shell; r - R_HEAD is the offset above the scalp."""
+    """A point just above the real scalp in direction (phi, elev) from the skull centre; r - R_HEAD is the offset."""
     off = r - R_HEAD
+    n = (math.cos(elev) * (math.cos(phi) * F + math.sin(phi) * S) + math.sin(elev) * U)
+    hit = probe(H + n * 0.45, -n)
+    if hit is not None and (hit - H).length < 0.2:
+        return hit + n * off
     f = math.cos(elev) * math.cos(phi)
     sd = math.cos(elev) * math.sin(phi)
     u = math.sin(elev)
     p = H + F * (f * (R_FRONT if f > 0 else R_BACK)) + S * (sd * R_SIDE) + U * (u * (R_UP if u > 0 else R_SIDE * 0.95))
-    n = (math.cos(elev) * (math.cos(phi) * F + math.sin(phi) * S) + math.sin(elev) * U)
     return p + n * off
 
 
@@ -304,6 +307,7 @@ for n in list(hn.nodes):
     if n.type != "OUTPUT_MATERIAL":
         hn.nodes.remove(n)
 try:
+    raise RuntimeError("using Principled BSDF for predictable black hair")
     hb = hn.nodes.new("ShaderNodeBsdfHairPrincipled")
     try:
         hb.parametrization = "COLOR"
@@ -318,8 +322,12 @@ try:
 except Exception as ex:     # noqa: BLE001
     print("hair BSDF fallback:", ex)
     pb_ = hn.nodes.new("ShaderNodeBsdfPrincipled")
-    pb_.inputs["Base Color"].default_value = (0.01, 0.008, 0.008, 1)
-    pb_.inputs["Roughness"].default_value = 0.35
+    pb_.inputs["Base Color"].default_value = (0.006, 0.005, 0.005, 1)
+    pb_.inputs["Roughness"].default_value = 0.38
+    for key in ("Specular IOR Level", "Specular"):
+        if key in pb_.inputs:
+            pb_.inputs[key].default_value = 0.35
+            break
     hn.links.new(pb_.outputs[0], hn.nodes["Material Output"].inputs["Surface"])
 made = False
 try:
@@ -455,7 +463,7 @@ world.color = (0.0, 0.0, 0.0)
 scene.world = world
 
 # ------------------------------------------------------------------------------------------------ orange MX
-mx_mat = flat_material("mx_orange", (1.0, 0.33, 0.0), 0.32)
+mx_mat = flat_material("mx_orange", (0.22, 0.05, 0.0), 0.35, (1.0, 0.3, 0.0), 0.9)
 fc = bpy.data.curves.new("MX", "FONT")
 fc.body = "MX"
 try:
@@ -483,8 +491,7 @@ oc.materials.append(flat_material("mx_outline", (0.0, 0.0, 0.0), 0.8))
 mxo = bpy.data.objects.new("MX_outline", oc)
 scene.collection.objects.link(mxo)
 mxo.matrix_world = Matrix.Translation(mx_pos - cam_fwd * (-0.006)) @ cam.matrix_world.to_3x3().to_4x4()
-# its own soft light so the orange reads clearly
-area("mx_light", mx_pos + cam_fwd * (-0.12) + cam_up * 0.05, mx_pos, 0.15, 0.6, (1.0, 0.85, 0.7))
+
 
 # ------------------------------------------------------------------------------------------------ render
 scene.render.engine = "CYCLES"
