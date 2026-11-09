@@ -16,7 +16,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
-RB, TEX, FONT, OUT = argv[0], argv[1], argv[2], argv[3]
+RB, TEX, FONT, OUT = (os.path.abspath(a) for a in argv[:4])
 SIZE = int(argv[4]) if len(argv) > 4 else 1024
 t0 = time.time()
 rng = random.Random(11)
@@ -170,10 +170,29 @@ ev.to_mesh_clear()
 k_scale = E.z / 1.612
 H = E - F * (0.064 * k_scale) + U * (0.024 * k_scale)
 R_HEAD = 0.088 * k_scale
+# measure the real head (it carries a bun and curly hair cards) with rays, and fit the hair shell to it
+deps = bpy.context.evaluated_depsgraph_get()
+
+
+def probe(origin, direction):
+    hit, loc, nor, idx, obj, mtx = scene.ray_cast(deps, origin, direction)
+    return loc if hit and obj is not None and obj.name == body.name else None
+
+
+_p = probe(H + U * 0.6, -U)
+R_UP = (_p - H).dot(U) if _p else 0.105
+_p = probe(H - F * 0.6 + U * 0.02, F)
+R_BACK = (H - _p).dot(F) if _p else 0.1
+_s = [abs((_q - H).dot(S)) for _q in (probe(H + S * 0.6 + U * 0.03, -S), probe(H - S * 0.6 + U * 0.03, S)) if _q]
+R_SIDE = max(_s) if _s else 0.085
+_p = probe(H + F * 0.6 + U * 0.06, -F)
+R_FRONT = (_p - H).dot(F) if _p else 0.085
+R_UP, R_BACK, R_SIDE, R_FRONT = (max(0.06, min(0.16, v)) for v in (R_UP, R_BACK, R_SIDE, R_FRONT))
+print("head radii up %.3f back %.3f side %.3f front %.3f" % (R_UP, R_BACK, R_SIDE, R_FRONT))
 print("head centre", tuple(round(c, 3) for c in H), "radius", round(R_HEAD, 3))
 
 # ------------------------------------------------------------------------------------------------ glowing eyes
-eye_mat = flat_material("eye_glow", (1.0, 0.05, 0.02), 0.4, (1.0, 0.05, 0.02), 30.0)
+eye_mat = flat_material("eye_glow", (1.0, 0.03, 0.01), 0.4, (1.0, 0.03, 0.01), 14.0)
 for p in (eye_r, eye_l):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=0.0118, location=p + F * 0.004)
     o = bpy.context.active_object
@@ -193,9 +212,14 @@ for p in (eye_r, eye_l):
 
 # ------------------------------------------------------------------------------------------------ long black hair
 def sph(phi, elev, r):
-    # the forehead is flatter than a sphere: pull the front in so roots and locks hug the skull
-    r *= 1.0 - 0.13 * max(0.0, math.cos(phi)) * max(0.0, math.cos(elev))
-    return H + r * (math.cos(elev) * (math.cos(phi) * F + math.sin(phi) * S) + math.sin(elev) * U)
+    """A point on the measured head shell; r - R_HEAD is the offset above the scalp."""
+    off = r - R_HEAD
+    f = math.cos(elev) * math.cos(phi)
+    sd = math.cos(elev) * math.sin(phi)
+    u = math.sin(elev)
+    p = H + F * (f * (R_FRONT if f > 0 else R_BACK)) + S * (sd * R_SIDE) + U * (u * (R_UP if u > 0 else R_SIDE * 0.95))
+    n = (math.cos(elev) * (math.cos(phi) * F + math.sin(phi) * S) + math.sin(elev) * U)
+    return p + n * off
 
 
 def clear_face(p):
@@ -364,7 +388,7 @@ def area(name, loc, target, size, power, color):
 area("key_candle", T + F * 0.42 - U * 0.33 + S * 0.06, T, 0.22, 26.0, (1.0, 0.55, 0.3))
 area("fill", T + F * 0.95 + U * 0.25 - S * 0.15, T, 0.7, 7.0, (0.62, 0.68, 0.85))
 for sgn in (1, -1):
-    area("rim", H - F * 0.42 + S * 0.33 * sgn + U * 0.22, H + U * 0.02, 0.35, 55.0, (1.0, 0.12, 0.05))
+    area("rim", H - F * 0.42 + S * 0.33 * sgn + U * 0.22, H + U * 0.02, 0.35, 32.0, (1.0, 0.08, 0.03))
 area("top", H + U * 0.6 + F * 0.15, H, 0.5, 9.0, (0.8, 0.3, 0.25))
 
 # backdrop: a red glow behind her head fading to black
@@ -385,14 +409,14 @@ mp.inputs["Scale"].default_value = (1.6, 1.6, 1.6)
 ramp = bnt.nodes.new("ShaderNodeValToRGB")
 ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1)
 ramp.color_ramp.elements[1].position = 0.75
-ramp.color_ramp.elements[1].color = (0.45, 0.012, 0.008, 1)
+ramp.color_ramp.elements[1].color = (0.3, 0.006, 0.004, 1)
 nz = bnt.nodes.new("ShaderNodeTexNoise")
 nz.inputs["Scale"].default_value = 4.0
 mix = bnt.nodes.new("ShaderNodeMixRGB")
 mix.blend_type = "MULTIPLY"
 mix.inputs["Fac"].default_value = 0.45
 em = bnt.nodes.new("ShaderNodeEmission")
-em.inputs["Strength"].default_value = 1.4
+em.inputs["Strength"].default_value = 0.6
 bnt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
 bnt.links.new(mp.outputs["Vector"], gr.inputs["Vector"])
 bnt.links.new(gr.outputs["Fac"], ramp.inputs["Fac"])
@@ -406,7 +430,7 @@ world.color = (0.0, 0.0, 0.0)
 scene.world = world
 
 # ------------------------------------------------------------------------------------------------ orange MX
-mx_mat = flat_material("mx_orange", (1.0, 0.36, 0.0), 0.35, (1.0, 0.38, 0.02), 1.6)
+mx_mat = flat_material("mx_orange", (1.0, 0.3, 0.0), 0.35, (1.0, 0.28, 0.0), 0.35)
 fc = bpy.data.curves.new("MX", "FONT")
 fc.body = "MX"
 try:
@@ -453,7 +477,7 @@ for vt, look in (("AgX", "AgX - Punchy"), ("AgX", "None"), ("Filmic", "High Cont
         break
     except Exception:       # noqa: BLE001
         continue
-scene.view_settings.exposure = 0.2
+scene.view_settings.exposure = 0.0
 # glow on the eyes and the MX
 scene.use_nodes = True
 tree = scene.node_tree
@@ -462,7 +486,7 @@ comp = tree.nodes.get("Composite") or tree.nodes.new("CompositorNodeComposite")
 glare = tree.nodes.new("CompositorNodeGlare")
 glare.glare_type = "FOG_GLOW"
 glare.quality = "HIGH"
-glare.threshold = 1.2
+glare.threshold = 2.5
 glare.size = 8
 tree.links.new(rl.outputs["Image"], glare.inputs["Image"])
 tree.links.new(glare.outputs["Image"], comp.inputs["Image"])
