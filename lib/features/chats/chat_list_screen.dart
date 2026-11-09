@@ -20,6 +20,7 @@ class ChatListScreen extends ConsumerStatefulWidget {
 
 class _ChatListScreenState extends ConsumerState<ChatListScreen> {
   int _filter = 0;
+  bool _phoneBannerClosed = false;
   Map<String, PresenceInfo> _presence = {};
   Timer? _presenceTimer;
 
@@ -110,6 +111,29 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                   await _loadPresence();
                 },
                 child: CustomScrollView(slivers: [
+                  // Accounts made before phone sign-in: ask for the number once,
+                  // so they can sign in with it and friends can find them.
+                  if ((session.user?.phone ?? '').isEmpty && !_phoneBannerClosed)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                        child: Material(
+                          color: HimeColors.yellow.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(HimeRadius.md),
+                          child: ListTile(
+                            leading: const Icon(Icons.phone_iphone_rounded),
+                            title: const Text('Add your phone number'),
+                            subtitle: const Text('Sign in with it next time, and let friends find you on Hime.'),
+                            trailing: IconButton(
+                              tooltip: 'Not now',
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () => setState(() => _phoneBannerClosed = true),
+                            ),
+                            onTap: () => context.push('/settings/phone'),
+                          ),
+                        ),
+                      ),
+                    ),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),

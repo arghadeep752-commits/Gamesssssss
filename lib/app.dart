@@ -172,6 +172,8 @@ GoRouter buildRouter(SessionController session) {
         ),
       ),
       _r('/settings/account', (_) => const AccountScreen()),
+      _r('/settings/phone', (_) => const PhoneAuthScreen(link: true)),
+      _r('/settings/phone/verify', (s) => OtpScreen(args: s.extra as OtpArgs)),
       _r('/settings/privacy', (_) => const PrivacyScreen()),
       _r('/settings/security', (_) => const SecurityScreen()),
       _r('/settings/two-step', (_) => const TwoStepScreen()),

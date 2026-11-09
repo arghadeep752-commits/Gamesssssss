@@ -46,8 +46,24 @@ class _AuthScaffold extends StatelessWidget {
   }
 }
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  /// Email stays available only while the SMS sender isn't set up yet.
+  bool _emailFallback = false;
+
+  @override
+  void initState() {
+    super.initState();
+    phoneCodesAvailable().then((ok) {
+      if (mounted && !ok) setState(() => _emailFallback = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,10 +102,14 @@ class WelcomeScreen extends StatelessWidget {
             _Feature(icon: Icons.videocam_rounded, text: 'Crystal-clear voice and video calls'),
             _Feature(icon: Icons.bolt_rounded, text: 'Fast and light, even on budget phones'),
             const Spacer(),
-            PrimaryButton(label: 'Create account', onPressed: () => context.push('/auth/email?mode=signup')),
+            PrimaryButton(label: 'Continue with phone number', onPressed: () => context.push('/auth/phone')),
             const SizedBox(height: 8),
-            TextButton(onPressed: () => context.push('/auth/email'), child: const Text('I already have an account')),
-            const SizedBox(height: 6),
+            if (_emailFallback)
+              TextButton(onPressed: () => context.push('/auth/email'), child: const Text('Use email instead'))
+            else
+              Text('Your number is only used to sign in and to help friends find you.',
+                  textAlign: TextAlign.center, style: context.text.labelSmall?.copyWith(color: context.palette.muted)),
+            const SizedBox(height: 10),
             Text('Made with love in India 🇮🇳', textAlign: TextAlign.center, style: context.text.labelSmall),
           ]),
         ),
@@ -171,6 +191,84 @@ Future<void> verifyEmailCode(String email, String code, {String? password}) asyn
   final hash = r['token_hash'] as String?;
   if (hash == null) throw EmailAuthError('server_error');
   await _sb.auth.verifyOTP(type: OtpType.magiclink, tokenHash: hash);
+}
+
+/// Errors from the phone-auth function, phrased for people.
+class PhoneAuthError implements UserFacingException {
+  PhoneAuthError(this.code, {this.seconds, this.prefixes});
+  final String code;
+  final int? seconds;
+  final List<String>? prefixes;
+
+  @override
+  String toString() => switch (code) {
+        'invalid_phone' => 'Enter a valid mobile number.',
+        'sms_not_configured' => 'Phone verification isn\'t switched on yet. Please try again a little later.',
+        'country_not_supported' =>
+          'Hime currently works with ${(prefixes ?? const ['+91']).join(', ')} numbers only.',
+        'wait' => 'Please wait ${seconds ?? 60} seconds before asking for a new code.',
+        'rate_limited' => 'Too many attempts. Please try again in a little while.',
+        'daily_limit' => 'Hime has sent its maximum number of codes for today. Please try again tomorrow.',
+        'code_expired' => 'That code has expired. Ask for a new one.',
+        'invalid_code' => 'That code is wrong. Check the SMS and try again.',
+        'too_many_attempts' => 'Too many wrong tries. Ask for a new code.',
+        'phone_in_use' => 'This number already belongs to another Hime account.',
+        'send_failed' => 'Couldn\'t send the SMS right now. Please try again in a minute.',
+        'missing_token' || 'invalid_token' => 'Please sign in again.',
+        _ => 'Something went wrong. Please try again.',
+      };
+}
+
+Future<Map<String, dynamic>> _phoneAuth(Map<String, dynamic> body) async {
+  try {
+    // The access token (when signed in) goes along automatically; "link" needs it.
+    final res = await _sb.functions.invoke('phone-auth', body: body);
+    final data = res.data;
+    return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+  } on FunctionException catch (e) {
+    var details = e.details;
+    if (details is String) {
+      try {
+        details = jsonDecode(details);
+      } catch (_) {}
+    }
+    final m = details is Map ? Map<String, dynamic>.from(details) : const <String, dynamic>{};
+    throw PhoneAuthError(
+      m['error']?.toString() ?? 'server_error',
+      seconds: (m['seconds'] as num?)?.toInt(),
+      prefixes: (m['prefixes'] as List?)?.map((e) => '$e').toList(),
+    );
+  }
+}
+
+/// Whether the server can text 6-digit codes (the SMS sender is set up).
+Future<bool> phoneCodesAvailable() async {
+  try {
+    return (await _phoneAuth({'action': 'config'}))['sms'] == true;
+  } catch (_) {
+    // Can't tell (offline): keep phone sign-in as the only option.
+    return true;
+  }
+}
+
+/// Texts a 6-digit code to [phone] (E.164).
+Future<void> sendPhoneCode(String phone) => _phoneAuth({'action': 'send_code', 'phone': phone});
+
+/// Checks the code and signs in (creating the account on first sign-in).
+Future<void> verifyPhoneCode(String phone, String code) async {
+  final r = await _phoneAuth({'action': 'verify_code', 'phone': phone, 'code': code});
+  final hash = r['token_hash'] as String?;
+  if (hash == null) throw PhoneAuthError('server_error');
+  await _sb.auth.verifyOTP(type: OtpType.magiclink, tokenHash: hash);
+}
+
+/// Adds or changes the phone number of the signed-in account.
+Future<void> linkPhoneCode(String phone, String code) async {
+  await _phoneAuth({'action': 'link', 'phone': phone, 'code': code});
+  // Pick up the new number in the local session.
+  try {
+    await _sb.auth.refreshSession();
+  } catch (_) {}
 }
 
 /// Email + password sign-in and account creation.
@@ -477,10 +575,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 }
 
 class OtpArgs {
-  const OtpArgs({this.phone, this.email, this.password, this.reset = false, this.sendOnOpen = false})
+  const OtpArgs({this.phone, this.email, this.password, this.reset = false, this.sendOnOpen = false, this.link = false})
       : assert(phone != null || email != null);
   final String? phone;
   final String? email;
+
+  /// Add/change the phone number of the signed-in account instead of signing in.
+  final bool link;
 
   /// Password to set once the code is confirmed (new accounts).
   final String? password;
@@ -494,7 +595,10 @@ class OtpArgs {
 }
 
 class PhoneAuthScreen extends StatefulWidget {
-  const PhoneAuthScreen({super.key});
+  const PhoneAuthScreen({super.key, this.link = false});
+
+  /// Opened from Settings to add or change the account's number.
+  final bool link;
 
   @override
   State<PhoneAuthScreen> createState() => _PhoneAuthScreenState();
@@ -526,10 +630,28 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       _error = null;
     });
     try {
-      await _sb.auth.signInWithOtp(phone: e164);
-      if (mounted) context.push('/auth/otp', extra: OtpArgs(phone: e164));
+      await sendPhoneCode(e164);
+      if (!mounted) return;
+      final args = OtpArgs(phone: e164, link: widget.link);
+      if (widget.link) {
+        final ok = await context.push<bool>('/settings/phone/verify', extra: args);
+        if (ok == true && mounted) context.pop(true);
+      } else {
+        context.push('/auth/otp', extra: args);
+      }
     } catch (e) {
-      setState(() => _error = friendlyError(e));
+      if (e is PhoneAuthError && e.code == 'wait' && mounted) {
+        // A code was sent a moment ago: go on and enter it.
+        final args = OtpArgs(phone: e164, link: widget.link);
+        if (widget.link) {
+          final ok = await context.push<bool>('/settings/phone/verify', extra: args);
+          if (ok == true && mounted) context.pop(true);
+        } else {
+          context.push('/auth/otp', extra: args);
+        }
+        return;
+      }
+      if (mounted) setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -538,8 +660,10 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   @override
   Widget build(BuildContext context) {
     return _AuthScaffold(
-      title: 'Your phone number',
-      subtitle: 'We\'ll text you a 6-digit code to verify it.',
+      title: widget.link ? 'Your phone number' : 'Enter your phone number',
+      subtitle: widget.link
+          ? 'We\'ll text a 6-digit code to the new number to confirm it.'
+          : 'Hime will send you an SMS with a 6-digit code to verify your number.',
       children: [
         Row(children: [
           Pressable(
@@ -575,7 +699,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
         const SizedBox(height: 24),
         PrimaryButton(label: 'Send code', loading: _busy, onPressed: _send),
         const SizedBox(height: 12),
-        Text('Carrier SMS charges may apply.', textAlign: TextAlign.center, style: context.text.labelSmall),
+        Text('Receiving the SMS is free.', textAlign: TextAlign.center, style: context.text.labelSmall),
       ],
     );
   }
@@ -694,8 +818,14 @@ class _OtpScreenState extends State<OtpScreen> {
     try {
       if (a.isEmail) {
         await verifyEmailCode(a.email!, code, password: a.reset ? _newPassword.text : a.password);
+      } else if (a.link) {
+        await linkPhoneCode(a.phone!, code);
+        if (mounted) {
+          toast(context, 'Phone number saved');
+          context.pop(true);
+        }
       } else {
-        await _sb.auth.verifyOTP(type: OtpType.sms, phone: a.phone!, token: code);
+        await verifyPhoneCode(a.phone!, code);
       }
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -713,12 +843,13 @@ class _OtpScreenState extends State<OtpScreen> {
       if (a.isEmail) {
         await sendEmailCode(a.email!);
       } else {
-        await _sb.auth.signInWithOtp(phone: a.phone!);
+        await sendPhoneCode(a.phone!);
       }
       _startTimer();
       if (mounted) setState(() => _info = 'A new code is on its way.');
     } catch (e) {
       if (e is EmailAuthError && e.code == 'wait' && e.seconds != null) _startTimer(e.seconds!);
+      if (e is PhoneAuthError && e.code == 'wait' && e.seconds != null) _startTimer(e.seconds!);
       final wait = RegExp(r'after (\d+) seconds').firstMatch(e.toString());
       if (wait != null) _startTimer(int.parse(wait.group(1)!));
       if (mounted) setState(() => _error = friendlyError(e));
@@ -732,7 +863,7 @@ class _OtpScreenState extends State<OtpScreen> {
       title: email ? 'Check your email' : 'Enter the code',
       subtitle: email
           ? 'Enter the 6-digit code we sent to ${a.email}. It can take a minute to arrive — check Spam or Promotions too.'
-          : 'Sent by SMS to ${a.phone}',
+          : 'We sent an SMS with a 6-digit code to ${prettyPhone(a.phone!)}.',
       children: [
         TextField(
           controller: _code,
@@ -772,6 +903,8 @@ class _OtpScreenState extends State<OtpScreen> {
           onPressed: _seconds > 0 ? null : _resend,
           child: Text(_seconds > 0 ? 'Resend code in ${_seconds}s' : 'Resend code'),
         ),
+        if (!email)
+          TextButton(onPressed: () => context.pop(), child: const Text('Wrong number? Change it')),
       ],
     );
   }

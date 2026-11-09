@@ -125,6 +125,17 @@ class Phone {
   static String hash(String e164) => crypto.sha256.convert(utf8.encode('+${digits(e164)}')).toString();
 }
 
+/// Readable form of a phone number: "+91 98765 43210".
+String prettyPhone(String phone) {
+  final d = Phone.digits(phone);
+  if (d.startsWith('91') && d.length == 12) return '+91 ${d.substring(2, 7)} ${d.substring(7)}';
+  return '+$d';
+}
+
+/// True for the private placeholder addresses given to phone-only accounts
+/// (they are never shown and never receive mail).
+bool isPlaceholderEmail(String? email) => (email ?? '').endsWith('@phone.hime.invalid');
+
 /// Errors whose toString() is written for people and safe to show as-is.
 abstract class UserFacingException implements Exception {}
 

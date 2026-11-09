@@ -60,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         SettingsGroup(children: [
-          SettingsTile(icon: Icons.key_rounded, title: 'Account', subtitle: 'Email, password, export, delete', onTap: () => context.push('/settings/account')),
+          SettingsTile(icon: Icons.key_rounded, title: 'Account', subtitle: 'Phone number, export, delete', onTap: () => context.push('/settings/account')),
           SettingsTile(icon: Icons.lock_outline_rounded, title: 'Privacy', subtitle: 'Last seen, photo, read receipts, blocked', onTap: () => context.push('/settings/privacy')),
           SettingsTile(icon: Icons.shield_outlined, title: 'Security', subtitle: 'Encryption, two-step verification', onTap: () => context.push('/settings/security')),
           SettingsTile(icon: Icons.devices_rounded, title: 'Linked devices', onTap: () => context.push('/settings/devices')),
@@ -117,6 +117,16 @@ class AccountScreen extends ConsumerStatefulWidget {
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool exporting = false;
+
+  bool _realEmail(String? email) => (email ?? '').isNotEmpty && !isPlaceholderEmail(email);
+
+  Future<void> _changePhone() async {
+    final changed = await context.push<bool>('/settings/phone');
+    if (changed == true && mounted) {
+      await ref.read(sessionProvider).refreshProfile().catchError((_) {});
+      if (mounted) setState(() {});
+    }
+  }
 
   Future<void> _changeEmail() async {
     final v = await promptText(context, title: 'New email address', hint: 'you@example.com', maxLength: 254);
@@ -201,12 +211,26 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       appBar: AppBar(title: const Text('Account')),
       body: ListView(children: [
         SettingsGroup(title: 'Sign-in', children: [
-          if ((user?.email ?? '').isNotEmpty)
-            SettingsTile(icon: Icons.mail_outline_rounded, title: 'Email', subtitle: user!.email, onTap: _changeEmail)
+          // You sign in with your phone number (a 6-digit SMS code).
+          if ((user?.phone ?? '').isNotEmpty)
+            SettingsTile(
+              icon: Icons.phone_outlined,
+              title: 'Phone number',
+              subtitle: prettyPhone(user!.phone!),
+              trailing: const Text('Change'),
+              onTap: _changePhone,
+            )
           else
-            SettingsTile(icon: Icons.mail_outline_rounded, title: 'Add email', onTap: _changeEmail),
-          if ((user?.phone ?? '').isNotEmpty) SettingsTile(icon: Icons.phone_outlined, title: 'Phone', subtitle: '+${user!.phone}'),
-          if ((user?.email ?? '').isNotEmpty) SettingsTile(icon: Icons.password_rounded, title: 'Change password', onTap: _changePassword),
+            SettingsTile(
+              icon: Icons.phone_outlined,
+              title: 'Add your phone number',
+              subtitle: 'Sign in with it and let friends find you on Hime',
+              onTap: _changePhone,
+            ),
+          // Older accounts that were created with an email keep seeing it.
+          if (_realEmail(user?.email))
+            SettingsTile(icon: Icons.mail_outline_rounded, title: 'Email', subtitle: user!.email, onTap: _changeEmail),
+          if (_realEmail(user?.email)) SettingsTile(icon: Icons.password_rounded, title: 'Change password', onTap: _changePassword),
           SettingsTile(icon: Icons.verified_user_outlined, title: 'Two-step verification', onTap: () => context.push('/settings/two-step')),
         ]),
         SettingsGroup(title: 'Your data', children: [

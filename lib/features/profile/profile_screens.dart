@@ -314,7 +314,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           SettingsTile(icon: Icons.info_outline_rounded, title: 'About', subtitle: me.about.isEmpty ? 'Add a few words about yourself' : me.about, onTap: () => _editAbout(me)),
         ]),
         SettingsGroup(title: 'Sign-in', children: [
-          if ((user?.email ?? '').isNotEmpty) SettingsTile(icon: Icons.mail_outline_rounded, title: 'Email', subtitle: user!.email),
+          if ((user?.phone ?? '').isNotEmpty)
+            SettingsTile(icon: Icons.phone_outlined, title: 'Phone', subtitle: prettyPhone(user!.phone!), onTap: () => context.push('/settings/phone')),
+          if ((user?.email ?? '').isNotEmpty && !isPlaceholderEmail(user?.email))
+            SettingsTile(icon: Icons.mail_outline_rounded, title: 'Email', subtitle: user!.email),
           if ((user?.phone ?? '').isNotEmpty) SettingsTile(icon: Icons.phone_outlined, title: 'Phone', subtitle: '+${user!.phone}'),
         ]),
         Padding(
