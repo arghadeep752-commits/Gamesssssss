@@ -22,7 +22,7 @@ import random
 import sys
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -304,6 +304,7 @@ def point(name, pos, energy, color, radius=0.05):
     ld.shadow_soft_size = radius
     lo = bpy.data.objects.new(name, ld)
     lo.location = pos
+    lo.visible_camera = False
     scene.collection.objects.link(lo)
     return lo
 
@@ -316,6 +317,7 @@ def area(name, pos, target, energy, color, size):
     lo = bpy.data.objects.new(name, ld)
     lo.location = pos
     lo.rotation_euler = (target - pos).to_track_quat("-Z", "Y").to_euler()
+    lo.visible_camera = False
     scene.collection.objects.link(lo)
     return lo
 
@@ -332,7 +334,7 @@ def shot_light(lo, shot, value):
 
 
 # ------------------------------------------------------------------------------------------------ hanging lanterns
-LAMP_E = 42.0
+LAMP_E = 34.0
 lamps = [point("lamp_%d" % k, G(*l["pos"]), LAMP_E, (1.0, 0.62, 0.32), 0.05) for k, l in enumerate(L["lights"])]
 ROW3 = (cell(5, 3), cell(11, 3))
 ROW10 = (cell(5, 10), cell(11, 10))
@@ -380,6 +382,18 @@ for k, lo in enumerate(lamps):
     for f in range(1, END + 1):
         key_energy(lo, f, LAMP_E * lamp_factor(k, lo, f))
     linear_keys(lo.data)
+# the lantern glass is one shared material: it follows the lamps that are in view in each shot
+glow_m = _mats.get("lantern_glow")
+if glow_m is not None:
+    em_node = next(nd for nd in glow_m.node_tree.nodes if nd.type == "EMISSION")
+    grp3 = [(k, lo) for k, lo in enumerate(lamps) if near_segment(lo.location, ROW3, 5.0)]
+    grp10 = [(k, lo) for k, lo in enumerate(lamps) if near_segment(lo.location, ROW10, 5.0)]
+    for f in range(1, END + 1):
+        grp = grp3 if SHOTS["S1"][0] <= f <= SHOTS["S1"][1] else (grp10 if SHOTS["S4"][0] <= f <= SHOTS["S7"][1] else None)
+        fac = sum(lamp_factor(k, lo, f) for k, lo in grp) / len(grp) if grp else 1.0
+        em_node.inputs["Strength"].default_value = 8.0 * fac
+        em_node.inputs["Strength"].keyframe_insert("default_value", frame=f)
+    linear_keys(glow_m.node_tree)
 log("lamps:", len(lamps))
 
 # ================================================================================================ flames
@@ -467,6 +481,77 @@ chaya = new_objects(before)
 arm = next(o for o in chaya if o.type == "ARMATURE")
 body = next(o for o in chaya if o.type == "MESH")
 actions, anim_fps = {}, {}
+
+
+def retarget(src_obj, src_act, dst_obj, name):
+    """Bake a mocap clip onto Chaya's own skeleton. Blender stores pose keys relative to each file's rest pose, and the
+    clip files rest in a different pose than the avatar (arms down vs arms out), so the keys are converted through the
+    absolute parent-relative bone transforms (what the game's Godot import applies):  P_dst = R_dst^-1 R_src P_src."""
+    sd, dd = src_obj.data, dst_obj.data
+    corr = {}
+    for b in dd.bones:
+        sb = sd.bones.get(b.name)
+        if sb is None:
+            continue
+        rd = (b.parent.matrix_local.inverted() @ b.matrix_local) if b.parent else b.matrix_local.copy()
+        rs = (sb.parent.matrix_local.inverted() @ sb.matrix_local) if sb.parent else sb.matrix_local.copy()
+        corr[b.name] = rd.inverted() @ rs
+    curves, obj_curves = {}, []
+    for fc in src_act.fcurves:
+        dp = fc.data_path
+        if dp.startswith('pose.bones["'):
+            bn = dp.split('"')[1]
+            curves.setdefault(bn, {}).setdefault(dp.rsplit(".", 1)[1], {})[fc.array_index] = fc
+        else:
+            obj_curves.append(fc)
+    a0, a1 = src_act.frame_range
+    frames = list(range(int(round(a0)), int(round(a1)) + 1))
+    out = bpy.data.actions.new("chaya_" + name)
+    out.use_fake_user = True
+    for fc in obj_curves:
+        nf = out.fcurves.new(fc.data_path, index=fc.array_index)
+        nf.keyframe_points.add(len(frames))
+        nf.keyframe_points.foreach_set("co", [v for f in frames for v in (f, fc.evaluate(f))])
+        nf.update()
+    for bn, props in curves.items():
+        if bn not in corr:
+            continue
+        c = corr[bn]
+
+        def ev(prop, idx, f, default):
+            fc_ = props.get(prop, {}).get(idx)
+            return fc_.evaluate(f) if fc_ is not None else default
+        vals = {"location": [], "rotation_quaternion": [], "scale": []}
+        prev = None
+        for f in frames:
+            loc = Vector((ev("location", 0, f, 0.0), ev("location", 1, f, 0.0), ev("location", 2, f, 0.0)))
+            if "rotation_quaternion" in props:
+                q = Quaternion((ev("rotation_quaternion", 0, f, 1.0), ev("rotation_quaternion", 1, f, 0.0),
+                                ev("rotation_quaternion", 2, f, 0.0), ev("rotation_quaternion", 3, f, 0.0))).normalized()
+            elif "rotation_euler" in props:
+                q = Euler((ev("rotation_euler", 0, f, 0.0), ev("rotation_euler", 1, f, 0.0), ev("rotation_euler", 2, f, 0.0))).to_quaternion()
+            else:
+                q = Quaternion()
+            scl = Vector((ev("scale", 0, f, 1.0), ev("scale", 1, f, 1.0), ev("scale", 2, f, 1.0)))
+            l2, q2, s2 = (c @ Matrix.LocRotScale(loc, q, scl)).decompose()
+            if prev is not None and prev.dot(q2) < 0.0:
+                q2 = -q2
+            prev = q2
+            vals["location"].append(l2)
+            vals["rotation_quaternion"].append(q2)
+            vals["scale"].append(s2)
+        for prop, seq in vals.items():
+            for idx in range(4 if prop == "rotation_quaternion" else 3):
+                nf = out.fcurves.new('pose.bones["%s"].%s' % (bn, prop), index=idx, action_group=bn)
+                nf.keyframe_points.add(len(frames))
+                nf.keyframe_points.foreach_set("co", [v for f, x in zip(frames, seq) for v in (f, x[idx])])
+                nf.update()
+    for pb in dst_obj.pose.bones:
+        pb.rotation_mode = "QUATERNION"
+    log("retargeted", name, "bones", len([b for b in curves if b in corr]), "of", len(dd.bones), "frames", len(frames))
+    return out
+
+
 for nm, fn in (("idle", "idle.fbx"), ("walk", "walk.fbx")):
     p = os.path.join(RB, "anims", fn)
     if not os.path.exists(p):
@@ -477,12 +562,12 @@ for nm, fn in (("idle", "idle.fbx"), ("walk", "walk.fbx")):
     bpy.ops.import_scene.fbx(filepath=p, ignore_leaf_bones=True)
     anim_fps[nm] = scene.render.fps / scene.render.fps_base
     new = [a for a in bpy.data.actions if a not in acts0]
-    if new:
+    imported = new_objects(before)
+    src_arm = next((o for o in imported if o.type == "ARMATURE"), None)
+    if new and src_arm is not None:
         act = max(new, key=lambda a: len(a.fcurves))
-        act.name = "chaya_" + nm
-        act.use_fake_user = True
-        actions[nm] = act
-    for ob in new_objects(before):
+        actions[nm] = retarget(src_arm, act, arm, nm)
+    for ob in imported:
         bpy.data.objects.remove(ob, do_unlink=True)
 set_fps()
 log("actions:", {k: (tuple(round(x) for x in v.frame_range), anim_fps.get(k)) for k, v in actions.items()})
@@ -510,7 +595,7 @@ def skin_material(name, color_png, normal_tga, sss, rough):
 
 rtex = os.path.join(RB, "tex")
 head_mat = skin_material("chaya_head", os.path.join(CTEX, "head_chaya.png"), os.path.join(rtex, "f152_head_normal.tga"), 0.07, 0.5)
-body_mat = skin_material("chaya_body", os.path.join(CTEX, "body_chaya.png"), os.path.join(rtex, "f152_body_normal.tga"), 0.03, 0.75)
+body_mat = skin_material("chaya_body", os.path.join(CTEX, "body_chaya.png"), os.path.join(rtex, "f152_body_normal.tga"), 0.0, 0.75)
 op, ont, ob_ = principled("chaya_opacity")
 ot = ont.nodes.new("ShaderNodeTexImage")
 ot.image = image(os.path.join(rtex, "f152_opacity_color.tga"))
@@ -548,7 +633,8 @@ F.normalize()
 U = Vector((0, 0, 1))
 S = F.cross(U).normalized()
 EYE_OFF = E - root_now                       # root -> eyes, at the rest heading
-ks = EYE_OFF.z / 1.612
+ROOT_Z = Vector((0.0, 0.0, root_now.z))      # the clip keys the armature object at hip height above her feet
+ks = E.z / 1.612
 H = E - F * (0.064 * ks) + U * (0.024 * ks)
 log("root", tuple(round(c, 3) for c in root_now), "eyes offset", tuple(round(c, 3) for c in EYE_OFF), "k %.3f" % ks)
 deps = bpy.context.evaluated_depsgraph_get()
@@ -742,6 +828,17 @@ def strip(name, f0_, f1_, speed=1.0):
     log("strip", name, f0_, f1_, "scale %.3f repeat %.2f end %.1f" % (st.scale, st.repeat, st.frame_end))
 
 
+def clip_z(name, f, f0_, speed=1.0):
+    """height the clip gives the armature object at scene frame f (the walk's bounce), for a strip starting at f0_"""
+    act_ = actions.get(name)
+    fc = act_.fcurves.find("location", index=2) if act_ is not None else None
+    if fc is None:
+        return ROOT_Z.z
+    a0, a1 = act_.frame_range
+    sc = (FPS / anim_fps.get(name, FPS)) / speed
+    return fc.evaluate(a0 + ((f - f0_) / sc) % max(1.0, a1 - a0))
+
+
 def face_yaw(direction):
     """yaw so that her face (F at the rest heading) looks along `direction`"""
     return rest_rot.z + math.atan2(direction.y, direction.x) - math.atan2(F.y, F.x)
@@ -854,7 +951,7 @@ for f in range(f0, f1 + 1):
     aim(c1, f, pos, Vector((far_x, row3_y + 0.05, 1.3)) + sway(f, 0.04, 2))
 finish_cam(c1, "S1")
 fa, fb = EV["s1_figure"]
-ch_key(fa, Vector((far_x - 0.3, row3_y, 0.0)), to_east)
+ch_key(fa, Vector((far_x - 0.3, row3_y, 0.0)) + ROOT_Z, to_east)
 ch_key(fb + 1, FAR, to_east)
 strip("idle", fa, fb)
 s1_back = point("S1_back", Vector((far_x - 0.9, row3_y, 2.6)), 90.0, (0.55, 0.65, 1.0), 0.25)
@@ -933,7 +1030,7 @@ if door is not None:
     log("door_3 swings", best)
 else:
     log("WARNING: no door_3")
-ch_key(f0, Vector((door_x - 0.12, G(0, 0, -8.05).y, 0.0)), Vector((0, -1, 0)))
+ch_key(f0, Vector((door_x - 0.12, G(0, 0, -8.05).y, 0.0)) + ROOT_Z, Vector((0, -1, 0)))
 ch_key(f1 + 1, FAR, to_east)
 strip("idle", f0, f1, 0.8)
 
@@ -974,9 +1071,9 @@ for k, (fl, li) in enumerate(flames3):
 for f in range(f0, f1 + 1):
     t = (f - f0) / (f1 - f0)
     a = math.radians(212 + 64 * t)
-    rad = 2.35 - 0.3 * t
-    pos = altar + Vector((math.cos(a) * rad, math.sin(a) * rad, 0.3 + 0.32 * t))
-    tgt = altar + Vector((0, 0.05, 0.24))
+    rad = 2.15 - 0.3 * t
+    pos = altar + Vector((math.cos(a) * rad, math.sin(a) * rad, 0.5 + 0.3 * t))
+    tgt = altar + Vector((0, 0.05, 0.16))
     aim(c3, f, pos, tgt)
     key_focus(c3, f, (tgt - pos).length)
 finish_cam(c3, "S3")
@@ -1004,9 +1101,9 @@ for f in range(f0, f1 + 1):
     aim(c4, f, pos, at(15.0) + Vector((0, 0.05, 1.22)))
 finish_cam(c4, "S4")
 j1, j2 = EV["s4_jump1"], EV["s4_jump2"]
-ch_key(f0, at(14.0), to_cam)
-ch_key(j1, at(9.3), to_cam)
-ch_key(j2, at(5.6), to_cam)
+ch_key(f0, at(14.0) + ROOT_Z, to_cam)
+ch_key(j1, at(9.3) + ROOT_Z, to_cam)
+ch_key(j2, at(5.6) + ROOT_Z, to_cam)
 strip("idle", f0, f1, 0.7)
 back4 = point("S4_back", at(16.2) + Vector((0, 0, 2.3)), 70.0, (1.0, 0.25, 0.1), 0.15)
 shot_light(back4, "S4", 70.0)
@@ -1017,7 +1114,7 @@ s_start = 8.6
 for f in range(f0, f1 + 1):
     t = (f - f0) / (f1 - f0)
     s_her = s_start - 1.15 * (f - f0) / FPS
-    root = at(s_her)
+    root = at(s_her) + Vector((0, 0, clip_z("walk", f, f0)))
     ch_key(f, root, to_cam, "LINEAR" if f < f1 else "CONSTANT")
     head = root + Vector((0, 0, EYE_OFF.z - 0.02))
     cam = at(0.2 + 0.9 * t) + Vector((0.0, -0.18, 0.92)) + sway(f, 0.005, 6)
@@ -1026,8 +1123,8 @@ for f in range(f0, f1 + 1):
 finish_cam(c5, "S5")
 linear_keys(c5.data)
 strip("walk", f0, f1)
-rim5 = area("S5_rim", at(s_start + 3.0) + Vector((0, 0, 2.2)), at(s_start - 2.0) + Vector((0, 0, 1.4)), 120.0, (1.0, 0.12, 0.05), 0.9)
-shot_light(rim5, "S5", 120.0)
+rim5 = area("S5_rim", at(s_start + 3.0) + Vector((0, 0, 2.2)), at(s_start - 2.0) + Vector((0, 0, 1.4)), 55.0, (1.0, 0.2, 0.08), 0.9)
+shot_light(rim5, "S5", 55.0)
 s_end = s_start - 1.15 * (f1 - f0) / FPS
 
 f0, f1 = SHOTS["S6"]
@@ -1050,7 +1147,7 @@ key_energy(fill6, f0, 4.0)
 key_energy(fill6, EV["s6_die"], 4.0)
 key_energy(fill6, EV["s6_die"] + 7, 0.0)
 linear_keys(fill6.data)
-ch_key(f0, at(min(s_end, 3.4)), to_cam)
+ch_key(f0, at(min(s_end, 3.4)) + ROOT_Z, to_cam)
 strip("idle", f0, f1, 0.6)
 
 f0, f1 = SHOTS["S7"]
@@ -1186,7 +1283,7 @@ scene.camera = cams["cam_S1"]
 rs_ = scene.render
 rs_.engine = "CYCLES"
 rs_.resolution_x, rs_.resolution_y, rs_.resolution_percentage = T["width"], T["height"], 100
-rs_.use_motion_blur = True
+rs_.use_motion_blur = False             # render time: 20 runners x 4 vCPU
 rs_.motion_blur_shutter = 0.5
 for owner in (scene.cycles, rs_):
     try:
@@ -1202,22 +1299,22 @@ rs_.image_settings.color_depth = "8"
 rs_.filepath = "//frames/f_"
 cy = scene.cycles
 cy.device = "CPU"
-cy.samples = 40
+cy.samples = 24
 cy.use_adaptive_sampling = True
-cy.adaptive_threshold = 0.05
-cy.adaptive_min_samples = 12
+cy.adaptive_threshold = 0.06
+cy.adaptive_min_samples = 10
 cy.use_denoising = True
 for k_, v_ in (("denoiser", "OPENIMAGEDENOISE"), ("denoising_input_passes", "RGB_ALBEDO_NORMAL"), ("denoising_prefilter", "ACCURATE")):
     try:
         setattr(cy, k_, v_)
     except Exception as ex:     # noqa: BLE001
         log("denoise setting", k_, ex)
-cy.max_bounces = 4
+cy.max_bounces = 3
 cy.diffuse_bounces = 2
-cy.glossy_bounces = 2
-cy.transmission_bounces = 2
+cy.glossy_bounces = 1
+cy.transmission_bounces = 1
 cy.volume_bounces = 0
-cy.transparent_max_bounces = 16
+cy.transparent_max_bounces = 12
 cy.sample_clamp_direct = 0.0
 cy.sample_clamp_indirect = 6.0
 cy.blur_glossy = 1.0

@@ -37,7 +37,7 @@ SPECS = {
     "tanpura":   dict(q=["tanpura", "tambura", "tanpura drone", "tanpoora", "shruti box", "harmonium drone"],
                       req=["tanpura", "tambura", "tanpoora", "tanboura", "shruti", "drone"], ban=["song", "remix"], dur=(8, 1500), out=40, loop=True),
     "whoosh":    dict(q=["whoosh", "swoosh", "swish", "whoosh sound effect", "air swish"], req=["whoosh", "swoosh", "swish", "woosh"],
-                      ban=["song", "music"], dur=(0.2, 30), out=2.5),
+                      ban=["song", "music", "lead", "synth", "rave", "electronic", "laser", "sci-fi", "game"], dur=(0.2, 30), out=2.5),
     "thunder":   dict(q=["thunder", "thunderclap", "thunder rumble", "thunderstorm", "distant thunder"], req=["thunder"],
                       ban=["song", "music", "band"], dur=(2, 300), out=10.0),
     "wind":      dict(q=["wind howling", "strong wind", "wind blowing", "winter wind", "wind noise", "wind"], req=["wind"],
@@ -75,7 +75,8 @@ def main():
     report.append("")
     report += ["%-22s rms %6.1f dBFS  peak %5.1f dBFS  %5.1fs" % (k, *v) for k, v in sorted(fa.LEVELS.items())]
     open(os.path.join(OUT, "report.txt"), "w").write("\n".join(report) + "\n")
-    open(os.path.join(OUT, "credits.txt"), "w").write("\n".join(c for _, c in res.values() if c) + "\n")
+    clean = [re.sub(r"\s*8=+D", "", c) for _, c in res.values() if c]
+    open(os.path.join(OUT, "credits.txt"), "w").write("\n".join(clean) + "\n")
     print("\n".join(report))
 
 
