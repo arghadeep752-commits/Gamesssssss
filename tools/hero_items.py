@@ -337,7 +337,7 @@ def coconut_parts(kit, name, scale=1.0, tilak=True, thread=True):
     def disp(a, z, r):
         t = z / H
         ridge = 0.0045 * s * max(0.0, math.cos(3 * (a + ridge_phase))) ** 6 * math.sin(math.pi * t)
-        return ridge + 0.0016 * s * fib(a, z / s) + 0.002 * s * lump(a, z * 8.0 / s)
+        return ridge + 0.0026 * s * fib(a, z / s) + 0.002 * s * lump(a, z * 8.0 / s)
     parts = [kit.revolve(name + "_husk", prof, 72, "coconut", disp=disp)]
     top = H
     for k in range(70):                                  # the coir tuft at the crown
