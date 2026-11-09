@@ -1,0 +1,329 @@
+name: Chaya - trailer
+
+# Builds the cinematic trailer: Blender scene from the game's assets -> Cycles render on 20 runners in parallel ->
+# soundtrack mixed from real recordings -> edit (titles, glitches, grade, letterbox) -> release with the MP4.
+# A commit message containing [preview] only builds the scene and posts preview stills to the chaya-ci release.
+
+on:
+  push:
+    branches: [chaya]
+    paths:
+      - "tools/trailer/**"
+      - ".github/workflows/chaya-trailer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chaya-trailer
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  BLENDER_VERSION: "4.2.3"
+  CHUNKS: "20"
+
+jobs:
+  # ---------------------------------------------------------------- house + Chaya + cameras -> trailer.blend
+  prep:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.chunks.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Downloaded assets (the game build's cache)
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            assets/downloaded
+            assets/sounds
+            build/CREDITS_AUTO.md
+            build/textures_contact.jpg
+            build/sounds_report.txt
+            build/textures_chosen.json
+          key: chaya-assets-${{ hashFiles('tools/fetch_assets.py') }}
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender python3-numpy python3-pil ffmpeg \
+            libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6 libice6 libegl1 >/dev/null
+          blender --version | head -1
+      - name: Download assets (cache miss only)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p build && touch build/.gdignore
+          python3 tools/fetch_assets.py all 2>&1 | tail -40
+      - name: Official Blender (Cycles + OpenImageDenoise)
+        id: bl
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+      - name: Download Blender
+        if: steps.bl.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/blender && cd ~/blender
+          V=$BLENDER_VERSION; S=${V%.*}
+          for u in https://download.blender.org/release/Blender$S/blender-$V-linux-x64.tar.xz \
+                   https://mirrors.ocf.berkeley.edu/blender/release/Blender$S/blender-$V-linux-x64.tar.xz \
+                   https://ftp.nluug.nl/pub/graphics/blender/release/Blender$S/blender-$V-linux-x64.tar.xz; do
+            curl -fsSL --retry 3 -o b.tar.xz "$u" && break
+          done
+          tar -xf b.tar.xz --strip-components=1 && rm -f b.tar.xz
+      - name: Blender check
+        run: ~/blender/blender -b --version | head -2
+      - name: The house (same seed as the game) and Chaya's textures
+        run: |
+          mkdir -p build map_out ctex trailer
+          python3 tools/maze.py map_out/layout.json 11
+          blender -b -noaudio -P tools/build_map.py -- map_out/layout.json map_out > build/trailer-map-log.txt 2>&1 || { tail -60 build/trailer-map-log.txt; exit 1; }
+          tail -5 build/trailer-map-log.txt
+          python3 tools/logo/chaya_tex.py assets/downloaded/chaya/tex ctex
+          ls -la map_out ctex
+      - name: Trailer scene
+        run: |
+          rc=0
+          ~/blender/blender -b -noaudio --python-exit-code 1 -P tools/trailer/scene.py -- map_out ctex assets trailer/trailer.blend > build/trailer-scene-log.txt 2>&1 || rc=$?
+          grep -E "\[trailer\]|Error|Traceback|File \"|line [0-9]" build/trailer-scene-log.txt | head -200 || true
+          [ $rc -eq 0 ] || { tail -40 build/trailer-scene-log.txt; exit 1; }
+          test -f trailer/trailer.blend
+          ls -la trailer
+      - name: Render chunks
+        id: chunks
+        run: |
+          python3 - >> "$GITHUB_OUTPUT" <<'EOF'
+          import json, os, sys
+          sys.path.insert(0, "tools/trailer")
+          import tl
+          n = tl.load()["frames"]
+          c = int(os.environ["CHUNKS"])
+          s = -(-n // c)
+          inc = [{"i": i, "s": 1 + i * s, "e": min(n, (i + 1) * s)} for i in range(c) if 1 + i * s <= n]
+          print("matrix=" + json.dumps({"include": inc}))
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trailer-scene
+          path: trailer/
+          retention-days: 3
+          if-no-files-found: error
+      - name: Preview stills
+        continue-on-error: true
+        run: |
+          ~/blender/blender -b trailer/trailer.blend -noaudio --python-exit-code 1 -P tools/trailer/preview.py -- preview 70,100,150,245,320,380,470,560,640,688,780,850 50 16 > build/trailer-preview-log.txt 2>&1 || true
+          grep -E "\[preview\]|Error|Traceback" build/trailer-preview-log.txt || true
+          python3 - <<'EOF'
+          import glob
+          from PIL import Image, ImageDraw
+          fs = sorted(glob.glob("preview/p_*.jpg"))
+          ims = [Image.open(f).convert("RGB") for f in fs]
+          if ims:
+              w, h = ims[0].size
+              cols = 4
+              rows = -(-len(ims) // cols)
+              sheet = Image.new("RGB", (w * cols, h * rows), (20, 20, 20))
+              for i, (f, im) in enumerate(zip(fs, ims)):
+                  sheet.paste(im, ((i % cols) * w, (i // cols) * h))
+                  ImageDraw.Draw(sheet).text(((i % cols) * w + 8, (i // cols) * h + 6), f.split("_")[-1][:-4], fill=(255, 255, 0))
+              sheet.save("build/trailer_preview.jpg", quality=88)
+          EOF
+      - name: Publish scene log and previews
+        if: always()
+        run: |
+          for f in build/trailer_preview.jpg build/trailer-scene-log.txt build/trailer-map-log.txt build/trailer-preview-log.txt; do
+            [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+
+  # ---------------------------------------------------------------- Cycles, 20 runners
+  render:
+    needs: prep
+    if: ${{ !contains(github.event.head_commit.message, '[preview]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prep.outputs.matrix) }}
+    steps:
+      - name: Blender
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+          fail-on-cache-miss: true
+      - name: Libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6 libice6 libegl1 >/dev/null
+      - uses: actions/download-artifact@v4
+        with:
+          name: trailer-scene
+          path: trailer
+      - name: Render frames ${{ matrix.s }}-${{ matrix.e }}
+        run: |
+          mkdir -p frames
+          rc=0
+          ~/blender/blender -b trailer/trailer.blend -noaudio --python-exit-code 1 -t 0 -o "$PWD/frames/f_####" -F PNG \
+            -s ${{ matrix.s }} -e ${{ matrix.e }} -a > render.log 2>&1 || rc=$?
+          grep -E "Saved:|^ ?Time:|Error|Traceback" render.log | tail -n 150 || true
+          [ $rc -eq 0 ] || { tail -40 render.log; exit 1; }
+          N=$(( ${{ matrix.e }} - ${{ matrix.s }} + 1 ))
+          test "$(ls frames | wc -l)" -eq "$N"
+          ffmpeg -v error -y -framerate 24 -start_number ${{ matrix.s }} -i frames/f_%04d.png -frames:v $N \
+            -c:v libx264 -preset slow -crf 12 -pix_fmt yuv420p -r 24 "chunk_$(printf %02d ${{ matrix.i }}).mp4"
+          ls -la chunk_*.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chunk-${{ matrix.i }}
+          path: chunk_*.mp4
+          retention-days: 3
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------- soundtrack (real recordings only)
+  audio:
+    if: ${{ !contains(github.event.head_commit.message, '[preview]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Downloaded assets (the game build's cache)
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            assets/downloaded
+            assets/sounds
+            build/CREDITS_AUTO.md
+            build/textures_contact.jpg
+            build/sounds_report.txt
+            build/textures_chosen.json
+          key: chaya-assets-${{ hashFiles('tools/fetch_assets.py') }}
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg python3-numpy >/dev/null
+      - name: Game sounds (cache miss only)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p build
+          python3 tools/fetch_assets.py sounds 2>&1 | tail -30
+      - name: Trailer recordings from Wikimedia Commons
+        run: |
+          mkdir -p build
+          python3 tools/trailer/fetch_sfx.py build/trailer_snd 2>&1 | tail -60
+      - name: Mix
+        run: |
+          python3 tools/trailer/soundtrack.py assets/sounds build/trailer_snd build/trailer_audio
+          cp build/trailer_snd/report.txt build/trailer_audio/trailer_sounds_report.txt
+          cp build/trailer_snd/credits.txt build/trailer_audio/trailer_sound_credits.txt
+          [ -f build/CREDITS_AUTO.md ] && cp build/CREDITS_AUTO.md build/trailer_audio/game_credits.md || true
+          ffmpeg -v error -y -i build/trailer_audio/trailer_mix.wav -c:a libmp3lame -b:a 192k build/trailer_audio/trailer_mix_preview.mp3
+          ls -la build/trailer_audio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trailer-audio
+          path: build/trailer_audio/
+          retention-days: 3
+          if-no-files-found: error
+      - name: Publish sound report
+        if: always()
+        run: |
+          for f in build/trailer_audio/trailer_sounds_report.txt build/trailer_audio/cues.txt build/trailer_audio/trailer_mix_preview.mp3; do
+            [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+
+  # ---------------------------------------------------------------- edit + release
+  edit:
+    needs: [render, audio]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Downloaded assets (fonts)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            assets/downloaded
+            assets/sounds
+            build/CREDITS_AUTO.md
+            build/textures_contact.jpg
+            build/sounds_report.txt
+            build/textures_chosen.json
+          key: chaya-assets-${{ hashFiles('tools/fetch_assets.py') }}
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg python3-pil >/dev/null
+          [ -f assets/downloaded/fonts/RozhaOne-Regular.ttf ] || { mkdir -p build; python3 tools/fetch_assets.py fonts | tail -5; }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: chunk-*
+          path: chunks
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: trailer-audio
+          path: audio
+      - name: Join the rendered chunks
+        run: |
+          ls chunks/chunk_*.mp4 | sort | sed "s|^|file '$PWD/|; s|$|'|" > chunks.txt
+          cat chunks.txt
+          ffmpeg -v error -y -f concat -safe 0 -i chunks.txt -c copy shots.mp4
+          ffprobe -v error -count_frames -select_streams v -show_entries stream=nb_read_frames -of csv=p=0 shots.mp4
+      - name: Edit
+        run: |
+          DEVA=assets/downloaded/fonts/RozhaOne-Regular.ttf
+          [ -f "$DEVA" ] || DEVA=assets/downloaded/fonts/NotoSansDevanagari.ttf
+          python3 tools/trailer/edit.py shots.mp4 audio/trailer_mix.wav out assets/fonts/TheFriendlyIndians.ttf "$DEVA" assets/ui/logo_chaya.png 2>&1 | grep -v "^+ " | tail -20
+          ls -la out
+      - name: Release
+        run: |
+          TAG=chaya-trailer-v${GITHUB_RUN_NUMBER}
+          cp audio/music_bed.wav out/Chaya_Trailer_music.wav
+          cp audio/sfx.wav out/Chaya_Trailer_sfx.wav
+          cp audio/trailer_mix.wav out/Chaya_Trailer_soundtrack.wav
+          {
+            echo "# Chaya - trailer credits"
+            echo
+            echo "Trailer by Mxyan Games Studio (founder: Arghadeep Das). Rendered in Blender (Cycles) from the game's own scenes."
+            echo
+            echo "- Chaya: Microsoft Rocketbox avatar and motion capture (MIT licence), re-shaded for the game."
+            echo "- Textures: photographic CC0 scans from Poly Haven / ambientCG."
+            echo "- Fonts: The Friendly Indians (supplied by Mxyan Games); Rozha One (SIL OFL). CHAYA lettering: Biro Script reduced by ingoFonts, drawn as artwork (no font file included)."
+            echo "- Sound and music: real recordings only (nothing synthesised or AI generated), from Wikimedia Commons:"
+            echo
+            cat audio/trailer_sound_credits.txt
+            [ -f audio/game_credits.md ] && grep "Sound '" audio/game_credits.md || true
+          } > out/TRAILER_CREDITS.md
+          cat > notes.md <<EOT
+          # CHAYA - official trailer
+
+          **Releasing 16 November 2026** - a horror game by **Mxyan Games Studio** (founder: Arghadeep Das).
+
+          - **Chaya_Trailer.mp4** - the trailer (1080p, 24 fps)
+          - Chaya_Trailer_raw_shots.mp4 - the rendered shots without titles or grading, for re-editing (e.g. in Alight Motion)
+          - Chaya_Trailer_music.wav / Chaya_Trailer_sfx.wav / Chaya_Trailer_soundtrack.wav - the soundtrack stems
+          - Chaya_Trailer_poster.jpg - the title frame
+
+          Every sound is a real recording (nothing AI generated) - see TRAILER_CREDITS.md.
+          EOT
+          sed -i 's/^          //' notes.md
+          FILES="out/Chaya_Trailer.mp4 out/Chaya_Trailer_poster.jpg out/Chaya_Trailer_raw_shots.mp4 out/Chaya_Trailer_music.wav out/Chaya_Trailer_sfx.wav out/Chaya_Trailer_soundtrack.wav out/TRAILER_CREDITS.md"
+          set +e
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Chaya - official trailer" --notes-file notes.md
+          ok=$?
+          if [ $ok -ne 0 ]; then
+            gh api -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" \
+              -f name="Chaya - official trailer" -F body=@notes.md -F draft=false -F prerelease=false --jq .html_url
+            ok=$?
+          fi
+          set -e
+          if [ $ok -eq 0 ]; then
+            gh release upload "$TAG" $FILES -R "$GITHUB_REPOSITORY" --clobber
+            echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+          fi
+          gh release upload chaya-ci out/Chaya_Trailer.mp4 out/Chaya_Trailer_poster.jpg -R "$GITHUB_REPOSITORY" --clobber || true
+          test $ok -eq 0

@@ -6,6 +6,8 @@ on:
     paths-ignore:
       - "tools/logo/**"
       - ".github/workflows/chaya-logo.yml"
+      - "tools/trailer/**"
+      - ".github/workflows/chaya-trailer.yml"
   workflow_dispatch:
 
 permissions:

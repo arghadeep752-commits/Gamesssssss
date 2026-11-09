@@ -1,0 +1,47 @@
+{
+  "fps": 24,
+  "width": 1600,
+  "height": 900,
+  "out_width": 1920,
+  "out_height": 1080,
+  "events": {
+    "s1_flicker": [60, 92], "s1_figure": [64, 90],
+    "s2_walk_end": 183, "s2_door": [155, 231],
+    "s4_jump1": 416, "s4_jump2": 460,
+    "s5_lamps_die": 610,
+    "s6_die": 651,
+    "s7_lunge": 683, "s7_black": 713
+  },
+  "shots": [
+    {"id": "S1", "f0": 1,   "f1": 120, "what": "corridor push-in, lanterns flicker, a figure at the far end"},
+    {"id": "S2", "f0": 121, "f1": 252, "what": "candle in hand, a door creaks open - she is standing behind it"},
+    {"id": "S3", "f0": 253, "f1": 372, "what": "orbit round the pooja altar, the six holy items, diyas burning"},
+    {"id": "S4", "f0": 373, "f1": 504, "what": "long corridor: each time the lamps die she is closer"},
+    {"id": "S5", "f0": 505, "f1": 624, "what": "she limps towards you, eyes burning, low angle"},
+    {"id": "S6", "f0": 625, "f1": 672, "what": "close on the candle flame - it gutters and dies"},
+    {"id": "S7", "f0": 673, "f1": 720, "what": "her face rushes out of the dark"},
+    {"id": "S8", "f0": 721, "f1": 864, "what": "3D CHAYA title in firelight, rising embers"}
+  ],
+  "edit": [
+    {"seg": "studio", "type": "card", "dur": 3.0, "style": "studio", "lines": ["MXYAN GAMES STUDIO", "PRESENTS"]},
+    {"seg": "S1", "type": "shot"},
+    {"seg": "cardA", "type": "card", "dur": 1.75, "lines": ["SHE DIED IN THIS HOUSE"]},
+    {"seg": "S2", "type": "shot"},
+    {"seg": "cardB", "type": "card", "dur": 1.75, "lines": ["HER SOUL NEVER LEFT"]},
+    {"seg": "S3", "type": "shot", "overlays": [
+      {"t0": 0.4, "t1": 2.5, "text": "FIND THE SIX HOLY ITEMS"},
+      {"t0": 2.75, "t1": 4.8, "text": "COMPLETE THE RITUAL"}]},
+    {"seg": "cardC", "type": "card", "dur": 1.5, "lines": ["BEFORE SHE FINDS YOU"]},
+    {"seg": "S4", "type": "shot"},
+    {"seg": "S5", "type": "shot"},
+    {"seg": "S6", "type": "shot"},
+    {"seg": "black1", "type": "black", "dur": 0.5},
+    {"seg": "S7", "type": "shot", "shake": true},
+    {"seg": "black2", "type": "black", "dur": 0.8},
+    {"seg": "S8", "type": "shot", "overlays": [
+      {"t0": 1.2, "t1": 6.0, "text": "छाया", "style": "hindi"},
+      {"t0": 2.4, "t1": 6.0, "text": "16 NOVEMBER 2026", "style": "date"}]},
+    {"seg": "end", "type": "card", "dur": 5.2, "style": "end",
+     "lines": ["MXYAN GAMES STUDIO", "FOUNDER: ARGHADEEP DAS", "RELEASING 16 NOVEMBER 2026", "ON ANDROID"]}
+  ]
+}
