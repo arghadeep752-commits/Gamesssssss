@@ -131,6 +131,20 @@ jobs:
           [ -f map_dl/chaya_map.blend ] && mv map_dl/chaya_map.blend build/chaya_map.blend
           rm -rf map_dl
           ls -la assets/map build
+      - name: Chaya's Mixamo clips (the developer's own downloads, kept in a private draft release)
+        run: |
+          mkdir -p assets/downloaded/chaya/mixamo
+          REL=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-mixamo") | .id' | head -1)
+          if [ -n "$REL" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/releases/$REL/assets?per_page=100" --jq '.[] | "\(.id) \(.name)"' | while read -r id name; do
+              case "$name" in *.fbx|*.FBX)
+                gh api -H "Accept: application/octet-stream" "repos/$GITHUB_REPOSITORY/releases/assets/$id" > "assets/downloaded/chaya/mixamo/$name" && echo "mixamo clip: $name";;
+              esac
+            done
+          else
+            echo "no Mixamo clips yet - Chaya keeps her Rocketbox motion capture"
+          fi
+          ls -la assets/downloaded/chaya/mixamo
       - name: Godot and export templates
         run: |
           mkdir -p ~/godot build && touch build/.gdignore

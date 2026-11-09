@@ -9,6 +9,41 @@ enum S { PATROL, HEARD, CHASE, SEARCH, IDLE, RITUAL }
 
 const MODEL := "res://assets/downloaded/chaya/Medical_Female_01.fbx"
 const ANIMS := {"walk": "walk", "run": "run", "idle": "idle"}
+# Mixamo clips (the developer's own downloads, fetched by CI from a private release): retargeted onto Chaya at load
+const MIXAMO_DIR := "res://assets/downloaded/chaya/mixamo/"
+const MIXAMO_CLIPS := {"idle": true, "walk": true, "run": true, "scream": false, "attack": false}    # name: loops
+const MIXAMO_MAP := {
+	"Hips": ["Bip01 Pelvis"], "Spine": ["Bip01 Spine"], "Spine1": ["Bip01 Spine1"], "Spine2": ["Bip01 Spine2", "Bip01 Spine1"],
+	"Neck": ["Bip01 Neck"], "Head": ["Bip01 Head"],
+	"LeftShoulder": ["Bip01 L Clavicle"], "LeftArm": ["Bip01 L UpperArm"], "LeftForeArm": ["Bip01 L Forearm"], "LeftHand": ["Bip01 L Hand"],
+	"RightShoulder": ["Bip01 R Clavicle"], "RightArm": ["Bip01 R UpperArm"], "RightForeArm": ["Bip01 R Forearm"], "RightHand": ["Bip01 R Hand"],
+	"LeftUpLeg": ["Bip01 L Thigh"], "LeftLeg": ["Bip01 L Calf"], "LeftFoot": ["Bip01 L Foot"], "LeftToeBase": ["Bip01 L Toe0"],
+	"RightUpLeg": ["Bip01 R Thigh"], "RightLeg": ["Bip01 R Calf"], "RightFoot": ["Bip01 R Foot"], "RightToeBase": ["Bip01 R Toe0"],
+	"LeftHandThumb1": ["Bip01 L Finger0"], "LeftHandThumb2": ["Bip01 L Finger01"], "LeftHandThumb3": ["Bip01 L Finger02"],
+	"LeftHandIndex1": ["Bip01 L Finger1"], "LeftHandIndex2": ["Bip01 L Finger11"], "LeftHandIndex3": ["Bip01 L Finger12"],
+	"LeftHandMiddle1": ["Bip01 L Finger2"], "LeftHandMiddle2": ["Bip01 L Finger21"], "LeftHandMiddle3": ["Bip01 L Finger22"],
+	"LeftHandRing1": ["Bip01 L Finger3"], "LeftHandRing2": ["Bip01 L Finger31"], "LeftHandRing3": ["Bip01 L Finger32"],
+	"LeftHandPinky1": ["Bip01 L Finger4"], "LeftHandPinky2": ["Bip01 L Finger41"], "LeftHandPinky3": ["Bip01 L Finger42"],
+	"RightHandThumb1": ["Bip01 R Finger0"], "RightHandThumb2": ["Bip01 R Finger01"], "RightHandThumb3": ["Bip01 R Finger02"],
+	"RightHandIndex1": ["Bip01 R Finger1"], "RightHandIndex2": ["Bip01 R Finger11"], "RightHandIndex3": ["Bip01 R Finger12"],
+	"RightHandMiddle1": ["Bip01 R Finger2"], "RightHandMiddle2": ["Bip01 R Finger21"], "RightHandMiddle3": ["Bip01 R Finger22"],
+	"RightHandRing1": ["Bip01 R Finger3"], "RightHandRing2": ["Bip01 R Finger31"], "RightHandRing3": ["Bip01 R Finger32"],
+	"RightHandPinky1": ["Bip01 R Finger4"], "RightHandPinky2": ["Bip01 R Finger41"], "RightHandPinky3": ["Bip01 R Finger42"],
+}
+# the next joint down each chain: used to line Chaya's rest pose up with Mixamo's T-pose before copying motion
+const MIXAMO_NEXT := {
+	"Spine": "Spine1", "Spine1": "Spine2", "Spine2": "Neck", "Neck": "Head",
+	"LeftShoulder": "LeftArm", "LeftArm": "LeftForeArm", "LeftForeArm": "LeftHand", "LeftHand": "LeftHandMiddle1",
+	"RightShoulder": "RightArm", "RightArm": "RightForeArm", "RightForeArm": "RightHand", "RightHand": "RightHandMiddle1",
+	"LeftUpLeg": "LeftLeg", "LeftLeg": "LeftFoot", "LeftFoot": "LeftToeBase",
+	"RightUpLeg": "RightLeg", "RightLeg": "RightFoot", "RightFoot": "RightToeBase",
+	"LeftHandThumb1": "LeftHandThumb2", "LeftHandThumb2": "LeftHandThumb3", "LeftHandIndex1": "LeftHandIndex2",
+	"LeftHandIndex2": "LeftHandIndex3", "LeftHandMiddle1": "LeftHandMiddle2", "LeftHandMiddle2": "LeftHandMiddle3",
+	"LeftHandRing1": "LeftHandRing2", "LeftHandRing2": "LeftHandRing3", "LeftHandPinky1": "LeftHandPinky2", "LeftHandPinky2": "LeftHandPinky3",
+	"RightHandThumb1": "RightHandThumb2", "RightHandThumb2": "RightHandThumb3", "RightHandIndex1": "RightHandIndex2",
+	"RightHandIndex2": "RightHandIndex3", "RightHandMiddle1": "RightHandMiddle2", "RightHandMiddle2": "RightHandMiddle3",
+	"RightHandRing1": "RightHandRing2", "RightHandRing2": "RightHandRing3", "RightHandPinky1": "RightHandPinky2", "RightHandPinky2": "RightHandPinky3",
+}
 const WALK_SPEED := 1.25
 const RUN_SPEED := 2.95
 const ANIM_WALK_SPEED := 1.15
@@ -117,6 +152,9 @@ var _last_seen := Vector3.ZERO
 var _lost := 0.0
 var _repath := 0.0
 var _anim_name := ""
+var _anim_speed := {"walk": ANIM_WALK_SPEED, "run": ANIM_RUN_SPEED}   # metres per second each clip was made for
+var _scream_t := 0.0
+var mixamo_clips: Array = []
 var _step_t := 0.0
 var _stuck_t := 0.0
 var _last_pos := Vector3.ZERO
@@ -172,6 +210,213 @@ func _retarget(clip: Animation, sk: Skeleton3D) -> Animation:
 					a.track_set_key_value(t, k, Vector3(v.x, v.y, 0.0))
 	return a
 
+static func _mx_name(bone: String) -> String:
+	var b := bone
+	var i := b.rfind(":")
+	if i >= 0:
+		b = b.substr(i + 1)
+	if b.begins_with("mixamorig"):
+		b = b.substr(9)
+		while b.length() > 0 and (b[0] == "_" or b[0].is_valid_int()):
+			b = b.substr(1)
+	return b
+
+static func _chain(n: Node, stop: Node) -> Transform3D:
+	# transform of n relative to `stop` (works for scenes that are not in the tree yet)
+	var t := Transform3D.IDENTITY
+	var c := n
+	while c != null and c != stop:
+		if c is Node3D:
+			t = (c as Node3D).transform * t
+		c = c.get_parent()
+	return t
+
+static func _depth(sk: Skeleton3D, i: int) -> int:
+	var d := 0
+	var p := sk.get_bone_parent(i)
+	while p >= 0:
+		d += 1
+		p = sk.get_bone_parent(p)
+	return d
+
+## Copy a Mixamo clip onto Chaya's Rocketbox skeleton: world-space rotation changes from each skeleton's rest pose,
+## after turning her rest pose into Mixamo's T-pose bone by bone (her arms rest lower) and facing the same way.
+func _retarget_mixamo(src_root: Node, clip: Animation, key: String) -> Animation:
+	var sks := src_root.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty() or skel == null:
+		return null
+	var ss := sks[0] as Skeleton3D
+	var ds := skel
+	var sx := _chain(ss, null)
+	var dx := _chain(ds, visual)
+	var sq := sx.basis.orthonormalized().get_rotation_quaternion()
+	var dq := dx.basis.orthonormalized().get_rotation_quaternion()
+	var sidx := {}
+	for i in ss.get_bone_count():
+		sidx[_mx_name(ss.get_bone_name(i))] = i
+	var pairs: Array = []
+	var dmap := {}
+	for mx in MIXAMO_MAP:
+		if not sidx.has(mx):
+			continue
+		for cand in MIXAMO_MAP[mx]:
+			var di := ds.find_bone(cand)
+			if di >= 0:
+				pairs.append([mx, sidx[mx], di])
+				dmap[mx] = di
+				break
+	if pairs.size() < 12 or not dmap.has("Hips"):
+		push_warning("Mixamo %s: only %d bones matched" % [key, pairs.size()])
+		return null
+	# rest poses in each scene's own frame
+	var s_rot := {}
+	var s_pos := {}
+	for i in ss.get_bone_count():
+		var g := ss.get_bone_global_rest(i)
+		s_rot[i] = sq * g.basis.orthonormalized().get_rotation_quaternion()
+		s_pos[i] = sx * g.origin
+	var d_rot := {}
+	var d_pos := {}
+	for i in ds.get_bone_count():
+		var g := ds.get_bone_global_rest(i)
+		d_rot[i] = dq * g.basis.orthonormalized().get_rotation_quaternion()
+		d_pos[i] = dx * g.origin
+	# face the same way: line up the hip axes (right thigh - left thigh)
+	var face := Quaternion.IDENTITY
+	if sidx.has("LeftUpLeg") and sidx.has("RightUpLeg") and dmap.has("LeftUpLeg") and dmap.has("RightUpLeg"):
+		var a: Vector3 = s_pos[sidx["RightUpLeg"]] - s_pos[sidx["LeftUpLeg"]]
+		var b: Vector3 = d_pos[dmap["RightUpLeg"]] - d_pos[dmap["LeftUpLeg"]]
+		a.y = 0.0
+		b.y = 0.0
+		if a.length() > 1e-4 and b.length() > 1e-4:
+			face = Quaternion(Vector3.UP, atan2(a.normalized().cross(b.normalized()).y, a.normalized().dot(b.normalized())))
+	# rest alignment, parents first
+	pairs.sort_custom(func(p1, p2): return _depth(ds, p1[2]) < _depth(ds, p2[2]))
+	var align := {}
+	var d_al := {}
+	for pr in pairs:
+		var mx: String = pr[0]
+		var si: int = pr[1]
+		var di: int = pr[2]
+		var up := Quaternion.IDENTITY
+		var p := ds.get_bone_parent(di)
+		while p >= 0:
+			if align.has(p):
+				up = align[p]
+				break
+			p = ds.get_bone_parent(p)
+		var al := up
+		if MIXAMO_NEXT.has(mx) and sidx.has(MIXAMO_NEXT[mx]) and dmap.has(MIXAMO_NEXT[mx]):
+			var sdir: Vector3 = face * (s_pos[sidx[MIXAMO_NEXT[mx]]] - s_pos[si])
+			var ddir: Vector3 = up * (d_pos[dmap[MIXAMO_NEXT[mx]]] - d_pos[di])
+			if sdir.length() > 1e-5 and ddir.length() > 1e-5:
+				al = Quaternion(ddir.normalized(), sdir.normalized()) * up
+		align[di] = al
+		d_al[di] = al * d_rot[di]
+	# source tracks
+	var rtr := {}
+	var ptr := {}
+	for t in clip.get_track_count():
+		var bn := str(clip.track_get_path(t).get_concatenated_subnames())
+		var bi := ss.find_bone(bn)
+		if bi < 0:
+			continue
+		if clip.track_get_type(t) == Animation.TYPE_ROTATION_3D:
+			rtr[bi] = t
+		elif clip.track_get_type(t) == Animation.TYPE_POSITION_3D:
+			ptr[bi] = t
+	var s_order: Array = range(ss.get_bone_count())
+	s_order.sort_custom(func(i1, i2): return _depth(ss, i1) < _depth(ss, i2))
+	var d_order: Array = range(ds.get_bone_count())
+	d_order.sort_custom(func(i1, i2): return _depth(ds, i1) < _depth(ds, i2))
+	var out := Animation.new()
+	out.length = clip.length
+	out.loop_mode = Animation.LOOP_LINEAR if MIXAMO_CLIPS.get(key, true) else Animation.LOOP_NONE
+	var otr := {}
+	var d2s := {}
+	for pr in pairs:
+		d2s[pr[2]] = pr[1]
+		var tr := out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(tr, NodePath("Skeleton3D:" + ds.get_bone_name(pr[2])))
+		otr[pr[2]] = tr
+	var hips_s: int = sidx["Hips"]
+	var root_d := ds.find_bone("Bip01")
+	var root_tr := -1
+	if root_d >= 0 and ptr.has(hips_s):
+		root_tr = out.add_track(Animation.TYPE_POSITION_3D)
+		out.track_set_path(root_tr, NodePath("Skeleton3D:Bip01"))
+	var k := 1.0
+	if absf(s_pos[hips_s].y) > 1e-4:
+		k = d_pos[dmap["Hips"]].y / s_pos[hips_s].y
+	var fwd_seps: Array = []
+	var fps := 30.0
+	var n := int(ceil(clip.length * fps)) + 1
+	for f in n:
+		var time := minf(float(f) / fps, clip.length)
+		var sw := {}
+		var sp := {}
+		for i in s_order:
+			var lr: Quaternion = clip.rotation_track_interpolate(rtr[i], time) if rtr.has(i) else ss.get_bone_rest(i).basis.get_rotation_quaternion()
+			var lp: Vector3 = clip.position_track_interpolate(ptr[i], time) if ptr.has(i) else ss.get_bone_rest(i).origin
+			var pi := ss.get_bone_parent(i)
+			if pi < 0:
+				sw[i] = sq * lr
+				sp[i] = sx * lp
+			else:
+				sw[i] = sw[pi] * lr
+				sp[i] = sp[pi] + (sw[pi] as Quaternion) * (lp * sx.basis.get_scale())
+		var dw := {}
+		for i in d_order:
+			var pi := ds.get_bone_parent(i)
+			if d_al.has(i):
+				var si: int = d2s[i]
+				var delta: Quaternion = face * (sw[si] as Quaternion) * (s_rot[si] as Quaternion).inverse() * face.inverse()
+				dw[i] = delta * (d_al[i] as Quaternion)
+			else:
+				var lr := ds.get_bone_rest(i).basis.get_rotation_quaternion()
+				dw[i] = (dq * lr) if pi < 0 else (dw[pi] as Quaternion) * lr
+			if otr.has(i):
+				var parent_w: Quaternion = dq if pi < 0 else dw[pi]
+				out.rotation_track_insert_key(otr[i], time, (parent_w.inverse() * (dw[i] as Quaternion)).normalized())
+		if root_tr >= 0:
+			var dy: float = ((sp[hips_s] as Vector3).y - (s_pos[hips_s] as Vector3).y) * k
+			var rest := ds.get_bone_rest(root_d).origin
+			out.position_track_insert_key(root_tr, time, rest + dx.basis.inverse() * Vector3(0.0, dy, 0.0))
+		if sidx.has("LeftFoot") and sidx.has("RightFoot"):
+			var sep: Vector3 = face * ((sp[sidx["LeftFoot"]] as Vector3) - (sp[sidx["RightFoot"]] as Vector3))
+			fwd_seps.append(sep.z)
+	# the speed this clip walks at (in-place clips): one cycle = two steps of half the foot swing
+	if key in ["walk", "run"] and fwd_seps.size() > 4:
+		var lo: float = fwd_seps.min()
+		var hi: float = fwd_seps.max()
+		var spd := (hi - lo) * k / maxf(0.2, clip.length)
+		if spd > 0.25 and spd < 5.0:
+			_anim_speed[key] = spd
+	print("[CHAYA] mixamo %s: %d bones, %.2fs, speed %.2f m/s" % [key, pairs.size(), clip.length, _anim_speed.get(key, 0.0)])
+	return out
+
+func _load_mixamo(lib: AnimationLibrary) -> void:
+	for key in MIXAMO_CLIPS:
+		var path: String = MIXAMO_DIR + str(key) + ".fbx"
+		if not ResourceLoader.exists(path):
+			continue
+		var ps := load(path) as PackedScene
+		if ps == null:
+			continue
+		var inst := ps.instantiate()
+		var aps := inst.find_children("*", "AnimationPlayer", true, false)
+		if aps.size() > 0:
+			var ap := aps[0] as AnimationPlayer
+			var names := ap.get_animation_list()
+			if names.size() > 0:
+				var a := _retarget_mixamo(inst, ap.get_animation(names[0]), key)
+				if a != null:
+					if lib.has_animation(key):
+						lib.remove_animation(key)
+					lib.add_animation(key, a)
+					mixamo_clips.append(key)
+		inst.free()
+
 func _build_visual() -> void:
 	visual = Node3D.new()
 	visual.rotation.y = PI
@@ -199,6 +444,7 @@ func _build_visual() -> void:
 			if names.size() > 0:
 				lib.add_animation(key, _retarget(src.get_animation(names[0]), skel))
 		inst.free()
+	_load_mixamo(lib)
 	anim.add_animation_library("c", lib)
 	var meshes := model.find_children("*", "MeshInstance3D", true, false)
 	for mn in meshes:
@@ -457,7 +703,10 @@ func jumpscare_mode(face_point: Vector3) -> void:
 		(e as Node3D).scale = Vector3.ONE * 1.8
 	for m in _body_mats:
 		(m as ShaderMaterial).set_shader_parameter("rim_power", 1.3)
-	_play("idle", 1.6)          # upright pose: her face stays where we frame it
+	if "attack" in mixamo_clips:
+		_play("attack", 1.25)
+	else:
+		_play("idle", 1.6)          # upright pose: her face stays where we frame it
 
 func face_center() -> Vector3:
 	if _eye_glow.size() > 0:
@@ -573,7 +822,7 @@ func _physics_process(dt: float) -> void:
 					_pick_patrol_target()
 			else:
 				var sp := WALK_SPEED * (1.2 if enraged else 1.0)
-				_play("walk", sp / ANIM_WALK_SPEED)
+				_play("walk", sp / float(_anim_speed["walk"]))
 				if _follow_path(sp, dt):
 					state = S.IDLE
 					_wait = randf_range(1.2, 3.2)
@@ -588,13 +837,23 @@ func _physics_process(dt: float) -> void:
 				_enter_chase()
 			else:
 				var sp2 := WALK_SPEED * 1.7
-				_play("walk", sp2 / ANIM_WALK_SPEED)
+				_play("walk", sp2 / float(_anim_speed["walk"]))
 				if _follow_path(sp2, dt):
 					state = S.SEARCH
 					_wait = randf_range(2.5, 4.5)
 		S.CHASE:
+			if _scream_t > 0.0:                      # she shrieks at you before she runs
+				_scream_t -= dt
+				velocity.x = 0.0
+				velocity.z = 0.0
+				var to := player.global_position - global_position
+				_yaw = lerp_angle(_yaw, atan2(-to.x, -to.z), clampf(dt * 8.0, 0.0, 1.0))
+				rotation.y = _yaw
+				_play("scream")
+				move_and_slide()
+				return
 			var sp3 := RUN_SPEED * (1.1 if enraged else 1.0)
-			_play("run", sp3 / ANIM_RUN_SPEED)
+			_play("run", sp3 / float(_anim_speed["run"]))
 			if sees:
 				_last_seen = player.global_position
 				_lost = 0.0
@@ -666,6 +925,8 @@ func _enter_chase() -> void:
 		state = S.CHASE
 		_lost = 0.0
 		_repath = 0.0
+		if "scream" in mixamo_clips and anim and anim.has_animation("c/scream"):
+			_scream_t = minf(1.3, anim.get_animation("c/scream").length)
 		level.ghost_spotted()
 
 func start_ritual_mode() -> void:

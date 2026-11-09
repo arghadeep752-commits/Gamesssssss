@@ -604,5 +604,15 @@ func _shots_tour() -> void:
 	player.face(0.0, 8.0)
 	ghost.global_position = base + Vector3(0, 0.05, -1.05)
 	await _snap("%02d_chaya_face" % n); n += 1
+	# each of her motions, caught mid-move (Mixamo clips once the developer has added them)
+	player.face(0.0, -4.0)
+	ghost.global_position = base + Vector3(0, 0.05, -2.6)
+	print("[CHAYA-TEST] mixamo clips: ", ghost.mixamo_clips)
+	for key in ["idle", "walk", "run", "scream", "attack"]:
+		if ghost.anim != null and ghost.anim.has_animation("c/" + key):
+			ghost._anim_name = ""
+			ghost._play(key, 1.0)
+			ghost.anim.seek(ghost.anim.get_animation("c/" + key).length * 0.35, true)
+			await _snap("%02d_pose_%s" % [n, key]); n += 1
 	print("[CHAYA-TEST] DONE")
 	get_tree().quit()
