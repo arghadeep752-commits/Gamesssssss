@@ -6,6 +6,7 @@ const SENS_MIN := 0.3
 const SENS_MAX := 2.5
 
 var sensitivity := 1.0
+var tutorial := false            # set by the menu's TUTORIAL button for the next game only
 
 func _ready() -> void:
 	var cfg := ConfigFile.new()

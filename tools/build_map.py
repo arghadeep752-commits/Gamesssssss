@@ -23,7 +23,12 @@ import mazegeo  # noqa: E402
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 layout_path, out_dir = argv[0], argv[1]
 DO_BAKE = "--no-bake" not in argv
+SCANS = argv[argv.index("--scans") + 1] if "--scans" in argv else os.path.join(HERE, "..", "assets", "downloaded", "scans")
 os.makedirs(out_dir, exist_ok=True)
+import scan_props  # noqa: E402
+scan_props.setup(os.path.abspath(SCANS))
+SCANS_OK = scan_props.available("Lantern_01") or scan_props.available("GothicBed_01")
+print("scanned models:", "yes" if SCANS_OK else "NO (hand-modelled fallback)", os.path.abspath(SCANS))
 
 t0 = time.time()
 L = json.load(open(layout_path))
@@ -410,7 +415,8 @@ BUILDERS = {"charpai": build_charpai, "chest": build_chest, "pots": build_pots, 
 PLAN = {"bedroom": ["charpai", "chest", "pots"], "kitchen": ["pots", "shelf", "sacks"], "store": ["sacks", "chest", "pots"],
         "hall": ["chest", "shelf", "pots"], "study": ["shelf", "chest", "sacks"]}
 prop_meta = []
-try:
+def place_procedural_props():
+  try:
     # keep props out of doorways, away from the ritual items and from each other
     keep_out = []
     for d in L["doorways"]:
@@ -443,7 +449,7 @@ try:
         prop_meta.append({"name": e.name, "kind": kind, "pos": [x, z], "yaw": slot["yaw"], "size": [size[0], size[1]], "h": size[2],
                           "back": 0.45})
     print("props placed: %d (%s)" % (len(prop_meta), ", ".join(p["kind"] for p in prop_meta)))
-except Exception as ex:     # noqa: BLE001
+  except Exception as ex:     # noqa: BLE001
     import traceback
     traceback.print_exc()
     print("PROPS FAILED:", ex)
@@ -483,6 +489,530 @@ except Exception as ex:     # noqa: BLE001
     traceback.print_exc()
     print("CANDLE FAILED:", ex)
     candle_root = None
+
+# ----------------------------------------------------------------------------------------------- real scanned models
+# Furniture, lanterns, pedestals, the brass ritual vessels and the player's candle are real photo-scanned objects
+# (Poly Haven, CC0 - see tools/fetch_scans.py), cleaned up and decimated here (tools/scan_props.py).
+TAU = 2.0 * math.pi
+for _n, _c in {"stone_base": (0.42, 0.4, 0.37), "pillar_wood": (0.2, 0.12, 0.07), "beam_wood": (0.18, 0.11, 0.07),
+               "shutter_wood": (0.25, 0.17, 0.1), "lantern_glow": (1.0, 0.6, 0.25)}.items():
+    BASE_COLOR.setdefault(_n, _c)
+
+# key: (model, triangle budget, extra turn, longest side along the wall, fit (x, y, z) or None, exact height or None)
+SCAN = {
+    "bed": ("GothicBed_01", 7000, 0, True, (2.0, 1.55, 1.9), None),
+    "daybed": ("vintage_day_bed", 2715, 0, True, (1.9, 0.9, 1.2), None),
+    "almirah": ("painted_wooden_cabinet_02", 1000, 0, False, (1.1, 0.8, 2.15), None),
+    "cabinet_low": ("painted_wooden_cabinet", 2300, 0, False, (1.2, 0.65, 1.3), None),
+    "commode": ("GothicCommode_01", 3900, 0, False, (1.2, 0.6, 1.25), None),
+    "sofa": ("chinese_sofa", 800, 0, True, (2.0, 1.0, 1.0), None),
+    "rocking": ("Rockingchair_01", 5000, 0, False, (0.8, 0.9, 1.05), None),
+    "armchair": ("chinese_armchair", 2700, 0, False, (0.85, 0.8, 1.4), None),
+    "round_table": ("round_wooden_table_01", 4000, 0, False, (0.95, 0.95, 0.8), None),
+    "clock": ("vintage_grandfather_clock_01", 5000, 0, False, (0.8, 0.65, 2.2), None),
+    "carved_cabinet": ("chinese_cabinet", 6000, 0, False, (1.0, 0.5, 2.2), None),
+    "bench": ("painted_wooden_bench", 700, 0, True, (1.2, 0.55, 0.95), None),
+    "vase_big": ("antique_ceramic_vase_01", 3000, 0, False, (0.3, 0.3, 0.5), None),
+    "rack": ("wooden_bookshelf_worn", 6000, 0, False, (1.3, 0.6, 2.0), None),
+    "low_table": ("WoodenTable_01", 960, 0, True, (1.6, 0.66, 0.6), None),
+    "pickle_jar": ("ceramic_pot", 2500, 0, False, (0.6, 0.5, 0.4), None),
+    "clay_pot": ("planter_pot_clay", 1600, 0, False, (0.3, 0.3, 0.25), None),
+    "bucket": ("wooden_bucket_01", 2500, 0, False, (0.4, 0.4, 0.55), None),
+    "basket": ("wicker_basket_02", 3000, 0, False, (0.4, 0.3, 0.25), None),
+    "basket_flat": ("wicker_basket_01", 3000, 0, False, (0.4, 0.3, 0.13), None),
+    "jug": ("metal_jug", 1500, 0, False, (0.2, 0.2, 0.29), None),
+    "brass_vase": ("brass_vase_01", 3000, 0, False, None, 0.6),
+    "brass_vase2": ("brass_vase_02", 2500, 0, False, None, 0.4),
+    "stool": ("wooden_stool_01", 2500, 0, False, (0.45, 0.45, 0.45), None),
+    "chest": ("treasure_chest", 6000, 0, True, (1.0, 0.6, 0.7), None),
+    "crate": ("wooden_crate_01", 2000, 0, True, (0.85, 0.45, 0.4), None),
+    "barrel": ("wine_barrel_01", 4000, 0, False, (0.7, 0.7, 0.85), None),
+    "ladder": ("wooden_ladder", 3000, 0, True, (1.0, 0.55, 1.4), None),
+    "broom": ("wooden_broom", 2000, 0, True, (0.5, 0.15, 1.45), None),
+    "desk": ("small_wooden_table_01", 2500, 0, True, (0.95, 0.5, 0.75), None),
+    "chair": ("painted_wooden_chair_02", 1250, 0, False, (0.65, 0.67, 1.27), None),
+    "charkha": ("spinning_wheel_01", 6000, 0, True, (1.05, 0.55, 1.0), None),
+    "drawer": ("vintage_wooden_drawer_01", 4000, 0, True, (1.6, 0.9, 1.1), None),
+    "oil_lamp": ("vintage_oil_lamp", 4000, 0, False, None, 0.45),
+    "elephant": ("carved_wooden_elephant", 2752, 0, False, None, 0.24),
+    "diya_lantern": ("brass_diya_lantern", 5000, 0, False, None, 0.42),
+    "pomegranate": ("food_pomegranate_01", 1500, 0, False, None, 0.1),
+    "apple": ("food_apple_01", 1500, 0, False, None, 0.08),
+    "lemon": ("lemon", 1000, 0, False, None, 0.065),
+    "lantern": ("Lantern_01", 3500, 0, False, None, 0.32),
+    "ped_a": ("ClassicNightstand_01", 2000, 0, False, None, 0.74),
+    "ped_b": ("WoodenTable_02", 1514, 0, False, None, 0.74),
+}
+
+# groups: [(key, x offset, where, turn degrees)]; where = wall (back against the wall), top (on the first piece),
+# front (on the floor in front of the first piece)
+GROUPS = {
+    "bed": [("bed", 0.0, "wall", 0)],
+    "daybed": [("daybed", 0.0, "wall", 0)],
+    "almirah": [("almirah", 0.0, "wall", 0)],
+    "cabinet_low": [("cabinet_low", 0.0, "wall", 0), ("brass_vase2", -0.3, "top", 0)],
+    "commode": [("commode", 0.0, "wall", 0), ("oil_lamp", -0.35, "top", 0), ("jug", 0.35, "top", 20)],
+    "pots": [("pickle_jar", -0.2, "wall", 0), ("clay_pot", 0.32, "wall", 30), ("clay_pot", 0.12, "front", 70)],
+    "rack": [("rack", 0.0, "wall", 0)],
+    "kitchen_table": [("low_table", 0.0, "wall", 0), ("jug", -0.5, "top", 0), ("basket_flat", 0.15, "top", 10), ("brass_vase2", 0.6, "top", 0)],
+    "bucket_basket": [("bucket", -0.25, "wall", 0), ("basket", 0.25, "wall", 15), ("stool", 0.0, "front", 10)],
+    "chest": [("chest", 0.0, "wall", 0)],
+    "crates": [("crate", 0.0, "wall", 0), ("crate", 0.05, "top", 7), ("basket", 0.0, "front", 0)],
+    "barrel": [("barrel", 0.0, "wall", 0), ("broom", 0.62, "wall", 0)],
+    "ladder": [("ladder", 0.0, "wall", 0)],
+    "sofa": [("sofa", 0.0, "wall", 0)],
+    "clock": [("clock", 0.0, "wall", 0)],
+    "rocking": [("rocking", 0.0, "wall", 0)],
+    "carved_cabinet": [("carved_cabinet", 0.0, "wall", 0)],
+    "bench": [("bench", 0.0, "wall", 0), ("vase_big", 0.78, "wall", 0)],
+    "round_table": [("round_table", 0.0, "wall", 0), ("elephant", 0.0, "top", 20)],
+    "bookshelf": [("rack", 0.0, "wall", 0)],
+    "desk": [("desk", 0.0, "wall", 0), ("oil_lamp", -0.25, "top", 0), ("chair", 0.0, "front", 180)],
+    "charkha": [("charkha", 0.0, "wall", 0)],
+    "drawer": [("drawer", 0.0, "wall", 0), ("brass_vase", 0.5, "top", 0)],
+    "armchair": [("armchair", 0.0, "wall", 0)],
+    "brass": [("brass_vase", -0.15, "wall", 0), ("brass_vase2", 0.2, "wall", 0)],
+    "start_bench": [("bench", 0.0, "wall", 0), ("broom", -0.85, "wall", 0)],
+}
+PLAN = {
+    "bedroom": ["bed", "almirah", "commode", "daybed", "cabinet_low", "pots", "brass"],
+    "kitchen": ["rack", "kitchen_table", "pots", "bucket_basket", "brass", "pots"],
+    "store": ["chest", "crates", "barrel", "ladder", "pots", "bucket_basket"],
+    "hall": ["sofa", "clock", "rocking", "carved_cabinet", "bench", "round_table", "brass"],
+    "study": ["bookshelf", "desk", "charkha", "drawer", "armchair", "brass"],
+    "start": ["start_bench", "pots"],
+}
+scan_meta = {"extra_lights": [], "paintings": []}
+
+
+def tmpl(key):
+    if key not in SCAN:
+        return None
+    mid, budget, rot, long_x, fit, height = SCAN[key]
+    return scan_props.template(mid, budget, rot, long_x, fit, height, key=key)
+
+
+def group_layout(gname):
+    """Pieces of a group in prop space -> ([(key, x, y, z, turn)], (xmin, xmax, ymin, ymax, h)) or None."""
+    out = []
+    first = None
+    xmin = ymin = 1e9
+    xmax = ymax = -1e9
+    h = 0.0
+    for (key, dx, where, turn) in GROUPS[gname]:
+        t = tmpl(key)
+        if t is None:
+            if first is None:
+                return None
+            continue
+        ob, size = t
+        ang = math.radians(turn)
+        w = abs(size.x * math.cos(ang)) + abs(size.y * math.sin(ang))
+        d = abs(size.x * math.sin(ang)) + abs(size.y * math.cos(ang))
+        if where == "wall" or first is None:
+            y = 0.45 - 0.02 - d / 2
+            z = 0.0
+        elif where == "top":
+            fk, fx, fy, fz, fsize = first
+            y = fy
+            z = fz + fsize.z
+            surf = scan_props.surface_z(tmpl(fk)[0], (dx - fx), 0.0, above=fsize.z + 1.0)
+            if surf is not None:
+                z = fz + surf
+        else:                                                  # front
+            fk, fx, fy, fz, fsize = first
+            y = fy - fsize.y / 2 - d / 2 - 0.08
+            z = 0.0
+        out.append((key, dx, y, z, ang))
+        if first is None:
+            first = (key, dx, y, z, size)
+        if where != "top":
+            xmin, xmax = min(xmin, dx - w / 2), max(xmax, dx + w / 2)
+            ymin, ymax = min(ymin, y - d / 2), max(ymax, y + d / 2)
+        h = max(h, z + size.z)
+    return out, (xmin, xmax, ymin, ymax, h)
+
+
+def world_rect(x, z, yaw, r):
+    """Prop-space rectangle -> world (x0, x1, z0, z1). Prop +x = world (cos yaw, -sin yaw), prop +y = (-sin yaw, -cos yaw)."""
+    xmin, xmax, ymin, ymax, _ = r
+    pts = []
+    for px in (xmin, xmax):
+        for py in (ymin, ymax):
+            wx = x + px * math.cos(yaw) - py * math.sin(yaw)
+            wz = z - px * math.sin(yaw) - py * math.cos(yaw)
+            pts.append((wx, wz))
+    return (min(p[0] for p in pts), max(p[0] for p in pts), min(p[1] for p in pts), max(p[1] for p in pts))
+
+
+def overlaps(a, b, m=0.0):
+    return a[0] < b[1] + m and b[0] < a[1] + m and a[2] < b[3] + m and b[2] < a[3] + m
+
+
+def place_scanned_props():
+    keep_out = []
+    for d in L["doorways"]:
+        if d["o"] == "h":
+            keep_out.append((d["c"] - 1.0, d["c"] + 1.0, d["p"] - 1.15, d["p"] + 1.15))
+        else:
+            keep_out.append((d["p"] - 1.15, d["p"] + 1.15, d["c"] - 1.0, d["c"] + 1.0))
+    for it in meta["items"]:
+        x, _, z = it["pos"]
+        keep_out.append((x - 0.75, x + 0.75, z - 0.75, z + 0.75))
+    for (px, pz) in meta.get("pillars", []):
+        keep_out.append((px - 0.3, px + 0.3, pz - 0.3, pz + 0.3))
+    po = L["pooja"]
+    S_, x0_, z0_ = L["cell"], L["x0"], L["z0"]
+    slots = list(L["props"])
+    # the start room has no prop slots in the layout: add a few along its closed walls
+    st = [r for r in L["rooms"] if r["kind"] == "start"][0]
+    edges = set((min(a, b), max(a, b)) for a, b in L["edges"])
+    C_, R_ = L["cols"], L["rows"]
+    for j in range(st["j0"], st["j0"] + st["h"]):
+        for i in range(st["i0"], st["i0"] + st["w"]):
+            for di, dj in ((-1, 0), (1, 0), (0, -1)):
+                ni, nj = i + di, j + dj
+                if st["i0"] <= ni < st["i0"] + st["w"] and st["j0"] <= nj < st["j0"] + st["h"]:
+                    continue
+                if 0 <= ni < C_ and 0 <= nj < R_ and (min(j * C_ + i, nj * C_ + ni), max(j * C_ + i, nj * C_ + ni)) in edges:
+                    continue
+                off = S_ / 2 - L["wall_t"] / 2 - 0.45
+                slots.append(dict(room="start", kind="start", pos=[x0_ + (i + 0.5) * S_ + di * off, z0_ + (j + 0.5) * S_ + dj * off],
+                                  yaw=math.degrees(math.atan2(-di, -dj))))
+    placed = []
+    used_in_room = {}
+    for k, slot in enumerate(slots):
+        x, z = slot["pos"]
+        yaw = math.radians(slot["yaw"])
+        plan = PLAN.get(slot["kind"], ["pots"])
+        n0 = used_in_room.get(slot["room"], 0)
+        done = False
+        for step in range(len(plan)):
+            gname = plan[(n0 + step) % len(plan)]
+            lay = group_layout(gname)
+            if lay is None:
+                continue
+            pieces, rect = lay
+            wr = world_rect(x, z, yaw, rect)
+            if any(overlaps(wr, ko) for ko in keep_out) or any(overlaps(wr, pr, 0.12) for pr in placed):
+                continue
+            e = new_prop("prop_%d_%s" % (k, gname))
+            for (key, px, py, pz, ang) in pieces:
+                scan_props.instance(key, "%s_%s" % (e.name, key), prop_collection, parent=e, loc=(px, py, pz), rot_z=ang)
+            e.location = (x, -z, 0.0)
+            e.rotation_euler = (0.0, 0.0, yaw)
+            placed.append(wr)
+            used_in_room[slot["room"]] = n0 + step + 1
+            xmin, xmax, ymin, ymax, h = rect
+            prop_meta.append({"name": e.name, "kind": gname, "pos": [x, z], "yaw": slot["yaw"], "size": [xmax - xmin, ymax - ymin],
+                              "h": h, "back": ymax, "cx": (xmin + xmax) / 2})
+            done = True
+            break
+        if not done:
+            print("  no room for a prop at slot %d (%s)" % (k, slot["room"]))
+    print("scanned props placed: %d (%s)" % (len(prop_meta), ", ".join(p["kind"] for p in prop_meta)))
+    return placed
+
+
+def place_lanterns():
+    t = tmpl("lantern")
+    if t is None:
+        return 0
+    H_ = L["wall_h"]
+    n = 0
+    for li, l in enumerate(L["lights"]):
+        x, y, z = l["pos"]
+        old = bpy.data.objects.get("lamp_%d" % li)
+        if old is not None:
+            if old in blender_objs:
+                blender_objs.remove(old)
+            bpy.data.objects.remove(old, do_unlink=True)
+        e = new_prop("lamp_%d" % li)
+        e.location = (x, -z, 0.0)
+        bottom = y - 0.15
+        scan_props.instance("lantern", "lamp_%d_lantern" % li, prop_collection, parent=e, loc=(0.0, 0.0, bottom), rot_z=rng.uniform(0, TAU))
+        top = bottom + t[1].z
+        p_cyl(e, "lamp_%d_chain" % li, 0.004, (H_ - 0.09) - top + 0.01, (0.0, 0.0, (top + H_ - 0.09) / 2), "lantern_metal", verts=6, bevel=0.0)
+        p_sphere(e, "lamp_%d_flame" % li, 0.011, (1.0, 1.0, 1.9), (0.0, 0.0, bottom + 0.085), "lantern_glow", seg=10, rings=6)
+        n += 1
+    print("hurricane lanterns hung: %d" % n)
+    return n
+
+
+def place_pedestals():
+    n = 0
+    for k, it in enumerate(meta["items"]):
+        key = "ped_a" if k % 2 == 0 else "ped_b"
+        t = tmpl(key)
+        if t is None:
+            continue
+        old = bpy.data.objects.get("pedestal_" + it["id"])
+        if old is not None:
+            if old in blender_objs:
+                blender_objs.remove(old)
+            bpy.data.objects.remove(old, do_unlink=True)
+        x, top, z = it["pos"]
+        fx, fz = it.get("face", [0, 1])
+        yaw = math.atan2(fx, fz)
+        e = new_prop("pedestal_%s" % it["id"])
+        scan_props.instance(key, "pedestal_%s_%s" % (it["id"], key), prop_collection, parent=e)
+        e.location = (x, -z, 0.0)
+        e.rotation_euler = (0.0, 0.0, yaw)
+        it["ped"] = [round(t[1].x, 3), round(t[1].y, 3)]
+        it["ped_yaw"] = math.degrees(yaw)
+        n += 1
+    print("scanned pedestals: %d" % n)
+
+
+def dress_pooja():
+    po = L["pooja"]
+    cx, cz = po["center"]
+    alt_top = 0.515
+    for k, (dx, dz) in enumerate(((-0.5, -0.5), (0.5, -0.5), (-0.5, 0.5), (0.5, 0.5))):
+        key = ["pomegranate", "apple", "lemon", "apple"][k]
+        if tmpl(key) is None:
+            continue
+        e = new_prop("offering_%d" % k)
+        e.location = (cx + dx, -(cz + dz), alt_top)
+        for m in range(2 if key != "pomegranate" else 1):
+            scan_props.instance(key, "offering_%d_%d" % (k, m), prop_collection, parent=e, loc=(0.05 * m, 0.03 * m, 0.0), rot_z=rng.uniform(0, TAU))
+    for k, (dx, dz) in enumerate(((-0.82, -0.82), (0.82, -0.82), (-0.82, 0.82), (0.82, 0.82))):
+        if tmpl("brass_vase2") is None:
+            break
+        e = new_prop("pooja_vase_%d" % k)
+        e.location = (cx + dx, -(cz + dz), 0.18)
+        scan_props.instance("brass_vase2", "pooja_vase_%d_v" % k, prop_collection, parent=e, rot_z=rng.uniform(0, TAU))
+    t = tmpl("diya_lantern")
+    if t is not None:
+        H_ = L["wall_h"]
+        for k, dx in enumerate((-1.1, 1.1)):
+            e = new_prop("pooja_lamp_%d" % k)
+            e.location = (cx + dx, -(cz - 0.9), 0.0)
+            bottom = 1.75
+            scan_props.instance("diya_lantern", "pooja_lamp_%d_l" % k, prop_collection, parent=e, loc=(0, 0, bottom))
+            top = bottom + t[1].z
+            p_cyl(e, "pooja_lamp_%d_chain" % k, 0.004, (H_ - 0.09) - top + 0.01, (0.0, 0.0, (top + H_ - 0.09) / 2), "lantern_metal", verts=6, bevel=0.0)
+            p_sphere(e, "pooja_lamp_%d_flame" % k, 0.008, (1.0, 1.0, 1.8), (0.0, 0.0, bottom + t[1].z * 0.3), "lantern_glow", seg=10, rings=6)
+            scan_meta["extra_lights"].append([cx + dx, bottom + t[1].z * 0.3, cz - 0.9, 0.9, 3.6])
+
+
+def scan_items():
+    """The four brass/wood vessels as real scans (kalash, gangajal, kapoor, kumkum); diya and coconut stay hand-made."""
+    import hero_items
+    kit = hero_items.Kit(get_material, collection)
+    built = {}
+
+    def body(mid, key, budget, height=None, fit=None):
+        t = scan_props.template(mid, budget, 0, False, fit, height, key=key)
+        if t is None:
+            return None, None
+        ob = bpy.data.objects.new(key + "_obj", t[0].data.copy())
+        collection.objects.link(ob)
+        bpy.context.view_layer.update()
+        return ob, t[1]
+
+    try:
+        ob, size = body("brass_vase_03", "it_kalash", 2616, height=0.25)
+        if ob is not None:
+            rr = scan_props.rim_radius(ob.data, 0.95)
+            H_ = size.z
+            parts = [ob]
+            for k in range(5):
+                az = TAU * k / 5 + 0.2
+                base = (rr * 0.75 * math.cos(az), rr * 0.75 * math.sin(az), H_ - 0.006)
+                parts.append(kit.leaf("kalash_leaf%d" % k, base, az, kit.rng.uniform(0.13, 0.16), kit.rng.uniform(0.04, 0.048),
+                                      kit.rng.uniform(55.0, 75.0), "leaf_green"))
+            sc = max(0.55, min(0.85, rr * 1.3 / 0.083))
+            nut = hero_items.coconut_parts(kit, "kalash_nut", scale=sc, tilak=True, thread=False)
+            for pp in nut:
+                pp.location = (0.0, 0.0, H_ - 0.012)
+            parts += nut
+            built["kalash"] = kit.join(parts, "scan_kalash")
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("SCAN KALASH FAILED", ex)
+    try:
+        ob, size = body("brass_pot_01", "it_gangajal", 3760, height=0.2)
+        if ob is not None:
+            built["gangajal"] = ob
+    except Exception as ex:     # noqa: BLE001
+        print("SCAN GANGAJAL FAILED", ex)
+    try:
+        ob, size = body("brass_pot_02", "it_kapoor", 3344, fit=(0.27, 0.27, None))
+        if ob is not None:
+            parts = [ob]
+            spots = [(0.0, 0.0, 0.0), (0.03, 0.006, 0.6), (-0.026, 0.018, 1.1), (0.008, -0.03, 2.0), (-0.012, -0.004, 0.3),
+                     (0.022, -0.024, 2.6), (-0.034, -0.022, 1.7)]
+            for k, (x, y, rz) in enumerate(spots):
+                zf = scan_props.surface_z(ob, x, y, above=1.0)
+                zf = zf if zf is not None else 0.02
+                stack = 1 if k == 4 else 0
+                parts.append(kit.rounded_box("kapoor_tab%d" % k, (0.026, 0.026, 0.011), (x, y, zf + 0.0055 + stack * 0.011),
+                                             "camphor_white", bevel=0.0035, rot_z=rz, tilt=(kit.rng.uniform(-0.08, 0.08), kit.rng.uniform(-0.08, 0.08)),
+                                             lumpy=0.0006))
+            built["kapoor"] = kit.join(parts, "scan_kapoor")
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("SCAN KAPOOR FAILED", ex)
+    try:
+        ob, size = body("wooden_bowl_02", "it_kumkum", 4666, fit=(0.15, 0.15, None))
+        if ob is not None:
+            rr = scan_props.rim_radius(ob.data, 0.9) * 0.9
+            z0 = size.z - 0.01
+            grain = hero_items.wave(61, 8, 10, 30)
+            fine = hero_items.wave(62, 8, 30, 70)
+            heap = []
+            n = 22
+            for i in range(n + 1):
+                t = i / n
+                heap.append((rr * (1.0 - t) if i < n else 0.0, z0 + 0.03 * (1.0 - (1.0 - t) ** 2) ** 0.85))
+            powder = kit.revolve("kumkum_powder", heap, 80, "kumkum_red",
+                                 disp=lambda a, z, r: 0.0011 * grain(a, z * 60.0) + 0.0006 * fine(a, z * 150.0))
+            built["kumkum"] = kit.join([ob, powder], "scan_kumkum")
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("SCAN KUMKUM FAILED", ex)
+    for iid, nob in built.items():
+        it = [i for i in meta["items"] if i["id"] == iid]
+        old = bpy.data.objects.get("item_" + iid)
+        if not it or old is None:
+            bpy.data.objects.remove(nob, do_unlink=True)
+            continue
+        loc = old.location.copy()
+        for ch in list(old.children):
+            bpy.data.objects.remove(ch, do_unlink=True)
+        if old in blender_objs:
+            blender_objs.remove(old)
+        bpy.data.objects.remove(old, do_unlink=True)
+        nob.name = "item_" + iid
+        nob.location = loc
+        for c in list(nob.users_collection):
+            c.objects.unlink(nob)
+        collection.objects.link(nob)
+        print("item %-9s is now a real scan (%d tris)" % (iid, sum(len(p.vertices) - 2 for p in nob.data.polygons)))
+
+
+def scan_candle():
+    global candle_root
+    res = None
+    for fn in (scan_props.candle_from_set, scan_props.candle_wooden):
+        try:
+            res = fn()
+        except Exception as ex:     # noqa: BLE001
+            import traceback
+            traceback.print_exc()
+            print("candle scan attempt failed:", ex)
+            res = None
+        if res:
+            break
+    if not res:
+        return False
+    cob, anchor = res
+    if candle_root is not None:
+        for ch in list(candle_root.children_recursive):
+            bpy.data.objects.remove(ch, do_unlink=True)
+        bpy.data.objects.remove(candle_root, do_unlink=True)
+    candle_root = new_prop("candle")
+    for c in list(cob.users_collection):
+        c.objects.unlink(cob)
+    prop_collection.objects.link(cob)
+    cob.parent = candle_root
+    a = bpy.data.objects.new("flame_anchor", None)
+    prop_collection.objects.link(a)
+    a.parent = candle_root
+    a.location = anchor
+    candle_root.location = (0.0, 0.0, -60.0)
+    print("player candle: real scan, flame at %.3f %.3f %.3f" % tuple(anchor))
+    return True
+
+
+def place_paintings(placed):
+    art = sorted(glob.glob(os.path.join(os.path.abspath(SCANS), "art", "*.jpg")))
+    if not art:
+        print("no paintings downloaded")
+        return
+    frames = sorted(meta.get("frames", []), key=lambda f: 0 if f["kind"] != "corridor" else 1)
+    k = 0
+    for fr in frames:
+        if k >= len(art):
+            break
+        x, y, z = fr["pos"]
+        if any(overlaps((x - 0.45, x + 0.45, z - 0.45, z + 0.45), pr) for pr in placed):
+            continue
+        try:
+            img = bpy.data.images.load(art[k])
+        except Exception as ex:     # noqa: BLE001
+            print("painting load failed", ex)
+            k += 1
+            continue
+        w_px, h_px = img.size
+        ph = 0.78
+        pw = ph * w_px / max(1, h_px)
+        mat = bpy.data.materials.new("scan_art_%d" % k)
+        mat.use_nodes = True
+        nt = mat.node_tree
+        bsdf = nt.nodes.get("Principled BSDF")
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+        bsdf.inputs["Roughness"].default_value = 0.55
+        me = bpy.data.meshes.new("canvas_%d" % k)
+        me.from_pydata([(-pw / 2, 0, -ph / 2), (pw / 2, 0, -ph / 2), (pw / 2, 0, ph / 2), (-pw / 2, 0, ph / 2)], [], [(0, 1, 2, 3)])
+        uv = me.uv_layers.new(name="UVMap")
+        for li, co in zip(range(4), ((0, 0), (1, 0), (1, 1), (0, 1))):
+            uv.data[li].uv = co
+        me.materials.append(mat)
+        bx, by = fr["n"][0], -fr["n"][1]
+        e = new_prop("painting_%d" % k)
+        e.location = (x + fr["n"][0] * 0.035, -(z + fr["n"][1] * 0.035), y)
+        e.rotation_euler = (0.0, 0.0, math.atan2(bx, -by))
+        cv = bpy.data.objects.new("painting_%d_canvas" % k, me)
+        prop_collection.objects.link(cv)
+        cv.parent = e
+        cv.location = (0.0, -0.012, 0.0)
+        fw = 0.07
+        for (sx, sz, lx, lz) in ((pw + 2 * fw, fw, 0, ph / 2 + fw / 2), (pw + 2 * fw, fw, 0, -ph / 2 - fw / 2),
+                                 (fw, ph, -pw / 2 - fw / 2, 0), (fw, ph, pw / 2 + fw / 2, 0)):
+            p_box(e, "painting_%d_frame" % k, (sx, 0.05, sz), (lx, 0.0, lz), "trim_wood", 0.006)
+        scan_meta["paintings"].append(fr)
+        k += 1
+    print("paintings hung: %d" % k)
+
+
+import glob  # noqa: E402
+
+if SCANS_OK:
+    try:
+        scan_items()
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("SCAN ITEMS FAILED:", ex)
+    placed_rects = []
+    try:
+        placed_rects = place_scanned_props()
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("SCANNED PROPS FAILED:", ex)
+    for fn in (place_lanterns, place_pedestals, dress_pooja, scan_candle):
+        try:
+            fn()
+        except Exception as ex:     # noqa: BLE001
+            import traceback
+            traceback.print_exc()
+            print("%s FAILED: %s" % (fn.__name__, ex))
+    try:
+        place_paintings(placed_rects)
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("PAINTINGS FAILED:", ex)
+else:
+    place_procedural_props()
 
 # ----------------------------------------------------------------------------------------------- AO bake
 baked = False
@@ -538,6 +1068,26 @@ if baked:
         a = np.concatenate(vals)
         print("AO values: min %.2f mean %.2f max %.2f" % (a.min(), a.mean(), a.max()))
 
+# ----------------------------------------------------------------------------------------------- icons + check sheet
+os.makedirs(os.path.join(out_dir, "icons"), exist_ok=True)
+for it in meta["items"]:
+    ob = bpy.data.objects.get(it["name"])
+    if ob is None or ob.type != "MESH":
+        continue
+    try:
+        scan_props.render_icon(ob, os.path.join(out_dir, "icons", it["id"] + ".png"))
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("ICON %s FAILED: %s" % (it["id"], ex))
+if SCANS_OK:
+    try:
+        scan_props.contact_sheet(sorted(scan_props._templates.keys()), os.path.join(out_dir, "scans_preview.jpg"))
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("CONTACT SHEET FAILED:", ex)
+
 # ----------------------------------------------------------------------------------------------- save + export
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "chaya_map.blend"))
 
@@ -548,7 +1098,7 @@ def export_glb(path, objects):
     bpy.ops.object.select_all(action="DESELECT")
     for ob in objects:
         ob.select_set(True)
-    kw = dict(filepath=path, export_format="GLB", export_yup=True, export_apply=True, use_selection=True,
+    kw = dict(filepath=path, export_format="GLTF_SEPARATE", export_texture_dir="tex", export_yup=True, export_apply=True, use_selection=True,
               export_texcoords=True, export_normals=True, export_materials="EXPORT", export_cameras=False,
               export_lights=False, export_animations=False)
     if "export_tangents" in gltf_keys:
@@ -569,12 +1119,15 @@ if candle_root is not None:
     candle_root.location = (0.0, 0.0, 0.0)
     candle_objs = {candle_root} | set(candle_root.children_recursive)
 house = [ob for ob in scene.objects if ob not in candle_objs]
-export_glb(os.path.join(out_dir, "maze.glb"), house)
+export_glb(os.path.join(out_dir, "maze.gltf"), house)
 if candle_objs:
     try:
-        export_glb(os.path.join(out_dir, "candle.glb"), list(candle_objs))
+        export_glb(os.path.join(out_dir, "candle.gltf"), list(candle_objs))
     except Exception as ex:     # noqa: BLE001
         print("CANDLE EXPORT FAILED:", ex)
 meta["props"] = prop_meta
+meta["extra_lights"] = scan_meta["extra_lights"]
+meta["paintings"] = scan_meta["paintings"]
+meta["scanned"] = bool(SCANS_OK)
 json.dump(meta, open(os.path.join(out_dir, "meta.json"), "w"))
-print("done in %.1fs, glb %.1f MB, AO baked: %s" % (time.time() - t0, os.path.getsize(os.path.join(out_dir, "maze.glb")) / 1e6, baked))
+print("done in %.1fs, bin %.1f MB, AO baked: %s" % (time.time() - t0, os.path.getsize(os.path.join(out_dir, "maze.bin")) / 1e6, baked))

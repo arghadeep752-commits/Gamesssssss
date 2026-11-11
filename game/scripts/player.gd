@@ -24,6 +24,7 @@ var _flame_nodes: Array = []
 const CANDLE_E := 1.7
 const SPOT_E := 1.25
 const CANDLE_GLB := "res://assets/map/candle.glb"
+const CANDLE_GLTF := "res://assets/map/candle.gltf"
 const FLAME_SHADER := """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled;
@@ -107,8 +108,9 @@ func _build_candle() -> void:
 	camera.add_child(candle)
 	var anchor_pos := Vector3(0.0024, 0.1155, 0.0)
 	var model: Node3D = null
-	if ResourceLoader.exists(CANDLE_GLB):
-		var ps = load(CANDLE_GLB)
+	var cpath := CANDLE_GLTF if ResourceLoader.exists(CANDLE_GLTF) else CANDLE_GLB
+	if ResourceLoader.exists(cpath):
+		var ps = load(cpath)
 		if ps is PackedScene:
 			model = (ps as PackedScene).instantiate()
 	if model:
@@ -116,6 +118,9 @@ func _build_candle() -> void:
 		var a := model.find_child("flame_anchor", true, false)
 		if a is Node3D:
 			anchor_pos = candle.to_local((a as Node3D).global_position) if candle.is_inside_tree() else (a as Node3D).position
+		# keep the flame where it always was on screen, however tall the candlestick is
+		_candle_base.y = -0.205 + 0.1155 - anchor_pos.y
+		candle.position = _candle_base
 	else:
 		model = _fallback_candle()
 		candle.add_child(model)
@@ -125,6 +130,17 @@ func _build_candle() -> void:
 		for i in range(mi.mesh.get_surface_count()):
 			var src := mi.mesh.surface_get_material(i)
 			var nm := src.resource_name if src else ""
+			if nm.begins_with("scan_"):
+				# the real scanned candlestick keeps its own textures; the wax glows a little from the flame
+				if src is StandardMaterial3D:
+					var sm := (src as StandardMaterial3D).duplicate() as StandardMaterial3D
+					sm.vertex_color_use_as_albedo = false
+					if nm.to_lower().contains("candles") or nm.to_lower().contains("wax"):
+						sm.emission_enabled = true
+						sm.emission = Color(1.0, 0.62, 0.32)
+						sm.emission_energy_multiplier = 0.16
+					mi.set_surface_override_material(i, sm)
+				continue
 			mi.set_surface_override_material(i, _candle_mat(nm))
 	# flame + soft glow + the light itself
 	var flame := MeshInstance3D.new()

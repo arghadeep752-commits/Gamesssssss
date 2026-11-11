@@ -17,7 +17,14 @@ TILE = {
     "trim_wood": 1.0, "door_wood": 1.3, "brass": 0.5, "stone_altar": 1.2, "red_cloth": 0.5, "clay": 0.4,
     "coconut": 0.3, "kumkum_red": 0.3, "camphor_white": 0.3, "copper": 0.5, "leaf_green": 0.3,
     "lantern_glow": 1.0, "lantern_metal": 1.0, "rope": 0.3,
+    # the old Indian house: per-room plaster and floors, carved pillars, beams, shutters
+    "floor_terracotta": 1.6, "floor_redtile": 1.8, "floor_checker": 1.6, "floor_clay": 2.2,
+    "wall_plaster_blue": 2.4, "wall_plaster_yellow": 2.4, "wall_plaster_red": 2.4, "wall_plaster_white": 2.4,
+    "beam_wood": 1.4, "pillar_wood": 0.9, "stone_base": 0.9, "shutter_wood": 1.1, "iron": 0.5,
 }
+FLOOR_OF = {"pooja": "floor_terracotta", "kitchen": "floor_redtile", "hall": "floor_checker", "store": "floor_clay"}
+WALL_OF = {"bedroom": "wall_plaster_blue", "hall": "wall_plaster_yellow", "kitchen": "wall_plaster_yellow",
+           "pooja": "wall_plaster_red", "store": "wall_plaster_white"}
 CHUNK_CELLS = 3
 SPLIT_H = 1.05       # wooden wainscot below, plaster above
 
@@ -180,6 +187,38 @@ class Builder:
         prof[-1] = (0.0, prof[-1][1])
         self.lathe(obj, mat, [(max(p[0], 1e-4), p[1] + ry) for p in prof], seg, (center[0], center[1] - ry, center[2]))
 
+    def quad(self, obj, mat, P, normal):
+        """One quad (4 corners in order round the edge) facing `normal`."""
+        P = np.asarray(P, float)
+        n = np.asarray(normal, float)
+        n = n / max(np.linalg.norm(n), 1e-9)
+        if np.dot(np.cross(P[1] - P[0], P[2] - P[0]), n) < 0:
+            P = P[::-1].copy()
+        obj.add(mat, P, np.tile(n, (4, 1)), uv_for(P, n, TILE[mat]), np.array([0, 1, 2, 0, 2, 3]))
+
+    def box_un(self, obj, orient, u0, u1, y0, y1, n0, n1, mat, skip=()):
+        """Box given along a wall: u = along the wall, n = across it (orient 'h': u = x, n = z; 'v': u = z, n = x)."""
+        u0, u1 = sorted((u0, u1))
+        n0, n1 = sorted((n0, n1))
+        if orient == "h":
+            self.box((u0, y0, n0), (u1, y1, n1), mat, obj=obj, skip=skip, cell=10.0)
+        else:
+            m = {"px": "pz", "nx": "nz", "pz": "px", "nz": "nx", "py": "py", "ny": "ny"}
+            self.box((n0, y0, u0), (n1, y1, u1), mat, obj=obj, skip=tuple(m[s] for s in skip), cell=10.0)
+
+    def stud(self, obj, orient, u, y, n_face, s, r=0.016):
+        """A domed brass stud on a door, its base on the face at n_face, bulging towards s (+1/-1)."""
+        prof = [(r, 0.0), (r * 0.92, r * 0.35), (r * 0.7, r * 0.7), (r * 0.38, r * 0.93), (0.0005, r)]
+        P, N, UV, I = _lathe_arrays(prof, 6, "brass")
+        # lathe axis is +y; turn it to point along the door normal
+        if orient == "h":
+            R = np.array([[1, 0, 0], [0, 0, -s], [0, s, 0]], float)      # y -> s*z
+            c = np.array([u, y, n_face])
+        else:
+            R = np.array([[0, s, 0], [-s, 0, 0], [0, 0, 1]], float)      # y -> s*x
+            c = np.array([n_face, y, u])
+        obj.add("brass", P @ R.T + c, N @ R.T, UV, I)
+
     def tilted_box(self, obj, mat, center, size, yaw=0.0, pitch=0.0):
         """Small rotated box (camphor cubes, leaves, chains)."""
         sx, sy, sz = size
@@ -199,6 +238,33 @@ class Builder:
             self.face(mat, np.asarray(center) + R @ a, R @ U, R @ V, R @ nrm, obj, cell=10.0)
 
 
+def _lathe_arrays(profile, seg, mat):
+    o = Obj("tmp", local=True)
+    Builder.lathe(None, o, mat, profile, seg)
+    o.finish()
+    return o.prims[mat]
+
+
+def door_dress(B, o, orient, u0, u1, y0, y1, n0, n1, studs=(2, 4), kind="door"):
+    """Traditional panelled leaf: raised frame (stiles and rails) on both faces and rows of brass studs."""
+    fw, pr = 0.085, 0.014
+    for nf, s in ((min(n0, n1), -1), (max(n0, n1), 1)):
+        na, nb = nf, nf + s * pr
+        B.box_un(o, orient, u0, u0 + fw, y0, y1, na, nb, "trim_wood")
+        B.box_un(o, orient, u1 - fw, u1, y0, y1, na, nb, "trim_wood")
+        for yy in (y0, y0 + (y1 - y0) * 0.42, y1 - fw):
+            B.box_un(o, orient, u0 + fw, u1 - fw, yy, yy + fw, na, nb, "trim_wood")
+        cols, rows = studs
+        for ci in range(cols):
+            uu = u0 + fw + (u1 - u0 - 2 * fw) * (ci + 0.5) / cols
+            for ri in range(rows):
+                yy = y0 + 0.25 + (y1 - y0 - 0.5) * ri / max(1, rows - 1)
+                B.stud(o, orient, uu, yy, nb, s)
+        if kind == "pooja":                     # brass bands across the pooja door
+            for yb in (0.35, y1 - 0.45):
+                B.box_un(o, orient, u0, u1, yb, yb + 0.08, nb, nb + s * 0.006, "brass")
+
+
 def build(L):
     B = Builder(L)
     C, Rr = L["cols"], L["rows"]
@@ -206,46 +272,97 @@ def build(L):
     x0, z0 = L["x0"], L["z0"]
     DW, DH = L["door_w"], L["door_h"]
     W_total, D_total = C * S, Rr * S
+    edges = set((min(a, b), max(a, b)) for a, b in L["edges"])
 
-    # ---------------- floor and ceiling
+    def kind_at(i, j):
+        if 0 <= i < C and 0 <= j < Rr:
+            r = L["region"][j][i]
+            return L["rooms"][r]["kind"] if r >= 0 else "corridor"
+        return None
+
+    def wall_mat(kind):
+        return WALL_OF.get(kind, "wall_plaster")
+
+    # ---------------- floor and ceiling (each room has its own floor: terracotta pooja room, red-tiled kitchen,
+    # chequered hall, beaten-clay store, old planks elsewhere)
     for j in range(Rr):
         for i in range(C):
-            r = L["region"][j][i]
-            kind = L["rooms"][r]["kind"] if r >= 0 else ""
-            mat = "floor_stone" if kind in ("pooja", "kitchen") else "floor_wood"
+            mat = FLOOR_OF.get(kind_at(i, j), "floor_wood")
             ax, az = x0 + i * S, z0 + j * S
             B.face(mat, (ax, 0, az), (S, 0, 0), (0, 0, S), (0, 1, 0))
             B.face("ceiling_wood", (ax, H, az), (S, 0, 0), (0, 0, S), (0, -1, 0), cell=1.3)
 
-    # beams across the ceiling every cell
+    # timber ceiling: heavy beams both ways on the grid, joists between them
     for i in range(C + 1):
-        B.box((x0 + i * S - 0.09, H - 0.2, z0), (x0 + i * S + 0.09, H, z0 + D_total), "trim_wood", skip=("py",))
+        B.box((x0 + i * S - 0.1, H - 0.24, z0), (x0 + i * S + 0.1, H, z0 + D_total), "beam_wood", skip=("py",))
+    for j in range(Rr + 1):
+        B.box((x0, H - 0.2, z0 + j * S - 0.08), (x0 + W_total, H, z0 + j * S + 0.08), "beam_wood", skip=("py",))
+    for i in range(C):
+        for k in (1, 2, 3):
+            x = x0 + i * S + k * S / 4.0
+            B.box((x - 0.035, H - 0.09, z0), (x + 0.035, H, z0 + D_total), "beam_wood", skip=("py",))
 
-    # ---------------- walls
+    # ---------------- walls: wooden wainscot, then lime plaster coloured by the room on that side
     trim_h = 0.13
+
+    def side_faces(o, p, a, b, y0, y1, side, kind):
+        """One face of a wall piece. o: 'h' (wall along x at z=p) or 'v' (along z at x=p); side -1/+1."""
+        if kind is None:
+            return                                   # outside the house: never seen
+        f = p + side * T / 2
+        nrm = (0, 0, side) if o == "h" else (side, 0, 0)
+
+        def F(mat, ya, yb):
+            if yb - ya < 1e-4:
+                return
+            if o == "h":
+                B.face(mat, (a, ya, f), (b - a, 0, 0), (0, yb - ya, 0), nrm)
+            else:
+                B.face(mat, (f, ya, a), (0, 0, b - a), (0, yb - ya, 0), nrm)
+        F("wall_wood", y0, min(y1, SPLIT_H))
+        F(wall_mat(kind), max(y0, SPLIT_H), y1)
+        orient = o
+        inward = ("pz" if side < 0 else "nz") if o == "h" else ("px" if side < 0 else "nx")
+        ends = ("nx", "px") if o == "h" else ("nz", "pz")
+        if y0 <= 0.0:
+            B.box_un(B.chunk(*(((a + b) / 2, f) if o == "h" else (f, (a + b) / 2))), orient,
+                     a, b, 0.0, trim_h, f, f + side * 0.03, "trim_wood", skip=("ny", inward) + ends)
+        if y0 < SPLIT_H < y1:
+            B.box_un(B.chunk(*(((a + b) / 2, f) if o == "h" else (f, (a + b) / 2))), orient,
+                     a, b, SPLIT_H - 0.04, SPLIT_H + 0.04, f, f + side * 0.03, "trim_wood", skip=(inward,) + ends)
+
+    def wall_piece(o, p, a, b, y0, y1, kneg, kpos, jambs=False):
+        side_faces(o, p, a, b, y0, y1, -1, kneg)
+        side_faces(o, p, a, b, y0, y1, 1, kpos)
+        if jambs:
+            for e in (a, b):
+                if o == "h":
+                    B.face("trim_wood", (e, y0, p - T / 2), (0, 0, T), (0, y1 - y0, 0), (1 if e == b else -1, 0, 0))
+                else:
+                    B.face("trim_wood", (p - T / 2, y0, e), (T, 0, 0), (0, y1 - y0, 0), (0, 0, 1 if e == b else -1))
+
+    wall_segments = []          # (o, line index, cell index, side kinds) for windows and pictures
     for w in L["walls"]:
         if w["o"] == "h":
-            mn = (w["a"] - T / 2, 0.0, w["p"] - T / 2)
-            mx = (w["b"] + T / 2, H, w["p"] + T / 2)
+            j = int(round((w["p"] - z0) / S))
+            ia, ib = int(round((w["a"] - x0) / S)), int(round((w["b"] - x0) / S))
+            for i in range(ia, ib):
+                a = x0 + i * S - (T / 2 if i == ia else 0.0)
+                b = x0 + (i + 1) * S + (T / 2 if i == ib - 1 else 0.0)
+                kn, kp = kind_at(i, j - 1), kind_at(i, j)
+                wall_piece("h", w["p"], a, b, 0.0, H, kn, kp)
+                wall_segments.append(("h", w["p"], x0 + (i + 0.5) * S, kn, kp, (i, j - 1), (i, j)))
         else:
-            mn = (w["p"] - T / 2, 0.0, w["a"] - T / 2)
-            mx = (w["p"] + T / 2, H, w["b"] + T / 2)
-        B.wall_box(mn, mx, ends=False)
-        # skirting board and chair rail on both faces
-        if w["o"] == "h":
-            for s in (-1, 1):
-                zf = w["p"] + s * T / 2
-                za, zb = sorted((zf, zf + s * 0.03))
-                B.box((w["a"] - T / 2, 0, za), (w["b"] + T / 2, trim_h, zb), "trim_wood", skip=("ny", "py", "nx", "px"))
-                B.box((w["a"] - T / 2, SPLIT_H - 0.04, za), (w["b"] + T / 2, SPLIT_H + 0.04, zb), "trim_wood", skip=("nx", "px"))
-        else:
-            for s in (-1, 1):
-                xf = w["p"] + s * T / 2
-                xa, xb = sorted((xf, xf + s * 0.03))
-                B.box((xa, 0, w["a"] - T / 2), (xb, trim_h, w["b"] + T / 2), "trim_wood", skip=("ny", "py", "nz", "pz"))
-                B.box((xa, SPLIT_H - 0.04, w["a"] - T / 2), (xb, SPLIT_H + 0.04, w["b"] + T / 2), "trim_wood", skip=("nz", "pz"))
+            i = int(round((w["p"] - x0) / S))
+            ja, jb = int(round((w["a"] - z0) / S)), int(round((w["b"] - z0) / S))
+            for j in range(ja, jb):
+                a = z0 + j * S - (T / 2 if j == ja else 0.0)
+                b = z0 + (j + 1) * S + (T / 2 if j == jb - 1 else 0.0)
+                kn, kp = kind_at(i - 1, j), kind_at(i, j)
+                wall_piece("v", w["p"], a, b, 0.0, H, kn, kp)
+                wall_segments.append(("v", w["p"], z0 + (j + 0.5) * S, kn, kp, (i - 1, j), (i, j)))
 
-    # ---------------- doorways: jambs, lintel, frame, door leaf
+    # ---------------- doorways: jambs, lintel, carved frame, panelled studded door leaf or a cusped arch
     doors = []
     for d in L["doorways"]:
         kind = d["kind"]
@@ -254,105 +371,163 @@ def build(L):
         if kind == "pooja":
             ow, oh = DW + 0.3, DH + 0.2
         c = d["c"]
+        o_ = d["o"]
+        p = d["p"]
+        kn, kp = kind_at(*d["cells"][0]), kind_at(*d["cells"][1])
         lo, hi = c - S / 2 - T / 2, c + S / 2 + T / 2
-        for (a, b) in ((lo, c - ow / 2), (c + ow / 2, hi)):
-            if d["o"] == "h":
-                B.wall_box((a, 0, d["p"] - T / 2), (b, H, d["p"] + T / 2))
-            else:
-                B.wall_box((d["p"] - T / 2, 0, a), (d["p"] + T / 2, H, b))
-        if d["o"] == "h":
-            B.wall_box((c - ow / 2, oh, d["p"] - T / 2), (c + ow / 2, H, d["p"] + T / 2), ends=False)
-            B.box((c - ow / 2, oh - 0.001, d["p"] - T / 2), (c + ow / 2, oh, d["p"] + T / 2), "trim_wood", skip=("px", "nx", "pz", "nz", "py"))
+        wall_piece(o_, p, lo, c - ow / 2, 0.0, H, kn, kp, jambs=True)
+        wall_piece(o_, p, c + ow / 2, hi, 0.0, H, kn, kp, jambs=True)
+        wall_piece(o_, p, c - ow / 2, c + ow / 2, oh, H, kn, kp)
+        ch = B.chunk(*((c, p) if o_ == "h" else (p, c)))
+        if o_ == "h":
+            B.face("trim_wood", (c - ow / 2, oh, p - T / 2), (ow, 0, 0), (0, 0, T), (0, -1, 0), obj=ch, cell=10.0)
         else:
-            B.wall_box((d["p"] - T / 2, oh, c - ow / 2), (d["p"] + T / 2, H, c + ow / 2), ends=False)
-            B.box((d["p"] - T / 2, oh - 0.001, c - ow / 2), (d["p"] + T / 2, oh, c + ow / 2), "trim_wood", skip=("px", "nx", "pz", "nz", "py"))
-        # frame
-        fw, pr = 0.09, 0.03
-        if d["o"] == "h":
-            for a, b in ((c - ow / 2 - fw, c - ow / 2), (c + ow / 2, c + ow / 2 + fw)):
-                B.box((a, 0, d["p"] - T / 2 - pr), (b, oh + fw, d["p"] + T / 2 + pr), "trim_wood", skip=("ny",))
-            B.box((c - ow / 2 - fw, oh, d["p"] - T / 2 - pr), (c + ow / 2 + fw, oh + fw, d["p"] + T / 2 + pr), "trim_wood", skip=("ny",))
-        else:
-            for a, b in ((c - ow / 2 - fw, c - ow / 2), (c + ow / 2, c + ow / 2 + fw)):
-                B.box((d["p"] - T / 2 - pr, 0, a), (d["p"] + T / 2 + pr, oh + fw, b), "trim_wood", skip=("ny",))
-            B.box((d["p"] - T / 2 - pr, oh, c - ow / 2 - fw), (d["p"] + T / 2 + pr, oh + fw, c + ow / 2 + fw), "trim_wood", skip=("ny",))
+            B.face("trim_wood", (p - T / 2, oh, c - ow / 2), (T, 0, 0), (0, 0, ow), (0, -1, 0), obj=ch, cell=10.0)
+        # frame: thick carved posts and a heavier lintel
+        fw, pr = 0.11, 0.035
+        for ua, ub in ((c - ow / 2 - fw, c - ow / 2), (c + ow / 2, c + ow / 2 + fw)):
+            B.box_un(ch, o_, ua, ub, 0.0, oh + fw, p - T / 2 - pr, p + T / 2 + pr, "pillar_wood", skip=("ny",))
+            B.box_un(ch, o_, ua - 0.02, ub + 0.02, 0.0, 0.16, p - T / 2 - pr - 0.02, p + T / 2 + pr + 0.02, "pillar_wood", skip=("ny",))
+        B.box_un(ch, o_, c - ow / 2 - fw - 0.06, c + ow / 2 + fw + 0.06, oh, oh + fw + 0.05, p - T / 2 - pr - 0.01,
+                 p + T / 2 + pr + 0.01, "pillar_wood", skip=())
+        if kind == "arch":
+            # a cusped (multifoil) arch in carved wood fills the top of the opening
+            rise, cusp, lobes, n = 0.5, 0.07, 5, 30
+            half = ow / 2
+            pts = []
+            for k in range(n + 1):
+                u = -1.0 + 2.0 * k / n
+                base = (oh - rise) + rise * math.sqrt(max(0.0, 1.0 - u * u))
+                fr = ((u + 1.0) / 2.0 * lobes) % 1.0
+                pts.append((c + u * half, base - cusp * (1.0 - math.sin(math.pi * fr))))
+            nf, nb = p - T / 2 - 0.012, p + T / 2 + 0.012
+
+            def P3(u, y, nn):
+                return (u, y, nn) if o_ == "h" else (nn, y, u)
+            nvec = (0, 0, 1) if o_ == "h" else (1, 0, 0)
+            for k in range(n):
+                (ua, ya), (ub, yb) = pts[k], pts[k + 1]
+                for nn, sg in ((nf, -1), (nb, 1)):
+                    B.quad(ch, "pillar_wood", [P3(ua, ya, nn), P3(ub, yb, nn), P3(ub, oh, nn), P3(ua, oh, nn)],
+                           tuple(sg * v for v in nvec))
+                du, dy = ub - ua, yb - ya
+                ln = math.hypot(du, dy) or 1.0
+                nu_, ny_ = dy / ln, -du / ln
+                B.quad(ch, "pillar_wood", [P3(ua, ya, nf), P3(ub, yb, nf), P3(ub, yb, nb), P3(ua, ya, nb)],
+                       P3(nu_, ny_, 0.0) if o_ == "h" else (0.0, ny_, nu_))
         if kind in ("door", "pooja"):
             leaf_w = ow - 0.03
             leaf_h = oh - 0.02
             th = 0.06 if kind == "door" else 0.09
             hinge_side = -1 if d["id"] % 2 == 0 else 1
-            if d["o"] == "h":
-                hinge = np.array([c + hinge_side * (ow / 2 - 0.015), 0.0, d["p"]])
+            if o_ == "h":
+                hinge = np.array([c + hinge_side * (ow / 2 - 0.015), 0.0, p])
             else:
-                hinge = np.array([d["p"], 0.0, c + hinge_side * (ow / 2 - 0.015)])
+                hinge = np.array([p, 0.0, c + hinge_side * (ow / 2 - 0.015)])
             name = "door_%d" % d["id"] if kind == "door" else "pooja_door"
             o = Obj(name, hinge)
             sgn = -hinge_side
-            if d["o"] == "h":
-                mn = (hinge[0] + (0 if sgn > 0 else -leaf_w), 0.01, hinge[2] - th / 2)
-                mx = (hinge[0] + (leaf_w if sgn > 0 else 0), leaf_h, hinge[2] + th / 2)
-            else:
-                mn = (hinge[0] - th / 2, 0.01, hinge[2] + (0 if sgn > 0 else -leaf_w))
-                mx = (hinge[0] + th / 2, leaf_h, hinge[2] + (leaf_w if sgn > 0 else 0))
-            B.box(mn, mx, "door_wood", obj=o)
-            # brass handle on both sides
-            hx = (mn[0] + mx[0]) / 2
-            hz = (mn[2] + mx[2]) / 2
+            hu = hinge[0] if o_ == "h" else hinge[2]
+            hn = hinge[2] if o_ == "h" else hinge[0]
+            u0, u1 = sorted((hu, hu + sgn * leaf_w))
+            B.box_un(o, o_, u0, u1, 0.01, leaf_h, hn - th / 2, hn + th / 2, "door_wood")
+            door_dress(B, o, o_, u0, u1, 0.01, leaf_h, hn - th / 2, hn + th / 2,
+                       studs=(2, 4) if kind == "door" else (3, 5), kind=kind)
+            # ring handle (kundi) on both sides
+            hx = hu + sgn * (leaf_w - 0.14)
             for s in (-1, 1):
-                if d["o"] == "h":
-                    cx = hinge[0] + sgn * (leaf_w - 0.12)
-                    B.box((cx - 0.02, 0.95, hinge[2] + s * th / 2 - (0.0 if s > 0 else 0.07)), (cx + 0.02, 1.0, hinge[2] + s * th / 2 + (0.07 if s > 0 else 0.0)), "brass", obj=o)
-                else:
-                    cz = hinge[2] + sgn * (leaf_w - 0.12)
-                    B.box((hinge[0] + s * th / 2 - (0.0 if s > 0 else 0.07), 0.95, cz - 0.02), (hinge[0] + s * th / 2 + (0.07 if s > 0 else 0.0), 1.0, cz + 0.02), "brass", obj=o)
-            if kind == "pooja":
-                for yb in (0.35, leaf_h - 0.35):          # brass bands
-                    if d["o"] == "h":
-                        B.box((mn[0], yb, mn[2] - 0.006), (mx[0], yb + 0.1, mx[2] + 0.006), "brass", obj=o)
-                    else:
-                        B.box((mn[0] - 0.006, yb, mn[2]), (mx[0] + 0.006, yb + 0.1, mx[2]), "brass", obj=o)
+                nf = hn + s * (th / 2 + 0.014)
+                B.box_un(o, o_, hx - 0.03, hx + 0.03, 0.96, 1.04, nf, nf + s * 0.012, "brass")
+                B.box_un(o, o_, hx - 0.008, hx + 0.008, 0.9, 0.97, nf + s * 0.012, nf + s * 0.024, "brass")
             B.objs.append(o)
-            doors.append(dict(name=name, hinge=hinge.tolist(), o=d["o"], sgn=sgn, kind=kind, width=leaf_w, height=leaf_h, thick=th))
+            doors.append(dict(name=name, hinge=hinge.tolist(), o=o_, sgn=sgn, kind=kind, width=leaf_w, height=leaf_h, thick=th))
 
-    # ---------------- front door (decor) on the start room's south wall
+    # ---------------- the front door of the house (locked for ever) on the start room's south wall
     st = [r for r in L["rooms"] if r["kind"] == "start"][0]
     fx = x0 + (st["i0"] + 1.5) * S
     fz = z0 + (st["j0"] + st["h"]) * S - T / 2
-    B.box((fx - 0.75, 0, fz - 0.07), (fx + 0.75, 2.4, fz), "door_wood", skip=("pz",))
-    B.box((fx - 0.83, 0, fz - 0.1), (fx - 0.75, 2.5, fz), "trim_wood", skip=("pz",))
-    B.box((fx + 0.75, 0, fz - 0.1), (fx + 0.83, 2.5, fz), "trim_wood", skip=("pz",))
-    B.box((fx - 0.83, 2.4, fz - 0.1), (fx + 0.83, 2.5, fz), "trim_wood", skip=("pz",))
-    for yb in (0.5, 1.2, 1.9):
-        B.box((fx - 0.75, yb, fz - 0.085), (fx + 0.75, yb + 0.1, fz - 0.07), "lantern_metal", skip=("pz",))
-    B.box((fx - 0.08, 1.05, fz - 0.14), (fx + 0.08, 1.25, fz - 0.07), "brass", skip=("pz",))   # padlock
+    fo = B.chunk(fx, fz - 0.5)
+    B.box_un(fo, "h", fx - 0.86, fx - 0.76, 0.0, 2.62, fz - 0.12, fz, "pillar_wood")
+    B.box_un(fo, "h", fx + 0.76, fx + 0.86, 0.0, 2.62, fz - 0.12, fz, "pillar_wood")
+    B.box_un(fo, "h", fx - 0.95, fx + 0.95, 2.5, 2.7, fz - 0.14, fz, "pillar_wood")
+    B.box_un(fo, "h", fx - 0.76, fx + 0.76, 0.0, 2.5, fz - 0.03, fz, "trim_wood")
+    for (ua, ub) in ((fx - 0.75, fx - 0.005), (fx + 0.005, fx + 0.75)):
+        B.box_un(fo, "h", ua, ub, 0.01, 2.48, fz - 0.09, fz - 0.03, "door_wood")
+        door_dress(B, fo, "h", ua, ub, 0.01, 2.48, fz - 0.09, fz - 0.03, studs=(3, 6))
+    for yb in (0.55, 1.95):                                  # iron straps, chain and padlock
+        B.box_un(fo, "h", fx - 0.74, fx + 0.74, yb, yb + 0.07, fz - 0.115, fz - 0.104, "iron")
+    for k in range(7):
+        B.tilted_box(fo, "iron", (fx - 0.15 + k * 0.05, 1.18 - 0.03 * math.sin(k / 6 * math.pi), fz - 0.13), (0.05, 0.022, 0.012), yaw=0, pitch=0)
+    B.box((fx - 0.05, 1.0, fz - 0.15), (fx + 0.05, 1.12, fz - 0.12), "brass", obj=fo, cell=10.0)
 
-    # ---------------- lanterns (hanging from the ceiling)
+    # ---------------- shuttered windows (closed for ever) on the outer walls of corridors and the start room
+    win_n = 0
+    for (o_, p, uc, kn, kp, cn, cp) in wall_segments:
+        if (kn is None) == (kp is None):
+            continue                                     # only outer walls
+        k_in, side = (kp, 1) if kn is None else (kn, -1)
+        if k_in not in ("corridor", "start"):
+            continue
+        win_n += 1
+        if win_n % 2 == 0:
+            continue
+        f = p + side * T / 2
+        wo = B.chunk(*((uc, f) if o_ == "h" else (f, uc)))
+        w2, ya, yb = 0.47, 1.0, 2.1
+        B.box_un(wo, o_, uc - w2 - 0.09, uc + w2 + 0.09, ya - 0.08, ya, f, f + side * 0.12, "pillar_wood")      # sill
+        B.box_un(wo, o_, uc - w2 - 0.08, uc - w2, ya, yb, f, f + side * 0.06, "trim_wood")
+        B.box_un(wo, o_, uc + w2, uc + w2 + 0.08, ya, yb, f, f + side * 0.06, "trim_wood")
+        B.box_un(wo, o_, uc - w2 - 0.12, uc + w2 + 0.12, yb, yb + 0.12, f, f + side * 0.08, "pillar_wood")     # lintel
+        for ua, ub in ((uc - w2, uc - 0.004), (uc + 0.004, uc + w2)):
+            B.box_un(wo, o_, ua, ub, ya, yb, f, f + side * 0.035, "shutter_wood")
+            B.box_un(wo, o_, ua + 0.03, ub - 0.03, ya + 0.48, ya + 0.53, f + side * 0.035, f + side * 0.045, "iron")
+        B.box_un(wo, o_, uc - 0.07, uc + 0.07, 1.48, 1.52, f + side * 0.035, f + side * 0.05, "iron")         # latch
+
+    # ---------------- lanterns (simple ones; build_map.py swaps in real scanned hurricane lanterns)
     for li, l in enumerate(L["lights"]):
         x, y, z = l["pos"]
-        o = None
-        B.lathe(B.chunk(x, z), "lantern_metal", [(0.001, y + 0.34), (0.06, y + 0.3), (0.12, y + 0.22), (0.13, y + 0.2)], 8)
-        B.lathe(B.chunk(x, z), "lantern_glow", [(0.1, y + 0.2), (0.105, y + 0.0), (0.095, y - 0.2)], 8, (x, 0, z)) if False else None
-        ch = B.chunk(x, z)
+        ch = Obj("lamp_%d" % li, (x, 0.0, z))
         B.lathe(ch, "lantern_glow", [(0.1, y - 0.2), (0.105, y), (0.1, y + 0.2)], 8, (x, 0, z))
         B.lathe(ch, "lantern_metal", [(0.12, y - 0.2), (0.12, y - 0.24), (0.05, y - 0.26), (0.001, y - 0.26)], 8, (x, 0, z))
         B.lathe(ch, "lantern_metal", [(0.001, y + 0.34), (0.06, y + 0.3), (0.12, y + 0.22), (0.13, y + 0.2)], 8, (x, 0, z))
         B.box((x - 0.008, y + 0.34, z - 0.008), (x + 0.008, H, z + 0.008), "lantern_metal", obj=ch, skip=("ny", "py"))
+        B.objs.append(ch)
 
-    # ---------------- ritual item pedestals and the items themselves
+    # ---------------- carved wooden pillars where four open cells meet (halls, the pooja mandapa, wide corridors)
+    pillars = []
+    region = L["region"]
+    for gj in range(1, Rr):
+        for gi in range(1, C):
+            cells = [(gi - 1, gj - 1), (gi, gj - 1), (gi - 1, gj), (gi, gj)]
+            idx = [cj * C + ci for ci, cj in cells]
+            pairs = [(idx[0], idx[1]), (idx[2], idx[3]), (idx[0], idx[2]), (idx[1], idx[3])]
+            if not all((min(a, b), max(a, b)) in edges for a, b in pairs):
+                continue
+            regs = {region[cj][ci] for ci, cj in cells}
+            if len(regs) != 1:
+                continue
+            if kind_at(gi, gj) == "start":
+                continue
+            px, pz = x0 + gi * S, z0 + gj * S
+            pillar(B, px, pz, H)
+            pillars.append([round(px, 3), round(pz, 3)])
+
+    # ---------------- ritual item pedestals (simple; build_map.py swaps in scanned wooden stands) and the items
     items = []
     for it in L["items"]:
         x, z = it["pos"]
-        ped = B.chunk(x, z)
+        ped = Obj("pedestal_" + it["id"], (x, 0.0, z))
         top = 0.74
         B.box((x - 0.28, top - 0.05, z - 0.28), (x + 0.28, top, z + 0.28), "trim_wood", obj=ped, cell=10.0)
         for lx in (-0.23, 0.23):
             for lz in (-0.23, 0.23):
                 B.box((x + lx - 0.03, 0, z + lz - 0.03), (x + lx + 0.03, top - 0.05, z + lz + 0.03), "trim_wood", obj=ped, cell=10.0)
         B.box((x - 0.23, 0.25, z - 0.23), (x + 0.23, 0.29, z + 0.23), "trim_wood", obj=ped, cell=10.0)
+        B.objs.append(ped)
         o = Obj("item_" + it["id"], (x, top, z), local=True)
         add_item(B, o, it["id"])
         B.objs.append(o)
-        items.append(dict(id=it["id"], name=o.name, pos=[x, top, z]))
+        items.append(dict(id=it["id"], name=o.name, pos=[x, top, z], face=it.get("face", [0, 1]), ped=[0.56, 0.56]))
 
     # ---------------- altar in the pooja room
     po = L["pooja"]
@@ -360,16 +535,51 @@ def build(L):
     alt = Obj("altar", (cx, 0.0, cz))
     B.box((cx - 1.0, 0.0, cz - 1.0), (cx + 1.0, 0.18, cz + 1.0), "stone_altar", obj=alt, cell=10.0)
     B.box((cx - 0.75, 0.18, cz - 0.75), (cx + 0.75, 0.36, cz + 0.75), "stone_altar", obj=alt, cell=10.0)
-    B.box((cx - 0.55, 0.36, cz - 0.55), (cx + 0.55, 0.50, cz + 0.55), "trim_wood", obj=alt, cell=10.0)
+    B.box((cx - 0.55, 0.36, cz - 0.55), (cx + 0.55, 0.50, cz + 0.55), "pillar_wood", obj=alt, cell=10.0)
     B.box((cx - 0.57, 0.50, cz - 0.57), (cx + 0.57, 0.515, cz + 0.57), "red_cloth", obj=alt, cell=10.0)
     B.objs.append(alt)
+
+    # ---------------- spots for framed paintings: room walls with nothing in front of them
+    frames = []
+    busy = [tuple(pp["pos"]) for pp in L.get("props", [])] + [tuple(it["pos"]) for it in L["items"]]
+    for (o_, p, uc, kn, kp, cn, cp) in wall_segments:
+        for k_in, side in ((kn, -1), (kp, 1)):
+            if k_in not in ("hall", "bedroom", "study", "start", "corridor"):
+                continue
+            f = p + side * T / 2
+            pos = (uc, f) if o_ == "h" else (f, uc)
+            if any(math.hypot(pos[0] - bx, pos[1] - bz) < 1.25 for bx, bz in busy):
+                continue
+            if any(math.hypot(pos[0] - fr["pos"][0], pos[1] - fr["pos"][2]) < 7.0 for fr in frames):
+                continue
+            nrm = [0.0, float(side)] if o_ == "h" else [float(side), 0.0]
+            frames.append(dict(pos=[round(pos[0], 3), 1.72, round(pos[1], 3)], n=nrm, kind=k_in))
 
     # ---------------- bring chunk geometry into the object list
     objs = [c for _, c in sorted(B.chunks.items())] + B.objs
     for o in objs:
         o.finish()
-    meta = dict(doors=doors, items=items, altar=dict(pos=[cx, 0.515, cz]))
+    meta = dict(doors=doors, items=items, altar=dict(pos=[cx, 0.515, cz]), pillars=pillars, frames=frames)
     return objs, meta
+
+
+def pillar(B, x, z, H):
+    """A turned and carved teak pillar on a stone plinth, with a capital and bracket arms up into the beams."""
+    o = B.chunk(x, z)
+    B.box((x - 0.2, 0.0, z - 0.2), (x + 0.2, 0.2, z + 0.2), "stone_base", obj=o, skip=("ny",), cell=10.0)
+    B.box((x - 0.155, 0.2, z - 0.155), (x + 0.155, 0.3, z + 0.155), "pillar_wood", obj=o, skip=("ny",), cell=10.0)
+    prof = [(0.125, 0.3), (0.135, 0.33), (0.1, 0.38), (0.092, 0.5), (0.115, 0.56), (0.132, 0.62), (0.115, 0.68),
+            (0.088, 0.74), (0.085, 0.9), (0.08, 1.55), (0.092, 1.62), (0.112, 1.68), (0.092, 1.74), (0.08, 1.8),
+            (0.078, 2.22), (0.098, 2.3), (0.128, 2.38), (0.138, 2.43), (0.12, 2.47)]
+    B.lathe(o, "pillar_wood", prof, seg=12, center=(x, 0, z))
+    B.box((x - 0.16, 2.46, z - 0.16), (x + 0.16, 2.6, z + 0.16), "pillar_wood", obj=o, cell=10.0)
+    top = H - 0.24
+    for (dx, dz) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        for (ln, ya, yb, wd) in ((0.3, 2.6, (2.6 + top) / 2, 0.15), (0.5, (2.6 + top) / 2, top, 0.13)):
+            if dx:
+                B.box((x + min(0, dx * ln), ya, z - wd / 2), (x + max(0, dx * ln), yb, z + wd / 2), "pillar_wood", obj=o, cell=10.0)
+            else:
+                B.box((x - wd / 2, ya, z + min(0, dz * ln)), (x + wd / 2, yb, z + max(0, dz * ln)), "pillar_wood", obj=o, cell=10.0)
 
 
 def add_item(B, o, kind):

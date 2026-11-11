@@ -1,5 +1,5 @@
 extends Node3D
-## Main menu: a dark corridor with Chaya standing at the far end, red title, START and SETTINGS.
+## Main menu: a dark corridor with Chaya standing at the far end, red title, START, TUTORIAL and SETTINGS.
 
 const GhostScript := preload("res://game/scripts/ghost.gd")
 const GAME := "res://game/game.tscn"
@@ -165,7 +165,7 @@ func _style(col: Color, border: Color, bw := 4) -> StyleBoxFlat:
 func _button(text: String, size := 84) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(560, 124)
+	b.custom_minimum_size = Vector2(560, 112)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	b.add_theme_font_override("font", font_ui)
 	b.add_theme_font_size_override("font_size", size)
@@ -208,24 +208,27 @@ func _build_ui() -> void:
 	root_ui.add_child(mm)
 	main_box = mm
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 22)
+	col.add_theme_constant_override("separation", 16)
 	mm.add_child(col)
 	if ResourceLoader.exists(LOGO):
 		var logo := TextureRect.new()
 		logo.texture = load(LOGO)
 		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		logo.custom_minimum_size = Vector2(800, 298)
+		logo.custom_minimum_size = Vector2(740, 262)
 		logo.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		col.add_child(logo)
 	else:
 		col.add_child(_label("CHAYA", 210, RED))
 	var sp := Control.new()
-	sp.custom_minimum_size = Vector2(0, 14)
+	sp.custom_minimum_size = Vector2(0, 0)
 	col.add_child(sp)
 	var start := _button("START")
 	start.pressed.connect(_on_start)
 	col.add_child(start)
+	var tut := _button("TUTORIAL")
+	tut.pressed.connect(_on_tutorial)
+	col.add_child(tut)
 	var sett := _button("SETTINGS")
 	sett.pressed.connect(_on_settings)
 	col.add_child(sett)
@@ -346,6 +349,12 @@ func _on_back() -> void:
 	_click()
 	settings_box.visible = false
 	main_box.visible = true
+
+func _on_tutorial() -> void:
+	if _starting:
+		return
+	Settings.tutorial = true
+	_on_start()
 
 func _on_start() -> void:
 	if _starting:

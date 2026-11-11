@@ -92,26 +92,39 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq blender python3-numpy
           blender --version | head -2
+      - name: Cache the scanned models (Poly Haven, CC0)
+        id: scans
+        uses: actions/cache@v4
+        with:
+          path: assets/downloaded/scans
+          key: chaya-scans-${{ hashFiles('tools/fetch_scans.py') }}
+      - name: Download the scanned models
+        if: steps.scans.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p build
+          python3 tools/fetch_scans.py assets/downloaded/scans 2>&1 | tee build/scans-log.txt
       - name: Layout and Blender build
         run: |
           mkdir -p build map_out
           python3 tools/maze.py map_out/layout.json 11
-          blender -b -noaudio -P tools/build_map.py -- map_out/layout.json map_out 2>&1 | tee build/map-log.txt
-          ls -la map_out
+          blender -b -noaudio -P tools/build_map.py -- map_out/layout.json map_out --scans assets/downloaded/scans > build/map-log.txt 2>&1 || { tail -60 build/map-log.txt; exit 1; }
+          grep -E "scan|FAILED|Error|props placed|lantern|pedestal|candle|item |icon|paintings|done in" build/map-log.txt | head -150 || true
+          [ -d assets/downloaded/scans/tex ] && cp -r assets/downloaded/scans/tex map_out/scan_tex || true
+          [ -f assets/downloaded/scans/CREDITS_SCANS.md ] && cp assets/downloaded/scans/CREDITS_SCANS.md map_out/ || true
+          ls -la map_out map_out/icons || true
+          du -sh map_out/tex || true
       - uses: actions/upload-artifact@v4
         with:
           name: map
-          path: |
-            map_out/maze.glb
-            map_out/candle.glb
-            map_out/meta.json
-            map_out/layout.json
-            map_out/chaya_map.blend
+          path: map_out
           if-no-files-found: error
-      - name: Publish log
+      - name: Publish log and previews
         if: always()
         run: |
-          [ -f build/map-log.txt ] && gh release upload chaya-ci build/map-log.txt -R "$GITHUB_REPOSITORY" --clobber || true
+          for f in build/map-log.txt build/scans-log.txt map_out/scans_preview.jpg; do
+            [ -f "$f" ] && gh release upload chaya-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+          for f in map_out/icons/*.png; do [ -f "$f" ] && cp "$f" "build/icon_$(basename $f)" && gh release upload chaya-ci "build/icon_$(basename $f)" -R "$GITHUB_REPOSITORY" --clobber || true; done
 
   # ---------------------------------------------------------------- Godot import, preview shots, Android export, release
   apk:
@@ -131,9 +144,15 @@ jobs:
       - name: Map files into the project (the .blend stays outside it)
         run: |
           mkdir -p assets/map build && touch build/.gdignore
-          cp map_dl/maze.glb map_dl/meta.json map_dl/layout.json assets/map/
-          [ -f map_dl/candle.glb ] && cp map_dl/candle.glb assets/map/ || echo "::warning::no candle.glb (the game uses a simple candle)"
+          rm -f assets/map/maze.glb assets/map/maze.glb.import
+          cp map_dl/maze.gltf map_dl/maze.bin map_dl/meta.json map_dl/layout.json assets/map/
+          [ -d map_dl/tex ] && cp -r map_dl/tex assets/map/tex
+          [ -f map_dl/candle.gltf ] && cp map_dl/candle.gltf map_dl/candle.bin assets/map/ || echo "::warning::no candle model (the game uses a simple candle)"
+          [ -d map_dl/icons ] && cp -r map_dl/icons assets/map/icons
+          [ -d map_dl/scan_tex ] && cp -r map_dl/scan_tex/. assets/downloaded/tex/
+          [ -f map_dl/CREDITS_SCANS.md ] && { echo; cat map_dl/CREDITS_SCANS.md; } >> build/CREDITS_AUTO.md
           [ -f map_dl/chaya_map.blend ] && mv map_dl/chaya_map.blend build/chaya_map.blend
+          du -sh assets/map/tex || true
           rm -rf map_dl
           ls -la assets/map build
       - name: Chaya's Mixamo clips (the developer's own downloads, kept in a private draft release)
@@ -168,11 +187,12 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1 libegl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxrandr2 libxi6 libasound2t64 libfontconfig1 libpulse0 python3-pil
           godot --headless --path . --import 2>&1 | tail -5 || true
           python3 tools/patch_imports.py assets/downloaded
+          python3 tools/patch_imports.py assets/map 512
           godot --headless --path . --import 2>&1 | tail -5 || true
           godot --headless --path . --quit 2>&1 | grep -E "SCRIPT ERROR|Parse Error|ERROR" | head -20 || true
           # never publish an APK without the house or Chaya
           ok=1
-          for f in maze.glb Medical_Female_01.fbx walk.fbx run.fbx idle.fbx; do
+          for f in maze.gltf Medical_Female_01.fbx walk.fbx run.fbx idle.fbx; do
             ls .godot/imported | grep -q "^$f-" && echo "imported: $f" || { echo "::error::$f was not imported"; ok=0; }
           done
           [ $ok = 1 ]
@@ -247,12 +267,13 @@ jobs:
 
           Download **Chaya-v${GITHUB_RUN_NUMBER}.apk** below and install it on your Android phone (allow "install unknown apps" once).
 
+          - New here? Press TUTORIAL on the main menu: it walks you through the whole game.
           - Controls: joystick (left), run button (right), drag the right side of the screen to look.
           - Find all six pooja items - kalash, diya, coconut, kumkum, kapoor, gangajal - and place them on the altar in the pooja room to destroy Chaya for good.
           - Sensitivity can be changed in Settings.
 
           ## Credits
-          Every sound is a real recording (nothing is AI generated); textures are photographic CC0 scans.
+          Every sound is a real recording (nothing is AI generated); the furniture, lamps, brass vessels and the candle are real photo-scanned objects and the textures are photographic CC0 scans (Poly Haven).
           Full list: CREDITS.md attached to this release.
           EOT
           sed -i 's/^          //' notes.md
@@ -291,7 +312,7 @@ jobs:
           mkdir -p shots
           export CHAYA_SHOTS=$PWD/shots
           CHAYA_MENU_SHOT=$PWD/shots timeout 120 xvfb-run -a -s "-screen 0 1600x720x24" godot --rendering-driver opengl3 --resolution 1600x720 --path . 2>&1 | grep -E "SCRIPT ERROR|CHAYA" | head -10 || true
-          timeout 300 xvfb-run -a -s "-screen 0 1600x720x24" godot --rendering-driver opengl3 --resolution 1600x720 --path . game/game.tscn 2>&1 | tee build/shots-log.txt | grep -E "SCRIPT ERROR|ERROR: .*gd|Parse Error|Invalid|Nonexistent" | head -40 || true
+          timeout 480 xvfb-run -a -s "-screen 0 1600x720x24" godot --rendering-driver opengl3 --resolution 1600x720 --path . game/game.tscn 2>&1 | tee build/shots-log.txt | grep -E "SCRIPT ERROR|ERROR: .*gd|Parse Error|Invalid|Nonexistent" | head -40 || true
           ls -la shots
           for f in shots/*.png; do [ -f "$f" ] && gh release upload "chaya-v${GITHUB_RUN_NUMBER}" "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
       - name: Publish logs

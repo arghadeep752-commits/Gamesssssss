@@ -3,6 +3,7 @@ extends Node3D
 ## player and Chaya, handles item pickups, the locked pooja room, the ritual and the jumpscare.
 
 const GLB := "res://assets/map/maze.glb"
+const GLTF := "res://assets/map/maze.gltf"
 const MENU := "res://game/menu.tscn"
 const PlayerScript := preload("res://game/scripts/player.gd")
 const GhostScript := preload("res://game/scripts/ghost.gd")
@@ -36,9 +37,20 @@ var _perf_t := 0.0
 var _perf_n := 0
 var _perf_sum := 0.0
 var _perf_stage := 0
+var tutorial := false
+var found := {}
+var _wisp: Node3D
+var _wisp_light: OmniLight3D
+var _wisp_target := Vector3.INF
+var _wisp_path := PackedVector3Array()
+var _wisp_repath := 0.0
+var _wisp_hidden := false
+var _tut_caught := false
 
 func _ready() -> void:
 	randomize()
+	tutorial = Settings.tutorial
+	Settings.tutorial = false
 	maze = MazeData.load_layout()
 	L = maze.L
 	meta = JSON.parse_string(FileAccess.get_file_as_string("res://assets/map/meta.json"))
@@ -56,6 +68,10 @@ func _ready() -> void:
 	tw.tween_property(hud, "fade", 0.0, 1.6)
 	if OS.get_environment("CHAYA_SHOTS") != "":
 		_shots_tour.call_deferred()
+	elif tutorial:
+		_tutorial.call_deferred()
+	else:
+		_intro_list.call_deferred()
 
 func is_busy() -> bool:
 	return caught_flag or ritual_flag
@@ -88,16 +104,32 @@ func _apply_mats(n: Node) -> void:
 			for i in range(mi.mesh.get_surface_count()):
 				var mat := mi.mesh.surface_get_material(i)
 				var nm := mat.resource_name if mat else ""
+				if nm.begins_with("scan_"):
+					# real scanned objects keep their own photo textures from the model
+					if mat is BaseMaterial3D:
+						(mat as BaseMaterial3D).vertex_color_use_as_albedo = false
+						(mat as BaseMaterial3D).texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+					continue
 				mi.set_surface_override_material(i, Mats.get_material(nm))
 	for c in n.get_children():
 		_apply_mats(c)
 
 func _build_map() -> void:
-	var ps: PackedScene = load(GLB)
+	var ps: PackedScene = load(GLTF if ResourceLoader.exists(GLTF) else GLB)
 	map = ps.instantiate()
 	add_child(map)
 	_apply_mats(map)
 	_setup_props(map)
+	# furniture and lamps far away are hidden in the fog anyway: don't draw them (phone GPU)
+	for node in map.get_children():
+		var nn := String(node.name)
+		for pre in ["prop_", "lamp_", "pedestal_", "painting_", "offering_", "pooja_vase", "pooja_lamp"]:
+			if nn.begins_with(pre):
+				for n in node.find_children("*", "MeshInstance3D", true, false):
+					var gi := n as GeometryInstance3D
+					gi.visibility_range_end = 21.0
+					gi.visibility_range_end_margin = 2.0
+				break
 	# doors
 	for info in meta["doors"]:
 		var node := map.find_child(info["name"], true, false)
@@ -196,9 +228,18 @@ func _build_collisions() -> void:
 		var d := float(pr["size"][1])
 		var h := float(pr["h"])
 		var back := float(pr.get("back", 0.45))
-		var c := Vector3(float(pr["pos"][0]), 0.0, float(pr["pos"][1])) + Basis(Vector3.UP, yaw) * Vector3(0.0, h / 2.0, d / 2.0 - back)
+		var cx := float(pr.get("cx", 0.0))
+		var c := Vector3(float(pr["pos"][0]), 0.0, float(pr["pos"][1])) + Basis(Vector3.UP, yaw) * Vector3(cx, h / 2.0, d / 2.0 - back)
 		var sz := Vector3(w, h, d) if absf(sin(yaw)) < 0.5 else Vector3(d, h, w)
 		_box(body, c, sz)
+	# carved pillars and the stands the ritual items sit on
+	for pl in meta.get("pillars", []):
+		_box(body, Vector3(float(pl[0]), 1.4, float(pl[1])), Vector3(0.38, 2.8, 0.38))
+	for it in meta["items"]:
+		var ped: Array = it.get("ped", [0.56, 0.56])
+		var pyaw := deg_to_rad(float(it.get("ped_yaw", 0.0)))
+		var psz := Vector3(float(ped[0]), 0.74, float(ped[1])) if absf(sin(pyaw)) < 0.5 else Vector3(float(ped[1]), 0.74, float(ped[0]))
+		_box(body, Vector3(float(it["pos"][0]), 0.37, float(it["pos"][2])), psz)
 	var T := float(L["wall_t"])
 	var H := float(L["wall_h"])
 	var S := float(L["cell"])
@@ -246,6 +287,19 @@ func _build_lights() -> void:
 		o.position = Vector3(l["pos"][0], l["pos"][1], l["pos"][2])
 		add_child(o)
 		lamps.append({"node": o, "base": 2.3, "ph": randf() * 20.0})
+	# the brass lamps hanging in the pooja room
+	for el in meta.get("extra_lights", []):
+		var o2 := OmniLight3D.new()
+		o2.light_color = Color(1.0, 0.6, 0.28)
+		o2.light_energy = float(el[3])
+		o2.omni_range = float(el[4])
+		o2.omni_attenuation = 1.3
+		o2.distance_fade_enabled = true
+		o2.distance_fade_begin = 12.0
+		o2.distance_fade_length = 3.0
+		o2.position = Vector3(float(el[0]), float(el[1]), float(el[2]))
+		add_child(o2)
+		lamps.append({"node": o2, "base": float(el[3]), "ph": randf() * 20.0})
 
 func _spawn_player() -> void:
 	player = CharacterBody3D.new()
@@ -284,18 +338,30 @@ func ghost_spotted() -> void:
 func _on_item_collected(pk: Node3D) -> void:
 	items_got += 1
 	Sfx.play("pickup", -2.0)
+	found[String(pk.item_id)] = true
 	pickups.erase(pk)
 	pk.queue_free()
+	var left := items_total - items_got
+	if left > 0:
+		hud.show_item_list(found, 2.6, "%s FOUND - %d MORE TO FIND" % [String(HudScript.ITEM_NAMES.get(String(pk.item_id), "ITEM")), left])
 	if items_got >= items_total and not all_collected:
 		all_collected = true
 		_all_items_found()
+
+func _intro_list() -> void:
+	# the game starts: only the list of the six items to find for the ritual
+	await get_tree().create_timer(1.2).timeout
+	if not is_busy():
+		hud.show_item_list(found, 6.5)
 
 func _all_items_found() -> void:
 	await get_tree().create_timer(1.2).timeout
 	Sfx.play("bell", 0.0)
 	if pooja_door:
 		pooja_door.locked = false
-	ghost.enrage()
+	if not tutorial:
+		ghost.enrage()
+		hud.prompt("ALL ITEMS FOUND. TAKE THEM TO THE ALTAR IN THE POOJA ROOM", 4.5)
 	player.flicker_light(2.5)
 	for l in lamps:
 		l["flick"] = 3.0
@@ -337,6 +403,8 @@ func _process(dt: float) -> void:
 		var snd: String = ["creak", "whisper_far", "knock", "distant_cry"][randi() % 4]
 		Sfx.play_at(snd, self, pos, 0.0, randf_range(0.85, 1.1), 28.0)
 	# the altar
+	if _wisp:
+		_update_wisp(dt)
 	if all_collected and not ritual_flag and not caught_flag:
 		var dd := player.global_position - altar_pos
 		dd.y = 0.0
@@ -370,6 +438,15 @@ func _notification(what: int) -> void:
 # ------------------------------------------------------------------------------------------ caught
 
 func _on_caught() -> void:
+	if tutorial and not ritual_flag:
+		_tut_caught = true
+		Sfx.play("jumpscare", -6.0)
+		player.add_shake(2.5)
+		hud.flash = 0.7
+		var tw := create_tween()
+		tw.tween_property(hud, "flash", 0.0, 0.6)
+		_tut_vanish()
+		return
 	if caught_flag or ritual_flag:
 		return
 	caught_flag = true
@@ -503,6 +580,9 @@ func _start_ritual() -> void:
 	await get_tree().create_timer(2.5).timeout
 	# Chaya comes to stop the ritual
 	var spawn_at := maze.cell_center(Vector2i(int(L["pooja"]["door"]) % maze.cols, int(L["pooja"]["door"]) / maze.cols)) + Vector3(0, 0.05, 0)
+	ghost.process_mode = Node.PROCESS_MODE_INHERIT
+	ghost.visible = true
+	_ghost_voice(true)
 	ghost.warp_to(spawn_at)
 	ghost.active = true
 	ghost.start_ritual_mode()
@@ -538,8 +618,216 @@ func _start_ritual() -> void:
 	var fo := create_tween()
 	fo.tween_property(hud, "fade", 1.0, 2.0)
 	await fo.finished
+	if tutorial:
+		hud.prompt("TUTORIAL COMPLETE! NOW PRESS START AND SURVIVE CHAYA'S HOUSE FOR REAL.")
+		await get_tree().create_timer(4.0).timeout
 	await get_tree().create_timer(1.2).timeout
 	get_tree().change_scene_to_file(MENU)
+
+
+# ------------------------------------------------------------------------------------------ the tutorial
+
+func _wait(t: float) -> void:
+	await get_tree().create_timer(t).timeout
+
+func _ghost_voice(on: bool) -> void:
+	var w = ghost.get("_whisper")
+	if w is AudioStreamPlayer3D:
+		(w as AudioStreamPlayer3D).stream_paused = not on
+
+func _tutorial() -> void:
+	ghost.active = false
+	ghost.visible = false
+	ghost.process_mode = Node.PROCESS_MODE_DISABLED
+	_ghost_voice(false)
+	await _wait(1.5)
+	hud.prompt("WELCOME TO CHAYA'S HOUSE. THIS TUTORIAL TEACHES YOU HOW TO PLAY.", 3.4)
+	await _wait(4.0)
+	# walking
+	hud.prompt("MOVE: PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
+	hud.highlight = "joy"
+	var start := player.global_position
+	while player.global_position.distance_to(start) < 2.4:
+		await get_tree().process_frame
+	hud.highlight = ""
+	Sfx.play("pickup", -12.0, 1.5)
+	# looking
+	hud.prompt("LOOK AROUND: SWIPE ON THE RIGHT SIDE OF THE SCREEN")
+	hud.highlight = "look"
+	var turned := 0.0
+	var ly: float = player.yaw
+	var lp: float = player.pitch
+	while turned < 110.0:
+		await get_tree().process_frame
+		turned += absf(player.yaw - ly) + absf(player.pitch - lp)
+		ly = player.yaw
+		lp = player.pitch
+	hud.highlight = ""
+	Sfx.play("pickup", -12.0, 1.5)
+	# running
+	hud.prompt("RUN: KEEP MOVING AND HOLD THE RUNNING BUTTON")
+	hud.highlight = "run"
+	var ran := 0.0
+	while ran < 1.2:
+		await get_tree().process_frame
+		if player.running:
+			ran += get_process_delta_time()
+	hud.highlight = ""
+	Sfx.play("pickup", -12.0, 1.5)
+	hud.prompt("RUNNING IS FAST BUT LOUD. CHAYA CAN HEAR YOUR FOOTSTEPS.", 3.6)
+	await _wait(4.2)
+	# the goal
+	hud.show_item_list(found, 0.0, "FIND THESE SIX HOLY ITEMS FOR THE RITUAL")
+	hud.prompt("PUT ALL SIX ON THE ALTAR OF THE POOJA ROOM TO DESTROY CHAYA FOR EVER", 5.0)
+	await _wait(5.6)
+	hud.hide_item_list()
+	hud.prompt("FOLLOW THE LIGHT. DOORS OPEN BY THEMSELVES WHEN YOU WALK UP TO THEM. WALK INTO AN ITEM TO PICK IT UP.", 6.0)
+	_wisp_on()
+	while items_got < 2:
+		await get_tree().process_frame
+	await _wait(2.8)
+	await _tut_chase_lesson()
+	while not all_collected:
+		await get_tree().process_frame
+	await _wait(1.4)
+	hud.prompt("ALL SIX FOUND! THE POOJA ROOM DOOR IS OPEN NOW. FOLLOW THE LIGHT TO THE ALTAR.", 5.5)
+	while not ritual_flag:
+		await get_tree().process_frame
+	_wisp_off()
+	hud.prompt("THE RITUAL BEGINS... STAY AT THE ALTAR!", 4.0)
+
+func _tut_chase_lesson() -> void:
+	_wisp_hidden = true
+	hud.prompt("CAREFUL! CHAYA IS AWAKE. WHEN THE SCREEN TURNS RED AND YOU HEAR YOUR HEART BEAT, SHE IS CLOSE.", 5.0)
+	# she appears a few rooms away and comes for you
+	var best := Vector2i(-1, -1)
+	var bd := 999
+	for c in maze.open_cells:
+		var n := maze.path(player.global_position, maze.cell_center(c)).size()
+		if n >= 4 and absi(n - 6) < bd:
+			bd = absi(n - 6)
+			best = c
+	if best.x < 0:
+		best = Vector2i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]))
+	ghost.process_mode = Node.PROCESS_MODE_INHERIT
+	ghost.visible = true
+	_ghost_voice(true)
+	ghost.warp_to(maze.cell_center(best) + Vector3(0, 0.05, 0))
+	ghost.active = true
+	ghost.state = ghost.S.HEARD
+	ghost._set_target(player.global_position)
+	_tut_caught = false
+	await _wait(5.2)
+	if not _tut_caught:
+		hud.prompt("RUN! KEEP AWAY FROM HER AND BREAK HER LINE OF SIGHT", 3.5)
+	var t := 0.0
+	var re := 0.0
+	while t < 15.0 and not _tut_caught:
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		t += dt
+		re -= dt
+		if re <= 0.0 and ghost.state != ghost.S.CHASE and ghost.active:
+			re = 2.0
+			ghost.state = ghost.S.HEARD
+			ghost._set_target(player.global_position)
+	if _tut_caught:
+		hud.prompt("SHE CAUGHT YOU! IN THE REAL GAME THAT MEANS GAME OVER. RUN, AND HIDE BEHIND DOORS AND CORNERS.", 6.0)
+	else:
+		_tut_vanish()
+		hud.prompt("YOU GOT AWAY! WHEN SHE LOSES YOU, SHE GOES BACK TO WANDERING THE HOUSE.", 5.0)
+	await _wait(6.4)
+	hud.prompt("NOW FIND THE REST OF THE ITEMS. FOLLOW THE LIGHT.", 4.0)
+	_wisp_hidden = false
+
+func _tut_vanish() -> void:
+	ghost.active = false
+	ghost.velocity = Vector3.ZERO
+	ghost.state = ghost.S.PATROL
+	ghost.visible = false
+	ghost.warp_to(maze.cell_center(Vector2i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]))) + Vector3(0, 0.05, 0))
+	ghost.set_deferred("process_mode", Node.PROCESS_MODE_DISABLED)
+	_ghost_voice(false)
+	var tw := create_tween()
+	tw.tween_property(hud, "danger", 0.0, 0.8)
+
+func _wisp_on() -> void:
+	if _wisp:
+		return
+	_wisp = Node3D.new()
+	add_child(_wisp)
+	var sh := Shader.new()
+	sh.code = PlayerScript.FLAME_SHADER
+	for sz in [0.62, 0.2]:
+		var q := MeshInstance3D.new()
+		var qm := QuadMesh.new()
+		qm.size = Vector2(sz, sz)
+		q.mesh = qm
+		var m := ShaderMaterial.new()
+		m.shader = sh
+		m.set_shader_parameter("glow", 1.0)
+		q.material_override = m
+		q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_wisp.add_child(q)
+	_wisp_light = OmniLight3D.new()
+	_wisp_light.light_color = Color(1.0, 0.78, 0.45)
+	_wisp_light.light_energy = 1.4
+	_wisp_light.omni_range = 4.0
+	_wisp.add_child(_wisp_light)
+	_wisp.global_position = player.global_position + Vector3(0, 1.4, 0) - player.global_transform.basis.z * 1.5
+	hud.guide_on = true
+
+func _wisp_off() -> void:
+	if _wisp:
+		_wisp.queue_free()
+		_wisp = null
+	hud.guide_on = false
+
+func _update_wisp(dt: float) -> void:
+	_wisp.visible = not _wisp_hidden
+	hud.guide_on = not _wisp_hidden
+	if _wisp_hidden:
+		return
+	# the target: the nearest item still to find, then the altar
+	var target := altar_pos
+	if not all_collected:
+		var bestd := 1e9
+		for pk in pickups:
+			var dd: float = (pk as Node3D).global_position.distance_to(player.global_position)
+			if dd < bestd:
+				bestd = dd
+				target = (pk as Node3D).global_position
+	_wisp_repath -= dt
+	if _wisp_repath <= 0.0:
+		_wisp_repath = 0.4
+		_wisp_path = maze.path(player.global_position, target)
+	# a point about 2.4 m ahead of the player along the way
+	var pts := PackedVector3Array([Vector3(player.global_position.x, 0, player.global_position.z)])
+	for p in _wisp_path:
+		pts.append(p)
+	pts.append(Vector3(target.x, 0, target.z))
+	var want := Vector3(target.x, target.y + 0.55, target.z)
+	var left := 2.4
+	for i in range(pts.size() - 1):
+		var seg := pts[i + 1] - pts[i]
+		var ln := seg.length()
+		if ln >= left:
+			var p2 := pts[i] + seg * (left / maxf(ln, 0.001))
+			want = Vector3(p2.x, 1.35, p2.z)
+			break
+		left -= ln
+	want.y += sin(_t * 2.3) * 0.08
+	_wisp.global_position = _wisp.global_position.lerp(want, clampf(dt * 2.6, 0.0, 1.0))
+	_wisp_light.light_energy = 1.3 + 0.2 * sin(_t * 7.0)
+	var cam: Camera3D = player.camera
+	var wp := _wisp.global_position
+	var vs := get_viewport().get_visible_rect().size
+	var sp := cam.unproject_position(wp)
+	var behind := cam.is_position_behind(wp)
+	if behind:
+		sp = vs / 2.0 - (sp - vs / 2.0) * 10.0
+	hud.guide_screen = sp
+	hud.guide_visible = (not behind) and Rect2(Vector2(60, 60), vs - Vector2(120, 120)).has_point(sp)
 
 # ------------------------------------------------------------------------------------------ screenshot tour (build checks)
 
@@ -569,6 +857,25 @@ func _shots_tour() -> void:
 	if not only_ghost:
 		_place(Vector3(sp[0], 0.05, sp[1]), 0.0)
 		await _snap("%02d_spawn" % n); n += 1
+		hud.show_item_list(found, 0.0)
+		await get_tree().create_timer(0.7).timeout
+		await _snap("%02d_item_list" % n); n += 1
+		found["kalash"] = true
+		found["diya"] = true
+		hud.show_item_list(found, 0.0, "DIYA FOUND - 4 MORE TO FIND")
+		await get_tree().create_timer(0.7).timeout
+		await _snap("%02d_item_list_found" % n); n += 1
+		found.clear()
+		hud.hide_item_list()
+		hud.prompt("MOVE: PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
+		hud.highlight = "joy"
+		await get_tree().create_timer(0.7).timeout
+		await _snap("%02d_tutorial" % n); n += 1
+		hud.highlight = ""
+		hud.hide_prompt()
+		await get_tree().create_timer(0.6).timeout
+		_place(Vector3(sp[0], 0.05, sp[1]), 180.0, -6.0)
+		await _snap("%02d_front_door" % n); n += 1
 	# a corridor and a room: pick cells
 	var shots := [[Vector2i(7, 8), 0.0], [Vector2i(3, 2), 90.0], [Vector2i(10, 1), 200.0], [Vector2i(13, 8), 270.0]]
 	for s in shots:
@@ -591,6 +898,41 @@ func _shots_tour() -> void:
 			var drop: float = float(it["pos"][1]) + 0.22 - (0.05 + player.EYE_HEIGHT)
 			_place(p + best, yaw, rad_to_deg(atan2(drop, maxf(0.3, best.length()))))
 			await _snap("%02d_item_%s" % [n, it["id"]]); n += 1
+	# the scanned furniture, a pillar, a painting, a lantern
+	if not only_ghost:
+		var props: Array = meta.get("props", [])
+		for k in range(mini(props.size(), 10)):
+			var pr: Dictionary = props[k]
+			var yaw := deg_to_rad(float(pr["yaw"]))
+			var b := Basis(Vector3.UP, yaw)
+			var c := Vector3(float(pr["pos"][0]), 0.0, float(pr["pos"][1])) + b * Vector3(float(pr.get("cx", 0.0)), 0.0, 0.0)
+			var eye := c + b * Vector3(0.35, 0.0, 2.1)
+			var look := c + Vector3(0, minf(float(pr["h"]) * 0.5, 0.9), 0) - (eye + Vector3(0, 0.05 + player.EYE_HEIGHT, 0))
+			_place(eye + Vector3(0, 0.05, 0), rad_to_deg(atan2(-look.x, -look.z)), rad_to_deg(atan2(look.y, Vector2(look.x, look.z).length())))
+			await _snap("%02d_prop_%s" % [n, String(pr["kind"])]); n += 1
+		var pls: Array = meta.get("pillars", [])
+		if pls.size() > 0:
+			var pc := Vector3(float(pls[0][0]), 0.0, float(pls[0][1]))
+			var e2 := pc + Vector3(1.6, 0, 1.1)
+			var lk := pc + Vector3(0, 1.6, 0) - (e2 + Vector3(0, 1.63, 0))
+			_place(e2 + Vector3(0, 0.05, 0), rad_to_deg(atan2(-lk.x, -lk.z)), rad_to_deg(atan2(lk.y, Vector2(lk.x, lk.z).length())))
+			await _snap("%02d_pillar" % n); n += 1
+		var pts: Array = meta.get("paintings", [])
+		if pts.size() > 0:
+			var fp := Vector3(float(pts[0]["pos"][0]), 0.0, float(pts[0]["pos"][2]))
+			var nn := Vector3(float(pts[0]["n"][0]), 0.0, float(pts[0]["n"][1]))
+			var e3 := fp + nn * 1.7
+			_place(e3 + Vector3(0, 0.05, 0), rad_to_deg(atan2(nn.x, nn.z)), 4.0)
+			await _snap("%02d_painting" % n); n += 1
+		var lt: Array = L["lights"]
+		if lt.size() > 0:
+			var lpos := Vector3(float(lt[0]["pos"][0]), 0.0, float(lt[0]["pos"][2]))
+			_place(lpos + Vector3(0, 0.05, 1.5), 0.0, 30.0)
+			await _snap("%02d_lantern" % n); n += 1
+		# the pooja room
+		var pc2 := Vector3(float(L["pooja"]["center"][0]), 0.0, float(L["pooja"]["center"][1]))
+		_place(pc2 + Vector3(0, 0.05, 2.9), 0.0, -14.0)
+		await _snap("%02d_pooja" % n); n += 1
 	# Chaya in front of the camera
 	var base := maze.cell_center(Vector2i(7, 8))
 	_place(base + Vector3(0, 0.05, 0), 0.0)
