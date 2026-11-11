@@ -204,8 +204,11 @@ jobs:
           ls ~/.local/share/godot/export_templates/*/ | head -30
       - name: Import project (twice, VRAM-compress the textures in between)
         run: |
-          sudo timeout 420 apt-get update -qq || echo "::warning::apt update timed out"
-          sudo timeout 420 apt-get install -y -qq xvfb libgl1 libegl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxrandr2 libxi6 libasound2t64 libfontconfig1 libpulse0 python3-pil || echo "::warning::apt install failed (screenshots may be missing)"
+          # the runner image already has xvfb and Mesa; apt only if they are missing (the mirror can hang)
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo timeout 300 apt-get update -qq || echo "::warning::apt update timed out"
+            sudo timeout 300 apt-get install -y -qq xvfb libgl1 libegl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxrandr2 libxi6 libasound2t64 libfontconfig1 libpulse0 || echo "::warning::apt install failed (screenshots may be missing)"
+          fi
           godot --headless --path . --import 2>&1 | tail -5 || true
           python3 tools/patch_imports.py assets/downloaded
           python3 tools/patch_imports.py assets/map 512

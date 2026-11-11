@@ -578,10 +578,11 @@ PLAN = {
     "bedroom": ["bed", "almirah", "commode", "daybed", "cabinet_low", "pots", "brass"],
     "kitchen": ["rack", "kitchen_table", "pots", "bucket_basket", "brass", "pots"],
     "store": ["chest", "crates", "barrel", "ladder", "pots", "bucket_basket"],
-    "hall": ["sofa", "clock", "rocking", "carved_cabinet", "bench", "round_table", "brass"],
+    "hall": ["daybed", "clock", "rocking", "carved_cabinet", "bench", "round_table", "brass"],
     "study": ["bookshelf", "desk", "charkha", "drawer", "armchair", "brass"],
     "start": ["start_bench", "pots"],
 }
+ROOM_MAX = {"start": 2}
 scan_meta = {"extra_lights": [], "paintings": []}
 
 
@@ -650,66 +651,88 @@ def overlaps(a, b, m=0.0):
 
 
 def place_scanned_props():
+    """Furnish every room: try each closed stretch of wall (sliding along it) with the room's next group."""
     keep_out = []
     for d in L["doorways"]:
         if d["o"] == "h":
-            keep_out.append((d["c"] - 1.0, d["c"] + 1.0, d["p"] - 1.15, d["p"] + 1.15))
+            keep_out.append((d["c"] - 0.95, d["c"] + 0.95, d["p"] - 1.1, d["p"] + 1.1))
         else:
-            keep_out.append((d["p"] - 1.15, d["p"] + 1.15, d["c"] - 1.0, d["c"] + 1.0))
+            keep_out.append((d["p"] - 1.1, d["p"] + 1.1, d["c"] - 0.95, d["c"] + 0.95))
     for it in meta["items"]:
         x, _, z = it["pos"]
-        keep_out.append((x - 0.75, x + 0.75, z - 0.75, z + 0.75))
+        keep_out.append((x - 0.7, x + 0.7, z - 0.7, z + 0.7))
     for (px, pz) in meta.get("pillars", []):
-        keep_out.append((px - 0.3, px + 0.3, pz - 0.3, pz + 0.3))
-    po = L["pooja"]
+        keep_out.append((px - 0.32, px + 0.32, pz - 0.32, pz + 0.32))
     S_, x0_, z0_ = L["cell"], L["x0"], L["z0"]
-    slots = list(L["props"])
-    # the start room has no prop slots in the layout: add a few along its closed walls
-    st = [r for r in L["rooms"] if r["kind"] == "start"][0]
-    edges = set((min(a, b), max(a, b)) for a, b in L["edges"])
     C_, R_ = L["cols"], L["rows"]
-    for j in range(st["j0"], st["j0"] + st["h"]):
-        for i in range(st["i0"], st["i0"] + st["w"]):
-            for di, dj in ((-1, 0), (1, 0), (0, -1)):
-                ni, nj = i + di, j + dj
-                if st["i0"] <= ni < st["i0"] + st["w"] and st["j0"] <= nj < st["j0"] + st["h"]:
-                    continue
-                if 0 <= ni < C_ and 0 <= nj < R_ and (min(j * C_ + i, nj * C_ + ni), max(j * C_ + i, nj * C_ + ni)) in edges:
-                    continue
-                off = S_ / 2 - L["wall_t"] / 2 - 0.45
-                slots.append(dict(room="start", kind="start", pos=[x0_ + (i + 0.5) * S_ + di * off, z0_ + (j + 0.5) * S_ + dj * off],
-                                  yaw=math.degrees(math.atan2(-di, -dj))))
+    edges = set((min(a, b), max(a, b)) for a, b in L["edges"])
+    st = [r for r in L["rooms"] if r["kind"] == "start"][0]
+    # the spawn point and the front door stay clear
+    sx, sz = L["spawn"]["pos"]
+    keep_out.append((sx - 0.9, sx + 0.9, sz - 0.9, sz + 0.9))
+    fx = x0_ + (st["i0"] + 1.5) * S_
+    fz = z0_ + (st["j0"] + st["h"]) * S_
+    keep_out.append((fx - 1.2, fx + 1.2, fz - 1.0, fz + 0.2))
+    off = S_ / 2 - L["wall_t"] / 2 - 0.45
+    rnd = random.Random(5)
     placed = []
-    used_in_room = {}
-    for k, slot in enumerate(slots):
-        x, z = slot["pos"]
-        yaw = math.radians(slot["yaw"])
-        plan = PLAN.get(slot["kind"], ["pots"])
-        n0 = used_in_room.get(slot["room"], 0)
-        done = False
-        for step in range(len(plan)):
-            gname = plan[(n0 + step) % len(plan)]
+    for room in L["rooms"]:
+        kind = room["kind"]
+        if kind == "pooja" or kind not in PLAN:
+            continue
+        walls = []
+        for j in range(room["j0"], room["j0"] + room["h"]):
+            for i in range(room["i0"], room["i0"] + room["w"]):
+                for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    ni, nj = i + di, j + dj
+                    if room["i0"] <= ni < room["i0"] + room["w"] and room["j0"] <= nj < room["j0"] + room["h"]:
+                        continue
+                    if 0 <= ni < C_ and 0 <= nj < R_ and (min(j * C_ + i, nj * C_ + ni), max(j * C_ + i, nj * C_ + ni)) in edges:
+                        continue                                  # an opening: keep it clear
+                    walls.append((i, j, di, dj))
+        rnd.shuffle(walls)
+        plan = PLAN[kind]
+        limit = ROOM_MAX.get(kind, len(plan))
+        n_done = 0
+        gi = 0
+        tried = 0
+        while n_done < limit and tried < len(plan) * 2 and walls:
+            gname = plan[gi % len(plan)]
+            gi += 1
+            tried += 1
             lay = group_layout(gname)
             if lay is None:
                 continue
             pieces, rect = lay
-            wr = world_rect(x, z, yaw, rect)
-            if any(overlaps(wr, ko) for ko in keep_out) or any(overlaps(wr, pr, 0.12) for pr in placed):
+            ok = None
+            for (i, j, di, dj) in walls:
+                yaw = math.atan2(-di, -dj)
+                along = (dj, di)
+                for t in (0.0, -0.45, 0.45, -0.8, 0.8):
+                    x = x0_ + (i + 0.5) * S_ + di * off + along[0] * t
+                    z = z0_ + (j + 0.5) * S_ + dj * off + along[1] * t
+                    wr = world_rect(x, z, yaw, rect)
+                    if any(overlaps(wr, ko) for ko in keep_out) or any(overlaps(wr, pr, 0.1) for pr in placed):
+                        continue
+                    ok = (x, z, yaw, wr, (i, j, di, dj))
+                    break
+                if ok:
+                    break
+            if not ok:
                 continue
-            e = new_prop("prop_%d_%s" % (k, gname))
+            x, z, yaw, wr, wall = ok
+            walls.remove(wall)
+            e = new_prop("prop_%s_%d_%s" % (room["name"], n_done, gname))
             for (key, px, py, pz, ang) in pieces:
                 scan_props.instance(key, "%s_%s" % (e.name, key), prop_collection, parent=e, loc=(px, py, pz), rot_z=ang)
             e.location = (x, -z, 0.0)
             e.rotation_euler = (0.0, 0.0, yaw)
             placed.append(wr)
-            used_in_room[slot["room"]] = n0 + step + 1
             xmin, xmax, ymin, ymax, h = rect
-            prop_meta.append({"name": e.name, "kind": gname, "pos": [x, z], "yaw": slot["yaw"], "size": [xmax - xmin, ymax - ymin],
+            prop_meta.append({"name": e.name, "kind": gname, "pos": [x, z], "yaw": math.degrees(yaw), "size": [xmax - xmin, ymax - ymin],
                               "h": h, "back": ymax, "cx": (xmin + xmax) / 2})
-            done = True
-            break
-        if not done:
-            print("  no room for a prop at slot %d (%s)" % (k, slot["room"]))
+            n_done += 1
+        print("  %-10s %-8s %d groups" % (room["name"], kind, n_done))
     print("scanned props placed: %d (%s)" % (len(prop_meta), ", ".join(p["kind"] for p in prop_meta)))
     return placed
 

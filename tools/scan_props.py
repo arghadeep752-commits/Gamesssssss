@@ -222,8 +222,10 @@ def candle_from_set(target_h=0.24):
     info = []
     for p in parts:
         mn, mx = bbox(p.data)
-        mats = " ".join(m.name.lower() for m in p.data.materials if m)
+        used = {pl.material_index for pl in p.data.polygons}          # separate() keeps every slot: look at the faces
+        mats = " ".join(p.data.materials[i].name.lower() for i in used if i < len(p.data.materials) and p.data.materials[i])
         info.append([p, mn, mx, mats])
+    print("candle set: %d pieces, materials %s" % (len(info), sorted({r[3] for r in info})))
     flames = [r for r in info if "flame" in r[3]]
     for r in flames:
         bpy.data.objects.remove(r[0], do_unlink=True)
@@ -297,7 +299,7 @@ def render_icon(ob, path, px=256):
     bg = w.node_tree.nodes.get("Background")
     if bg:
         bg.inputs[0].default_value = (0.45, 0.4, 0.36, 1.0)
-        bg.inputs[1].default_value = 0.6
+        bg.inputs[1].default_value = 0.3
     sc.world = w
     col = sc.collection
     dup = bpy.data.objects.new("icon_obj", ob.data)
@@ -322,7 +324,7 @@ def render_icon(ob, path, px=256):
     cam.location = c + d * (r * 6.0)
     cam.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
     sc.camera = cam
-    for (loc, en, sz) in (((-1.2, -1.4, 1.6), 260.0, 1.2), ((1.6, -0.6, 0.9), 90.0, 1.5), ((0.4, 1.6, 1.4), 160.0, 0.8)):
+    for (loc, en, sz) in (((-1.2, -1.4, 1.6), 55.0, 1.2), ((1.6, -0.6, 0.9), 18.0, 1.5), ((0.4, 1.6, 1.4), 35.0, 0.8)):
         ld = bpy.data.lights.new("icon_light", "AREA")
         ld.energy = en * (r / 0.15) ** 2
         ld.size = sz * r * 4
