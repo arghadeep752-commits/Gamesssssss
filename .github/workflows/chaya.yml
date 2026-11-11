@@ -217,7 +217,7 @@ jobs:
           # never publish an APK without the house or Chaya
           ok=1
           for f in maze.gltf Medical_Female_01.fbx walk.fbx run.fbx idle.fbx; do
-            ls .godot/imported | grep -q "^$f-" && echo "imported: $f" || { echo "::error::$f was not imported"; ok=0; }
+            if compgen -G ".godot/imported/$f-*" >/dev/null; then echo "imported: $f"; else echo "::error::$f was not imported"; ok=0; fi
           done
           [ $ok = 1 ]
       - name: Restore the signing key (the same key for every build, so updates install over the old version)
