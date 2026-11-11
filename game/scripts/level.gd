@@ -81,7 +81,8 @@ func is_busy() -> bool:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0, 0, 0)
+	env.background_color = Color(0.13, 0.095, 0.07)      # never seen (the house is closed); metals reflect it
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.36, 0.29, 0.25)
 	env.ambient_light_energy = 0.45      # a little brighter (player request)
@@ -107,8 +108,11 @@ func _apply_mats(n: Node) -> void:
 				if nm.begins_with("scan_"):
 					# real scanned objects keep their own photo textures from the model
 					if mat is BaseMaterial3D:
-						(mat as BaseMaterial3D).vertex_color_use_as_albedo = false
-						(mat as BaseMaterial3D).texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+						var bm := mat as BaseMaterial3D
+						bm.vertex_color_use_as_albedo = false
+						bm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+						# no reflection probes on the phone: full metal would look black, keep some diffuse brass
+						bm.metallic = minf(bm.metallic, 0.55)
 					continue
 				mi.set_surface_override_material(i, Mats.get_material(nm))
 	for c in n.get_children():
@@ -284,7 +288,7 @@ func _build_lights() -> void:
 		o.distance_fade_enabled = true      # far lanterns are hidden by the fog anyway: skip them (phone GPU)
 		o.distance_fade_begin = 13.0
 		o.distance_fade_length = 3.0
-		o.position = Vector3(l["pos"][0], l["pos"][1], l["pos"][2])
+		o.position = Vector3(l["pos"][0], float(l["pos"][1]) - (0.3 if meta.get("scanned", false) else 0.0), l["pos"][2])
 		add_child(o)
 		lamps.append({"node": o, "base": 2.3, "ph": randf() * 20.0})
 	# the brass lamps hanging in the pooja room
@@ -644,7 +648,7 @@ func _tutorial() -> void:
 	hud.prompt("WELCOME TO CHAYA'S HOUSE. THIS TUTORIAL TEACHES YOU HOW TO PLAY.", 3.4)
 	await _wait(4.0)
 	# walking
-	hud.prompt("MOVE: PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
+	hud.prompt("MOVE - PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
 	hud.highlight = "joy"
 	var start := player.global_position
 	while player.global_position.distance_to(start) < 2.4:
@@ -652,7 +656,7 @@ func _tutorial() -> void:
 	hud.highlight = ""
 	Sfx.play("pickup", -12.0, 1.5)
 	# looking
-	hud.prompt("LOOK AROUND: SWIPE ON THE RIGHT SIDE OF THE SCREEN")
+	hud.prompt("LOOK AROUND - SWIPE ON THE RIGHT SIDE OF THE SCREEN")
 	hud.highlight = "look"
 	var turned := 0.0
 	var ly: float = player.yaw
@@ -665,7 +669,7 @@ func _tutorial() -> void:
 	hud.highlight = ""
 	Sfx.play("pickup", -12.0, 1.5)
 	# running
-	hud.prompt("RUN: KEEP MOVING AND HOLD THE RUNNING BUTTON")
+	hud.prompt("RUN - KEEP MOVING AND HOLD THE RUNNING BUTTON")
 	hud.highlight = "run"
 	var ran := 0.0
 	while ran < 1.2:
@@ -867,7 +871,7 @@ func _shots_tour() -> void:
 		await _snap("%02d_item_list_found" % n); n += 1
 		found.clear()
 		hud.hide_item_list()
-		hud.prompt("MOVE: PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
+		hud.prompt("MOVE - PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
 		hud.highlight = "joy"
 		await get_tree().create_timer(0.7).timeout
 		await _snap("%02d_tutorial" % n); n += 1

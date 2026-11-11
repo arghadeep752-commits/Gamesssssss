@@ -135,6 +135,7 @@ func _build_candle() -> void:
 				if src is StandardMaterial3D:
 					var sm := (src as StandardMaterial3D).duplicate() as StandardMaterial3D
 					sm.vertex_color_use_as_albedo = false
+					sm.metallic = minf(sm.metallic, 0.6)
 					if nm.to_lower().contains("candles") or nm.to_lower().contains("wax"):
 						sm.emission_enabled = true
 						sm.emission = Color(1.0, 0.62, 0.32)

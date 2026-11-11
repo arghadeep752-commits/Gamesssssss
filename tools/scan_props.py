@@ -220,7 +220,21 @@ def candle_from_set(target_h=0.24):
     ob = import_raw("brass_candleholders")
     parts = loose_parts(ob)
     info = []
-    for p in parts:
+    for p in list(parts):
+        # the flame cards are part of each candle's mesh: cut them off (the game draws its own flame)
+        fl = [i for i, m in enumerate(p.data.materials) if m and "flame" in m.name.lower()]
+        if fl:
+            bm = bmesh.new()
+            bm.from_mesh(p.data)
+            dead = [f for f in bm.faces if f.material_index in fl]
+            if dead:
+                bmesh.ops.delete(bm, geom=dead, context="FACES")
+            bm.to_mesh(p.data)
+            bm.free()
+            p.data.update()
+        if len(p.data.polygons) == 0:
+            bpy.data.objects.remove(p, do_unlink=True)
+            continue
         mn, mx = bbox(p.data)
         used = {pl.material_index for pl in p.data.polygons}          # separate() keeps every slot: look at the faces
         mats = " ".join(p.data.materials[i].name.lower() for i in used if i < len(p.data.materials) and p.data.materials[i])
@@ -314,10 +328,11 @@ def render_icon(ob, path, px=256):
             kids.append(k)
     mn, mx = bbox(ob.data)
     c = (mn + mx) / 2
-    r = max((mx - mn).length / 2, 0.02)
+    sz = mx - mn
+    r = max(sz.length / 2, 0.02)
     cam_d = bpy.data.cameras.new("icon_cam")
     cam_d.type = "ORTHO"
-    cam_d.ortho_scale = r * 2.15
+    cam_d.ortho_scale = max(sz.x, sz.y * 0.55 + sz.z * 0.85, 0.04) * 1.12
     cam = bpy.data.objects.new("icon_cam", cam_d)
     col.objects.link(cam)
     d = Vector((0.0, -1.0, 0.62)).normalized()

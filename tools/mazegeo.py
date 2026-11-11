@@ -462,6 +462,7 @@ def build(L):
 
     # ---------------- shuttered windows (closed for ever) on the outer walls of corridors and the start room
     win_n = 0
+    windows = []
     for (o_, p, uc, kn, kp, cn, cp) in wall_segments:
         if (kn is None) == (kp is None):
             continue                                     # only outer walls
@@ -472,6 +473,7 @@ def build(L):
         if win_n % 2 == 0:
             continue
         f = p + side * T / 2
+        windows.append((uc, f) if o_ == "h" else (f, uc))
         wo = B.chunk(*((uc, f) if o_ == "h" else (f, uc)))
         w2, ya, yb = 0.47, 1.0, 2.1
         B.box_un(wo, o_, uc - w2 - 0.09, uc + w2 + 0.09, ya - 0.08, ya, f, f + side * 0.12, "pillar_wood")      # sill
@@ -541,7 +543,7 @@ def build(L):
 
     # ---------------- spots for framed paintings: room walls with nothing in front of them
     frames = []
-    busy = [tuple(pp["pos"]) for pp in L.get("props", [])] + [tuple(it["pos"]) for it in L["items"]]
+    busy = [tuple(pp["pos"]) for pp in L.get("props", [])] + [tuple(it["pos"]) for it in L["items"]] + windows
     for (o_, p, uc, kn, kp, cn, cp) in wall_segments:
         for k_in, side in ((kn, -1), (kp, 1)):
             if k_in not in ("hall", "bedroom", "study", "start", "corridor"):

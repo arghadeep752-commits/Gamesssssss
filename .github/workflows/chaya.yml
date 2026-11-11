@@ -171,6 +171,12 @@ jobs:
           [ -f map_dl/candle.gltf ] && cp map_dl/candle.gltf map_dl/candle.bin assets/map/ || echo "::warning::no candle model (the game uses a simple candle)"
           [ -d map_dl/icons ] && cp -r map_dl/icons assets/map/icons
           [ -d map_dl/scan_tex ] && cp -r map_dl/scan_tex/. assets/downloaded/tex/
+          # old house textures replaced by the scanned set (keep each one only if its replacement is missing)
+          T=assets/downloaded/tex
+          for pair in wood_floor:wood_floor_old plaster:plaster_old wood_wall:wood_panel wood_door:wood_studded cloth:cloth_red; do
+            o=${pair%%:*}; n=${pair##*:}
+            [ -f "$T/$n/diff.jpg" ] && rm -rf "$T/$o" && echo "dropped old texture $o (now $n)" || true
+          done
           [ -f map_dl/CREDITS_SCANS.md ] && { echo; cat map_dl/CREDITS_SCANS.md; } >> build/CREDITS_AUTO.md
           [ -f map_dl/chaya_map.blend ] && mv map_dl/chaya_map.blend build/chaya_map.blend
           du -sh assets/map/tex || true

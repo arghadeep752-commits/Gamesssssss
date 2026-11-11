@@ -752,7 +752,7 @@ def place_lanterns():
             bpy.data.objects.remove(old, do_unlink=True)
         e = new_prop("lamp_%d" % li)
         e.location = (x, -z, 0.0)
-        bottom = y - 0.15
+        bottom = y - 0.4
         scan_props.instance("lantern", "lamp_%d_lantern" % li, prop_collection, parent=e, loc=(0.0, 0.0, bottom), rot_z=rng.uniform(0, TAU))
         top = bottom + t[1].z
         p_cyl(e, "lamp_%d_chain" % li, 0.004, (H_ - 0.09) - top + 0.01, (0.0, 0.0, (top + H_ - 0.09) / 2), "lantern_metal", verts=6, bevel=0.0)
