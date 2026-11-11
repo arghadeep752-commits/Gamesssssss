@@ -87,11 +87,32 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Official Blender 4.2 LTS (cached; shared with the trailer build)
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-4.2.3-linux-x64
       - name: Blender
+        timeout-minutes: 12
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq blender python3-numpy
-          blender --version | head -2
+          if [ ! -x ~/blender/blender ]; then
+            mkdir -p ~/blender && cd ~/blender
+            V=4.2.3; S=${V%.*}
+            for u in https://download.blender.org/release/Blender$S/blender-$V-linux-x64.tar.xz \
+                     https://mirrors.ocf.berkeley.edu/blender/release/Blender$S/blender-$V-linux-x64.tar.xz \
+                     https://ftp.nluug.nl/pub/graphics/blender/release/Blender$S/blender-$V-linux-x64.tar.xz; do
+              curl -fsSL --retry 3 --max-time 600 "$u" -o b.tar.xz && break || rm -f b.tar.xz
+            done
+            tar -xJf b.tar.xz --strip-components=1 && rm -f b.tar.xz
+            cd -
+          fi
+          sudo ln -sf ~/blender/blender /usr/local/bin/blender
+          if ! blender -b --version >/dev/null 2>&1; then
+            ldd ~/blender/blender | grep "not found" || true
+            L="libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libgl1 libsm6 libegl1"
+            sudo timeout 300 apt-get install -y -qq --no-install-recommends $L || { sudo timeout 300 apt-get update -qq || true; sudo timeout 300 apt-get install -y -qq --no-install-recommends $L; }
+          fi
+          blender -b --version | head -2
       - name: Cache the scanned models (Poly Haven, CC0)
         id: scans
         uses: actions/cache@v4
@@ -183,8 +204,8 @@ jobs:
           ls ~/.local/share/godot/export_templates/*/ | head -30
       - name: Import project (twice, VRAM-compress the textures in between)
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb libgl1 libegl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxrandr2 libxi6 libasound2t64 libfontconfig1 libpulse0 python3-pil
+          sudo timeout 420 apt-get update -qq || echo "::warning::apt update timed out"
+          sudo timeout 420 apt-get install -y -qq xvfb libgl1 libegl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxrandr2 libxi6 libasound2t64 libfontconfig1 libpulse0 python3-pil || echo "::warning::apt install failed (screenshots may be missing)"
           godot --headless --path . --import 2>&1 | tail -5 || true
           python3 tools/patch_imports.py assets/downloaded
           python3 tools/patch_imports.py assets/map 512
