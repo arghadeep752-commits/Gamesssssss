@@ -8,6 +8,8 @@ on:
       - ".github/workflows/chaya-logo.yml"
       - "tools/trailer/**"
       - ".github/workflows/chaya-trailer.yml"
+      - "tools/scout/**"
+      - ".github/workflows/chaya-scout.yml"
       - "tools/mixamo_fetch.py"
       - "tools/mixamo_clips.json"
       - ".github/workflows/chaya-mixamo.yml"

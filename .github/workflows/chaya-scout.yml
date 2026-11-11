@@ -1,0 +1,27 @@
+name: Chaya - asset scout
+
+# Thumbnails and sizes of candidate CC0 models (Poly Haven), posted to the chaya-ci release for choosing.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chaya]
+    paths:
+      - "tools/scout/**"
+      - ".github/workflows/chaya-scout.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  scout:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq python3-pil >/dev/null
+          python3 tools/scout/polyhaven_scout.py scout_out
+          ls -la scout_out
+          gh release upload chaya-ci scout_out/* -R "$GITHUB_REPOSITORY" --clobber
