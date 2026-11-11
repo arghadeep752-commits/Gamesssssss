@@ -21,8 +21,10 @@ for path in glob.glob(os.path.join(root, "**", "*.import"), recursive=True):
     limit = base_limit
     if any(k.lower() in name for k in CLOSE_UP):
         limit = max(limit, 1024)
-    elif "/tex/" in path.replace(os.sep, "/") and re.match(r"(nor|rough)\.", name):
-        limit = min(limit, 512)                 # house normal/roughness maps: half size is plenty on a phone
+    elif re.match(r"ao\.", name):
+        limit = min(limit, 512)                 # ambient occlusion is soft: half size is plenty
+    elif "_diff_" in name:
+        limit = max(limit, 1024)                # scanned furniture: full-size colour maps, sharp up close
     if "head_color" in name:
         limit = 2048
     sets = {

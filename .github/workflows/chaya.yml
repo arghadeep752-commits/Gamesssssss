@@ -173,7 +173,8 @@ jobs:
           [ -d map_dl/scan_tex ] && cp -r map_dl/scan_tex/. assets/downloaded/tex/
           # old house textures replaced by the scanned set (keep each one only if its replacement is missing)
           T=assets/downloaded/tex
-          for pair in wood_floor:wood_floor_old plaster:plaster_old wood_wall:wood_panel wood_door:wood_studded cloth:cloth_red; do
+          for pair in wood_floor:wood_floor_old plaster:plaster_old wood_wall:wood_panel wood_door:wood_studded cloth:cloth_red \
+                      wood_dark:trim_dark wood_ceiling:ceiling_planks stone_floor:stone_slab clay:clay_pbr fiber:hessian; do
             o=${pair%%:*}; n=${pair##*:}
             [ -f "$T/$n/diff.jpg" ] && rm -rf "$T/$o" && echo "dropped old texture $o (now $n)" || true
           done

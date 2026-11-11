@@ -5,7 +5,7 @@
 
 Everything is CC0 from Poly Haven (photo-scanned or hand-made from real objects, no AI):
   models/<id>/…gltf + .bin + textures/   the 1k glTF package of each model in MODELS
-  tex/<slot>/{diff,nor,rough}.jpg        extra surfaces for the old Indian house (aged lime plaster, panelled wood,
+  tex/<slot>/{diff,nor,rough,ao}.jpg     extra surfaces for the old Indian house (aged lime plaster, panelled wood,
                                          terracotta and chequered floors, thatch for the coconut husk …)
   art/*.jpg                              Raja Ravi Varma paintings (public domain) for the frames on the walls
 tools/build_map.py turns the models into game props in Blender (clean-up, decimation, scale, placement).
@@ -54,6 +54,12 @@ TEXTURES = {
     "husk": ["thatch_roof_angled", "riet_01", "bark_brown_02"],
     "powder": ["red_sand", "red_laterite_soil_stones"],
     "cloth_red": ["quatrefoil_jacquard_fabric", "velour_velvet"],
+    # full photo-scanned PBR sets (colour, normal, roughness, ambient occlusion) for the rest of the house
+    "trim_dark": ["dark_wood", "dark_wooden_planks"],
+    "ceiling_planks": ["wood_planks_dirt", "dark_wooden_planks"],
+    "stone_slab": ["concrete_floor_worn_001", "stone_tiles"],
+    "clay_pbr": ["clay_plaster", "clay_floor_001"],
+    "hessian": ["hessian_230", "hessian_380"],
 }
 COMMONS = "https://commons.wikimedia.org/w/api.php"
 
@@ -129,6 +135,9 @@ def texture(slot, ids):
             ru = url_of(["Rough", "rough"])
             if ru:
                 save(os.path.join(dest, "rough.jpg"), http(ru))
+            au = url_of(["AO", "ao"])
+            if au:
+                save(os.path.join(dest, "ao.jpg"), http(au))
             log("texture %-18s <- %s" % (slot, aid))
             return slot, aid
         except Exception as e:      # noqa: BLE001

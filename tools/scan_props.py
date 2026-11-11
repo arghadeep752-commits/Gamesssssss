@@ -339,7 +339,7 @@ def render_icon(ob, path, px=256):
     cam.location = c + d * (r * 6.0)
     cam.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
     sc.camera = cam
-    for (loc, en, sz) in (((-1.2, -1.4, 1.6), 55.0, 1.2), ((1.6, -0.6, 0.9), 18.0, 1.5), ((0.4, 1.6, 1.4), 35.0, 0.8)):
+    for (loc, en, sz) in (((-1.2, -1.4, 1.6), 13.0, 1.2), ((1.6, -0.6, 0.9), 4.0, 1.5), ((0.4, 1.6, 1.4), 9.0, 0.8)):
         ld = bpy.data.lights.new("icon_light", "AREA")
         ld.energy = en * (r / 0.15) ** 2
         ld.size = sz * r * 4
