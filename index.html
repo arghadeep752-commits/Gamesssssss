@@ -774,7 +774,7 @@ a { color: inherit; }
   function authMessage(err) {
     const m = String((err && (err.message || err.error_description)) || "");
     if (/invalid login credentials/i.test(m)) return "That email and password don't match. Try again or reset your password.";
-    if (/email not confirmed/i.test(m)) return "Confirm your email first. Open the link we sent to your inbox.";
+    if (/email not confirmed/i.test(m)) return "This account isn't active yet. Tap Sign up and use the same email to activate it instantly.";
     if (/already (been )?registered/i.test(m)) return "An account with this email already exists. Sign in instead.";
     if (/email rate limit/i.test(m)) return "Vishnu AI can't send more emails right now. Try again in about an hour" + (googleEnabled() ? ", or continue with Google." : ".");
     if (/rate limit|too many/i.test(m)) return "Too many attempts for now. Wait a few minutes" + (googleEnabled() ? ", or continue with Google." : " and try again.");
