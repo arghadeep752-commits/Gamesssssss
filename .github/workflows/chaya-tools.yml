@@ -106,7 +106,8 @@ jobs:
           git clone -q --depth 1 https://github.com/VAST-AI-Research/TripoSR
           pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install -q omegaconf==2.3.0 einops==0.7.0 transformers==4.35.0 trimesh==4.0.5 "rembg[cpu]" huggingface-hub "imageio[ffmpeg]" xatlas==0.0.9 moderngl==5.10.0 Pillow onnxruntime
-          pip install -q git+https://github.com/tatsy/torchmcubes.git
+          pip install -q scikit-build-core cmake ninja pybind11
+          pip install -q --no-build-isolation git+https://github.com/tatsy/torchmcubes.git
           R=$GITHUB_REPOSITORY
           rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
           mkdir -p pics out
