@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 24
+world = 6
+display_name = "Final Destination"
+chunks = PackedStringArray("start", "enemy_camp", "shadow_void", "checkpoint_heart", "ninja_dojo", "lava_moving", "checkpoint", "high_road", "arena")
+difficulty = 3.53
+enemy_pool = PackedStringArray("a:spike_slime,block_slime", "b:fly,bee", "c:elite_ninja,kunai_ninja,ninja", "d:frog")
+boss_id = "shadow_king"
+par_time = 198.0
+objective = "Defeat the boss guarding the gate"

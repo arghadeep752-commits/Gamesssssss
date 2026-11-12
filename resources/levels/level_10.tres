@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 10
+world = 3
+display_name = "Ice Cavern"
+chunks = PackedStringArray("start", "tunnel", "crusher_hall", "fish_pond", "checkpoint_heart", "coin_blocks", "vertical_climb", "secret_room", "goal")
+difficulty = 1.99
+enemy_pool = PackedStringArray("a:block_slime,snail", "b:bee", "c:ninja,kunai_ninja", "d:frog")
+boss_id = ""
+par_time = 198.0
+objective = "Reach the exit gate"

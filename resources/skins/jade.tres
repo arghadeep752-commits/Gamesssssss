@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/skin_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "jade"
+display_name = "Jade"
+cloth_hue = 0.38
+cloth_saturation = 0.9
+cloth_value = 0.95
+armor_tint = Color(0.9, 1.05, 0.95, 1)
+price_coins = 900
+price_gems = 0

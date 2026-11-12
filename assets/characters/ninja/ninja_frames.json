@@ -1,0 +1,80 @@
+{
+ "idle": {
+  "frames": 10,
+  "w": 70,
+  "h": 138,
+  "fps": 12,
+  "loop": true
+ },
+ "run": {
+  "frames": 10,
+  "w": 124,
+  "h": 138,
+  "fps": 16,
+  "loop": true
+ },
+ "jump": {
+  "frames": 10,
+  "w": 98,
+  "h": 138,
+  "fps": 14,
+  "loop": false
+ },
+ "attack": {
+  "frames": 10,
+  "w": 164,
+  "h": 138,
+  "fps": 26,
+  "loop": false
+ },
+ "jump_attack": {
+  "frames": 10,
+  "w": 156,
+  "h": 138,
+  "fps": 26,
+  "loop": false
+ },
+ "throw": {
+  "frames": 10,
+  "w": 106,
+  "h": 138,
+  "fps": 24,
+  "loop": false
+ },
+ "jump_throw": {
+  "frames": 10,
+  "w": 104,
+  "h": 138,
+  "fps": 24,
+  "loop": false
+ },
+ "glide": {
+  "frames": 10,
+  "w": 140,
+  "h": 138,
+  "fps": 12,
+  "loop": true
+ },
+ "climb": {
+  "frames": 10,
+  "w": 74,
+  "h": 138,
+  "fps": 12,
+  "loop": true
+ },
+ "slide": {
+  "frames": 10,
+  "w": 110,
+  "h": 138,
+  "fps": 18,
+  "loop": true
+ },
+ "dead": {
+  "frames": 10,
+  "w": 150,
+  "h": 138,
+  "fps": 14,
+  "loop": false
+ },
+ "_foot_margin": 4
+}

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/weapons/icon_sai.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "dual_blades"
+display_name = "Dual Blades"
+description = "Twin sai. Every attack strikes twice."
+icon = ExtResource("2")
+kind = "melee"
+base_damage = 13.0
+damage_per_level = 4.0
+max_level = 5
+attack_cooldown = 0.22
+attack_speed = 1.3
+reach = Vector2(84, 76)
+hits_per_attack = 2
+projectile = ""
+projectile_speed = 0.0
+effect_color = Color(0.7, 0.95, 1, 1)
+ability_id = "whirlwind"
+ability_name = "Whirlwind"
+ability_cooldown = 4.0
+unlock_type = "level"
+unlock_level = 6
+price_coins = 1200
+price_gems = 0
+upgrade_base_cost = 320

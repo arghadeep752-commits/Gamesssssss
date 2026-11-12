@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 8
+world = 2
+display_name = "Demon Gate"
+chunks = PackedStringArray("start", "enemy_camp", "saw_run", "checkpoint_heart", "high_road", "gap_spikes", "arena")
+difficulty = 1.77
+enemy_pool = PackedStringArray("a:mouse,ladybug", "b:fly", "c:ninja,kunai_ninja", "d:frog")
+boss_id = "demon_ronin"
+par_time = 174.0
+objective = "Defeat the boss guarding the gate"

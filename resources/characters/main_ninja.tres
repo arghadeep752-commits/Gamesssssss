@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "main_ninja"
+display_name = "Kage"
+description = "The last student of the Shadow Clan. Balanced speed, power and agility."
+cloth_hue = -1.0
+cloth_saturation = 1.0
+cloth_value = 1.0
+armor_tint = Color(1, 1, 1, 1)
+aura = ""
+max_health = 100.0
+move_speed = 340.0
+jump_velocity = 960.0
+damage_multiplier = 1.0
+defense = 0.0
+special_id = "kunai_barrage"
+special_name = "Kunai Barrage"
+special_description = "Throws a fan of five kunai."
+unlock_type = "default"
+unlock_level = 0
+price_coins = 0
+price_gems = 0
+theme_color = Color(0.58, 0.32, 0.78, 1)

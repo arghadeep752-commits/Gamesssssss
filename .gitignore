@@ -1,0 +1,6 @@
+.godot/
+build/
+signing/
+*.apk
+*.keystore
+*.jks

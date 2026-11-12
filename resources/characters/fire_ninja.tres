@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "fire_ninja"
+display_name = "Homura"
+description = "Trained in the volcano monasteries. Burns everything in her path."
+cloth_hue = 0.06
+cloth_saturation = 1.25
+cloth_value = 1.05
+armor_tint = Color(1.15, 0.78, 0.6, 1)
+aura = "fire"
+max_health = 100.0
+move_speed = 350.0
+jump_velocity = 965.0
+damage_multiplier = 1.1
+defense = 0.0
+special_id = "flame_wave"
+special_name = "Flame Wave"
+special_description = "Sends rolling waves of fire both ways along the ground."
+unlock_type = "level"
+unlock_level = 20
+price_coins = 0
+price_gems = 60
+theme_color = Color(1.0, 0.45, 0.1, 1)

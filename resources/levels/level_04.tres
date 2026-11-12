@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 4
+world = 1
+display_name = "Samurai's Trial"
+chunks = PackedStringArray("start", "enemy_camp", "gap_spikes", "checkpoint_heart", "ninja_dojo", "platforms_low", "arena")
+difficulty = 1.33
+enemy_pool = PackedStringArray("a:slime,snail", "b:bee", "c:ninja", "d:frog")
+boss_id = "shadow_samurai"
+par_time = 174.0
+objective = "Defeat the boss guarding the gate"

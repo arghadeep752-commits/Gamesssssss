@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 20
+world = 5
+display_name = "Throne Entrance"
+chunks = PackedStringArray("start", "ninja_dojo", "lava_moving", "checkpoint_heart", "enemy_camp", "spike_corridor", "arena")
+difficulty = 3.09
+enemy_pool = PackedStringArray("a:fire_slime,ring_worm", "b:bee", "c:elite_ninja,kunai_ninja", "d:frog")
+boss_id = "fire_lord"
+par_time = 174.0
+objective = "Defeat the boss guarding the gate"

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PowerupData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/powerup_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud/hud_heart.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "health_recovery"
+display_name = "Health Recovery"
+description = "Restores 40 health instantly."
+icon = ExtResource("2")
+color = Color(1, 0.35, 0.4, 1)
+duration = 0.0
+magnitude = 40.0
+shop_price_coins = 120
+shop_price_gems = 0

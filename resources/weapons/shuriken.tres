@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/weapons/icon_shuriken.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "shuriken"
+display_name = "Shuriken"
+description = "Throwing stars that fly straight across the screen."
+icon = ExtResource("2")
+kind = "ranged"
+base_damage = 14.0
+damage_per_level = 4.0
+max_level = 5
+attack_cooldown = 0.34
+attack_speed = 1.1
+reach = Vector2(0, 0)
+hits_per_attack = 1
+projectile = "shuriken"
+projectile_speed = 980.0
+effect_color = Color(0.85, 0.9, 1, 1)
+ability_id = "fan_throw"
+ability_name = "Star Fan"
+ability_cooldown = 3.0
+unlock_type = "level"
+unlock_level = 10
+price_coins = 1500
+price_gems = 0
+upgrade_base_cost = 340

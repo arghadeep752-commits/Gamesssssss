@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/weapons/icon_bow.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "bow"
+display_name = "Bow"
+description = "Slow but powerful long-range arrows."
+icon = ExtResource("2")
+kind = "ranged"
+base_damage = 26.0
+damage_per_level = 7.0
+max_level = 5
+attack_cooldown = 0.55
+attack_speed = 1.0
+reach = Vector2(0, 0)
+hits_per_attack = 1
+projectile = "arrow"
+projectile_speed = 1300.0
+effect_color = Color(1, 0.95, 0.7, 1)
+ability_id = "power_shot"
+ability_name = "Piercing Shot"
+ability_cooldown = 3.5
+unlock_type = "level"
+unlock_level = 14
+price_coins = 2500
+price_gems = 0
+upgrade_base_cost = 380

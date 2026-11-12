@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/weapons/icon_katana.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "katana"
+display_name = "Katana"
+description = "A balanced blade. Fast, reliable slashes."
+icon = ExtResource("2")
+kind = "melee"
+base_damage = 20.0
+damage_per_level = 6.0
+max_level = 5
+attack_cooldown = 0.3
+attack_speed = 1.0
+reach = Vector2(92, 84)
+hits_per_attack = 1
+projectile = ""
+projectile_speed = 0.0
+effect_color = Color(1, 1, 1, 1)
+ability_id = "dash_slash"
+ability_name = "Dash Slash"
+ability_cooldown = 3.0
+unlock_type = "default"
+unlock_level = 0
+price_coins = 0
+price_gems = 0
+upgrade_base_cost = 300

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/weapon_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/weapons/icon_bigsword.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "dragon_blade"
+display_name = "Dragon Blade"
+description = "Legendary blade forged in dragon fire. Every swing burns."
+icon = ExtResource("2")
+kind = "melee"
+base_damage = 34.0
+damage_per_level = 8.0
+max_level = 5
+attack_cooldown = 0.34
+attack_speed = 0.95
+reach = Vector2(112, 92)
+hits_per_attack = 1
+projectile = ""
+projectile_speed = 0.0
+effect_color = Color(1, 0.55, 0.15, 1)
+ability_id = "flame_wave"
+ability_name = "Dragon Fire"
+ability_cooldown = 4.5
+unlock_type = "level"
+unlock_level = 18
+price_coins = 0
+price_gems = 45
+upgrade_base_cost = 500

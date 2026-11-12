@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/skin_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sakura"
+display_name = "Sakura"
+cloth_hue = 0.92
+cloth_saturation = 0.5
+cloth_value = 1.3
+armor_tint = Color(1.1, 0.95, 1.0, 1)
+price_coins = 0
+price_gems = 15

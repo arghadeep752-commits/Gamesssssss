@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 12
+world = 3
+display_name = "Guardian's Peak"
+chunks = PackedStringArray("start", "vertical_climb", "enemy_camp", "checkpoint_heart", "ladder_tower", "high_road", "arena")
+difficulty = 2.21
+enemy_pool = PackedStringArray("a:block_slime,snail", "b:bee", "c:ninja,kunai_ninja", "d:frog")
+boss_id = "ice_guardian"
+par_time = 174.0
+objective = "Defeat the boss guarding the gate"

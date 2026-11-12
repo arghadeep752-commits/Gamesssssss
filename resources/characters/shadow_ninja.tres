@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "shadow_ninja"
+display_name = "Yoru"
+description = "A shadow-walker. The fastest ninja, but fragile."
+cloth_hue = 0.74
+cloth_saturation = 0.45
+cloth_value = 0.38
+armor_tint = Color(0.62, 0.55, 0.85, 1)
+aura = "shadow"
+max_health = 85.0
+move_speed = 385.0
+jump_velocity = 990.0
+damage_multiplier = 0.95
+defense = 0.0
+special_id = "shadow_dash"
+special_name = "Shadow Dash"
+special_description = "Becomes a shadow and dashes through enemies, untouchable."
+unlock_type = "level"
+unlock_level = 8
+price_coins = 1800
+price_gems = 0
+theme_color = Color(0.32, 0.22, 0.48, 1)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 23
+world = 6
+display_name = "Dark Citadel"
+chunks = PackedStringArray("start", "crusher_hall", "ninja_dojo", "checkpoint", "lava_steps", "spike_corridor", "ladder_tower", "saw_run", "enemy_camp", "goal")
+difficulty = 3.42
+enemy_pool = PackedStringArray("a:spike_slime,block_slime", "b:fly,bee", "c:elite_ninja,kunai_ninja,ninja", "d:frog")
+boss_id = ""
+par_time = 210.0
+objective = "Reach the exit gate"

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PowerupData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/powerup_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/icon_burst.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "energy_boost"
+display_name = "Special Energy"
+description = "Fills your special energy instantly."
+icon = ExtResource("2")
+color = Color(0.75, 0.5, 1, 1)
+duration = 0.0
+magnitude = 100.0
+shop_price_coins = 180
+shop_price_gems = 0

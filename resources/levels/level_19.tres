@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 19
+world = 5
+display_name = "Fortress Wall"
+chunks = PackedStringArray("start", "ladder_tower", "crusher_hall", "checkpoint", "vertical_climb", "lava_steps", "secret_room", "saw_run", "goal")
+difficulty = 2.98
+enemy_pool = PackedStringArray("a:fire_slime,ring_worm", "b:bee", "c:elite_ninja,kunai_ninja", "d:frog")
+boss_id = ""
+par_time = 198.0
+objective = "Reach the exit gate"

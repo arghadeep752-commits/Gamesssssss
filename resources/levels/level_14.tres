@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 14
+world = 4
+display_name = "Ancient Hall"
+chunks = PackedStringArray("start", "tunnel", "ninja_dojo", "checkpoint_heart", "crusher_hall", "secret_room", "coin_blocks", "gap_spikes", "goal")
+difficulty = 2.43
+enemy_pool = PackedStringArray("a:spike_slime,ring_worm", "b:fly", "c:kunai_ninja,elite_ninja", "d:frog")
+boss_id = ""
+par_time = 198.0
+objective = "Reach the exit gate"

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 7
+world = 2
+display_name = "Abandoned Shrine"
+chunks = PackedStringArray("start", "ninja_dojo", "ladder_tower", "secret_room", "checkpoint", "spike_corridor", "vertical_climb", "treasure_ledge", "goal")
+difficulty = 1.66
+enemy_pool = PackedStringArray("a:mouse,ladybug", "b:fly", "c:ninja,kunai_ninja", "d:frog")
+boss_id = ""
+par_time = 198.0
+objective = "Reach the exit gate"

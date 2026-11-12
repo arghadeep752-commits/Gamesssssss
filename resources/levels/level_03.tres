@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 3
+world = 1
+display_name = "Hidden Waterfall"
+chunks = PackedStringArray("start", "steps_up", "fish_pond", "treasure_ledge", "checkpoint", "moving_gap", "ladder_tower", "spring_jump", "flat_coins", "goal")
+difficulty = 1.22
+enemy_pool = PackedStringArray("a:slime,snail", "b:bee", "c:ninja", "d:frog")
+boss_id = ""
+par_time = 210.0
+objective = "Reach the exit gate"

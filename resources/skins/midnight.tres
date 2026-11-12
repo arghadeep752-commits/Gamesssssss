@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/skin_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "midnight"
+display_name = "Midnight"
+cloth_hue = 0.62
+cloth_saturation = 0.65
+cloth_value = 0.45
+armor_tint = Color(0.7, 0.75, 0.95, 1)
+price_coins = 1200
+price_gems = 0

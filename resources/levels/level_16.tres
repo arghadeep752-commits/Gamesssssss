@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 16
+world = 4
+display_name = "Sacred Battlefield"
+chunks = PackedStringArray("start", "enemy_camp", "gap_spikes", "checkpoint_heart", "ninja_dojo", "saw_run", "arena")
+difficulty = 2.65
+enemy_pool = PackedStringArray("a:spike_slime,ring_worm", "b:fly", "c:kunai_ninja,elite_ninja", "d:frog")
+boss_id = "temple_beast"
+par_time = 174.0
+objective = "Defeat the boss guarding the gate"

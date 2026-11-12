@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ice_ninja"
+display_name = "Yuki"
+description = "Born in the Frozen Mountains. Controls the battlefield with ice."
+cloth_hue = 0.53
+cloth_saturation = 0.85
+cloth_value = 1.15
+armor_tint = Color(0.8, 0.95, 1.2, 1)
+aura = "ice"
+max_health = 105.0
+move_speed = 345.0
+jump_velocity = 975.0
+damage_multiplier = 1.0
+defense = 0.05
+special_id = "frost_nova"
+special_name = "Frost Nova"
+special_description = "Freezes every nearby enemy solid and damages them."
+unlock_type = "level"
+unlock_level = 12
+price_coins = 2600
+price_gems = 0
+theme_color = Color(0.4, 0.8, 1.0, 1)

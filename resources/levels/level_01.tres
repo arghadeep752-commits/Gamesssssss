@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/data/level_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+index = 1
+world = 1
+display_name = "The Forgotten Path"
+chunks = PackedStringArray("start_tutorial", "flat_coins", "gap_small", "crates", "checkpoint", "steps_up", "coin_blocks", "hill", "goal")
+difficulty = 1.0
+enemy_pool = PackedStringArray("a:slime,snail", "b:bee", "c:ninja", "d:frog")
+boss_id = ""
+par_time = 198.0
+objective = "Reach the exit gate"
