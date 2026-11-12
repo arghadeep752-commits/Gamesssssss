@@ -498,7 +498,7 @@ a { color: inherit; }
 .about-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: center; }
 .about-row b { display: block; font-weight: 500; font-size: 14px; }
 .about-row span { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-.toast { position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 80; display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; background: var(--toast-bg); color: var(--toast-fg); font-size: 13.5px; font-weight: 500; box-shadow: var(--shadow); pointer-events: none; opacity: 0; transform: translate(-50%, 10px); transition: opacity 0.2s var(--ease), transform 0.3s var(--ease); max-width: calc(100vw - 32px); }
+.toast { position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 80; display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 20px; text-align: center; line-height: 1.4; background: var(--toast-bg); color: var(--toast-fg); font-size: 13.5px; font-weight: 500; box-shadow: var(--shadow); pointer-events: none; opacity: 0; transform: translate(-50%, 10px); transition: opacity 0.2s var(--ease), transform 0.3s var(--ease); max-width: calc(100vw - 32px); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (min-width: 861px) {
@@ -560,8 +560,12 @@ a { color: inherit; }
     SUPABASE_URL: "https://txtoesvjqkfpotfbbwhz.supabase.co",
     SUPABASE_KEY: "sb_publishable_iq90hV6J2kuV62ZvQuAMEA_ECaK1Lpg",
     FUNCTION: "vishnu-chat",
+    AUTH_FUNCTION: "vishnu-auth",
+    // Google OAuth Client ID (public, not a secret). When set, "Continue with Google" appears.
+    GOOGLE_CLIENT_ID: "",
   };
   const FN_URL = CONFIG.SUPABASE_URL + "/functions/v1/" + CONFIG.FUNCTION;
+  const AUTH_URL = CONFIG.SUPABASE_URL + "/functions/v1/" + CONFIG.AUTH_FUNCTION;
   const TZ = (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { return ""; } })();
 
   if (!window.React || !window.ReactDOM || !window.htm) {
@@ -581,7 +585,36 @@ a { color: inherit; }
     .then((s) => { AUTH_SETTINGS = s && typeof s === "object" ? s : null; })
     .catch(() => {})
     .then(() => { authSettingsDone = true; });
-  const googleEnabled = () => !AUTH_SETTINGS || !AUTH_SETTINGS.external || AUTH_SETTINGS.external.google !== false;
+  const googleEnabled = () => !!CONFIG.GOOGLE_CLIENT_ID || !!(AUTH_SETTINGS && AUTH_SETTINGS.external && AUTH_SETTINGS.external.google === true);
+  // How "Continue with Google" works: "gis" = Google popup + Vishnu AI's account server (needs only a Client ID),
+  // "supabase" = Supabase's own Google provider (if it gets switched on in the dashboard), "off" = no Google button.
+  const googleMode = () => (CONFIG.GOOGLE_CLIENT_ID ? "gis" : AUTH_SETTINGS && AUTH_SETTINGS.external && AUTH_SETTINGS.external.google === true ? "supabase" : "off");
+  let PENDING_NOTICE = "";
+
+  // Vishnu AI's account server (sign-up without email codes, Google sign-in).
+  async function authCall(body) {
+    const res = await fetch(AUTH_URL, { method: "POST", headers: { "Content-Type": "application/json", apikey: CONFIG.SUPABASE_KEY }, body: JSON.stringify(body) });
+    let data = {};
+    try { data = (await res.json()) || {}; } catch (e) { data = {}; }
+    return { ok: res.ok, status: res.status, data: data };
+  }
+
+  // Google's sign-in popup library, loaded only when a Client ID is set.
+  let googleLib = null;
+  function loadGoogle() {
+    if (googleLib) return googleLib;
+    googleLib = new Promise((resolve, reject) => {
+      const ready = () => window.google && window.google.accounts && window.google.accounts.oauth2;
+      if (ready()) return resolve(window.google);
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.async = true;
+      s.onload = () => (ready() ? resolve(window.google) : reject(new Error("Google sign-in didn't load.")));
+      s.onerror = () => { googleLib = null; reject(new Error("Google sign-in didn't load.")); };
+      document.head.appendChild(s);
+    });
+    return googleLib;
+  }
 
   // ---------- constants ----------
   const LS_ACTIVE = "vishnu.active";
@@ -900,20 +933,68 @@ a { color: inherit; }
     const [busy, setBusy] = useState("");
     const [error, setError] = useState(initialError || "");
     const [info, setInfo] = useState("");
-    const [gState, setGState] = useState(authSettingsDone ? (googleEnabled() ? "on" : "off") : "wait");
+    const [gMode, setGMode] = useState(CONFIG.GOOGLE_CLIENT_ID || authSettingsDone ? googleMode() : "wait");
+    const tokenClient = useRef(null);
+    const gOn = gMode === "gis" || gMode === "supabase";
 
     useEffect(() => {
-      if (gState !== "wait") return;
+      if (gMode !== "wait") return;
       let live = true;
-      const t = setTimeout(() => { if (live) setGState((s) => (s === "wait" ? "on" : s)); }, 1500);
-      authSettingsReady.then(() => { if (live) setGState(googleEnabled() ? "on" : "off"); });
-      return () => { live = false; clearTimeout(t); };
+      authSettingsReady.then(() => { if (live) setGMode(googleMode()); });
+      return () => { live = false; };
     }, []);
+
+    // Get Google's popup ready ahead of time, so a tap opens it straight away.
+    useEffect(() => {
+      if (gMode !== "gis") return;
+      let live = true;
+      loadGoogle().then((g) => {
+        if (!live) return;
+        tokenClient.current = g.accounts.oauth2.initTokenClient({
+          client_id: CONFIG.GOOGLE_CLIENT_ID,
+          scope: "openid email profile",
+          callback: (resp) => {
+            if (resp && resp.access_token) finishGoogle(resp.access_token);
+            else { setBusy(""); setError("Google sign-in didn't finish. Try again."); }
+          },
+          error_callback: (err) => {
+            setBusy("");
+            if (err && err.type === "popup_closed") return;
+            setError(err && err.type === "popup_failed_to_open"
+              ? "Your browser blocked the Google window. Allow pop-ups for this site, then try again."
+              : "Google sign-in didn't finish. Try again.");
+          },
+        });
+      }).catch(() => {});
+      return () => { live = false; };
+    }, [gMode]);
 
     function switchMode(m) { setMode(m); setError(""); setInfo(""); }
 
+    async function finishGoogle(accessToken) {
+      setBusy("google");
+      try {
+        const r = await authCall({ action: "google", access_token: accessToken });
+        if (!r.ok || !r.data.token_hash) throw { friendly: true, message: r.data.message || "Couldn't sign you in with Google. Try again." };
+        if (r.data.password_off) PENDING_NOTICE = "Signed in with Google. For your safety, your old password for this email is switched off. Use Continue with Google next time.";
+        const type = r.data.type || "magiclink";
+        let res = await sb.auth.verifyOtp({ token_hash: r.data.token_hash, type: type });
+        if (res.error && type !== "email") res = await sb.auth.verifyOtp({ token_hash: r.data.token_hash, type: "email" });
+        if (res.error) throw res.error;
+      } catch (err) { PENDING_NOTICE = ""; setBusy(""); setError(err && err.friendly ? err.message : authMessage(err)); }
+    }
+
     async function google() {
-      setError(""); setInfo(""); setBusy("google");
+      setError(""); setInfo("");
+      if (gMode === "gis") {
+        if (!tokenClient.current) { setError("Google sign-in is still loading. Try again in a moment."); loadGoogle().catch(() => {}); return; }
+        setBusy("google");
+        // If the Google window is closed without an answer, unlock the button again.
+        setTimeout(() => setBusy((b) => (b === "google" ? "" : b)), 90000);
+        try { tokenClient.current.requestAccessToken(); } catch (err) { setBusy(""); setError("Google sign-in didn't open. Try again."); }
+        return;
+      }
+      setBusy("google");
       try {
         const { error: err } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: siteUrl() } });
         if (err) throw err;
@@ -935,26 +1016,31 @@ a { color: inherit; }
           const { error: err } = await sb.auth.signInWithPassword({ email: em, password: password });
           if (err) throw err;
         } else if (mode === "signup") {
-          const { data, error: err } = await sb.auth.signUp({ email: em, password: password, options: { data: { full_name: name.trim() }, emailRedirectTo: siteUrl() } });
-          if (err) throw err;
-          if (!data.session) {
-            if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) setError("An account with this email already exists. Sign in instead.");
-            else setInfo("We sent a confirmation link to " + em + ". Open it to activate your account, then come back here and sign in.");
-            setPassword("");
+          // Vishnu AI's account server creates a ready-to-use account: no code or confirmation email.
+          const r = await authCall({ action: "signup", email: em, password: password, name: name.trim() });
+          if (r.status === 404) {
+            // The account server isn't deployed: fall back to Supabase's own sign-up.
+            const { data, error: err } = await sb.auth.signUp({ email: em, password: password, options: { data: { full_name: name.trim() }, emailRedirectTo: siteUrl() } });
+            if (err) throw err;
+            if (!data.session) {
+              if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) setError("An account with this email already exists. Sign in instead.");
+              else setInfo("We sent a confirmation link to " + em + ". Open it to activate your account, then come back here and sign in.");
+              setPassword("");
+            }
+          } else {
+            if (!r.ok) throw { friendly: true, message: r.data.message || "Couldn't create your account right now. Try again in a moment." };
+            const { error: err } = await sb.auth.signInWithPassword({ email: em, password: password });
+            if (err) throw err;
           }
-        } else {
-          const { error: err } = await sb.auth.resetPasswordForEmail(em, { redirectTo: siteUrl() });
-          if (err) throw err;
-          setInfo("If an account exists for " + em + ", a password reset link is on its way.");
         }
-      } catch (err) { setError(authMessage(err)); }
+      } catch (err) { setError(err && err.friendly ? err.message : authMessage(err)); }
       setBusy("");
     }
 
     const titles = {
       signin: ["Welcome back", "Sign in to continue to Vishnu AI."],
       signup: ["Create your account", "Free to start. Takes less than a minute."],
-      forgot: ["Reset your password", "We'll email you a link to set a new one."],
+      forgot: ["Can't sign in?", "Continue with Google using the same email address. You'll get straight back into your account and chats."],
     };
     const t = titles[mode];
 
@@ -988,16 +1074,17 @@ a { color: inherit; }
               <h1>${t[0]}</h1>
               <p className="sub">${t[1]}</p>
             </div>
-            ${mode !== "forgot" && gState === "on"
+            ${gOn
               ? html`<button type="button" className="gbtn" disabled=${!!busy} onClick=${google}>
                   ${busy === "google"
                     ? html`<span className="spinner"></span>`
                     : html`<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" onError=${(e) => { e.currentTarget.style.display = "none"; }} />`}
                   Continue with Google
                 </button>
-                <div className="or">or</div>`
+                ${mode !== "forgot" ? html`<div className="or">or</div>` : null}`
               : null}
-            <form className="form" onSubmit=${submit} noValidate>
+            ${mode === "forgot" && error ? html`<div className="msg error" role="alert">${error}</div>` : null}
+            ${mode !== "forgot" ? html`<form className="form" onSubmit=${submit} noValidate>
               ${mode === "signup"
                 ? html`<div className="field">
                     <label htmlFor="auth-name">Full name</label>
@@ -1008,25 +1095,23 @@ a { color: inherit; }
                 <label htmlFor="auth-email">Email</label>
                 <input id="auth-email" className="input" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value=${email} onChange=${(e) => setEmail(e.target.value)} />
               </div>
-              ${mode !== "forgot"
-                ? html`<div className="field">
-                    <div className="field-row">
-                      <label htmlFor="auth-password">Password</label>
-                      ${mode === "signin" ? html`<button type="button" className="linkbtn" onClick=${() => switchMode("forgot")}>Forgot password?</button>` : null}
-                    </div>
-                    <div className="inputwrap">
-                      <input id="auth-password" className="input" type=${peek ? "text" : "password"} autoComplete=${mode === "signup" ? "new-password" : "current-password"}
-                        placeholder=${mode === "signup" ? "At least 8 characters" : "Your password"} value=${password} onChange=${(e) => setPassword(e.target.value)} />
-                      <button type="button" className="peek" onClick=${() => setPeek((v) => !v)} aria-label=${peek ? "Hide password" : "Show password"}>${peek ? "Hide" : "Show"}</button>
-                    </div>
-                  </div>`
-                : null}
+              <div className="field">
+                <div className="field-row">
+                  <label htmlFor="auth-password">Password</label>
+                  ${mode === "signin" && gOn ? html`<button type="button" className="linkbtn" onClick=${() => switchMode("forgot")}>Forgot password?</button>` : null}
+                </div>
+                <div className="inputwrap">
+                  <input id="auth-password" className="input" type=${peek ? "text" : "password"} autoComplete=${mode === "signup" ? "new-password" : "current-password"}
+                    placeholder=${mode === "signup" ? "At least 8 characters" : "Your password"} value=${password} onChange=${(e) => setPassword(e.target.value)} />
+                  <button type="button" className="peek" onClick=${() => setPeek((v) => !v)} aria-label=${peek ? "Hide password" : "Show password"}>${peek ? "Hide" : "Show"}</button>
+                </div>
+              </div>
               ${error ? html`<div className="msg error" role="alert">${error}</div>` : null}
               ${info ? html`<div className="msg info" role="status">${info}</div>` : null}
               <button type="submit" className="primary" disabled=${!!busy}>
-                ${busy === "email" ? html`<span className="spinner"></span>` : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"}
+                ${busy === "email" ? html`<span className="spinner"></span>` : mode === "signin" ? "Sign in" : "Create account"}
               </button>
-            </form>
+            </form>` : null}
             <div className="switch">
               ${mode === "signin"
                 ? html`Don't have an account? <button type="button" className="linkbtn" onClick=${() => switchMode("signup")}>Sign up</button>`
@@ -1320,11 +1405,14 @@ a { color: inherit; }
       lsSet(LS_LOCAL, list);
     }, [chats, storeMode, loaded]);
 
-    function showToast(text) {
+    function showToast(text, ms) {
       clearTimeout(toastTimer.current);
       setToast({ text: text, show: true });
-      toastTimer.current = setTimeout(() => setToast((t) => ({ text: t.text, show: false })), 1800);
+      toastTimer.current = setTimeout(() => setToast((t) => ({ text: t.text, show: false })), ms || 1800);
     }
+    useEffect(() => {
+      if (PENDING_NOTICE) { showToast(PENDING_NOTICE, 7000); PENDING_NOTICE = ""; }
+    }, []);
 
     // ----- chat history from your Supabase account -----
     useEffect(() => {
