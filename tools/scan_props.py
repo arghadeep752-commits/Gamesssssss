@@ -87,6 +87,38 @@ def import_raw(mid):
     return ob
 
 
+def import_glb(path, name):
+    """Import a ready-made GLB (tools/ai3d: AI models already scaled, origin at the bottom centre, front -Y) as one
+    mesh object with its own materials and textures."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH"]
+    if not meshes:
+        raise RuntimeError("no mesh in %s" % path)
+    for o in meshes:
+        mw = o.matrix_world.copy()
+        o.parent = None
+        if o.data.users > 1:
+            o.data = o.data.copy()
+        o.data.transform(mw)
+        o.matrix_world = Matrix.Identity(4)
+    for o in new:
+        if o.type != "MESH":
+            bpy.data.objects.remove(o, do_unlink=True)
+    _select_only(meshes, meshes[0])
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    ob = bpy.context.view_layer.objects.active
+    ob.name = name
+    for c in list(ob.users_collection):
+        c.objects.unlink(ob)
+    for m in ob.data.materials:
+        if m is not None and not m.name.startswith("scan_"):
+            m.name = "scan_" + m.name
+    return ob
+
+
 def decimate(ob, budget):
     me = ob.data
     t = _tris(me)

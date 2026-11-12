@@ -846,8 +846,12 @@ def scan_items():
         bpy.context.view_layer.update()
         return ob, t[1]
 
+    ai = ai_model("kalash")                                      # the AI-generated kalash, when it is there
+    if ai is not None:
+        collection.objects.link(ai)
+        built["kalash"] = ai
     try:
-        ob, size = body("brass_vase_03", "it_kalash", 2616, height=0.25)
+        ob, size = (None, None) if "kalash" in built else body("brass_vase_03", "it_kalash", 2616, height=0.25)
         if ob is not None:
             rr = scan_props.rim_radius(ob.data, 0.95)
             H_ = size.z
@@ -1133,6 +1137,25 @@ def place_house_props():
     print("house props placed: %d" % len(prop_meta))
 
 
+AI_DIR = os.path.join(HERE, "ai3d")
+
+
+def ai_model(name):
+    """The AI-generated model tools/ai3d/<name>.glb (Hyper3D Rodin, made ready by tools/ai_props.py) or None."""
+    path = os.path.join(AI_DIR, name + ".glb")
+    if not os.path.exists(path):
+        return None
+    try:
+        ob = scan_props.import_glb(path, "ai_" + name)
+        print("AI model %-8s %d tris" % (name, sum(len(p.vertices) - 2 for p in ob.data.polygons)))
+        return ob
+    except Exception as ex:     # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("AI MODEL %s FAILED: %s" % (name, ex))
+        return None
+
+
 def build_murti():
     """Hanuman ji as village shrines keep him: coated in shining sindoor on his stone slab, silver mukut, gada and eyes,
     a marigold mala - standing in a geru-red niche on the wall of the pooja ghar (tools/murti.py)."""
@@ -1143,9 +1166,16 @@ def build_murti():
 
     def lathe(parent, name, profile, loc, material):
         return p_lathe(parent, name, profile, loc, material, segments=32)
-    body = murti.build(root, prop_collection, get_material, lathe)
+    ai = ai_model("murti")                                       # the AI-generated murti, when it is there
+    if ai is not None:
+        prop_collection.objects.link(ai)
+        ai.parent = root
+        ai.location = (0.0, 0.08, 0.0)
+        print("Hanuman ji's murti: AI model (Hyper3D Rodin)")
+    else:
+        body = murti.build(root, prop_collection, get_material, lathe)
+        blender_objs.append(body)                                # baked with the house: shade in the folds of the coat
     murti.niche(root, prop_collection, get_material, float(meta["murti"].get("wall", 0.34)))
-    blender_objs.append(body)                                    # baked with the house: shade in the folds of the coat
     print("Hanuman ji's murti in place")
 
 
