@@ -4,8 +4,8 @@
   "seed": 11
  },
  "diya": {
-  "prompt": "a traditional Indian clay diya oil lamp, small hand-made terracotta lamp with a cotton wick, unlit",
-  "seed": 12
+  "prompt": "an unlit traditional Indian clay diya oil lamp, small terracotta lamp with a cotton wick lying in it, no flame",
+  "seed": 112
  },
  "coconut": {
   "prompt": "a whole brown coconut with dry husk fibres and a red sacred thread tied around it, Hindu puja coconut",
@@ -28,8 +28,8 @@
   "seed": 17
  },
  "murti": {
-  "prompt": "an Indian village temple idol of Lord Hanuman covered in shiny bright orange sindoor, standing, holding a mace on his left shoulder, right hand raised in blessing, silver eyes, silver crown, on a small stone pedestal, full figure",
-  "seed": 18
+  "prompt": "a statue of Lord Hanuman, the monkey-faced Hindu god, standing upright, monkey face with a protruding jaw, holding a golden mace (gada) resting on his shoulder, his long tail curling up above his head, his whole body painted bright orange-red with sindoor, silver crown, village temple idol on a stone base, full figure",
+  "seed": 118
  },
  "samai": {
   "prompt": "a traditional Indian brass samai oil lamp stand with five wicks on top, tall standing deepam",
@@ -44,7 +44,7 @@
   "seed": 21
  },
  "lantern": {
-  "prompt": "an old kerosene hurricane lantern, rusty dark metal frame with a glass chimney and a wire handle",
+  "prompt": "an old kerosene hurricane lantern with a glass chimney and a wire handle, rusty dark metal, the whole lantern small in the frame",
   "seed": 22
  },
  "palang": {
@@ -52,8 +52,8 @@
   "seed": 23
  },
  "charpai": {
-  "prompt": "a traditional Indian charpai, wooden cot with a woven jute rope bed and four turned wooden legs",
-  "seed": 24
+  "prompt": "a traditional Indian charpai bed, a long low cot with four wooden legs and a woven jute rope surface, the whole cot in view",
+  "seed": 124
  },
  "almirah": {
   "prompt": "an old Indian steel almirah, tall grey-green painted metal cupboard with two doors and a long handle, slightly worn and scratched",
@@ -80,16 +80,16 @@
   "seed": 30
  },
  "wallclock": {
-  "prompt": "an old wooden pendulum wall clock with a round white dial and roman numerals",
-  "seed": 31
+  "prompt": "an old tall wooden grandfather pendulum floor clock with a round white dial, the whole clock from top to bottom small in the frame",
+  "seed": 131
  },
  "cupboard": {
   "prompt": "an old carved Indian wooden cupboard with glass doors and brass handles",
   "seed": 32
  },
  "chulha": {
-  "prompt": "a traditional Indian clay chulha mud stove with two openings and a few sticks of firewood",
-  "seed": 33
+  "prompt": "a traditional Indian village mud stove (chulha) made of clay, U-shaped low stove with an opening in the front for firewood and a cooking pot on top, rustic",
+  "seed": 133
  },
  "utensil_rack": {
   "prompt": "an old wooden wall shelf with brass and steel Indian kitchen utensils, plates, glasses and pots",

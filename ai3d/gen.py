@@ -15,8 +15,9 @@ from gradio_client import Client, handle_file
 IMG_SPACES = ["black-forest-labs/FLUX.1-schnell"]
 TRELLIS_SPACES = ["trellis-community/TRELLIS", "JeffreyXiang/TRELLIS"]
 HUNYUAN_SPACES = ["tencent/Hunyuan3D-2"]
-STYLE = (", a single object, full object in view, three-quarter view from slightly above, centered, isolated on a plain "
-         "white background, soft even studio light, photorealistic product photo, real materials, sharp detail")
+STYLE = (", a single object, the whole object in view with empty space around it, three-quarter view from slightly above, "
+         "centered, isolated on a plain white background, soft even studio light, photorealistic product photo, real materials, "
+         "sharp detail")
 
 
 def endpoints(client):
@@ -170,6 +171,9 @@ def main():
             print("   picture ok (%.0fs)" % (time.time() - t0))
         except Exception as e:   # noqa: BLE001
             report[name] = "picture failed: " + str(e)[:200]
+            continue
+        if "--pictures-only" in sys.argv:
+            report[name] = "picture ok"
             continue
         try:
             by = trellis(png, glb, int(m.get("seed", 7)))

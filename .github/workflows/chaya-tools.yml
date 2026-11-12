@@ -76,40 +76,52 @@ jobs:
               "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$f" >/dev/null && echo "uploaded $f"
           done
 
-  ai3d-plan:
-    if: contains(github.event.head_commit.message, '[ai3d]')
+  plan:
+    if: contains(github.event.head_commit.message, '[tsr]')
     runs-on: ubuntu-24.04
     outputs:
-      groups: ${{ steps.p.outputs.groups }}
+      tsr: ${{ steps.p.outputs.tsr }}
     steps:
       - uses: actions/checkout@v4
       - id: p
         run: |
-          python3 -c "import json; L=[l.strip() for l in open('ai3d/run.txt') if l.strip()]; print('groups=' + json.dumps(L))" >> $GITHUB_OUTPUT
+          python3 -c "import json; L=[l.strip() for l in open('ai3d/tsr.txt') if l.strip()]; print('tsr=' + json.dumps(L))" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
 
-  ai3d:
-    needs: ai3d-plan
+  tsr:
+    needs: plan
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      max-parallel: 8
       matrix:
-        group: ${{ fromJSON(needs.ai3d-plan.outputs.groups) }}
+        group: ${{ fromJSON(needs.plan.outputs.tsr) }}
     steps:
       - uses: actions/checkout@v4
-      - name: AI 3D models from free Hugging Face Spaces
-        timeout-minutes: 50
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: TripoSR on the runner's CPU (MIT licence)
+        timeout-minutes: 80
         run: |
-          pip install -q gradio_client
-          mkdir -p out
-          python3 ai3d/gen.py ai3d/models.json out ${{ matrix.group }} 2>&1 | tee out/log_$(echo "${{ matrix.group }}" | tr -c 'a-z0-9_\n' '_' | cut -c1-40).txt || true
-          ls -la out
+          git clone -q --depth 1 https://github.com/VAST-AI-Research/TripoSR
+          pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -q omegaconf==2.3.0 einops==0.7.0 transformers==4.35.0 trimesh==4.0.5 "rembg[cpu]" huggingface-hub "imageio[ffmpeg]" xatlas==0.0.9 moderngl==5.10.0 Pillow onnxruntime
+          pip install -q git+https://github.com/tatsy/torchmcubes.git
+          R=$GITHUB_REPOSITORY
+          rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
+          mkdir -p pics out
+          for n in ${{ matrix.group }}; do
+            id=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --paginate --jq ".[] | select(.name==\"ai3d_$n.png\") | .id")
+            [ -n "$id" ] && gh api -H "Accept: application/octet-stream" repos/$R/releases/assets/$id > pics/$n.png
+          done
+          ls -la pics
+          xvfb-run -a python ai3d/tsr_run.py pics out ${{ matrix.group }} || true
+          cd out && for d in tsr_*; do [ -d "$d" ] && (cd $d && zip -qr ../$d.zip .); done; ls -la
       - name: Upload to the private draft release
         run: |
           R=$GITHUB_REPOSITORY
           rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
-          for f in out/*; do
+          for f in out/*.zip; do
             n=ai3d_$(basename $f)
             old=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --paginate --jq ".[] | select(.name==\"$n\") | .id")
             [ -n "$old" ] && gh api -X DELETE "repos/$R/releases/assets/$old"
