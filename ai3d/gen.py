@@ -13,7 +13,7 @@ import traceback
 from gradio_client import Client, handle_file
 
 IMG_SPACES = ["black-forest-labs/FLUX.1-schnell"]
-TRELLIS_SPACES = ["JeffreyXiang/TRELLIS", "trellis-community/TRELLIS"]
+TRELLIS_SPACES = ["trellis-community/TRELLIS", "JeffreyXiang/TRELLIS"]
 HUNYUAN_SPACES = ["tencent/Hunyuan3D-2"]
 STYLE = (", a single object, full object in view, three-quarter view from slightly above, centered, isolated on a plain "
          "white background, soft even studio light, photorealistic product photo, real materials, sharp detail")
@@ -56,6 +56,22 @@ def first_file(x):
     return None
 
 
+def find_ext(x, exts):
+    if isinstance(x, str) and os.path.exists(x) and x.lower().endswith(exts):
+        return x
+    if isinstance(x, dict):
+        for v in x.values():
+            f = find_ext(v, exts)
+            if f:
+                return f
+    if isinstance(x, (list, tuple)):
+        for y in x:
+            f = find_ext(y, exts)
+            if f:
+                return f
+    return None
+
+
 def picture(prompt, seed, out_png):
     last = None
     for sp in IMG_SPACES:
@@ -87,11 +103,15 @@ def trellis(png, out_glb, seed):
             img = png
             if "/preprocess_image" in eps:
                 img = first_file(call(c, "/preprocess_image", eps, image=handle_file(png))) or png
-            call(c, "/image_to_3d", eps, image=handle_file(img), multiimages=[], is_multiimage=False, seed=seed,
-                 ss_guidance_strength=7.5, ss_sampling_steps=12, slat_guidance_strength=3.0, slat_sampling_steps=12,
-                 multiimage_algo="stochastic")
-            r = call(c, "/extract_glb", eps, mesh_simplify=0.9, texture_size=1024)
-            f = first_file(r)
+            kw = dict(image=handle_file(img), multiimages=[], is_multiimage=False, seed=seed, ss_guidance_strength=7.5,
+                      ss_sampling_steps=12, slat_guidance_strength=3.0, slat_sampling_steps=12, multiimage_algo="stochastic",
+                      mesh_simplify=0.9, texture_size=1024)
+            if "/generate_and_extract_glb" in eps:
+                r = call(c, "/generate_and_extract_glb", eps, **kw)
+            else:
+                call(c, "/image_to_3d", eps, **kw)
+                r = call(c, "/extract_glb", eps, **kw)
+            f = find_ext(r, (".glb",))
             if f:
                 shutil.copy(f, out_glb)
                 return sp
