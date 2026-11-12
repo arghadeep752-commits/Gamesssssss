@@ -40,6 +40,8 @@ var _list_title: Label
 var _list_tw: Tween
 var _prompt_panel: PanelContainer
 var _prompt_label: Label
+var _cap_label: Label                 # cinematic caption at the bottom (opening cutscene)
+var _cap_tw: Tween
 var _prompt_tw: Tween
 var highlight := ""              # "joy", "run", "look" or "" - a pulsing ring for the tutorial
 var guide_on := false
@@ -219,6 +221,10 @@ func _build_texts() -> void:
 	_prompt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_prompt_label.custom_minimum_size = Vector2(1300, 0)
 	_prompt_panel.add_child(_prompt_label)
+	_cap_label = _text("", 46, Color(1.0, 0.9, 0.78))
+	_cap_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_cap_label.modulate.a = 0.0
+	add_child(_cap_label)
 
 func _place_texts() -> void:
 	if _list_panel == null:
@@ -229,6 +235,9 @@ func _place_texts() -> void:
 	_prompt_panel.reset_size()
 	var ps := _prompt_panel.get_combined_minimum_size()
 	_prompt_panel.position = Vector2((_size.x - ps.x) / 2.0, _size.y * 0.5 - ps.y - 40.0)
+	if _cap_label:
+		_cap_label.size = Vector2(_size.x * 0.76, 0.0)
+		_cap_label.position = Vector2(_size.x * 0.12, _size.y - 190.0)
 
 ## Show the six items; `found` ids are dimmed and ticked. hold <= 0: stay until hide_item_list().
 func show_item_list(found: Dictionary, hold := 6.0, title := "FIND THESE ITEMS FOR THE RITUAL") -> void:
@@ -270,6 +279,17 @@ func prompt(text: String, hold := 0.0) -> void:
 		_prompt_tw.tween_interval(hold)
 		_prompt_tw.tween_property(_prompt_panel, "modulate:a", 0.0, 0.5)
 		_prompt_tw.tween_callback(func(): _prompt_panel.visible = false)
+
+## A line of story at the bottom of the screen, like a film subtitle.
+func caption(text: String, hold := 4.0) -> void:
+	_cap_label.text = text
+	_place_texts()
+	if _cap_tw:
+		_cap_tw.kill()
+	_cap_tw = create_tween()
+	_cap_tw.tween_property(_cap_label, "modulate:a", 1.0, 0.8)
+	_cap_tw.tween_interval(hold)
+	_cap_tw.tween_property(_cap_label, "modulate:a", 0.0, 0.9)
 
 func hide_prompt() -> void:
 	if _prompt_tw:

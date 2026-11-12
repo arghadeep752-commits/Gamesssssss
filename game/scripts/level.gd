@@ -100,7 +100,7 @@ func _build_environment() -> void:
 		if ResourceLoader.exists(sp):
 			var pano := PanoramaSkyMaterial.new()
 			pano.panorama = load(sp)
-			pano.energy_multiplier = 1.6
+			pano.energy_multiplier = 1.15         # a dark night: stars, the trees, a faint glow low on the horizon
 			var sky := Sky.new()
 			sky.sky_material = pano
 			sky.radiance_size = Sky.RADIANCE_SIZE_32
@@ -767,6 +767,7 @@ func _cutscene() -> void:
 	moon.global_position = Vector3(-6.0, 14.0, dz + 16.0)
 	moon.look_at(Vector3(0.0, 3.0, dz - 1.0), Vector3.UP)
 	Sfx.play("bell", -4.0, 0.92)
+	hud.caption("MIDNIGHT. A PUJARI HAS COME TO FREE THIS HOUSE FROM CHAYA'S EVIL SPIRIT.", 5.5)
 	var voice: AudioStreamPlayer = null
 	if ResourceLoader.exists(VOICE):
 		voice = AudioStreamPlayer.new()
