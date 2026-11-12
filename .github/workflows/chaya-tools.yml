@@ -129,3 +129,50 @@ jobs:
             curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
               "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$n" >/dev/null && echo "uploaded $n"
           done
+
+  xferkey:
+    if: contains(github.event.head_commit.message, '[xferkey]')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: A transfer key kept only in the private draft (encrypts download links committed to this public branch)
+        run: |
+          R=$GITHUB_REPOSITORY
+          rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
+          old=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --paginate --jq '.[] | select(.name=="xfer.key") | .id')
+          if [ -z "$old" ]; then
+            openssl rand -hex 32 > xfer.key
+            curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T xfer.key \
+              "https://uploads.github.com/repos/$R/releases/$rid/assets?name=xfer.key" >/dev/null && echo "transfer key stored"
+          else
+            echo "transfer key already there"
+          fi
+
+  fetch:
+    if: contains(github.event.head_commit.message, '[fetch]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the generated 3D models into the private draft
+        run: |
+          R=$GITHUB_REPOSITORY
+          rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
+          kid=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --paginate --jq '.[] | select(.name=="xfer.key") | .id')
+          gh api -H "Accept: application/octet-stream" repos/$R/releases/assets/$kid > xfer.key
+          openssl enc -d -aes-256-cbc -pbkdf2 -a -pass file:xfer.key -in rodin/fetch.enc -out fetch.json
+          rm -f xfer.key
+          mkdir -p out
+          python3 - <<'PY'
+          import json, urllib.request
+          for name, url in json.load(open("fetch.json")).items():
+              data = urllib.request.urlopen(url, timeout=300).read()
+              open("out/" + name, "wb").write(data)
+              print(name, len(data), "bytes")
+          PY
+          rm -f fetch.json
+          for f in out/*; do
+            n=rodin_$(basename $f)
+            old=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --paginate --jq ".[] | select(.name==\"$n\") | .id")
+            [ -n "$old" ] && gh api -X DELETE "repos/$R/releases/assets/$old"
+            curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
+              "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$n" >/dev/null && echo "uploaded $n"
+          done
