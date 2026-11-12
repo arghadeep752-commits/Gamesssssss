@@ -1,4 +1,4 @@
-name: Chaya - park build tools (private draft)
+name: Chaya - build tools (private draft)
 
 on:
   push:
@@ -16,6 +16,7 @@ env:
 
 jobs:
   park:
+    if: contains(github.event.head_commit.message, '[park]')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -49,4 +50,28 @@ jobs:
             [ -n "$old" ] && gh api -X DELETE "repos/$R/releases/assets/$old"
             curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
               "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$n" >/dev/null && echo "uploaded $n"
+          done
+
+  voice:
+    if: contains(github.event.head_commit.message, '[voice]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: The Pujari's voice from ElevenLabs (the key is read once, then deleted)
+        run: |
+          R=$GITHUB_REPOSITORY
+          rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
+          kid=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --jq '.[] | select(.name=="el.key") | .id')
+          if [ -z "$kid" ]; then echo "::error::no key in the draft"; exit 1; fi
+          KEY=$(gh api -H "Accept: application/octet-stream" "repos/$R/releases/assets/$kid" | tr -d '\r\n ')
+          echo "::add-mask::$KEY"
+          gh api -X DELETE "repos/$R/releases/assets/$kid" && echo "key deleted from the draft"
+          python3 voice/eleven_voice.py "$KEY" voice.mp3
+          KEY=""
+          bash voice/voice_fx.sh voice.mp3 pujari_chalisa.ogg
+          for f in voice.mp3 pujari_chalisa.ogg; do
+            old=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --jq ".[] | select(.name==\"$f\") | .id")
+            [ -n "$old" ] && gh api -X DELETE "repos/$R/releases/assets/$old"
+            curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
+              "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$f" >/dev/null && echo "uploaded $f"
           done
