@@ -1,0 +1,52 @@
+name: Chaya - park build tools (private draft)
+
+on:
+  push:
+    branches: [chaya-tools]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  park:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chaya
+      - name: Blender 4.2.3 LTS and the Poly Haven scans (CC0)
+        timeout-minutes: 30
+        run: |
+          mkdir -p park
+          V=4.2.3; S=${V%.*}; F=blender-$V-linux-x64.tar.xz
+          for u in https://download.blender.org/release/Blender$S/$F \
+                   https://mirrors.ocf.berkeley.edu/blender/release/Blender$S/$F \
+                   https://ftp.nluug.nl/pub/graphics/blender/release/Blender$S/$F; do
+            curl -fsSL --retry 3 --max-time 600 "$u" -o park/$F && break || rm -f park/$F
+          done
+          python3 tools/fetch_scans.py park/scans > park/scans-log.txt 2>&1 || tail -40 park/scans-log.txt
+          tail -5 park/scans-log.txt
+          tar -C park -cf park/scans.tar scans
+          ls -la park
+      - name: Upload to the private draft release
+        run: |
+          R=$GITHUB_REPOSITORY
+          rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
+          if [ -z "$rid" ]; then
+            rid=$(gh api -X POST "repos/$R/releases" -f tag_name=chaya-tools -f name="Chaya build tools (private draft - do not publish)" \
+                  -F draft=true -f body="Blender and the scanned models for local test builds. Not a game release." --jq .id)
+          fi
+          for f in park/blender-4.2.3-linux-x64.tar.xz park/scans.tar; do
+            n=$(basename $f)
+            old=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --jq ".[] | select(.name==\"$n\") | .id")
+            [ -n "$old" ] && gh api -X DELETE "repos/$R/releases/assets/$old"
+            curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
+              "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$n" >/dev/null && echo "uploaded $n"
+          done
