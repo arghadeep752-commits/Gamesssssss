@@ -127,11 +127,12 @@ jobs:
       - name: Layout and Blender build
         run: |
           mkdir -p build map_out
-          python3 tools/maze.py map_out/layout.json 11
+          python3 tools/house.py map_out/layout.json
           blender -b -noaudio -P tools/build_map.py -- map_out/layout.json map_out --scans assets/downloaded/scans > build/map-log.txt 2>&1 || { tail -60 build/map-log.txt; exit 1; }
           grep -E "scan|FAILED|Error|props placed|lantern|pedestal|candle|item |icon|paintings|done in" build/map-log.txt | head -150 || true
           [ -d assets/downloaded/scans/tex ] && cp -r assets/downloaded/scans/tex map_out/scan_tex || true
           [ -f assets/downloaded/scans/CREDITS_SCANS.md ] && cp assets/downloaded/scans/CREDITS_SCANS.md map_out/ || true
+          [ -d assets/downloaded/scans/sky ] && cp -r assets/downloaded/scans/sky map_out/sky || true
           ls -la map_out map_out/icons || true
           du -sh map_out/tex || true
       - uses: actions/upload-artifact@v4
@@ -171,9 +172,10 @@ jobs:
           [ -f map_dl/candle.gltf ] && cp map_dl/candle.gltf map_dl/candle.bin assets/map/ || echo "::warning::no candle model (the game uses a simple candle)"
           [ -d map_dl/icons ] && cp -r map_dl/icons assets/map/icons
           [ -d map_dl/scan_tex ] && cp -r map_dl/scan_tex/. assets/downloaded/tex/
+          [ -d map_dl/sky ] && mkdir -p assets/downloaded/sky && cp map_dl/sky/* assets/downloaded/sky/
           # old house textures replaced by the scanned set (keep each one only if its replacement is missing)
           T=assets/downloaded/tex
-          for pair in wood_floor:wood_floor_old plaster:plaster_old wood_wall:wood_panel wood_door:wood_studded cloth:cloth_red \
+          for pair in wood_floor:floor_deck plaster:wall_beige wood_wall:wall_planks wood_door:door_planks cloth:cloth_red \
                       wood_dark:trim_dark wood_ceiling:ceiling_planks stone_floor:stone_slab clay:clay_pbr fiber:hessian; do
             o=${pair%%:*}; n=${pair##*:}
             [ -f "$T/$n/diff.jpg" ] && rm -rf "$T/$o" && echo "dropped old texture $o (now $n)" || true

@@ -46,6 +46,14 @@ var _wisp_path := PackedVector3Array()
 var _wisp_repath := 0.0
 var _wisp_hidden := false
 var _tut_caught := false
+var front_doors: Array = []
+var exit_door: Node3D
+var exit_pos := Vector3.INF
+var exit_open := false
+var escaped := false
+var in_cutscene := false
+var _skip_cut := false
+var sky_tex: Texture2D
 
 func _ready() -> void:
 	randomize()
@@ -68,21 +76,38 @@ func _ready() -> void:
 	tw.tween_property(hud, "fade", 0.0, 1.6)
 	if OS.get_environment("CHAYA_SHOTS") != "":
 		_shots_tour.call_deferred()
-	elif tutorial:
-		_tutorial.call_deferred()
 	else:
-		_intro_list.call_deferred()
+		_intro.call_deferred()
+
+func _intro() -> void:
+	await _cutscene()
+	if tutorial:
+		_tutorial()
+	else:
+		_intro_list()
 
 func is_busy() -> bool:
-	return caught_flag or ritual_flag
+	return caught_flag or ritual_flag or in_cutscene or escaped
 
 # ------------------------------------------------------------------------------------------ building
 
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.13, 0.095, 0.07)      # never seen (the house is closed); metals reflect it
+	env.background_color = Color(0.02, 0.025, 0.04)
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
+	for sp in ["res://assets/downloaded/sky/sky.hdr", "res://assets/downloaded/sky/sky.exr"]:
+		if ResourceLoader.exists(sp):
+			var pano := PanoramaSkyMaterial.new()
+			pano.panorama = load(sp)
+			pano.energy_multiplier = 1.6
+			var sky := Sky.new()
+			sky.sky_material = pano
+			sky.radiance_size = Sky.RADIANCE_SIZE_32
+			env.sky = sky
+			env.background_mode = Environment.BG_SKY
+			env.background_energy_multiplier = 1.0
+			break
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.36, 0.29, 0.25)
 	env.ambient_light_energy = 0.45      # a little brighter (player request)
@@ -127,7 +152,7 @@ func _build_map() -> void:
 	# furniture and lamps far away are hidden in the fog anyway: don't draw them (phone GPU)
 	for node in map.get_children():
 		var nn := String(node.name)
-		for pre in ["prop_", "lamp_", "pedestal_", "painting_", "offering_", "pooja_vase", "pooja_lamp"]:
+		for pre in ["prop_", "lamp_", "pedestal_", "painting_", "offering_", "pooja_vase", "pooja_lamp", "ground_"]:
 			if nn.begins_with(pre):
 				for n in node.find_children("*", "MeshInstance3D", true, false):
 					var gi := n as GeometryInstance3D
@@ -139,6 +164,18 @@ func _build_map() -> void:
 		var node := map.find_child(info["name"], true, false)
 		if node != null:
 			_make_door(info, node)
+	for key in ["front_door", "exit_door"]:
+		var d = meta.get(key)
+		if d == null:
+			continue
+		for leaf in d["leaves"]:
+			var info2: Dictionary = (leaf as Dictionary).duplicate()
+			info2["kind"] = "front" if key == "front_door" else "exit"
+			var node2 := map.find_child(info2["name"], true, false)
+			if node2 != null:
+				_make_door(info2, node2)
+		if key == "exit_door":
+			exit_pos = Vector3(float(d["center"][0]), 0.0, float(d["center"][2]))
 	# ritual items
 	for it in meta["items"]:
 		var node := map.find_child(it["name"], true, false)
@@ -160,7 +197,7 @@ func _build_map() -> void:
 	altar_pos = Vector3(meta["altar"]["pos"][0], meta["altar"]["pos"][1], meta["altar"]["pos"][2])
 
 func _make_door(info: Dictionary, node: Node3D) -> void:
-	var hinge := Vector3(info["hinge"][0], 0.0, info["hinge"][2])
+	var hinge := Vector3(info["hinge"][0], info["hinge"][1], info["hinge"][2])
 	var pivot := Node3D.new()
 	pivot.set_script(DoorScript)
 	add_child(pivot)
@@ -189,6 +226,13 @@ func _make_door(info: Dictionary, node: Node3D) -> void:
 		pivot.locked = true
 		pivot.reach = 2.2
 		pooja_door = pivot
+	elif info["kind"] == "front":
+		pivot.locked = true
+		front_doors.append(pivot)
+	elif info["kind"] == "exit":
+		pivot.locked = true
+		pivot.reach = 2.0
+		exit_door = pivot
 	doors.append(pivot)
 
 func _box(parent: StaticBody3D, center: Vector3, size: Vector3) -> void:
@@ -233,7 +277,7 @@ func _build_collisions() -> void:
 		var h := float(pr["h"])
 		var back := float(pr.get("back", 0.45))
 		var cx := float(pr.get("cx", 0.0))
-		var c := Vector3(float(pr["pos"][0]), 0.0, float(pr["pos"][1])) + Basis(Vector3.UP, yaw) * Vector3(cx, h / 2.0, d / 2.0 - back)
+		var c := Vector3(float(pr["pos"][0]), float(pr.get("y", 0.0)), float(pr["pos"][1])) + Basis(Vector3.UP, yaw) * Vector3(cx, h / 2.0, d / 2.0 - back)
 		var sz := Vector3(w, h, d) if absf(sin(yaw)) < 0.5 else Vector3(d, h, w)
 		_box(body, c, sz)
 	# carved pillars and the stands the ritual items sit on
@@ -243,7 +287,18 @@ func _build_collisions() -> void:
 		var ped: Array = it.get("ped", [0.56, 0.56])
 		var pyaw := deg_to_rad(float(it.get("ped_yaw", 0.0)))
 		var psz := Vector3(float(ped[0]), 0.74, float(ped[1])) if absf(sin(pyaw)) < 0.5 else Vector3(float(ped[1]), 0.74, float(ped[0]))
-		_box(body, Vector3(float(it["pos"][0]), 0.37, float(it["pos"][2])), psz)
+		_box(body, Vector3(float(it["pos"][0]), float(it["pos"][1]) - 0.37, float(it["pos"][2])), psz)
+	if meta.has("colliders"):
+		for cb in meta["colliders"]:
+			var cs := CollisionShape3D.new()
+			var bs := BoxShape3D.new()
+			bs.size = Vector3(float(cb[3]), float(cb[4]), float(cb[5]))
+			cs.shape = bs
+			cs.position = Vector3(float(cb[0]), float(cb[1]), float(cb[2]))
+			if cb.size() > 6 and absf(float(cb[6])) > 0.01:
+				cs.rotation = Vector3(deg_to_rad(float(cb[6])), 0.0, 0.0)
+			body.add_child(cs)
+		return
 	var T := float(L["wall_t"])
 	var H := float(L["wall_h"])
 	var S := float(L["cell"])
@@ -291,6 +346,18 @@ func _build_lights() -> void:
 		o.position = Vector3(l["pos"][0], float(l["pos"][1]) - (0.3 if meta.get("scanned", false) else 0.0), l["pos"][2])
 		add_child(o)
 		lamps.append({"node": o, "base": 2.3, "ph": randf() * 20.0})
+	# moonlight falling into the open courtyard (no shadows: the cone only covers the courtyard)
+	if L.get("type", "") == "house":
+		var moon := SpotLight3D.new()
+		moon.light_color = Color(0.55, 0.65, 0.95)
+		moon.light_energy = 2.2
+		moon.spot_range = 16.0
+		moon.spot_angle = 17.0
+		moon.spot_attenuation = 0.4
+		var t: Array = L["tulsi"]
+		moon.position = Vector3(float(t[0]) - 1.0, 13.0, float(t[1]) + 1.5)
+		add_child(moon)
+		moon.look_at(Vector3(float(t[0]), 0.0, float(t[1])), Vector3.FORWARD)
 	# the brass lamps hanging in the pooja room
 	for el in meta.get("extra_lights", []):
 		var o2 := OmniLight3D.new()
@@ -319,7 +386,8 @@ func _spawn_ghost() -> void:
 	ghost = CharacterBody3D.new()
 	ghost.set_script(GhostScript)
 	add_child(ghost)
-	var gc := Vector2i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]))
+	var gcl: Array = L["ghost_cell"]
+	var gc := Vector3i(int(gcl[0]), int(gcl[1]), int(gcl[2]) if gcl.size() > 2 else 0)
 	ghost.global_position = maze.cell_center(gc) + Vector3(0, 0.05, 0)
 	ghost.setup(self, maze, player)
 	ghost.caught_player.connect(_on_caught)
@@ -365,7 +433,7 @@ func _all_items_found() -> void:
 		pooja_door.locked = false
 	if not tutorial:
 		ghost.enrage()
-		hud.prompt("ALL ITEMS FOUND. TAKE THEM TO THE ALTAR IN THE POOJA ROOM", 4.5)
+		hud.prompt("ALL ITEMS FOUND - THE POOJA GHAR IS OPEN. DO THE RITUAL ON THE VERANDA", 4.5)
 	player.flicker_light(2.5)
 	for l in lamps:
 		l["flick"] = 3.0
@@ -412,8 +480,13 @@ func _process(dt: float) -> void:
 	if all_collected and not ritual_flag and not caught_flag:
 		var dd := player.global_position - altar_pos
 		dd.y = 0.0
-		if dd.length() < 1.95:
+		if dd.length() < 1.95 and absf(player.global_position.y - altar_pos.y) < 1.5:
 			_start_ritual()
+	if exit_open and not escaped and exit_pos != Vector3.INF:
+		var de := player.global_position - exit_pos
+		de.y = 0.0
+		if de.length() < 1.1 or player.global_position.z < exit_pos.z - 0.3:
+			_escape()
 	_perf_monitor(dt)
 
 func _perf_monitor(dt: float) -> void:
@@ -583,7 +656,8 @@ func _start_ritual() -> void:
 	Sfx.loop_on("fire", self, -6.0)
 	await get_tree().create_timer(2.5).timeout
 	# Chaya comes to stop the ritual
-	var spawn_at := maze.cell_center(Vector2i(int(L["pooja"]["door"]) % maze.cols, int(L["pooja"]["door"]) / maze.cols)) + Vector3(0, 0.05, 0)
+	var cf: Array = L["ritual"]["chaya_from"]
+	var spawn_at := maze.cell_center(Vector3i(int(cf[0]), int(cf[1]), int(cf[2]))) + Vector3(0, 0.05, 0)
 	ghost.process_mode = Node.PROCESS_MODE_INHERIT
 	ghost.visible = true
 	_ghost_voice(true)
@@ -619,15 +693,151 @@ func _start_ritual() -> void:
 	var dd := create_tween()
 	dd.tween_property(hud, "danger", 0.0, 0.5)
 	await get_tree().create_timer(1.6).timeout
-	var fo := create_tween()
-	fo.tween_property(hud, "fade", 1.0, 2.0)
-	await fo.finished
+	var bk := create_tween()
+	bk.tween_property(hud, "flash", 0.0, 1.2)
+	# the evil is gone: the exit door opens
+	exit_open = true
+	if exit_door:
+		exit_door.locked = false
+		exit_door.force(-100.0)
+	player.frozen = false
+	hud.reset_touches()
+	hud.prompt("THE EVIL IS DESTROYED. THE EXIT DOOR IS OPEN - LEAVE THE HOUSE", 5.0)
 	if tutorial:
-		hud.prompt("TUTORIAL COMPLETE! NOW PRESS START AND SURVIVE CHAYA'S HOUSE FOR REAL.")
-		await get_tree().create_timer(4.0).timeout
-	await get_tree().create_timer(1.2).timeout
+		_wisp_on()
+		_wisp_hidden = false
+
+func _escape() -> void:
+	escaped = true
+	player.frozen = true
+	_wisp_off()
+	var fo := create_tween()
+	fo.tween_property(hud, "fade", 1.0, 2.2)
+	await fo.finished
+	hud.prompt("YOU ARE FREE. JAI HANUMAN!" if not tutorial else "TUTORIAL COMPLETE! NOW PRESS START AND PLAY FOR REAL.")
+	await get_tree().create_timer(4.0).timeout
 	get_tree().change_scene_to_file(MENU)
 
+
+
+# ------------------------------------------------------------------------------------------ the opening cutscene
+
+const VOICE := "res://assets/voice/pujari_chalisa.ogg"
+
+func _unhandled_input(event: InputEvent) -> void:
+	if in_cutscene and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed)):
+		_skip_cut = true
+
+## The Pujari walks up to the house at night reciting the Hanuman Chalisa, the door opens by itself, he steps in and
+## it slams shut behind him. A tap skips it.
+func _cutscene() -> void:
+	var out: Dictionary = L.get("outside", {})
+	if out.is_empty() or front_doors.is_empty():
+		return
+	in_cutscene = true
+	_skip_cut = false
+	var ghost_was: bool = ghost.active
+	ghost.active = false
+	hud.hide_controls()
+	player.frozen = true
+	player.visible = false
+	var cam := Camera3D.new()
+	cam.fov = 62.0
+	cam.far = 120.0
+	add_child(cam)
+	var y := 1.62
+	var dz := float(out["door"][1])
+	var p0 := Vector3(float(out["start"][0]) + 1.4, y, float(out["start"][1]))
+	var p1 := Vector3(0.0, y, dz)
+	cam.global_position = p0
+	cam.look_at(Vector3(0.0, 3.6, dz - 3.0), Vector3.UP)
+	cam.make_current()
+	# moonlight on the front of the house while we are outside
+	var moon := SpotLight3D.new()
+	moon.light_color = Color(0.5, 0.6, 0.95)
+	moon.light_energy = 1.6
+	moon.spot_range = 40.0
+	moon.spot_angle = 24.0
+	moon.spot_attenuation = 0.3
+	add_child(moon)
+	moon.global_position = Vector3(-6.0, 14.0, dz + 16.0)
+	moon.look_at(Vector3(0.0, 3.0, dz - 1.0), Vector3.UP)
+	Sfx.play("bell", -4.0, 0.92)
+	var voice: AudioStreamPlayer = null
+	if ResourceLoader.exists(VOICE):
+		voice = AudioStreamPlayer.new()
+		voice.stream = load(VOICE)
+		add_child(voice)
+		voice.play()
+	else:
+		voice = Sfx.play("ritual_chant", -2.0)            # a real recording of mantra chanting until the voice-over is in
+	var t := 0.0
+	var dur := 12.0
+	var step_t := 0.8
+	while t < dur and not _skip_cut:
+		await get_tree().process_frame
+		var dt := get_process_delta_time()
+		t += dt
+		var k := smoothstep(0.0, 1.0, t / dur)
+		var pos := p0.lerp(p1, k)
+		pos.y = y + sin(t * 6.5) * 0.02
+		cam.global_position = pos
+		cam.look_at(Vector3(0.0, lerpf(3.6, 1.75, k), dz - 3.0), Vector3.UP)
+		step_t -= dt
+		if step_t <= 0.0:
+			step_t = 0.58
+			Sfx.play_at("footstep", self, pos - Vector3(0, 1.5, 0), -8.0, randf_range(0.9, 1.05))
+	if not _skip_cut:
+		for d in front_doors:
+			d.force(95.0 * (1.0 if d.leaf_dir.x > 0 else -1.0))
+		t = 0.0
+		while t < 2.2 and not _skip_cut:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+	var sp: Array = L["spawn"]["pos"]
+	var p2 := Vector3(float(sp[0]), y, float(sp[1]))
+	var mf := create_tween()
+	mf.tween_property(moon, "light_energy", 0.0, 1.2)
+	if not _skip_cut:
+		t = 0.0
+		step_t = 0.2
+		while t < 3.4 and not _skip_cut:
+			await get_tree().process_frame
+			var dt2 := get_process_delta_time()
+			t += dt2
+			var k2 := smoothstep(0.0, 1.0, t / 3.4)
+			cam.global_position = p1.lerp(p2, k2) + Vector3(0, sin(t * 6.5) * 0.02, 0)
+			cam.look_at(cam.global_position + Vector3(0, -0.05, -3.0), Vector3.UP)
+			step_t -= dt2
+			if step_t <= 0.0:
+				step_t = 0.58
+				Sfx.play_at("footstep", self, cam.global_position - Vector3(0, 1.5, 0), -6.0)
+	if not _skip_cut:
+		# the door slams shut behind him
+		for d in front_doors:
+			d.force(0.0)
+		t = 0.0
+		while t < 1.6 and not _skip_cut:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+			cam.rotation.z = sin(t * 40.0) * 0.01 * maxf(0.0, 1.0 - t)
+	for d in front_doors:
+		d.force(0.0, false)
+		d._cur = 0.0
+		d.rotation.y = 0.0
+	if voice:
+		var vf := create_tween()
+		vf.tween_property(voice, "volume_db", -40.0, 2.5)
+		vf.tween_callback(voice.queue_free)
+	_place(Vector3(float(sp[0]), 0.05, float(sp[1])), float(L["spawn"]["yaw"]))
+	player.visible = true
+	player.camera.make_current()
+	cam.queue_free()
+	moon.queue_free()
+	player.frozen = false
+	hud.show_controls()
+	ghost.active = ghost_was
+	in_cutscene = false
 
 # ------------------------------------------------------------------------------------------ the tutorial
 
@@ -645,7 +855,7 @@ func _tutorial() -> void:
 	ghost.process_mode = Node.PROCESS_MODE_DISABLED
 	_ghost_voice(false)
 	await _wait(1.5)
-	hud.prompt("WELCOME TO CHAYA'S HOUSE. THIS TUTORIAL TEACHES YOU HOW TO PLAY.", 3.4)
+	hud.prompt("YOU ARE THE PUJARI. THIS TUTORIAL TEACHES YOU HOW TO FREE THIS HOUSE.", 3.4)
 	await _wait(4.0)
 	# walking
 	hud.prompt("MOVE - PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
@@ -682,10 +892,10 @@ func _tutorial() -> void:
 	await _wait(4.2)
 	# the goal
 	hud.show_item_list(found, 0.0, "FIND THESE SIX HOLY ITEMS FOR THE RITUAL")
-	hud.prompt("PUT ALL SIX ON THE ALTAR OF THE POOJA ROOM TO DESTROY CHAYA FOR EVER", 5.0)
+	hud.prompt("BRING ALL SIX TO THE VERANDA IN FRONT OF THE POOJA GHAR TO DESTROY CHAYA", 5.0)
 	await _wait(5.6)
 	hud.hide_item_list()
-	hud.prompt("FOLLOW THE LIGHT. DOORS OPEN BY THEMSELVES WHEN YOU WALK UP TO THEM. WALK INTO AN ITEM TO PICK IT UP.", 6.0)
+	hud.prompt("FOLLOW THE LIGHT - IT ALSO TAKES YOU UP THE STAIRS. DOORS OPEN WHEN YOU WALK UP TO THEM. WALK INTO AN ITEM TO PICK IT UP.", 6.0)
 	_wisp_on()
 	while items_got < 2:
 		await get_tree().process_frame
@@ -694,7 +904,7 @@ func _tutorial() -> void:
 	while not all_collected:
 		await get_tree().process_frame
 	await _wait(1.4)
-	hud.prompt("ALL SIX FOUND! THE POOJA ROOM DOOR IS OPEN NOW. FOLLOW THE LIGHT TO THE ALTAR.", 5.5)
+	hud.prompt("ALL SIX FOUND! THE POOJA GHAR IS OPEN. FOLLOW THE LIGHT TO THE VERANDA.", 5.5)
 	while not ritual_flag:
 		await get_tree().process_frame
 	_wisp_off()
@@ -704,7 +914,7 @@ func _tut_chase_lesson() -> void:
 	_wisp_hidden = true
 	hud.prompt("CAREFUL! CHAYA IS AWAKE. WHEN THE SCREEN TURNS RED AND YOU HEAR YOUR HEART BEAT, SHE IS CLOSE.", 5.0)
 	# she appears a few rooms away and comes for you
-	var best := Vector2i(-1, -1)
+	var best := Vector3i(-1, -1, -1)
 	var bd := 999
 	for c in maze.open_cells:
 		var n := maze.path(player.global_position, maze.cell_center(c)).size()
@@ -712,7 +922,7 @@ func _tut_chase_lesson() -> void:
 			bd = absi(n - 6)
 			best = c
 	if best.x < 0:
-		best = Vector2i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]))
+		best = Vector3i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]), int(L["ghost_cell"][2]))
 	ghost.process_mode = Node.PROCESS_MODE_INHERIT
 	ghost.visible = true
 	_ghost_voice(true)
@@ -749,7 +959,7 @@ func _tut_vanish() -> void:
 	ghost.velocity = Vector3.ZERO
 	ghost.state = ghost.S.PATROL
 	ghost.visible = false
-	ghost.warp_to(maze.cell_center(Vector2i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]))) + Vector3(0, 0.05, 0))
+	ghost.warp_to(maze.cell_center(Vector3i(int(L["ghost_cell"][0]), int(L["ghost_cell"][1]), int(L["ghost_cell"][2]))) + Vector3(0, 0.05, 0))
 	ghost.set_deferred("process_mode", Node.PROCESS_MODE_DISABLED)
 	_ghost_voice(false)
 	var tw := create_tween()
@@ -794,7 +1004,9 @@ func _update_wisp(dt: float) -> void:
 		return
 	# the target: the nearest item still to find, then the altar
 	var target := altar_pos
-	if not all_collected:
+	if exit_open and exit_pos != Vector3.INF:
+		target = exit_pos + Vector3(0, 0, -1.0)
+	elif not all_collected:
 		var bestd := 1e9
 		for pk in pickups:
 			var dd: float = (pk as Node3D).global_position.distance_to(player.global_position)
@@ -850,6 +1062,16 @@ func _place(pos: Vector3, yaw: float, pitch := 0.0) -> void:
 	player.face(yaw, pitch)
 	player.velocity = Vector3.ZERO
 
+func _shot_cam(pos: Vector3, look: Vector3, fov := 64.0) -> Camera3D:
+	var cam := Camera3D.new()
+	cam.fov = fov
+	cam.far = 120.0
+	add_child(cam)
+	cam.global_position = pos
+	cam.look_at(look, Vector3.UP)
+	cam.make_current()
+	return cam
+
 func _shots_tour() -> void:
 	player.frozen = true
 	ghost.active = false
@@ -859,17 +1081,41 @@ func _shots_tour() -> void:
 	var n := 1
 	var only_ghost := OS.get_environment("CHAYA_SHOTS_ONLY") == "ghost"
 	if not only_ghost:
+		# the opening cutscene: the house at night, then the open front door
+		var out: Dictionary = L.get("outside", {})
+		if not out.is_empty():
+			hud.hide_controls()
+			player.visible = false
+			var mn := SpotLight3D.new()
+			mn.light_color = Color(0.5, 0.6, 0.95)
+			mn.light_energy = 1.6
+			mn.spot_range = 40.0
+			mn.spot_angle = 24.0
+			mn.spot_attenuation = 0.3
+			add_child(mn)
+			mn.global_position = Vector3(-6.0, 14.0, float(out["door"][1]) + 16.0)
+			mn.look_at(Vector3(0.0, 3.0, float(out["door"][1]) - 1.0), Vector3.UP)
+			var c1 := _shot_cam(Vector3(float(out["start"][0]) + 1.2, 1.62, float(out["start"][1])), Vector3(0.0, 3.4, float(out["door"][1]) - 3.0))
+			await _snap("%02d_cut_house" % n); n += 1
+			for d in front_doors:
+				d.force(95.0 * (1.0 if d.leaf_dir.x > 0 else -1.0), false)
+				d._cur = d._target
+			c1.global_position = Vector3(0.0, 1.62, float(out["door"][1]) + 1.2)
+			c1.look_at(Vector3(0.0, 1.5, float(out["door"][1]) - 6.0), Vector3.UP)
+			await _snap("%02d_cut_door" % n); n += 1
+			for d in front_doors:
+				d.force(0.0, false)
+				d._cur = 0.0
+			c1.queue_free()
+			mn.queue_free()
+			player.visible = true
+			player.camera.make_current()
+			hud.show_controls()
 		_place(Vector3(sp[0], 0.05, sp[1]), 0.0)
 		await _snap("%02d_spawn" % n); n += 1
 		hud.show_item_list(found, 0.0)
 		await get_tree().create_timer(0.7).timeout
 		await _snap("%02d_item_list" % n); n += 1
-		found["kalash"] = true
-		found["diya"] = true
-		hud.show_item_list(found, 0.0, "DIYA FOUND - 4 MORE TO FIND")
-		await get_tree().create_timer(0.7).timeout
-		await _snap("%02d_item_list_found" % n); n += 1
-		found.clear()
 		hud.hide_item_list()
 		hud.prompt("MOVE - PUT YOUR THUMB ON THE LEFT SIDE OF THE SCREEN AND DRAG IT")
 		hud.highlight = "joy"
@@ -878,67 +1124,53 @@ func _shots_tour() -> void:
 		hud.highlight = ""
 		hud.hide_prompt()
 		await get_tree().create_timer(0.6).timeout
-		_place(Vector3(sp[0], 0.05, sp[1]), 180.0, -6.0)
-		await _snap("%02d_front_door" % n); n += 1
-	# a corridor and a room: pick cells
-	var shots := [[Vector2i(7, 8), 0.0], [Vector2i(3, 2), 90.0], [Vector2i(10, 1), 200.0], [Vector2i(13, 8), 270.0]]
-	for s in shots:
-		if only_ghost:
-			break
-		_place(maze.cell_center(s[0]) + Vector3(0, 0.05, 0), s[1])
-		await _snap("%02d_cell_%d_%d" % [n, s[0].x, s[0].y]); n += 1
-	# every ritual item on its pedestal, close up (the tour must not pick them up)
+		# the courtyard, the veranda with the pooja ghar, Hanuman ji, the stairs, the gallery
+		var tl: Array = L["tulsi"]
+		var tc := Vector3(float(tl[0]), 0.0, float(tl[1]))
+		_place(tc + Vector3(-3.6, 0.05, 3.4), rad_to_deg(atan2(3.6, -3.4)) + 180.0, 6.0)
+		await _snap("%02d_courtyard" % n); n += 1
+		if pooja_door:
+			pooja_door.force(100.0, false)
+			pooja_door._cur = pooja_door._target
+		var ch: Array = L["ritual"]["chowki"]
+		_place(Vector3(float(ch[0]) + 0.4, 0.05, float(ch[1]) + 2.4), 8.0, -8.0)
+		await _snap("%02d_veranda_pooja" % n); n += 1
+		var mu: Array = meta["murti"]["pos"]
+		_place(Vector3(float(mu[0]), 0.05, float(mu[2]) + 1.75), 0.0, -2.0)
+		await _snap("%02d_murti" % n); n += 1
+		if pooja_door:
+			pooja_door.force(0.0, false)
+			pooja_door._cur = 0.0
+		var stl: Dictionary = L["stairs"]
+		_place(Vector3(float(stl["x"]), 0.05, float(stl["z_start"]) - 1.4), 180.0, 14.0)
+		await _snap("%02d_stairs" % n); n += 1
+		_place(Vector3(tc.x - 3.9, float(L["floor_h"]) + 0.05, tc.z + 3.9), 225.0 - 180.0 + 180.0, -14.0)
+		player.face(rad_to_deg(atan2(3.9, -3.9)) + 180.0, -16.0)
+		await _snap("%02d_gallery" % n); n += 1
+	# every ritual item on its stand, close up (the tour must not pick them up)
 	for pk in pickups:
 		pk.player = null
 	if not only_ghost:
 		for it in meta["items"]:
-			var p := Vector3(it["pos"][0], 0.05, it["pos"][2])
-			var best := Vector3.ZERO
-			for off in [Vector3(0.85, 0, 0), Vector3(-0.85, 0, 0), Vector3(0, 0, 0.85), Vector3(0, 0, -0.85)]:
-				if maze.world_to_cell(p + off) == maze.world_to_cell(p):
-					best = off
-					break
+			var p := Vector3(it["pos"][0], float(it["pos"][1]) - 0.74 + 0.05, it["pos"][2])
+			var fc: Array = it.get("face", [0, 1])
+			var best := Vector3(float(fc[0]), 0.0, float(fc[1])) * 0.95
 			var yaw := rad_to_deg(atan2(best.x, best.z))
-			var drop: float = float(it["pos"][1]) + 0.22 - (0.05 + player.EYE_HEIGHT)
+			var drop: float = float(it["pos"][1]) + 0.22 - (p.y + player.EYE_HEIGHT)
 			_place(p + best, yaw, rad_to_deg(atan2(drop, maxf(0.3, best.length()))))
 			await _snap("%02d_item_%s" % [n, it["id"]]); n += 1
-	# the scanned furniture, a pillar, a painting, a lantern
-	if not only_ghost:
 		var props: Array = meta.get("props", [])
-		for k in range(mini(props.size(), 10)):
+		for k in range(mini(props.size(), 9)):
 			var pr: Dictionary = props[k]
 			var yaw := deg_to_rad(float(pr["yaw"]))
 			var b := Basis(Vector3.UP, yaw)
-			var c := Vector3(float(pr["pos"][0]), 0.0, float(pr["pos"][1])) + b * Vector3(float(pr.get("cx", 0.0)), 0.0, 0.0)
+			var c := Vector3(float(pr["pos"][0]), float(pr.get("y", 0.0)), float(pr["pos"][1])) + b * Vector3(float(pr.get("cx", 0.0)), 0.0, 0.0)
 			var eye := c + b * Vector3(0.35, 0.0, 2.1)
 			var look := c + Vector3(0, minf(float(pr["h"]) * 0.5, 0.9), 0) - (eye + Vector3(0, 0.05 + player.EYE_HEIGHT, 0))
 			_place(eye + Vector3(0, 0.05, 0), rad_to_deg(atan2(-look.x, -look.z)), rad_to_deg(atan2(look.y, Vector2(look.x, look.z).length())))
 			await _snap("%02d_prop_%s" % [n, String(pr["kind"])]); n += 1
-		var pls: Array = meta.get("pillars", [])
-		if pls.size() > 0:
-			var pc := Vector3(float(pls[0][0]), 0.0, float(pls[0][1]))
-			var e2 := pc + Vector3(1.6, 0, 1.1)
-			var lk := pc + Vector3(0, 1.6, 0) - (e2 + Vector3(0, 1.63, 0))
-			_place(e2 + Vector3(0, 0.05, 0), rad_to_deg(atan2(-lk.x, -lk.z)), rad_to_deg(atan2(lk.y, Vector2(lk.x, lk.z).length())))
-			await _snap("%02d_pillar" % n); n += 1
-		var pts: Array = meta.get("paintings", [])
-		if pts.size() > 0:
-			var fp := Vector3(float(pts[0]["pos"][0]), 0.0, float(pts[0]["pos"][2]))
-			var nn := Vector3(float(pts[0]["n"][0]), 0.0, float(pts[0]["n"][1]))
-			var e3 := fp + nn * 1.7
-			_place(e3 + Vector3(0, 0.05, 0), rad_to_deg(atan2(nn.x, nn.z)), 4.0)
-			await _snap("%02d_painting" % n); n += 1
-		var lt: Array = L["lights"]
-		if lt.size() > 0:
-			var lpos := Vector3(float(lt[0]["pos"][0]), 0.0, float(lt[0]["pos"][2]))
-			_place(lpos + Vector3(0, 0.05, 1.5), 0.0, 30.0)
-			await _snap("%02d_lantern" % n); n += 1
-		# the pooja room
-		var pc2 := Vector3(float(L["pooja"]["center"][0]), 0.0, float(L["pooja"]["center"][1]))
-		_place(pc2 + Vector3(0, 0.05, 2.9), 0.0, -14.0)
-		await _snap("%02d_pooja" % n); n += 1
-	# Chaya in front of the camera
-	var base := maze.cell_center(Vector2i(7, 8))
+	# Chaya in front of the camera (on the veranda)
+	var base := maze.cell_center(Vector3i(2, 4, 0))
 	_place(base + Vector3(0, 0.05, 0), 0.0)
 	ghost.global_position = base + Vector3(0, 0.05, -3.2)
 	ghost.rotation.y = PI
@@ -946,11 +1178,9 @@ func _shots_tour() -> void:
 	await _snap("%02d_chaya_far" % n); n += 1
 	ghost.global_position = base + Vector3(0, 0.05, -1.7)
 	await _snap("%02d_chaya_near" % n); n += 1
-	print("[CHAYA-TEST] hair_root ", ghost.hair_root.global_position, " eye ", ghost._eye_glow[0].global_position, " eyeL ", ghost._eye_glow[1].global_position, " visual ", ghost.visual.global_position, " ghost ", ghost.global_position, " head bone ", ghost.skel.global_transform * ghost.skel.get_bone_global_pose(ghost._head).origin)
 	player.face(0.0, 8.0)
 	ghost.global_position = base + Vector3(0, 0.05, -1.05)
 	await _snap("%02d_chaya_face" % n); n += 1
-	# each of her motions, caught mid-move (Mixamo clips once the developer has added them)
 	player.face(0.0, -4.0)
 	ghost.global_position = base + Vector3(0, 0.05, -2.6)
 	print("[CHAYA-TEST] mixamo clips: ", ghost.mixamo_clips)

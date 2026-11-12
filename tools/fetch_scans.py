@@ -25,42 +25,42 @@ PH = "https://api.polyhaven.com/"
 UA = "chaya-game-build/1.0 (Mxyan Games; CC0 asset fetch)"
 
 MODELS = """
-GothicBed_01 vintage_day_bed painted_wooden_cabinet_02 painted_wooden_cabinet GothicCommode_01 chinese_sofa Rockingchair_01
-chinese_armchair round_wooden_table_01 vintage_grandfather_clock_01 chinese_cabinet painted_wooden_bench antique_ceramic_vase_01
-wooden_bookshelf_worn WoodenTable_01 ceramic_pot planter_pot_clay wooden_bucket_01 wicker_basket_02 wicker_basket_01 metal_jug
-brass_vase_01 brass_vase_02 wooden_stool_01 treasure_chest wooden_crate_01 wine_barrel_01 wooden_ladder wooden_broom
-small_wooden_table_01 painted_wooden_chair_02 spinning_wheel_01 vintage_wooden_drawer_01 vintage_oil_lamp carved_wooden_elephant
-brass_diya_lantern food_pomegranate_01 food_apple_01 lemon Lantern_01 ClassicNightstand_01 WoodenTable_02 brass_vase_03 brass_pot_01
-brass_pot_02 wooden_bowl_02 brass_candleholders wooden_candlestick
+GothicBed_01 vintage_day_bed painted_wooden_cabinet_02 painted_wooden_cabinet GothicCommode_01 Rockingchair_01
+vintage_grandfather_clock_01 chinese_cabinet wooden_bookshelf_worn WoodenTable_01 ceramic_pot planter_pot_clay wooden_bucket_01
+wicker_basket_02 wicker_basket_01 metal_jug brass_vase_02 wooden_stool_01 treasure_chest wooden_crate_01 wine_barrel_01 wooden_broom
+small_wooden_table_01 painted_wooden_chair_02 spinning_wheel_01 vintage_oil_lamp brass_diya_lantern food_pomegranate_01 food_apple_01
+lemon Lantern_01 ClassicNightstand_01 WoodenTable_02 brass_vase_03 brass_pot_01 brass_pot_02 wooden_bowl_02 brass_candleholders
+wooden_candlestick
 """.split()
 
-# slot -> Poly Haven texture ids, first one that downloads wins
+# slot -> Poly Haven texture ids, first one that downloads wins (HIRES slots at 2k: the big walls and floors stay sharp)
 TEXTURES = {
-    "plaster_old": ["worn_plaster_wall", "yellow_plaster_02", "plastered_wall_03"],
-    "plaster_yellow": ["rough_plaster_broken", "yellow_plaster", "yellow_plaster_02"],
-    "plaster_blue": ["blue_plaster_weathered", "blue_plaster_wall"],
-    "plaster_red": ["red_plaster_weathered", "peeling_painted_wall"],
-    "plaster_white": ["damaged_plaster", "white_plaster_rough_01", "white_rough_plaster"],
-    "wood_panel": ["wooden_panels", "dark_paneled_wood", "wood_plank_wall"],
-    "wood_carved": ["fine_grained_wood", "rosewood_veneer1", "dark_wood"],
-    "wood_studded": ["wooden_garage_door", "medieval_wood", "wooden_gate"],
-    "wood_shutter": ["wood_shutter", "worn_shutter"],
-    "wood_floor_old": ["old_wood_floor", "wood_floor_worn", "old_wooden_floor_02"],
-    "wood_beam": ["weathered_brown_planks", "dark_wooden_planks", "brown_planks_09"],
+    "wall_planks": ["wood_planks_grey", "wood_planks"],
+    "wall_beige": ["beige_wall_001", "beige_wall_002"],
+    "door_planks": ["wooden_planks", "wood_planks"],
+    "floor_deck": ["wood_floor_deck", "wood_floor_worn"],
     "floor_terracotta": ["patterned_terracotta_tiling", "terracotta_floor_tiles"],
-    "floor_redtile": ["terracotta_floor_tiles", "brick_villa_floor", "clay_floor_001"],
-    "floor_checker": ["checkered_pavement_tiles", "floor_tiles_06"],
-    "floor_clay": ["clay_floor_001", "clay_plaster"],
+    "floor_courtyard": ["red_sandstone_pavement", "brick_pavement_02"],
+    "floor_marble": ["marble_tiles", "marble_01"],
+    "floor_redtile": ["terracotta_floor_tiles", "brick_villa_floor"],
+    "ceiling_planks": ["wood_planks_dirt", "dark_wooden_planks"],
+    "trim_dark": ["dark_wood", "dark_wooden_planks"],
+    "wood_carved": ["fine_grained_wood", "rosewood_veneer1", "dark_wood"],
+    "wood_beam": ["weathered_brown_planks", "dark_wooden_planks"],
+    "wood_shutter": ["wood_shutter", "worn_shutter"],
+    "stone_slab": ["concrete_floor_worn_001", "stone_tiles"],
+    "plinth": ["red_sandstone_wall", "large_sandstone_blocks"],
+    "ground_mud": ["brown_mud_dry", "dry_mud_field_001", "brown_mud"],
+    "roof_tiles": ["clay_roof_tiles_02", "clay_roof_tiles"],
+    "stair_planks": ["stair_planks", "wood_planks"],
     "husk": ["thatch_roof_angled", "riet_01", "bark_brown_02"],
     "powder": ["red_sand", "red_laterite_soil_stones"],
     "cloth_red": ["quatrefoil_jacquard_fabric", "velour_velvet"],
-    # full photo-scanned PBR sets (colour, normal, roughness, ambient occlusion) for the rest of the house
-    "trim_dark": ["dark_wood", "dark_wooden_planks"],
-    "ceiling_planks": ["wood_planks_dirt", "dark_wooden_planks"],
-    "stone_slab": ["concrete_floor_worn_001", "stone_tiles"],
     "clay_pbr": ["clay_plaster", "clay_floor_001"],
     "hessian": ["hessian_230", "hessian_380"],
 }
+HIRES = {"wall_planks", "wall_beige", "door_planks", "floor_deck", "floor_terracotta", "floor_courtyard"}
+SKIES = ["satara_night", "rogland_clear_night", "kloppenheim_02", "dikhololo_night", "moonless_golf"]
 COMMONS = "https://commons.wikimedia.org/w/api.php"
 
 
@@ -120,7 +120,7 @@ def texture(slot, ids):
 
             def url_of(keys):
                 for k in keys:
-                    for res in ("1k", "2k"):
+                    for res in (("2k", "1k") if slot in HIRES else ("1k", "2k")):
                         f = files.get(k, {}).get(res, {})
                         if "jpg" in f:
                             return f["jpg"]["url"]
@@ -144,6 +144,23 @@ def texture(slot, ids):
             log("  texture failed", slot, aid, e)
     log("TEXTURE MISSING", slot)
     return slot, None
+
+
+def sky():
+    """A night sky (HDRI photographed by Poly Haven, CC0) over the open courtyard and the village outside."""
+    for aid in SKIES:
+        try:
+            f = jget(PH + "files/" + aid)
+            h = f.get("hdri", {})
+            for res in ("1k", "2k"):
+                u = h.get(res, {}).get("hdr", {}).get("url")
+                if u:
+                    save(os.path.join(OUT, "sky", "sky.hdr"), http(u))
+                    log("sky <- %s (%s)" % (aid, res))
+                    return aid
+        except Exception as e:      # noqa: BLE001
+            log("  sky failed", aid, e)
+    return None
 
 
 def paintings():
@@ -194,17 +211,17 @@ def main():
         ms = list(ex.map(model, MODELS))
         ts = list(ex.map(lambda kv: texture(*kv), TEXTURES.items()))
     arts = []
+    sky_id = None
     try:
-        arts = paintings()
+        sky_id = sky()
     except Exception as e:      # noqa: BLE001
-        log("paintings failed", e)
+        log("sky failed", e)
     ok = [m for m in ms if m[1]]
     lines = ["- Furniture, pots, lamps, the candle and the brass ritual vessels are real scanned / hand-crafted models from Poly Haven "
              "(CC0, https://polyhaven.com/models): " + ", ".join("%s" % n for _, n, _ in ok) + "."]
     lines.append("- Extra house surfaces from Poly Haven (CC0): " + ", ".join("%s (%s)" % (a, s) for s, a in ts if a) + ".")
-    if arts:
-        lines.append("- Paintings on the walls: Raja Ravi Varma (1848-1906), public domain, via Wikimedia Commons: "
-                     + "; ".join(t.replace("File:", "") for t in arts) + ".")
+    if sky_id:
+        lines.append("- Night sky: Poly Haven HDRI '%s' (CC0)." % sky_id)
     open(os.path.join(OUT, "CREDITS_SCANS.md"), "w").write("\n".join(lines) + "\n")
     json.dump({"models": [m[0] for m in ok], "missing_models": [m[0] for m in ms if not m[1]], "textures": dict(ts), "paintings": arts},
               open(os.path.join(OUT, "manifest.json"), "w"), indent=1)

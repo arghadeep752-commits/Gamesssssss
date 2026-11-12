@@ -10,6 +10,7 @@ root = sys.argv[1] if len(sys.argv) > 1 else "assets/downloaded"
 base_limit = int(sys.argv[2]) if len(sys.argv) > 2 else 1024
 # scanned models seen close up (the ritual vessels, the player's candle) keep more detail
 CLOSE_UP = ("brass_vase_03", "brass_pot_01", "brass_pot_02", "wooden_bowl_02", "brass_candleholders", "wooden_candlestick")
+HIRES = ("wall_planks", "wall_beige", "door_planks", "floor_deck", "floor_terracotta", "floor_courtyard")
 count = 0
 for path in glob.glob(os.path.join(root, "**", "*.import"), recursive=True):
     src = path[:-len(".import")]
@@ -25,6 +26,8 @@ for path in glob.glob(os.path.join(root, "**", "*.import"), recursive=True):
         limit = min(limit, 512)                 # ambient occlusion is soft: half size is plenty
     elif "_diff_" in name:
         limit = max(limit, 1024)                # scanned furniture: full-size colour maps, sharp up close
+    if os.path.basename(os.path.dirname(src)) in HIRES and name.startswith("diff."):
+        limit = 2048                            # the big walls and floors: sharp colour up close
     if "head_color" in name:
         limit = 2048
     sets = {

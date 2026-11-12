@@ -746,8 +746,8 @@ func _pick_patrol_target() -> void:
 	var cells: Array = maze.open_cells
 	var here := maze.world_to_cell(global_position)
 	for _i in range(12):
-		var c: Vector2i = cells[randi() % cells.size()]
-		if abs(c.x - here.x) + abs(c.y - here.y) >= 5:
+		var c: Vector3i = cells[randi() % cells.size()]
+		if maze.cell_dist(c, here) >= 5:
 			_set_target(maze.cell_center(c))
 			return
 	_set_target(maze.cell_center(cells[randi() % cells.size()]))
@@ -858,7 +858,8 @@ func _physics_process(dt: float) -> void:
 				_last_seen = player.global_position
 				_lost = 0.0
 				_repath -= dt
-				if dist_p < 3.5 or _line_clear_to(player.global_position):
+				var same_floor := absf(player.global_position.y - global_position.y) < 1.2
+				if same_floor and (dist_p < 3.5 or _line_clear_to(player.global_position)):
 					_follow_path(sp3, dt, player.global_position)
 				else:
 					if _repath <= 0.0:

@@ -13,6 +13,7 @@ var _side := 1.0
 var _hold := 0.0
 var _lock_cd := 0.0
 var _closing_sound := false
+var forced := false                  # the cutscene / the ending moves this door itself
 
 func _closest_actor() -> Node3D:
 	var best: Node3D = null
@@ -22,6 +23,8 @@ func _closest_actor() -> Node3D:
 		if a == null:
 			continue
 		var p: Vector3 = a.global_position
+		if absf(p.y - global_position.y) > 1.6:
+			continue                     # someone on the other floor
 		p.y = mid.y
 		var d := p.distance_to(mid)
 		if d < bd:
@@ -29,7 +32,27 @@ func _closest_actor() -> Node3D:
 			best = a
 	return best
 
+## Swing the door to `deg` (0 = shut) on its own, ignoring who walks by, until release().
+func force(deg: float, speed_sound := true) -> void:
+	forced = true
+	var t := deg_to_rad(deg)
+	if speed_sound and absf(t) > 0.05 and absf(_target) < 0.05:
+		Sfx.play_at("door_open", get_parent(), global_position + leaf_dir * 0.6, 0.0, 0.85)
+	elif speed_sound and absf(t) < 0.05 and absf(_target) > 0.05:
+		_closing_sound = true
+	_target = t
+
+func release() -> void:
+	forced = false
+
 func _process(dt: float) -> void:
+	if forced:
+		_cur = move_toward(_cur, _target, dt * 1.6)
+		rotation.y = _cur
+		if _closing_sound and absf(_target) < 0.05 and absf(_cur) < 0.02:
+			_closing_sound = false
+			Sfx.play_at("door_close", get_parent(), global_position + leaf_dir * 0.6, 2.0, 0.8)
+		return
 	var who := _closest_actor()
 	_lock_cd = maxf(0.0, _lock_cd - dt)
 	if who != null and locked:

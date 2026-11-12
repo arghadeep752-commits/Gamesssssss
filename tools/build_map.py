@@ -32,7 +32,12 @@ print("scanned models:", "yes" if SCANS_OK else "NO (hand-modelled fallback)", o
 
 t0 = time.time()
 L = json.load(open(layout_path))
-objs, meta = mazegeo.build(L)
+HOUSE = L.get("type") == "house"
+if HOUSE:
+    import housegeo  # noqa: E402
+    objs, meta = housegeo.build(L)
+else:
+    objs, meta = mazegeo.build(L)
 print("geometry: %d objects, %d triangles" % (len(objs), sum(len(i) // 3 for o in objs for (_, _, _, i) in o.prims.values())))
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -47,8 +52,12 @@ BASE_COLOR = {
     "kumkum_red": (0.80, 0.04, 0.03), "camphor_white": (0.92, 0.92, 0.88), "copper": (0.72, 0.40, 0.25),
     "leaf_green": (0.14, 0.32, 0.10), "lantern_glow": (1.0, 0.6, 0.25), "lantern_metal": (0.10, 0.09, 0.08),
     "rope": (0.45, 0.35, 0.22),
+    "floor_courtyard": (0.5, 0.3, 0.22), "floor_marble": (0.85, 0.84, 0.8), "ext_plaster": (0.78, 0.72, 0.62),
+    "ext_plinth": (0.5, 0.32, 0.24), "roof_top": (0.45, 0.43, 0.4), "roof_tiles": (0.55, 0.25, 0.15), "ground_mud": (0.3, 0.24, 0.18),
+    "stair_wood": (0.3, 0.2, 0.12), "floor_terracotta": (0.5, 0.25, 0.15), "floor_redtile": (0.45, 0.2, 0.13),
+    "sindoor": (0.95, 0.32, 0.04), "silver": (0.8, 0.8, 0.82), "marigold": (1.0, 0.5, 0.02), "shutter_wood": (0.25, 0.17, 0.1),
 }
-METAL = {"brass", "copper", "lantern_metal"}
+METAL = {"brass", "copper", "lantern_metal", "silver"}
 mat_cache = {}
 
 
@@ -753,9 +762,11 @@ def place_lanterns():
         e = new_prop("lamp_%d" % li)
         e.location = (x, -z, 0.0)
         bottom = y - 0.4
+        fy = L.get("floor_h", 0.0) * round((y - (H_ - 0.55)) / L["floor_h"]) if L.get("floor_h") else 0.0
         scan_props.instance("lantern", "lamp_%d_lantern" % li, prop_collection, parent=e, loc=(0.0, 0.0, bottom), rot_z=rng.uniform(0, TAU))
         top = bottom + t[1].z
-        p_cyl(e, "lamp_%d_chain" % li, 0.004, (H_ - 0.09) - top + 0.01, (0.0, 0.0, (top + H_ - 0.09) / 2), "lantern_metal", verts=6, bevel=0.0)
+        ceil = fy + H_ - 0.09
+        p_cyl(e, "lamp_%d_chain" % li, 0.004, ceil - top + 0.01, (0.0, 0.0, (top + ceil) / 2), "lantern_metal", verts=6, bevel=0.0)
         p_sphere(e, "lamp_%d_flame" % li, 0.011, (1.0, 1.0, 1.9), (0.0, 0.0, bottom + 0.085), "lantern_glow", seg=10, rings=6)
         n += 1
     print("hurricane lanterns hung: %d" % n)
@@ -779,7 +790,7 @@ def place_pedestals():
         yaw = math.atan2(fx, fz)
         e = new_prop("pedestal_%s" % it["id"])
         scan_props.instance(key, "pedestal_%s_%s" % (it["id"], key), prop_collection, parent=e)
-        e.location = (x, -z, 0.0)
+        e.location = (x, -z, top - 0.74)
         e.rotation_euler = (0.0, 0.0, yaw)
         it["ped"] = [round(t[1].x, 3), round(t[1].y, 3)]
         it["ped_yaw"] = math.degrees(yaw)
@@ -1005,9 +1016,292 @@ def place_paintings(placed):
     print("paintings hung: %d" % k)
 
 
+
+# ----------------------------------------------------------------------------------------------- the courtyard house
+PLAN_H = {
+    "bedroom": ["bed", "almirah", "commode", "cabinet_low", "daybed"],
+    "kitchen": ["rack", "kitchen_table", "pots", "bucket_basket"],
+    "store": ["chest", "crates", "barrel", "pots"],
+    "hall": ["daybed", "clock", "rocking", "carved_cabinet"],
+    "study": ["desk", "bookshelf", "charkha"],
+}
+MAX_H = {"bedroom": 3, "kitchen": 3, "store": 2, "hall": 3, "study": 2}
+
+
+def house_edges():
+    """(floor, (i, j), (di, dj)) -> edge, for both sides of every edge."""
+    out = {}
+    for e in L["edges"]:
+        if e["b"] is None:
+            out[(e["f"], tuple(e["a"]), tuple(e["side"]))] = e
+        else:
+            a, b = tuple(e["a"]), tuple(e["b"])
+            d = (b[0] - a[0], b[1] - a[1])
+            out[(e["f"], a, d)] = e
+            out[(e["f"], b, (-d[0], -d[1]))] = e
+    return out
+
+
+def place_house_props():
+    """A few real scanned pieces per room, against plain walls: clean rooms, nothing in the way."""
+    S_, x0_, z0_, FH = L["cell"], L["x0"], L["z0"], L["floor_h"]
+    E = house_edges()
+    keep = {0: [], 1: []}
+    for e in L["edges"]:
+        if e["kind"] in ("door", "arch", "pooja", "open", "wide", "front", "exit"):
+            i, j = e["a"]
+            if e["b"] is None:
+                di, dj = e["side"]
+            else:
+                di, dj = e["b"][0] - i, e["b"][1] - j
+            mx = x0_ + (i + 0.5 + di * 0.5) * S_
+            mz = z0_ + (j + 0.5 + dj * 0.5) * S_
+            if e["o"] == "h":
+                keep[e["f"]].append((mx - 1.0, mx + 1.0, mz - 1.2, mz + 1.2))
+            else:
+                keep[e["f"]].append((mx - 1.2, mx + 1.2, mz - 1.0, mz + 1.0))
+    for it in meta["items"]:
+        x, _, z = it["pos"]
+        keep[it.get("floor", 0)].append((x - 0.75, x + 0.75, z - 0.75, z + 0.75))
+    for (px, pz, py) in meta.get("pillars", []):
+        keep[0 if py < 1 else 1].append((px - 0.3, px + 0.3, pz - 0.3, pz + 0.3))
+    for c in L["stairs"]["cells"] + [L["stairs"]["foot"][:2]]:
+        keep[0].append((x0_ + c[0] * S_, x0_ + (c[0] + 1) * S_, z0_ + c[1] * S_, z0_ + (c[1] + 1) * S_))
+    for (f, o, p, uc, side) in meta.get("windows", []):
+        if o == "h":
+            keep[f].append((uc - 0.75, uc + 0.75, p - 0.9, p + 0.9))
+        else:
+            keep[f].append((p - 0.9, p + 0.9, uc - 0.75, uc + 0.75))
+    off = S_ / 2 - L["wall_t"] / 2 - 0.45
+    placed = {0: [], 1: []}
+    rnd = random.Random(9)
+    k_room = {}
+    for room in L["rooms"]:
+        kind = room["kind"]
+        if kind not in PLAN_H:
+            continue
+        f = room["floor"]
+        walls = []
+        for (i, j) in room["cells"]:
+            for d in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+                e = E.get((f, (i, j), d))
+                if e and e["kind"] in ("wall", "outer") and not e.get("window"):
+                    walls.append((i, j, d[0], d[1]))
+        rnd.shuffle(walls)
+        plan = PLAN_H[kind]
+        start = k_room.get(kind, 0)
+        k_room[kind] = start + 1
+        n_done = 0
+        for step in range(len(plan)):
+            if n_done >= MAX_H[kind] or not walls:
+                break
+            gname = plan[(start + step) % len(plan)]
+            lay = group_layout(gname)
+            if lay is None:
+                continue
+            pieces, rect = lay
+            ok = None
+            for (i, j, di, dj) in walls:
+                yaw = math.atan2(-di, -dj)
+                along = (dj, di)
+                for t in (0.0, -0.45, 0.45, -0.8, 0.8):
+                    x = x0_ + (i + 0.5) * S_ + di * off + along[0] * t
+                    z = z0_ + (j + 0.5) * S_ + dj * off + along[1] * t
+                    wr = world_rect(x, z, yaw, rect)
+                    if any(overlaps(wr, ko) for ko in keep[f]) or any(overlaps(wr, pr, 0.1) for pr in placed[f]):
+                        continue
+                    ok = (x, z, yaw, wr, (i, j, di, dj))
+                    break
+                if ok:
+                    break
+            if not ok:
+                continue
+            x, z, yaw, wr, wall = ok
+            walls.remove(wall)
+            e = new_prop("prop_%s_%d_%s" % (room["name"], n_done, gname))
+            for (key, px, py, pz, ang) in pieces:
+                scan_props.instance(key, "%s_%s" % (e.name, key), prop_collection, parent=e, loc=(px, py, pz), rot_z=ang)
+            e.location = (x, -z, f * FH)
+            e.rotation_euler = (0.0, 0.0, yaw)
+            placed[f].append(wr)
+            xmin, xmax, ymin, ymax, h = rect
+            prop_meta.append({"name": e.name, "kind": gname, "pos": [x, z], "y": f * FH, "yaw": math.degrees(yaw),
+                              "size": [xmax - xmin, ymax - ymin], "h": h, "back": ymax, "cx": (xmin + xmax) / 2})
+            n_done += 1
+        print("  %-12s %-8s floor %d: %d groups" % (room["name"], kind, f, n_done))
+    print("house props placed: %d" % len(prop_meta))
+
+
+def build_murti():
+    """Hanuman ji as he is worshipped in village shrines: standing, the gada on his left shoulder, the right hand raised
+    in blessing, coated in shining sindoor, silver crown and eyes, a marigold garland - before a brass arch."""
+    mp = meta["murti"]["pos"]
+    base = (mp[0], -mp[2], mp[1])                    # Blender coordinates of the top of the platform
+    root = new_prop("murti")
+    root.location = base
+    # figure skeleton (front = -Y, up = +Z, metres from the feet)
+    V = [(0, 0, 0.42), (0, 0.005, 0.52), (0, 0, 0.64), (0, -0.005, 0.73), (0, -0.012, 0.8), (0, -0.075, 0.785),
+         (0.065, 0, 0.42), (0.085, -0.035, 0.22), (0.09, -0.005, 0.045), (0.095, -0.07, 0.022),
+         (-0.065, 0, 0.42), (-0.085, -0.035, 0.22), (-0.09, -0.005, 0.045), (-0.095, -0.07, 0.022),
+         (0.11, 0, 0.69), (0.175, -0.03, 0.56), (0.135, -0.075, 0.625),
+         (-0.11, 0, 0.69), (-0.195, -0.04, 0.6), (-0.175, -0.095, 0.745),
+         (0, 0.07, 0.43), (-0.05, 0.13, 0.55), (-0.1, 0.12, 0.75), (-0.1, 0.08, 0.93), (-0.04, 0.06, 1.0), (0.0, 0.07, 0.965)]
+    Ed = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (0, 6), (6, 7), (7, 8), (8, 9), (0, 10), (10, 11), (11, 12), (12, 13),
+          (2, 14), (14, 15), (15, 16), (2, 17), (17, 18), (18, 19), (0, 20), (20, 21), (21, 22), (22, 23), (23, 24), (24, 25)]
+    Rr = [0.088, 0.078, 0.1, 0.042, 0.072, 0.042, 0.062, 0.046, 0.034, 0.03, 0.062, 0.046, 0.034, 0.03,
+          0.052, 0.036, 0.032, 0.052, 0.035, 0.031, 0.03, 0.027, 0.025, 0.022, 0.018, 0.013]
+    me = bpy.data.meshes.new("murti_body")
+    me.from_pydata(V, Ed, [])
+    me.update()
+    ob = bpy.data.objects.new("murti_body", me)
+    prop_collection.objects.link(ob)
+    ob.parent = root
+    sk = ob.modifiers.new("skin", "SKIN")
+    try:
+        if len(me.skin_vertices) == 0:
+            for o2 in bpy.context.view_layer.objects:
+                o2.select_set(False)
+            ob.select_set(True)
+            bpy.context.view_layer.objects.active = ob
+            bpy.ops.mesh.customdata_skin_add()
+        sv = me.skin_vertices[0].data
+        for i, r in enumerate(Rr):
+            sv[i].radius = (r, r * 0.92)
+        sv[0].use_root = True
+    except Exception as ex:     # noqa: BLE001
+        print("skin radii not set:", ex)
+    sub = ob.modifiers.new("sub", "SUBSURF")
+    sub.levels = 2
+    sub.render_levels = 2
+    tex = bpy.data.textures.new("sindoor_lumps", "CLOUDS")
+    tex.noise_scale = 0.035
+    dis = ob.modifiers.new("lumps", "DISPLACE")
+    dis.texture = tex
+    dis.strength = 0.005
+    dg = bpy.context.evaluated_depsgraph_get()
+    m2 = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
+    ob.modifiers.clear()
+    ob.data = m2
+    m2.materials.clear()
+    m2.materials.append(get_material("sindoor"))
+    for pl in m2.polygons:
+        pl.use_smooth = True
+    print("murti body: %d tris" % sum(len(pl.vertices) - 2 for pl in m2.polygons))
+    # crown, eyes, gada, garland, lotus base, brass arch
+    p_lathe(root, "murti_crown", [(0.0, 0.83), (0.066, 0.83), (0.07, 0.85), (0.055, 0.88), (0.06, 0.9), (0.04, 0.93), (0.022, 0.97),
+                                  (0.008, 1.0), (0.0, 1.01)], (0, -0.012, 0.0), "silver", segments=24)
+    for sx in (-1, 1):
+        p_sphere(root, "murti_eye", 0.013, (1.0, 0.7, 1.0), (sx * 0.026, -0.072, 0.815), "silver", seg=12, rings=8)
+    # the gada: handle in the left hand, head resting behind the left shoulder
+    h0 = (0.135, -0.075, 0.6)
+    h1 = (0.17, 0.06, 0.9)
+    dv = (h1[0] - h0[0], h1[1] - h0[1], h1[2] - h0[2])
+    ln = math.sqrt(sum(c * c for c in dv))
+    mid = tuple((a + b) / 2 for a, b in zip(h0, h1))
+    rot_x = -math.atan2(dv[1], dv[2])
+    rot_y = math.atan2(dv[0], math.hypot(dv[1], dv[2]))
+    p_cyl(root, "murti_gada_handle", 0.014, ln, mid, "brass", verts=12, bevel=0.0, rot=(rot_x, rot_y, 0.0))
+    p_sphere(root, "murti_gada_head", 0.075, (1.0, 1.0, 1.15), h1, "brass", seg=20, rings=14)
+    for k in range(4):
+        p_torus(root, "murti_gada_ring", 0.07 * math.sin(math.pi * (k + 1) / 5), 0.006,
+                (h1[0], h1[1], h1[2] - 0.075 * 1.15 + 0.15 * 1.15 * (k + 1) / 5), "brass", rot=(0.0, 0.0, 0.0))
+    p_sphere(root, "murti_gada_tip", 0.018, (1, 1, 1.4), (h1[0], h1[1], h1[2] + 0.095), "brass", seg=10, rings=8)
+    # marigold garland: a loop of flowers from the neck down over the chest
+    for k in range(26):
+        a = math.pi * 2 * k / 26
+        x = 0.07 * math.sin(a)
+        zz = 0.71 - 0.11 * (1 - math.cos(a)) / 2 * 1.0
+        y = -0.06 - 0.02 * (1 - math.cos(a)) / 2 if math.cos(a) < 0.95 else -0.035
+        p_sphere(root, "murti_flower", 0.017, (1, 1, 0.8), (x, y, zz), "marigold", seg=10, rings=6)
+    p_lathe(root, "murti_lotus", [(0.0, -0.06), (0.2, -0.06), (0.23, -0.04), (0.2, -0.02), (0.16, 0.0), (0.0, 0.0)], (0, 0, 0.0), "sindoor", segments=28)
+    # brass arch (prabhavali) behind him
+    for k in range(17):
+        a = math.pi * k / 16
+        x = 0.36 * math.cos(a)
+        zz = 0.6 + 0.48 * math.sin(a)
+        p_sphere(root, "murti_arch_bead", 0.03, (1, 0.6, 1), (x, 0.14, zz), "brass", seg=10, rings=6)
+    p_box(root, "murti_arch_post", (0.05, 0.05, 0.6), (-0.36, 0.14, 0.3), "brass", 0.008)
+    p_box(root, "murti_arch_post", (0.05, 0.05, 0.6), (0.36, 0.14, 0.3), "brass", 0.008)
+    print("Hanuman ji's murti in place")
+
+
+def dress_pooja_house():
+    mp = meta["murti"]["pos"]
+    mx, my, mz = mp
+    for k, sx in enumerate((-0.62, 0.62)):
+        if tmpl("brass_vase2") is not None:
+            e = new_prop("pooja_vase_%d" % k)
+            e.location = (mx + sx, -(mz + 0.25), 0.32)
+            scan_props.instance("brass_vase2", "pooja_vase_%d_v" % k, prop_collection, parent=e, rot_z=rng.uniform(0, TAU))
+    for k, (dx, key) in enumerate(((-0.3, "pomegranate"), (0.0, "apple"), (0.3, "lemon"))):
+        if tmpl(key) is not None:
+            e = new_prop("offering_%d" % k)
+            e.location = (mx + dx, -(mz + 0.3), 0.32)
+            scan_props.instance(key, "offering_%d_f" % k, prop_collection, parent=e, rot_z=rng.uniform(0, TAU))
+    t = tmpl("diya_lantern")
+    if t is not None:
+        H_ = L["wall_h"]
+        e = new_prop("pooja_lamp_0")
+        e.location = (mx + 0.75, -(mz + 0.75), 0.0)
+        bottom = 1.85
+        scan_props.instance("diya_lantern", "pooja_lamp_0_l", prop_collection, parent=e, loc=(0, 0, bottom))
+        top = bottom + t[1].z
+        p_cyl(e, "pooja_lamp_0_chain", 0.004, (H_ - 0.09) - top + 0.01, (0.0, 0.0, (top + H_ - 0.09) / 2), "lantern_metal", verts=6, bevel=0.0)
+        p_sphere(e, "pooja_lamp_0_flame", 0.008, (1.0, 1.0, 1.8), (0.0, 0.0, bottom + t[1].z * 0.3), "lantern_glow", seg=10, rings=6)
+    scan_meta["extra_lights"].append([mx, 1.6, mz + 0.9, 0.9, 3.4])
+
+
+def build_tulsi():
+    """The tulsi plant in its terracotta pot on the chaura in the middle of the courtyard."""
+    tx, ty, tz = meta["tulsi"]["pos"]
+    root = new_prop("tulsi_plant")
+    root.location = (tx, -tz, ty)
+    p_lathe(root, "tulsi_pot", [(0.0, 0.0), (0.11, 0.0), (0.15, 0.07), (0.16, 0.16), (0.17, 0.2), (0.15, 0.21), (0.0, 0.2)],
+            (0, 0, 0), "clay", segments=20)
+    rr = random.Random(3)
+    for s in range(7):
+        a = rr.uniform(0, TAU)
+        lean = rr.uniform(0.05, 0.3)
+        h = rr.uniform(0.35, 0.55)
+        x1, y1 = math.cos(a) * lean * h, math.sin(a) * lean * h
+        p_cyl(root, "tulsi_stem", 0.006, h, (x1 / 2, y1 / 2, 0.2 + h / 2), "trim_wood", verts=6, bevel=0.0,
+              rot=(-math.atan2(y1, h), math.atan2(x1, h), 0.0))
+        for k in range(16):
+            t = rr.uniform(0.25, 1.0)
+            cxp, cyp, czp = x1 * t, y1 * t, 0.2 + h * t
+            b = rr.uniform(0, TAU)
+            p_box(root, "tulsi_leaf", (0.032, 0.002, 0.018), (cxp + math.cos(b) * 0.025, cyp + math.sin(b) * 0.025, czp),
+                  "leaf_green", 0.0, rot=(rr.uniform(-0.6, 0.6), rr.uniform(-0.4, 0.4), b))
+
+
+def front_lantern():
+    """A hurricane lantern on a bracket by the front door: the only light outside the house."""
+    fd = meta.get("front_door") or {}
+    c = fd.get("center")
+    if not c:
+        return
+    x, y, z = c[0] + 1.25, 0.0, c[2] + L["wall_t"] / 2 + 0.3
+    e = new_prop("lamp_front")
+    e.location = (x, -z, 0.0)
+    if tmpl("lantern") is not None:
+        scan_props.instance("lantern", "lamp_front_lantern", prop_collection, parent=e, loc=(0, 0, 2.05))
+    p_box(e, "lamp_front_bracket", (0.03, 0.34, 0.03), (0.0, 0.15, 2.42), "lantern_metal", 0.0)
+    p_sphere(e, "lamp_front_flame", 0.011, (1.0, 1.0, 1.9), (0.0, 0.0, 2.135), "lantern_glow", seg=10, rings=6)
+    scan_meta["extra_lights"].append([x, 2.2, z, 1.8, 7.5])
+
+
 import glob  # noqa: E402
 
-if SCANS_OK:
+if SCANS_OK and HOUSE:
+    for fn in (scan_items, place_house_props, place_lanterns, place_pedestals, dress_pooja_house, build_murti, build_tulsi,
+               front_lantern, scan_candle):
+        try:
+            fn()
+        except Exception as ex:     # noqa: BLE001
+            import traceback
+            traceback.print_exc()
+            print("%s FAILED: %s" % (fn.__name__, ex))
+elif SCANS_OK:
     try:
         scan_items()
     except Exception as ex:     # noqa: BLE001
@@ -1034,7 +1328,7 @@ if SCANS_OK:
         import traceback
         traceback.print_exc()
         print("PAINTINGS FAILED:", ex)
-else:
+elif not HOUSE:
     place_procedural_props()
 
 # ----------------------------------------------------------------------------------------------- AO bake

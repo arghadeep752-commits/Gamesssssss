@@ -120,6 +120,10 @@ func _set_fade(v: float) -> void:
 func hide_controls() -> void:
 	_layer.visible = false
 
+func show_controls() -> void:
+	_layer.visible = true
+	reset_touches()
+
 func _process(dt: float) -> void:
 	if highlight != "" or guide_on:
 		_pulse += dt
