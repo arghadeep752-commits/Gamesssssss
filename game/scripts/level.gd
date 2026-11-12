@@ -114,6 +114,7 @@ func _build_environment() -> void:
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.03, 0.025, 0.025)
 	env.fog_density = 0.038
+	env.fog_sky_affect = 0.0             # the stars stay clear above the fog
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.1
 	env.adjustment_enabled = true
@@ -350,9 +351,9 @@ func _build_lights() -> void:
 	if L.get("type", "") == "house":
 		var moon := SpotLight3D.new()
 		moon.light_color = Color(0.55, 0.65, 0.95)
-		moon.light_energy = 2.2
-		moon.spot_range = 16.0
-		moon.spot_angle = 17.0
+		moon.light_energy = 5.0
+		moon.spot_range = 30.0
+		moon.spot_angle = 13.0
 		moon.spot_attenuation = 0.4
 		var t: Array = L["tulsi"]
 		moon.position = Vector3(float(t[0]) - 1.0, 13.0, float(t[1]) + 1.5)
@@ -759,6 +760,9 @@ func _cutscene() -> void:
 	moon.spot_range = 40.0
 	moon.spot_angle = 24.0
 	moon.spot_attenuation = 0.3
+	moon.shadow_enabled = true                         # the porch roof and the chajjas throw their shadows
+	moon.shadow_bias = 0.3
+	moon.shadow_normal_bias = 4.0
 	add_child(moon)
 	moon.global_position = Vector3(-6.0, 14.0, dz + 16.0)
 	moon.look_at(Vector3(0.0, 3.0, dz - 1.0), Vector3.UP)

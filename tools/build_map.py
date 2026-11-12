@@ -55,7 +55,8 @@ BASE_COLOR = {
     "floor_courtyard": (0.5, 0.3, 0.22), "floor_marble": (0.85, 0.84, 0.8), "ext_plaster": (0.78, 0.72, 0.62),
     "ext_plinth": (0.5, 0.32, 0.24), "roof_top": (0.45, 0.43, 0.4), "roof_tiles": (0.55, 0.25, 0.15), "ground_mud": (0.3, 0.24, 0.18),
     "stair_wood": (0.3, 0.2, 0.12), "floor_terracotta": (0.5, 0.25, 0.15), "floor_redtile": (0.45, 0.2, 0.13),
-    "sindoor": (0.95, 0.32, 0.04), "silver": (0.8, 0.8, 0.82), "marigold": (1.0, 0.5, 0.02), "shutter_wood": (0.25, 0.17, 0.1),
+    "sindoor": (0.8, 0.13, 0.014), "silver": (0.8, 0.8, 0.82), "marigold": (1.0, 0.45, 0.02), "shutter_wood": (0.25, 0.17, 0.1),
+    "geru": (0.42, 0.11, 0.06), "wick": (0.03, 0.028, 0.025), "sindoor_old": (0.42, 0.055, 0.01),
 }
 METAL = {"brass", "copper", "lantern_metal", "silver"}
 mat_cache = {}
@@ -548,7 +549,7 @@ SCAN = {
     "pomegranate": ("food_pomegranate_01", 1500, 0, False, None, 0.1),
     "apple": ("food_apple_01", 1500, 0, False, None, 0.08),
     "lemon": ("lemon", 1000, 0, False, None, 0.065),
-    "lantern": ("Lantern_01", 3500, 0, False, None, 0.32),
+    "lantern": ("Lantern_01", 1500, 0, False, None, 0.32),
     "ped_a": ("ClassicNightstand_01", 2000, 0, False, None, 0.74),
     "ped_b": ("WoodenTable_02", 1514, 0, False, None, 0.74),
 }
@@ -1133,122 +1134,46 @@ def place_house_props():
 
 
 def build_murti():
-    """Hanuman ji as he is worshipped in village shrines: standing, the gada on his left shoulder, the right hand raised
-    in blessing, coated in shining sindoor, silver crown and eyes, a marigold garland - before a brass arch."""
+    """Hanuman ji as village shrines keep him: coated in shining sindoor on his stone slab, silver mukut, gada and eyes,
+    a marigold mala - standing in a geru-red niche on the wall of the pooja ghar (tools/murti.py)."""
+    import murti
     mp = meta["murti"]["pos"]
-    base = (mp[0], -mp[2], mp[1])                    # Blender coordinates of the top of the platform
     root = new_prop("murti")
-    root.location = base
-    # figure skeleton (front = -Y, up = +Z, metres from the feet)
-    V = [(0, 0, 0.42), (0, 0.005, 0.52), (0, 0, 0.64), (0, -0.005, 0.73), (0, -0.012, 0.8), (0, -0.075, 0.785),
-         (0.065, 0, 0.42), (0.085, -0.035, 0.22), (0.09, -0.005, 0.045), (0.095, -0.07, 0.022),
-         (-0.065, 0, 0.42), (-0.085, -0.035, 0.22), (-0.09, -0.005, 0.045), (-0.095, -0.07, 0.022),
-         (0.11, 0, 0.69), (0.175, -0.03, 0.56), (0.135, -0.075, 0.625),
-         (-0.11, 0, 0.69), (-0.195, -0.04, 0.6), (-0.175, -0.095, 0.745),
-         (0, 0.07, 0.43), (-0.05, 0.13, 0.55), (-0.1, 0.12, 0.75), (-0.1, 0.08, 0.93), (-0.04, 0.06, 1.0), (0.0, 0.07, 0.965)]
-    Ed = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (0, 6), (6, 7), (7, 8), (8, 9), (0, 10), (10, 11), (11, 12), (12, 13),
-          (2, 14), (14, 15), (15, 16), (2, 17), (17, 18), (18, 19), (0, 20), (20, 21), (21, 22), (22, 23), (23, 24), (24, 25)]
-    Rr = [0.088, 0.078, 0.1, 0.042, 0.072, 0.042, 0.062, 0.046, 0.034, 0.03, 0.062, 0.046, 0.034, 0.03,
-          0.052, 0.036, 0.032, 0.052, 0.035, 0.031, 0.03, 0.027, 0.025, 0.022, 0.018, 0.013]
-    me = bpy.data.meshes.new("murti_body")
-    me.from_pydata(V, Ed, [])
-    me.update()
-    ob = bpy.data.objects.new("murti_body", me)
-    prop_collection.objects.link(ob)
-    ob.parent = root
-    sk = ob.modifiers.new("skin", "SKIN")
-    try:
-        if len(me.skin_vertices) == 0:
-            for o2 in bpy.context.view_layer.objects:
-                o2.select_set(False)
-            ob.select_set(True)
-            bpy.context.view_layer.objects.active = ob
-            bpy.ops.mesh.customdata_skin_add()
-        sv = me.skin_vertices[0].data
-        for i, r in enumerate(Rr):
-            sv[i].radius = (r, r * 0.92)
-        sv[0].use_root = True
-    except Exception as ex:     # noqa: BLE001
-        print("skin radii not set:", ex)
-    sub = ob.modifiers.new("sub", "SUBSURF")
-    sub.levels = 2
-    sub.render_levels = 2
-    tex = bpy.data.textures.new("sindoor_lumps", "CLOUDS")
-    tex.noise_scale = 0.035
-    dis = ob.modifiers.new("lumps", "DISPLACE")
-    dis.texture = tex
-    dis.strength = 0.005
-    dg = bpy.context.evaluated_depsgraph_get()
-    m2 = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
-    ob.modifiers.clear()
-    ob.data = m2
-    m2.materials.clear()
-    m2.materials.append(get_material("sindoor"))
-    for pl in m2.polygons:
-        pl.use_smooth = True
-    print("murti body: %d tris" % sum(len(pl.vertices) - 2 for pl in m2.polygons))
-    # crown, eyes, gada, garland, lotus base, brass arch
-    p_lathe(root, "murti_crown", [(0.0, 0.83), (0.066, 0.83), (0.07, 0.85), (0.055, 0.88), (0.06, 0.9), (0.04, 0.93), (0.022, 0.97),
-                                  (0.008, 1.0), (0.0, 1.01)], (0, -0.012, 0.0), "silver", segments=24)
-    for sx in (-1, 1):
-        p_sphere(root, "murti_eye", 0.013, (1.0, 0.7, 1.0), (sx * 0.026, -0.072, 0.815), "silver", seg=12, rings=8)
-    # the gada: handle in the left hand, head resting behind the left shoulder
-    h0 = (0.135, -0.075, 0.6)
-    h1 = (0.17, 0.06, 0.9)
-    dv = (h1[0] - h0[0], h1[1] - h0[1], h1[2] - h0[2])
-    ln = math.sqrt(sum(c * c for c in dv))
-    mid = tuple((a + b) / 2 for a, b in zip(h0, h1))
-    rot_x = -math.atan2(dv[1], dv[2])
-    rot_y = math.atan2(dv[0], math.hypot(dv[1], dv[2]))
-    p_cyl(root, "murti_gada_handle", 0.014, ln, mid, "brass", verts=12, bevel=0.0, rot=(rot_x, rot_y, 0.0))
-    p_sphere(root, "murti_gada_head", 0.075, (1.0, 1.0, 1.15), h1, "brass", seg=20, rings=14)
-    for k in range(4):
-        p_torus(root, "murti_gada_ring", 0.07 * math.sin(math.pi * (k + 1) / 5), 0.006,
-                (h1[0], h1[1], h1[2] - 0.075 * 1.15 + 0.15 * 1.15 * (k + 1) / 5), "brass", rot=(0.0, 0.0, 0.0))
-    p_sphere(root, "murti_gada_tip", 0.018, (1, 1, 1.4), (h1[0], h1[1], h1[2] + 0.095), "brass", seg=10, rings=8)
-    # marigold garland: a loop of flowers from the neck down over the chest
-    for k in range(26):
-        a = math.pi * 2 * k / 26
-        x = 0.07 * math.sin(a)
-        zz = 0.71 - 0.11 * (1 - math.cos(a)) / 2 * 1.0
-        y = -0.06 - 0.02 * (1 - math.cos(a)) / 2 if math.cos(a) < 0.95 else -0.035
-        p_sphere(root, "murti_flower", 0.017, (1, 1, 0.8), (x, y, zz), "marigold", seg=10, rings=6)
-    p_lathe(root, "murti_lotus", [(0.0, -0.06), (0.2, -0.06), (0.23, -0.04), (0.2, -0.02), (0.16, 0.0), (0.0, 0.0)], (0, 0, 0.0), "sindoor", segments=28)
-    # brass arch (prabhavali) behind him
-    for k in range(17):
-        a = math.pi * k / 16
-        x = 0.36 * math.cos(a)
-        zz = 0.6 + 0.48 * math.sin(a)
-        p_sphere(root, "murti_arch_bead", 0.03, (1, 0.6, 1), (x, 0.14, zz), "brass", seg=10, rings=6)
-    p_box(root, "murti_arch_post", (0.05, 0.05, 0.6), (-0.36, 0.14, 0.3), "brass", 0.008)
-    p_box(root, "murti_arch_post", (0.05, 0.05, 0.6), (0.36, 0.14, 0.3), "brass", 0.008)
+    root.location = (mp[0], -mp[2], mp[1])                       # Blender coordinates of the top of the platform
+
+    def lathe(parent, name, profile, loc, material):
+        return p_lathe(parent, name, profile, loc, material, segments=32)
+    body = murti.build(root, prop_collection, get_material, lathe)
+    murti.niche(root, prop_collection, get_material, float(meta["murti"].get("wall", 0.34)))
+    blender_objs.append(body)                                    # baked with the house: shade in the folds of the coat
     print("Hanuman ji's murti in place")
+
+
+def _samai(e, name):
+    """A brass samai (standing oil lamp) with five little flames on its dish."""
+    p_lathe(e, name, [(0.0, 0.0), (0.075, 0.0), (0.08, 0.012), (0.062, 0.028), (0.032, 0.044), (0.024, 0.06), (0.032, 0.075),
+                      (0.017, 0.09), (0.014, 0.25), (0.025, 0.268), (0.014, 0.286), (0.013, 0.33), (0.024, 0.345), (0.068, 0.358),
+                      (0.074, 0.372), (0.06, 0.378), (0.02, 0.37), (0.012, 0.388), (0.02, 0.41), (0.014, 0.428), (0.0, 0.44)],
+            (0.0, 0.0, 0.0), "brass", segments=24)
+    for k in range(5):
+        a = TAU * k / 5
+        p_sphere(e, name + "_flame", 0.008, (1.0, 1.0, 2.0), (math.cos(a) * 0.058, math.sin(a) * 0.058, 0.392), "lantern_glow",
+                 seg=8, rings=5)
 
 
 def dress_pooja_house():
     mp = meta["murti"]["pos"]
     mx, my, mz = mp
-    for k, sx in enumerate((-0.62, 0.62)):
-        if tmpl("brass_vase2") is not None:
-            e = new_prop("pooja_vase_%d" % k)
-            e.location = (mx + sx, -(mz + 0.25), 0.32)
-            scan_props.instance("brass_vase2", "pooja_vase_%d_v" % k, prop_collection, parent=e, rot_z=rng.uniform(0, TAU))
-    for k, (dx, key) in enumerate(((-0.3, "pomegranate"), (0.0, "apple"), (0.3, "lemon"))):
+    for k, sx in enumerate((-0.64, 0.64)):
+        e = new_prop("pooja_lamp_%d" % k)
+        e.location = (mx + sx, -(mz + 0.26), 0.32)
+        _samai(e, "pooja_lamp_%d_samai" % k)
+    for k, (dx, key) in enumerate(((-0.24, "pomegranate"), (0.0, "apple"), (0.24, "lemon"))):
         if tmpl(key) is not None:
             e = new_prop("offering_%d" % k)
-            e.location = (mx + dx, -(mz + 0.3), 0.32)
+            e.location = (mx + dx, -(mz + 0.33), 0.32)
             scan_props.instance(key, "offering_%d_f" % k, prop_collection, parent=e, rot_z=rng.uniform(0, TAU))
-    t = tmpl("diya_lantern")
-    if t is not None:
-        H_ = L["wall_h"]
-        e = new_prop("pooja_lamp_0")
-        e.location = (mx + 0.75, -(mz + 0.75), 0.0)
-        bottom = 1.85
-        scan_props.instance("diya_lantern", "pooja_lamp_0_l", prop_collection, parent=e, loc=(0, 0, bottom))
-        top = bottom + t[1].z
-        p_cyl(e, "pooja_lamp_0_chain", 0.004, (H_ - 0.09) - top + 0.01, (0.0, 0.0, (top + H_ - 0.09) / 2), "lantern_metal", verts=6, bevel=0.0)
-        p_sphere(e, "pooja_lamp_0_flame", 0.008, (1.0, 1.0, 1.8), (0.0, 0.0, bottom + t[1].z * 0.3), "lantern_glow", seg=10, rings=6)
-    scan_meta["extra_lights"].append([mx, 1.6, mz + 0.9, 0.9, 3.4])
+    scan_meta["extra_lights"].append([mx - 0.5, 1.05, mz + 0.6, 1.2, 3.6])  # the samai flames light him from below
 
 
 def build_tulsi():

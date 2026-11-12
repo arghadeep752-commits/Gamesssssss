@@ -193,11 +193,13 @@ def generate(seed=7):
         y = r["floor"] * FLOOR_H + WALL_H - 0.55
         cells = r["cells"]
         if r["kind"] in ("veranda", "gallery"):
-            picks = [c for c in cells if (c[0] in (2, 5) and c[1] in (1, 4))]
-        elif len(cells) >= 6:
-            picks = [cells[len(cells) // 4], cells[(3 * len(cells)) // 4]]
+            picks = [c for c in cells if tuple(c) in ((2, 1), (5, 4))]       # two opposite corners
+        elif r["kind"] == "passage" and len(cells) == 1 and r["floor"] == 0 and r["name"] == "back_passage":
+            picks = []                                                       # lit by the veranda lamp next to it
+        elif r["kind"] == "pooja":
+            picks = []                                                       # only the samai lamps by the murti
         else:
-            picks = [cells[len(cells) // 2]] if len(cells) != 4 else [None]
+            picks = [None] if len(cells) in (2, 4, 6) else [cells[len(cells) // 2]]
         for c in picks:
             if c is None:
                 xs = sum(cx(c2[0]) for c2 in cells) / len(cells)
@@ -234,7 +236,7 @@ def generate(seed=7):
 
     pooja = [x for x in rooms if x["name"] == "pooja_ghar"][0]
     pc = pooja["cells"][0]
-    ritual = dict(chowki=[round(cx(pc[0]), 3), round(cz(pc[1] + 1) - 0.35, 3)], murti=[round(cx(pc[0]), 3), round(cz(pc[1]) - 0.62, 3)],
+    ritual = dict(chowki=[round(cx(pc[0]), 3), round(cz(pc[1] + 1) - 0.35, 3)], murti=[round(cx(pc[0]), 3), round(cz(pc[1]) - 0.85, 3)],
                   pooja_cell=pc, chaya_from=[4, 3, 0])
     aangan = [x for x in rooms if x["name"] == "aangan"][0]
     tulsi = [round(x0 + 4 * CELL, 3), round(z0 + 3 * CELL, 3)]

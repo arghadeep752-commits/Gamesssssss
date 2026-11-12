@@ -41,7 +41,7 @@ TEXTURES = {
     "floor_deck": ["wood_floor_deck", "wood_floor_worn"],
     "floor_terracotta": ["patterned_terracotta_tiling", "terracotta_floor_tiles"],
     "floor_courtyard": ["red_sandstone_pavement", "brick_pavement_02"],
-    "floor_marble": ["marble_tiles", "marble_01"],
+    "floor_marble": ["marble_01", "marble_tiles"],
     "floor_redtile": ["terracotta_floor_tiles", "brick_villa_floor"],
     "ceiling_planks": ["wood_planks_dirt", "dark_wooden_planks"],
     "trim_dark": ["dark_wood", "dark_wooden_planks"],
@@ -60,7 +60,7 @@ TEXTURES = {
     "hessian": ["hessian_230", "hessian_380"],
 }
 HIRES = {"wall_planks", "wall_beige", "door_planks", "floor_deck", "floor_terracotta", "floor_courtyard"}
-SKIES = ["satara_night", "rogland_clear_night", "kloppenheim_02", "dikhololo_night", "moonless_golf"]
+SKIES = ["dikhololo_night", "satara_night", "rogland_clear_night", "kloppenheim_02", "moonless_golf"]   # bush, trees, stars - no buildings
 COMMONS = "https://commons.wikimedia.org/w/api.php"
 
 

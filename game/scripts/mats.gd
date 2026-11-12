@@ -21,8 +21,10 @@ const TABLE := {
 	"roof_tiles": {"slot": ["roof_tiles"], "tint": Color(0.85, 0.75, 0.7), "rough": 0.8, "color": Color(0.55, 0.25, 0.15)},
 	"ground_mud": {"slot": ["ground_mud", "stone_slab"], "tint": Color(0.62, 0.56, 0.5), "rough": 1.0, "color": Color(0.3, 0.24, 0.18), "ao": true},
 	"stair_wood": {"slot": ["stair_planks", "floor_deck", "wood_floor"], "tint": Color(0.62, 0.55, 0.5), "rough": 0.9, "color": Color(0.3, 0.2, 0.12), "ao": true},
-	"sindoor": {"slot": ["powder"], "tint": Color(1.0, 0.45, 0.12), "rough": 0.32, "color": Color(0.95, 0.32, 0.04)},
-	"silver": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.28, "metal": 0.9, "color": Color(0.86, 0.86, 0.88)},
+	"sindoor": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.38, "color": Color(0.8, 0.13, 0.014), "ao": true},
+	"silver": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.3, "metal": 0.55, "color": Color(0.88, 0.88, 0.9)},
+	"sindoor_old": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.5, "color": Color(0.42, 0.055, 0.01), "ao": true},
+	"geru": {"slot": ["wall_beige", "plaster"], "tint": Color(0.4, 0.11, 0.07), "rough": 1.0, "color": Color(0.3, 0.07, 0.04)},
 	"marigold": {"slot": "", "tint": Color(1, 1, 1), "rough": 0.8, "color": Color(1.0, 0.48, 0.02)},
 	# the old Indian house: lime plaster in the colours of each room, its own floor in each room
 	"wall_plaster_blue": {"slot": ["plaster_blue", "plaster"], "tint": Color(0.7, 0.72, 0.78), "rough": 1.0, "color": Color(0.3, 0.38, 0.45), "ao": true},

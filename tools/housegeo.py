@@ -17,6 +17,7 @@ TILE.update({
 FLOOR_OF = {"kitchen": "floor_redtile", "pooja": "floor_marble", "veranda": "floor_terracotta", "entrance": "floor_terracotta",
             "passage": "floor_terracotta", "courtyard": "floor_courtyard", "store": "floor_terracotta", "stairs": "floor_terracotta"}
 SOLID = ("wall", "outer", "front", "exit", "door", "arch", "pooja", "wide")
+YARD = -0.16                  # the village yard round the house, a step below its floor
 
 
 def build(L):
@@ -131,12 +132,18 @@ def build(L):
             B.box((c_ - (pt if s < 0 else 0), roof_y, a), (c_ + (pt if s > 0 else 0), roof_y + 0.9, b), "ext_plaster", cell=2.6)
             B.box((c_ - (pt + 0.04 if s < 0 else 0.04), roof_y + 0.9, a - 0.04), (c_ + (pt + 0.04 if s > 0 else 0.04), roof_y + 0.98, b + 0.04),
                   "stone_base", cell=2.6)
+    for (a, b, c_, o, s) in ((x0, x0 + W, z0, "h", -1), (x0, x0 + W, z0 + D, "h", 1), (z0, z0 + D, x0, "v", -1), (z0, z0 + D, x0 + W, "v", 1)):
+        fo = c_ + s * T / 2
+        if o == "h":
+            B.box((a - T / 2 - 0.07, FH - 0.08, min(fo, fo + s * 0.07)), (b + T / 2 + 0.07, FH + 0.1, max(fo, fo + s * 0.07)), "ext_plinth", cell=2.6)
+        else:
+            B.box((min(fo, fo + s * 0.07), FH - 0.08, a - T / 2), (max(fo, fo + s * 0.07), FH + 0.1, b + T / 2), "ext_plinth", cell=2.6)
     # the ground outside (village yard) and the floor under the house
     G = 36.0
     for (ax, az, bx, bz) in ((x0 - G, z0 - G, x0 + W + G, z0), (x0 - G, z0 + D, x0 + W + G, z0 + D + G),
                              (x0 - G, z0, x0, z0 + D), (x0 + W, z0, x0 + W + G, z0 + D)):
         go = Obj("ground_%d" % len(B.objs))
-        B.face("ground_mud", (ax, -0.02, az), (bx - ax, 0, 0), (0, 0, bz - az), (0, 1, 0), obj=go, cell=6.0)
+        B.face("ground_mud", (ax, YARD, az), (bx - ax, 0, 0), (0, 0, bz - az), (0, 1, 0), obj=go, cell=6.0)
         B.objs.append(go)
     col(x0 + W / 2, -0.5, z0 + D / 2, W + 2 * G, 1.0, D + 2 * G)
 
@@ -196,7 +203,7 @@ def build(L):
         else:
             top = yb
             if f == 0:
-                F("ext_plinth", ya, min(top, 0.6))
+                F("ext_plinth", ya + (YARD - 0.04 if ya <= 1e-3 else 0.0), min(top, 0.6))
                 F("ext_plaster", max(ya, 0.6), top)
             else:
                 F("ext_plaster", ya, top)
@@ -266,12 +273,11 @@ def build(L):
         a2, b2 = extents(f, o, p, a, a + S)[0], extents(f, o, p, b - S, b)[1]
         if k == "front":
             front = big_door(B, f, o, p, a2, b2, (a + b) / 2, 1.6, 2.45, base, top, cneg, cpos, wall_piece, outer_top, double=True, name="front_door")
-            # stone step and a tiled awning (chhajja) on wooden brackets outside the front door
-            zf = p + T / 2
-            B.box((-1.3, -0.02, zf), (1.3, 0.16, zf + 1.0), "stone_base", cell=2.6)
-            awning(B, -1.6, 1.6, zf, 2.95, 1.05)
+            porch(B, (a + b) / 2 - 3.9, (a + b) / 2 + 3.9, p + T / 2, 2.1)
         else:
             exitd = big_door(B, f, o, p, a2, b2, (a + b) / 2, 1.1, 2.2, base, top, cneg, cpos, wall_piece, outer_top, double=False, name="exit_door")
+            zo = p - T / 2
+            B.box(((a + b) / 2 - 0.85, YARD - 0.02, zo - 0.6), ((a + b) / 2 + 0.85, 0.0, zo), "stone_base", cell=2.6)
     # windows: closed wooden shutters on both faces of the outer walls
     for (f, o, p, uc, side) in windows:
         base = f * FH
@@ -287,6 +293,13 @@ def build(L):
             for ua, ub in ((uc - w2, uc - 0.004), (uc + 0.004, uc + w2)):
                 B.box_un(wo, o, ua, ub, ya, yb, fpos, fpos + face_s * 0.035, "shutter_wood")
             B.box_un(wo, o, uc - 0.06, uc + 0.06, base + 1.5, base + 1.54, fpos + face_s * 0.035, fpos + face_s * 0.05, "brass")
+            if face_s == s:                           # outside: iron bars in front of the shutters, a chajja over it
+                for kb in range(5):
+                    ub = uc - w2 + (kb + 1) * (2 * w2) / 6
+                    B.box_un(wo, o, ub - 0.009, ub + 0.009, ya, yb, fpos + face_s * 0.07, fpos + face_s * 0.088, "iron")
+                for yy in (ya + 0.25, yb - 0.25):
+                    B.box_un(wo, o, uc - w2, uc + w2, yy - 0.012, yy + 0.012, fpos + face_s * 0.064, fpos + face_s * 0.094, "iron")
+                B.box_un(wo, o, uc - w2 - 0.3, uc + w2 + 0.3, yb + 0.22, yb + 0.29, fpos, fpos + face_s * 0.42, "ext_plaster")
 
     # ---------------------------------------------------------------- the stairs (solid steps; the game walks a ramp)
     st = L["stairs"]
@@ -342,11 +355,12 @@ def build(L):
     # ---------------------------------------------------------------- the pooja ghar: marble platform for the murti
     rt = L["ritual"]
     mx_, mz_ = rt["murti"]
+    wz = z0 + int((mz_ - z0) // S) * S + T / 2                 # face of the wall behind the murti
     po = Obj("murti_platform", (mx_, 0.0, mz_))
-    B.box((mx_ - 0.8, 0.0, mz_ - 0.45), (mx_ + 0.8, 0.32, mz_ + 0.45), "floor_marble", obj=po, cell=2.6)
-    B.box((mx_ - 0.55, 0.32, mz_ - 0.38), (mx_ + 0.55, 0.62, mz_ + 0.2), "floor_marble", obj=po, cell=2.6)
+    B.box((mx_ - 0.8, 0.0, wz), (mx_ + 0.8, 0.32, mz_ + 0.45), "floor_marble", obj=po, cell=2.6, skip=("nz",))
+    B.box((mx_ - 0.55, 0.32, wz), (mx_ + 0.55, 0.62, mz_ + 0.2), "floor_marble", obj=po, cell=2.6, skip=("nz",))
     B.objs.append(po)
-    col(mx_, 0.31, mz_, 1.6, 0.62, 0.9)
+    col(mx_, 0.31, (wz + mz_ + 0.45) / 2, 1.6, 0.62, mz_ + 0.45 - wz)
     # the ritual chowki on the veranda in front of it (low wooden stool with a red cloth)
     kx, kz = rt["chowki"]
     ko = Obj("chowki", (kx, 0.0, kz))
@@ -386,7 +400,7 @@ def build(L):
     for o in objs:
         o.finish()
     meta = dict(doors=doors, items=items, pillars=pillars, colliders=colliders, front_door=front, exit_door=exitd,
-                altar=dict(pos=[kx, 0.36, kz]), murti=dict(pos=[mx_, 0.62, mz_], yaw=0.0), tulsi=dict(pos=[tx, 1.02, tz]),
+                altar=dict(pos=[kx, 0.36, kz]), murti=dict(pos=[mx_, 0.62, mz_], yaw=0.0, wall=round(mz_ - wz, 3)), tulsi=dict(pos=[tx, 1.02, tz]),
                 windows=[[w[0], w[1], round(w[2], 3), round(w[3], 3), w[4]] for w in windows])
     return objs, meta
 
@@ -504,6 +518,44 @@ def big_door(B, f, o, p, a, b, c, ow, oh, base, top, cneg, cpos, wall_piece, out
         B.objs.append(lo)
         leaves.append(dict(name=nm, hinge=hinge.tolist(), o=o, sgn=(1 if side < 0 else -1), width=u1 - u0, height=oh - 0.03, thick=th, floor=f))
     return dict(leaves=leaves, center=[c if o == "h" else p, base, p if o == "h" else c], width=ow, height=oh)
+
+
+def porch(B, xa, xb, zf, depth):
+    """The osari along the front: a lean-to roof of clay tiles on rafters and four turned posts, over a stone-paved
+    platform a step above the yard."""
+    o = Obj("porch", ((xa + xb) / 2, 0.0, zf + depth / 2))
+    zb = zf + depth                                   # the line of posts
+    zr = zb + 0.45                                    # the eaves
+    yw, yb = 3.12, 2.74                               # roof height at the wall, over the beam
+
+    def ry(z):
+        return yw + (yb - yw) * (z - zf) / depth
+    # platform and a step in front of the door
+    B.box((xa - 0.3, YARD - 0.02, zf), (xb + 0.3, 0.0, zb + 0.4), {"default": "ext_plinth", "py": "stone_base", "ny": None}, obj=o, cell=2.6)
+    cx = (xa + xb) / 2
+    B.box((cx - 1.2, YARD - 0.02, zb + 0.4), (cx + 1.2, YARD / 2, zb + 0.72), {"default": "ext_plinth", "py": "stone_base", "ny": None}, obj=o, cell=2.6)
+    B.objs.append(o)
+    for xp in (xa + 0.15, cx - 1.3, cx + 1.3, xb - 0.15):
+        pillar(B, xp, zb, 0.0, yb)
+    r = Obj("porch_roof", (cx, yb, zf + depth / 2))
+    B.box((xa - 0.05, yb - 0.27, zb - 0.09), (xb + 0.05, yb - 0.01, zb + 0.09), "beam_wood", obj=r, cell=2.6)
+    tile_t = 0.07
+    P = [(xa - 0.2, yw + tile_t, zf), (xb + 0.2, yw + tile_t, zf), (xb + 0.2, ry(zr) + tile_t, zr), (xa - 0.2, ry(zr) + tile_t, zr)]
+    B.quad(r, "roof_tiles", P, (0.0, 1.0, (yw - yb) / depth))
+    P2 = [(xa - 0.2, yw, zf), (xb + 0.2, yw, zf), (xb + 0.2, ry(zr), zr), (xa - 0.2, ry(zr), zr)]
+    B.quad(r, "ceiling_wood", P2, (0.0, -1.0, -(yw - yb) / depth))
+    B.box((xa - 0.22, ry(zr) - 0.1, zr), (xb + 0.22, ry(zr) + tile_t + 0.01, zr + 0.035), "trim_wood", obj=r, cell=10.0)
+    for side in (-1, 1):                               # end boards closing the roof's edge
+        xe = (xa - 0.2) if side < 0 else (xb + 0.2)
+        B.quad(r, "trim_wood", [(xe, yw, zf), (xe, ry(zr), zr), (xe, ry(zr) + tile_t, zr), (xe, yw + tile_t, zf)], (side, 0.0, 0.0))
+    pitch = math.degrees(math.atan2(yw - yb, depth))
+    ln = math.hypot(zr - zf, ry(zf) - ry(zr))
+    n = int((xb - xa) / 0.55)
+    for k in range(n + 1):                             # rafters under the planks
+        xx = xa + (xb - xa) * k / n
+        zc = (zf + zr) / 2
+        B.tilted_box(r, "beam_wood", (xx, ry(zc) - 0.045, zc), (0.06, 0.08, ln), yaw=0.0, pitch=pitch)
+    B.objs.append(r)
 
 
 def awning(B, xa, xb, zf, y, depth):
