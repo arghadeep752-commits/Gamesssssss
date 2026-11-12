@@ -75,3 +75,44 @@ jobs:
             curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
               "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$f" >/dev/null && echo "uploaded $f"
           done
+
+  ai3d-plan:
+    if: contains(github.event.head_commit.message, '[ai3d]')
+    runs-on: ubuntu-24.04
+    outputs:
+      groups: ${{ steps.p.outputs.groups }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: p
+        run: |
+          python3 -c "import json; L=[l.strip() for l in open('ai3d/run.txt') if l.strip()]; print('groups=' + json.dumps(L))" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+  ai3d:
+    needs: ai3d-plan
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        group: ${{ fromJSON(needs.ai3d-plan.outputs.groups) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: AI 3D models from free Hugging Face Spaces
+        timeout-minutes: 50
+        run: |
+          pip install -q gradio_client
+          mkdir -p out
+          python3 ai3d/gen.py ai3d/models.json out ${{ matrix.group }} 2>&1 | tee out/log_$(echo "${{ matrix.group }}" | tr -c 'a-z0-9_\n' '_' | cut -c1-40).txt || true
+          ls -la out
+      - name: Upload to the private draft release
+        run: |
+          R=$GITHUB_REPOSITORY
+          rid=$(gh api "repos/$R/releases?per_page=100" --jq '.[] | select(.tag_name=="chaya-tools") | .id' | head -1)
+          for f in out/*; do
+            n=ai3d_$(basename $f)
+            old=$(gh api "repos/$R/releases/$rid/assets?per_page=100" --paginate --jq ".[] | select(.name==\"$n\") | .id")
+            [ -n "$old" ] && gh api -X DELETE "repos/$R/releases/assets/$old"
+            curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" -T "$f" \
+              "https://uploads.github.com/repos/$R/releases/$rid/assets?name=$n" >/dev/null && echo "uploaded $n"
+          done

@@ -1,0 +1,130 @@
+{
+ "kalash": {
+  "prompt": "a traditional Indian brass kalash pot with five green mango leaves and a coconut wrapped in red thread on its mouth, Hindu puja ritual object",
+  "seed": 11
+ },
+ "diya": {
+  "prompt": "a traditional Indian clay diya oil lamp, small hand-made terracotta lamp with a cotton wick, unlit",
+  "seed": 12
+ },
+ "coconut": {
+  "prompt": "a whole brown coconut with dry husk fibres and a red sacred thread tied around it, Hindu puja coconut",
+  "seed": 13
+ },
+ "kumkum": {
+  "prompt": "a small round brass bowl filled to the top with bright red kumkum powder, Hindu puja item",
+  "seed": 14
+ },
+ "kapoor": {
+  "prompt": "white camphor tablets (kapoor) piled on a small round brass plate, Hindu puja item",
+  "seed": 15
+ },
+ "gangajal": {
+  "prompt": "a small copper lota water pot with a round body and narrow neck, holy Ganga water vessel, Hindu puja item",
+  "seed": 16
+ },
+ "candle": {
+  "prompt": "an old brass candlestick holder with a tall white wax candle, unlit",
+  "seed": 17
+ },
+ "murti": {
+  "prompt": "an Indian village temple idol of Lord Hanuman covered in shiny bright orange sindoor, standing, holding a mace on his left shoulder, right hand raised in blessing, silver eyes, silver crown, on a small stone pedestal, full figure",
+  "seed": 18
+ },
+ "samai": {
+  "prompt": "a traditional Indian brass samai oil lamp stand with five wicks on top, tall standing deepam",
+  "seed": 19
+ },
+ "chowki": {
+  "prompt": "a low square Indian wooden chowki stool covered with a red cloth, puja altar",
+  "seed": 20
+ },
+ "tulsi": {
+  "prompt": "a holy basil tulsi plant growing in a round terracotta clay pot",
+  "seed": 21
+ },
+ "lantern": {
+  "prompt": "an old kerosene hurricane lantern, rusty dark metal frame with a glass chimney and a wire handle",
+  "seed": 22
+ },
+ "palang": {
+  "prompt": "an old Indian wooden double bed with a carved wooden headboard, thin cotton mattress and a plain white bedsheet",
+  "seed": 23
+ },
+ "charpai": {
+  "prompt": "a traditional Indian charpai, wooden cot with a woven jute rope bed and four turned wooden legs",
+  "seed": 24
+ },
+ "almirah": {
+  "prompt": "an old Indian steel almirah, tall grey-green painted metal cupboard with two doors and a long handle, slightly worn and scratched",
+  "seed": 25
+ },
+ "dresser": {
+  "prompt": "an old Indian wooden dressing table with an oval mirror and small drawers",
+  "seed": 26
+ },
+ "trunk": {
+  "prompt": "an old Indian tin trunk box painted dark green with metal latches and side handles, slightly rusty",
+  "seed": 27
+ },
+ "sandook": {
+  "prompt": "an old Indian wooden sandook chest with brass corner fittings, brass studs and a hasp lock",
+  "seed": 28
+ },
+ "takht": {
+  "prompt": "an Indian wooden takht, low wooden platform bed with a white cotton sheet and two round bolster pillows",
+  "seed": 29
+ },
+ "easychair": {
+  "prompt": "an old Indian wooden easy chair (aaram kursi) with a woven cane seat and long armrests",
+  "seed": 30
+ },
+ "wallclock": {
+  "prompt": "an old wooden pendulum wall clock with a round white dial and roman numerals",
+  "seed": 31
+ },
+ "cupboard": {
+  "prompt": "an old carved Indian wooden cupboard with glass doors and brass handles",
+  "seed": 32
+ },
+ "chulha": {
+  "prompt": "a traditional Indian clay chulha mud stove with two openings and a few sticks of firewood",
+  "seed": 33
+ },
+ "utensil_rack": {
+  "prompt": "an old wooden wall shelf with brass and steel Indian kitchen utensils, plates, glasses and pots",
+  "seed": 34
+ },
+ "matka": {
+  "prompt": "three terracotta clay matka water pots of different sizes standing together",
+  "seed": 35
+ },
+ "balti": {
+  "prompt": "an old brass water bucket (balti) with a handle",
+  "seed": 36
+ },
+ "sacks": {
+  "prompt": "three jute sacks full of grain tied at the top, standing together",
+  "seed": 37
+ },
+ "kothi": {
+  "prompt": "a large Indian clay grain storage jar (kothi) with a lid, hand-made terracotta",
+  "seed": 38
+ },
+ "crate": {
+  "prompt": "an old wooden crate box made of rough planks",
+  "seed": 39
+ },
+ "desk": {
+  "prompt": "an old wooden writing desk with a drawer and four tapered legs",
+  "seed": 40
+ },
+ "bookshelf": {
+  "prompt": "an old wooden bookshelf filled with worn old books",
+  "seed": 41
+ },
+ "charkha": {
+  "prompt": "a traditional Indian wooden charkha spinning wheel",
+  "seed": 42
+ }
+}
