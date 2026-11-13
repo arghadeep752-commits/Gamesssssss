@@ -1,6 +1,5 @@
-run=4 sha=bd2a7e4f80428d4aa2823aab768b63f4c97810e4 tsc=failure tests=success release=success debug=success verify=success
+run=5 sha=e0d357912f43a1646511ab9464f8673b3f0f5fe9 tsc=success tests=success release=success debug=success verify=success
 ===== TSC =====
-src/screens/editor/useGuard.ts(4,59): error TS2339: Property 'dispatch' does not exist on type 'unknown'.
 ===== TESTS =====
 # tests 14
 # pass 14
@@ -15,7 +14,7 @@ npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and cont
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-added 678 packages in 17s
+added 678 packages in 22s
 ===== PREBUILD (tail) =====
 ! Git branch has uncommitted file changes
 › It's recommended to commit all changes before proceeding in case you want to revert generated changes.
@@ -45,8 +44,8 @@ Note: Recompile with -Xlint:unchecked for details.
 > Task :react-native-reanimated:writeReleaseLintModelMetadata
 > Task :react-native-reanimated:stripReleaseDebugSymbols
 > Task :react-native-reanimated:copyReleaseJniLibsProjectAndLocalJars
-> Task :react-native-reanimated:bundleReleaseLocalLintAar
 > Task :react-native-reanimated:lintVitalAnalyzeRelease
+> Task :react-native-reanimated:bundleReleaseLocalLintAar
 > Task :react-native-reanimated:generateReleaseLintVitalModel
 > Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[arm64-v8a]
 > Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[armeabi-v7a]
@@ -60,8 +59,8 @@ w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/react-native-ge
 
 > Task :react-native-gesture-handler:compileReleaseJavaWithJavac
 > Task :react-native-gesture-handler:bundleLibCompileToJarRelease
-> Task :react-native-gesture-handler:bundleLibRuntimeToJarRelease
 > Task :react-native-gesture-handler:processReleaseJavaRes
+> Task :react-native-gesture-handler:bundleLibRuntimeToJarRelease
 > Task :react-native-gesture-handler:createFullJarRelease
 > Task :react-native-gesture-handler:bundleLibRuntimeToDirRelease
 > Task :react-native-gesture-handler:generateReleaseLintModel
@@ -81,17 +80,17 @@ w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/co
 w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:22:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
 w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:22:33 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
 
-> Task :app:mergeReleaseNativeLibs
 > Task :app:compileReleaseJavaWithJavac
-> Task :app:stripReleaseDebugSymbols
+> Task :app:mergeReleaseNativeLibs
 > Task :app:dexBuilderRelease
-> Task :app:generateReleaseLintVitalReportModel
 > Task :app:mergeReleaseGlobalSynthetics
+> Task :app:stripReleaseDebugSymbols
+> Task :app:generateReleaseLintVitalReportModel
 > Task :app:processReleaseJavaRes
 > Task :app:extractReleaseNativeSymbolTables
 > Task :app:lintVitalAnalyzeRelease
-> Task :app:mergeReleaseJavaResource
 > Task :app:lintVitalReportRelease
+> Task :app:mergeReleaseJavaResource
 > Task :app:lintVitalRelease
 > Task :app:mergeReleaseNativeDebugMetadata
 > Task :app:mergeDexRelease
@@ -108,62 +107,62 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 8m 54s
+BUILD SUCCESSFUL in 9m 45s
 539 actionable tasks: 539 executed
 ===== build-debug.log: errors =====
 ===== build-debug.log: tail =====
-> Task :expo:processDebugJavaRes
-> Task :expo:bundleLibRuntimeToDirDebug
+w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/expo/android/src/main/java/expo/modules/ReactNativeHostWrapperBase.kt:16:23 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/expo/android/src/main/java/expo/modules/ReactNativeHostWrapperBase.kt:89:16 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/expo/android/src/main/java/expo/modules/ReactNativeHostWrapperBase.kt:101:38 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/expo/android/src/main/java/expo/modules/fetch/ExpoFetchModule.kt:30:39 'constructor(reactContext: ReactContext): ForwardingCookieHandler' is deprecated. Use the default constructor.
+w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:44:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:46:11 'fun deallocate(): Unit' is deprecated. Use sharedObjectDidRelease() instead.
+
+> Task :expo:compileDebugJavaWithJavac
+> Task :expo:bundleLibCompileToJarDebug
 
 > Task :app:compileDebugKotlin
 w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:10:8 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:22:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
 w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:22:33 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
 
-> Task :react-native-async-storage_async-storage:mergeDebugJniLibFolders
-> Task :react-native-async-storage_async-storage:mergeDebugNativeLibs NO-SOURCE
-> Task :react-native-async-storage_async-storage:copyDebugJniLibsProjectOnly
-> Task :app:configureCMakeDebug[armeabi-v7a]
+> Task :react-native-screens:buildCMakeDebug[arm64-v8a]
+> Task :expo:bundleLibRuntimeToJarDebug
 > Task :app:compileDebugJavaWithJavac
-> Task :react-native-gesture-handler:configureCMakeDebug[arm64-v8a]
+> Task :camero-engine:bundleLibRuntimeToJarDebug
+> Task :expo-modules-core:buildCMakeDebug[arm64-v8a]
 > Task :app:dexBuilderDebug
-> Task :react-native-gesture-handler:configureCMakeDebug[armeabi-v7a]
-> Task :react-native-gesture-handler:mergeDebugJniLibFolders
-> Task :react-native-reanimated:mergeDebugJniLibFolders
-> Task :react-native-safe-area-context:mergeDebugJniLibFolders
 > Task :app:processDebugJavaRes
+> Task :camero-engine:processDebugJavaRes
+> Task :expo:processDebugJavaRes
 > Task :app:mergeDebugGlobalSynthetics
-> Task :react-native-safe-area-context:mergeDebugNativeLibs NO-SOURCE
-> Task :react-native-safe-area-context:copyDebugJniLibsProjectOnly
-> Task :react-native-screens:configureCMakeDebug[arm64-v8a]
+> Task :expo:bundleLibRuntimeToDirDebug
 > Task :app:mergeDebugJavaResource
-> Task :app:mergeLibDexDebug
+> Task :camero-engine:bundleLibRuntimeToDirDebug
 > Task :app:mergeProjectDexDebug
+> Task :react-native-screens:configureCMakeDebug[armeabi-v7a]
+> Task :app:mergeLibDexDebug
 > Task :react-native-svg:mergeDebugJniLibFolders
 > Task :react-native-svg:mergeDebugNativeLibs NO-SOURCE
 > Task :react-native-svg:copyDebugJniLibsProjectOnly
 > Task :app:validateSigningDebug
 > Task :app:writeDebugAppMetadata
 > Task :app:writeDebugSigningConfigVersions
-> Task :react-native-worklets:buildCMakeDebug[arm64-v8a][worklets]
-> Task :react-native-screens:buildCMakeDebug[arm64-v8a]
-> Task :react-native-screens:configureCMakeDebug[armeabi-v7a]
-> Task :expo-modules-core:buildCMakeDebug[arm64-v8a]
+> Task :expo-modules-core:configureCMakeDebug[armeabi-v7a]
 > Task :react-native-screens:buildCMakeDebug[armeabi-v7a]
 > Task :react-native-screens:mergeDebugJniLibFolders
 > Task :react-native-screens:mergeDebugNativeLibs
 > Task :react-native-screens:copyDebugJniLibsProjectOnly
-> Task :expo-modules-core:configureCMakeDebug[armeabi-v7a]
+> Task :expo-modules-core:buildCMakeDebug[armeabi-v7a]
 > Task :react-native-worklets:buildCMakeDebug[armeabi-v7a][worklets]
+> Task :expo-modules-core:mergeDebugJniLibFolders
+> Task :expo-modules-core:mergeDebugNativeLibs
+> Task :expo-modules-core:copyDebugJniLibsProjectOnly
 > Task :react-native-worklets:externalNativeBuildDebug
 > Task :react-native-worklets:prefabDebugPackage
 > Task :react-native-worklets:mergeDebugJniLibFolders
 > Task :react-native-worklets:mergeDebugNativeLibs
 > Task :react-native-worklets:copyDebugJniLibsProjectOnly
-> Task :expo-modules-core:buildCMakeDebug[armeabi-v7a]
-> Task :expo-modules-core:mergeDebugJniLibFolders
-> Task :expo-modules-core:mergeDebugNativeLibs
-> Task :expo-modules-core:copyDebugJniLibsProjectOnly
 > Task :react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated]
 > Task :react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated]
 > Task :react-native-reanimated:externalNativeBuildDebug
@@ -190,5 +189,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 6m 26s
+BUILD SUCCESSFUL in 7m 15s
 344 actionable tasks: 300 executed, 44 up-to-date
