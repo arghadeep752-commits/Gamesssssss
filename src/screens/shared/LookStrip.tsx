@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { memo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -16,6 +17,8 @@ type Props = {
   onSelect: (id: string) => void;
   onPreset?: (preset: Preset) => void;
   onPresetLongPress?: (preset: Preset) => void;
+  /** Rendered thumbnails of the photo being edited, by look id ('none' for the original). */
+  previews?: Record<string, string>;
 };
 
 const NEUTRAL = ['#2B2B2B', '#757575', '#C9C9C9'];
@@ -31,17 +34,24 @@ export const Swatch = memo(function Swatch({ colors, active, accent }: { colors:
   );
 });
 
-function Item({ label, colors, active, accent, onPress, onLongPress }: {
+function Item({ label, colors, active, accent, onPress, onLongPress, preview }: {
   label: string;
   colors: string[];
   active: boolean;
   accent: string;
   onPress: () => void;
   onLongPress?: () => void;
+  preview?: string;
 }) {
   return (
     <Tap haptic="selection" pressedOpacity={0.7} onPress={onPress} onLongPress={onLongPress} style={styles.item}>
-      <Swatch colors={colors} active={active} accent={accent} />
+      {preview ? (
+        <View style={[styles.preview, { borderColor: active ? accent : 'transparent' }]}>
+          <Image source={{ uri: preview }} style={styles.previewImage} contentFit="cover" transition={120} />
+        </View>
+      ) : (
+        <Swatch colors={colors} active={active} accent={accent} />
+      )}
       <T variant="caption" color={active ? palette.ink : palette.ash} align="center" numberOfLines={2} style={styles.name}>
         {label}
       </T>
@@ -60,7 +70,7 @@ function GroupLabel({ text }: { text: string }) {
   );
 }
 
-export function LookStrip({ looks, presets = [], selected, selectedPreset, onSelect, onPreset, onPresetLongPress }: Props) {
+export function LookStrip({ looks, presets = [], selected, selectedPreset, onSelect, onPreset, onPresetLongPress, previews }: Props) {
   const accent = useAccent();
   const groups: Record<string, LookInfo[]> = {};
   for (const l of looks) (groups[l.collection] ??= []).push(l);
@@ -68,7 +78,14 @@ export function LookStrip({ looks, presets = [], selected, selectedPreset, onSel
   const swatchOf = (id: string) => looks.find((l) => l.id === id)?.swatch ?? NEUTRAL;
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-      <Item label="Original" colors={NEUTRAL} active={selected === 'none' && !selectedPreset} accent={accent} onPress={() => onSelect('none')} />
+      <Item
+        label="Original"
+        colors={NEUTRAL}
+        active={selected === 'none' && !selectedPreset}
+        accent={accent}
+        preview={previews?.none}
+        onPress={() => onSelect('none')}
+      />
       {presets.length ? (
         <>
           <GroupLabel text="Saved" />
@@ -79,6 +96,7 @@ export function LookStrip({ looks, presets = [], selected, selectedPreset, onSel
               colors={swatchOf(p.grade.look)}
               active={selectedPreset === p.id}
               accent={accent}
+              preview={previews?.[p.grade.look]}
               onPress={() => onPreset?.(p)}
               onLongPress={() => onPresetLongPress?.(p)}
             />
@@ -97,6 +115,7 @@ export function LookStrip({ looks, presets = [], selected, selectedPreset, onSel
                 colors={l.swatch}
                 active={!selectedPreset && selected === l.id}
                 accent={accent}
+                preview={previews?.[l.id]}
                 onPress={() => onSelect(l.id)}
               />
             ))}
@@ -112,6 +131,8 @@ const styles = StyleSheet.create({
   swatch: { flexDirection: 'row', width: 54, height: 14, borderRadius: 4, overflow: 'hidden', borderWidth: 1.5 },
   swatchPart: { flex: 1 },
   name: { marginTop: 6, width: 70 },
+  preview: { width: 58, height: 58, borderRadius: 8, borderWidth: 1.5, padding: 2 },
+  previewImage: { flex: 1, borderRadius: 5 },
   groupBox: { width: 22, height: 56, marginLeft: 8, alignItems: 'center', justifyContent: 'center' },
   groupText: { width: 80, textAlign: 'center', transform: [{ rotate: '-90deg' }] },
 });

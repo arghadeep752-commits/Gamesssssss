@@ -33,6 +33,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraState
 import androidx.camera.core.DynamicRange
 import androidx.camera.core.ExperimentalSessionConfig
+import androidx.camera.video.ExperimentalHighSpeedVideo
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -412,7 +413,7 @@ class CameraSession(
     listener.emitReady(readyInfo(cam, cfg, notes))
   }
 
-  @kotlin.OptIn(ExperimentalSessionConfig::class)
+  @kotlin.OptIn(ExperimentalSessionConfig::class, ExperimentalHighSpeedVideo::class)
   private fun bindAttempt(p: ProcessCameraProvider, info: CameraInfo, selector: CameraSelector, cfg: SessionConfigState, attempt: Attempt) {
     val rotation = previewView.display?.rotation ?: Surface.ROTATION_0
     val viewPort = ViewPort.Builder(aspectRational(cfg), rotation).setScaleType(ViewPort.FILL_CENTER).build()

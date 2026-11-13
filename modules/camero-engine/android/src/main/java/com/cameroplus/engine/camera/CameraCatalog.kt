@@ -20,6 +20,7 @@ import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.DynamicRange
 import androidx.camera.core.ExperimentalSessionConfig
+import androidx.camera.video.ExperimentalHighSpeedVideo
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.extensions.ExtensionMode
@@ -143,7 +144,7 @@ object CameraCatalog {
     return LensInfo(kind, eq, minFocusCm, fixedFocus)
   }
 
-  @kotlin.OptIn(ExperimentalSessionConfig::class)
+  @kotlin.OptIn(ExperimentalSessionConfig::class, ExperimentalHighSpeedVideo::class)
   fun describeCamera(info: CameraInfo, extensions: ExtensionsManager?): Map<String, Any?> {
     val out = HashMap<String, Any?>()
     val lens = lensInfo(info)
@@ -200,7 +201,7 @@ object CameraCatalog {
       out["shutterMinNs"] = it.lower.toDouble(); out["shutterMaxNs"] = minOf(it.upper, 1_000_000_000L).toDouble()
     }
     val awb = characteristic(info, CameraCharacteristics.CONTROL_AWB_AVAILABLE_MODES) ?: IntArray(0)
-    out["awbModes"] = awb.mapNotNull { awbName(it) }
+    out["awbModes"] = awb.asList().mapNotNull { awbName(it) }
     out["awbLock"] = characteristic(info, CameraCharacteristics.CONTROL_AWB_LOCK_AVAILABLE) == true
     out["aeLock"] = characteristic(info, CameraCharacteristics.CONTROL_AE_LOCK_AVAILABLE) == true
 

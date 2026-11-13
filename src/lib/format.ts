@@ -108,6 +108,15 @@ export function formatDay(ms: number): string {
   }
 }
 
+export function formatTime(ms: number): string {
+  const d = new Date(ms);
+  try {
+    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return d.toISOString().slice(11, 16);
+  }
+}
+
 export function formatZoom(z: number): string {
   if (z < 1) return `${z.toFixed(1).replace(/^0/, '')}×`;
   if (z < 10) return `${Number(z.toFixed(1))}×`;

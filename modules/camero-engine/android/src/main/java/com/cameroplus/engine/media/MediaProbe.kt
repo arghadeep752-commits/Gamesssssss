@@ -17,6 +17,7 @@ import android.util.Size
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -251,6 +252,13 @@ object MediaProbe {
       info["hasAudio"] = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO) == "yes"
       info["captureFps"] = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)?.toFloatOrNull()
       info["dateTime"] = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE)
+      if (Build.VERSION.SDK_INT >= 28) {
+        // Many phone recordings leave KEY_FRAME_RATE out of the track format; the frame count is
+        // a reliable fallback for the average rate.
+        val frames = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)?.toLongOrNull() ?: 0L
+        val ms = (info["durationMs"] as? Long) ?: 0L
+        if (frames > 0 && ms > 0) info["avgFps"] = frames * 1000f / ms
+      }
     } catch (_: Exception) {
     } finally {
       try { r.release() } catch (_: Exception) {}
@@ -278,6 +286,14 @@ object MediaProbe {
     } finally {
       extractor.release()
     }
+    if (info["fps"] == null) {
+      (info["avgFps"] as? Float)?.let { avg ->
+        // Snap to the usual rates so 29.94 reads as 30.
+        val common = floatArrayOf(24f, 25f, 30f, 48f, 50f, 60f, 90f, 120f, 240f)
+        info["fps"] = common.minByOrNull { abs(it - avg) }?.takeIf { abs(it - avg) < it * 0.04f } ?: avg
+      }
+    }
+    info.remove("avgFps")
   }
 
   fun storage(): Map<String, Any> {

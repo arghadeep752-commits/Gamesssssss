@@ -1,5 +1,7 @@
 import * as MediaLibrary from 'expo-media-library';
 
+import { Engine } from '../../modules/camero-engine';
+
 export type Filter = 'all' | 'photos' | 'videos' | 'favorites' | 'edited' | 'recent';
 
 export const ALBUM = 'Camero Plus';
@@ -107,6 +109,25 @@ export async function latestAsset(): Promise<MediaLibrary.Asset | null> {
 export async function deleteAsset(asset: MediaLibrary.Asset): Promise<boolean> {
   try {
     return await MediaLibrary.deleteAssetsAsync([asset]);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The media library hands out file paths; other apps need a MediaStore content URI with a read
+ * grant. Asset ids are MediaStore row ids, shared by the images and video tables.
+ */
+export function contentUri(asset: Pick<MediaLibrary.Asset, 'id' | 'mediaType'>): string {
+  return `content://media/external/${asset.mediaType === 'video' ? 'video' : 'images'}/media/${asset.id}`;
+}
+
+export async function shareAssets(assets: MediaLibrary.Asset[]): Promise<boolean> {
+  if (!assets.length) return false;
+  const videos = assets.filter((a) => a.mediaType === 'video').length;
+  const mime = videos === assets.length ? 'video/*' : videos === 0 ? 'image/*' : '*/*';
+  try {
+    return await Engine.share(assets.map(contentUri), mime);
   } catch {
     return false;
   }

@@ -70,7 +70,7 @@ object PhotoRenderer {
     val pfd = context.contentResolver.openFileDescriptor(source, "r") ?: throw IOException("Can't open the photo")
     pfd.use { descriptor ->
       val decoder = if (Build.VERSION.SDK_INT >= 31) {
-        BitmapRegionDecoder.newInstance(descriptor.fileDescriptor)
+        BitmapRegionDecoder.newInstance(descriptor)
       } else {
         @Suppress("DEPRECATION")
         BitmapRegionDecoder.newInstance(descriptor.fileDescriptor, false)

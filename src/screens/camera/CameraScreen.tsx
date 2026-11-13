@@ -32,9 +32,9 @@ import {
   type LensStop,
 } from '../../lib/camera';
 import { formatMp, qualityLabel, signed } from '../../lib/format';
-import { gradeJson, isNeutral } from '../../lib/grade';
+import { gradeJson, isNeutral, type UiGrade } from '../../lib/grade';
 import { haptic } from '../../lib/haptics';
-import { idFromUri, latestAsset } from '../../lib/media';
+import { contentUri, idFromUri, latestAsset } from '../../lib/media';
 import type { Nav } from '../../navigation/types';
 import { useApp } from '../../state/app';
 import { IDLE_RECORDING, useCamera } from '../../state/camera';
@@ -167,7 +167,8 @@ export function CameraScreen() {
     latestAsset().then(async (a) => {
       if (!a || cancelled) return;
       const thumb = a.mediaType === 'video' ? await Engine.getThumbnail(a.uri, 200).catch(() => null) : a.uri;
-      if (!cancelled) cam.set({ last: { uri: a.uri, thumbnail: thumb ?? undefined, kind: a.mediaType === 'video' ? 'video' : 'photo', at: a.creationTime } });
+      // A content URI keeps the asset id, which opens the viewer on this item.
+      if (!cancelled) cam.set({ last: { uri: contentUri(a), thumbnail: thumb ?? undefined, kind: a.mediaType === 'video' ? 'video' : 'photo', at: a.creationTime } });
     });
     return () => {
       cancelled = true;
@@ -178,6 +179,30 @@ export function CameraScreen() {
   useEffect(() => {
     Engine.setSaveLocation(settings.saveLocation).catch(() => {});
   }, [settings.saveLocation]);
+
+  // ---- look: the camera opens with the look picked in Looks and remembers changes ----
+  useEffect(() => {
+    const g = useCamera.getState().grade;
+    if (g.look === settings.lookId) return;
+    cam.setGrade({ look: settings.lookId, intensity: settings.lookId === 'none' ? g.intensity : settings.defaultIntensity });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.lookId]);
+  const onGradeChange = useCallback(
+    (patch: Partial<UiGrade>) => {
+      const current = useCamera.getState().grade.look;
+      if (patch.look !== undefined && patch.look !== current) {
+        const s = useSettings.getState();
+        // Switching between looks keeps the strength; turning a look on starts at the default.
+        const fresh = current === 'none' && patch.look !== 'none';
+        const intensity = patch.intensity ?? (fresh ? s.defaultIntensity : undefined);
+        cam.setGrade(intensity === undefined ? patch : { ...patch, intensity });
+        s.set({ lookId: patch.look });
+        return;
+      }
+      cam.setGrade(patch);
+    },
+    [cam]
+  );
 
   // ---- events ----
   const onReady = useCallback(
@@ -541,7 +566,7 @@ export function CameraScreen() {
       />
 
       <View style={[styles.controls, { paddingBottom: insets.bottom + 10, backgroundColor: overlapBottom && !drawer ? palette.scrim : 'transparent' }]}>
-        {drawer ? <LookDrawer grade={cam.grade} onChange={cam.setGrade} note={lookNote} /> : null}
+        {drawer ? <LookDrawer grade={cam.grade} onChange={onGradeChange} note={lookNote} /> : null}
         {!drawer && (mode === 'pro' || mode === 'macro') ? (
           <ProDials
             mode={mode}

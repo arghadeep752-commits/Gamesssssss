@@ -26,7 +26,6 @@ export type SettingsState = {
   timelapseIntervalMs: number;
   accent: AccentKey;
   haptics: boolean;
-  performance: 'auto' | 'quality' | 'efficiency';
   onboarded: boolean;
   set: (patch: Partial<Omit<SettingsState, 'set' | 'setPhoto' | 'setVideo'>>) => void;
   setPhoto: (patch: Partial<PhotoConfig>) => void;
@@ -75,7 +74,6 @@ export const useSettings = create<SettingsState>()(
       timelapseIntervalMs: 1000,
       accent: 'tungsten',
       haptics: true,
-      performance: 'auto',
       onboarded: false,
       set: (patch) => set(patch),
       setPhoto: (patch) => set((s) => ({ photo: { ...s.photo, ...patch } })),
