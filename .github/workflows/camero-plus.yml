@@ -1,0 +1,170 @@
+name: Camero Plus Android
+
+on:
+  push:
+    branches: [camero-plus]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a GitHub release with the APKs
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: camero-plus-android
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      CI_RUN: ${{ github.run_number }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('package.json', 'modules/camero-engine/android/build.gradle') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --legacy-peer-deps 2>&1 | tee npm.log
+
+      - name: Check Expo package versions
+        run: npx expo install --check 2>&1 | tee expo-check.log || true
+
+      - name: Type-check
+        id: tsc
+        continue-on-error: true
+        run: npx tsc --noEmit 2>&1 | tee tsc.log; exit ${PIPESTATUS[0]}
+
+      - name: Prepare release signing
+        env:
+          KEYSTORE_B64: ${{ secrets.CAMERO_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.CAMERO_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.CAMERO_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.CAMERO_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/camero-release.keystore"
+            echo "CAMERO_KEYSTORE=$RUNNER_TEMP/camero-release.keystore" >> "$GITHUB_ENV"
+            echo "CAMERO_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "CAMERO_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "CAMERO_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Release signing: repository keystore"
+          else
+            echo "Release signing: debug keystore (add CAMERO_KEYSTORE_* secrets for your own key)"
+          fi
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --clean --no-install 2>&1 | tee prebuild.log; exit ${PIPESTATUS[0]}
+
+      - name: Build release APK
+        id: release
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace --continue 2>&1 | tee ../build-release.log; exit ${PIPESTATUS[0]}
+
+      - name: Build debug APK
+        id: debug
+        if: steps.release.outcome == 'success'
+        working-directory: android
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ../build-debug.log; exit ${PIPESTATUS[0]}
+
+      - name: Verify APKs
+        id: verify
+        if: steps.release.outcome == 'success'
+        run: |
+          set -e
+          REL=android/app/build/outputs/apk/release/app-release.apk
+          DBG=android/app/build/outputs/apk/debug/app-debug.apk
+          ls -la android/app/build/outputs/apk/*/
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for apk in "$REL" "$DBG"; do
+            [ -f "$apk" ] || continue
+            echo "== $apk ($(du -h "$apk" | cut -f1))"
+            "$AAPT" dump badging "$apk" | grep -E "^package|sdkVersion|targetSdkVersion|native-code|application-label:" || true
+            "$APKSIGNER" verify --print-certs "$apk" | head -3
+          done
+          mkdir -p dist
+          cp "$REL" "dist/CameroPlus-1.0.0-release.apk"
+          [ -f "$DBG" ] && cp "$DBG" "dist/CameroPlus-1.0.0-debug.apk"
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Upload APKs
+        if: steps.verify.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: camero-plus-apks-${{ github.run_number }}
+          path: dist/
+
+      - name: Publish release
+        if: steps.verify.outcome == 'success' && (contains(github.event.head_commit.message, '[release]') || (github.event_name == 'workflow_dispatch' && inputs.publish))
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="camero-plus-v1.0.0-build.${CI_RUN}"
+          cat > notes.md << 'NOTES'
+          Camero Plus 1.0.0 for Android 8.0 and newer.
+
+          Install **CameroPlus-1.0.0-release.apk** on your phone. Allow installs from your browser or file manager if Android asks.
+          The debug APK is the same app with debugging enabled.
+          NOTES
+          gh release create "$TAG" dist/*.apk dist/SHA256SUMS.txt --target "$GITHUB_SHA" --title "Camero Plus 1.0.0 (build ${CI_RUN})" --notes-file notes.md
+
+      - name: Write build report
+        if: always()
+        run: |
+          {
+            echo "run=${CI_RUN} sha=${GITHUB_SHA} tsc=${{ steps.tsc.outcome }} release=${{ steps.release.outcome }} debug=${{ steps.debug.outcome }} verify=${{ steps.verify.outcome }}"
+            echo "===== TSC ====="; tail -n 120 tsc.log 2>/dev/null
+            echo "===== EXPO CHECK ====="; tail -n 40 expo-check.log 2>/dev/null
+            echo "===== NPM (tail) ====="; tail -n 25 npm.log 2>/dev/null
+            echo "===== PREBUILD (tail) ====="; tail -n 40 prebuild.log 2>/dev/null
+            for f in build-release.log build-debug.log; do
+              [ -f "$f" ] || continue
+              echo "===== $f: errors ====="
+              grep -nE "^e: |error:|ERROR|FAILED|What went wrong|Could not |Unresolved reference|Execution failed" "$f" | grep -v "^.*warning" | head -n 200
+              echo "===== $f: tail ====="; tail -n 80 "$f"
+            done
+          } > ci-report.txt 2>&1
+          wc -l ci-report.txt
+
+      - name: Push build report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "camero-ci"
+          git config --global user.email "camero-ci@users.noreply.github.com"
+          mkdir ci-out && cd ci-out
+          git init -q
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth 1 origin camero-plus-ci; then git checkout -q -b camero-plus-ci FETCH_HEAD; else git checkout -q --orphan camero-plus-ci; fi
+          mkdir -p reports
+          cp ../ci-report.txt "reports/run-${CI_RUN}.txt"
+          cp ../ci-report.txt latest.txt
+          git add -A
+          git commit -qm "Build report ${CI_RUN}"
+          git push -q origin HEAD:camero-plus-ci

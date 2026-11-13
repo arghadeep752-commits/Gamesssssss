@@ -1,0 +1,10 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": [
+      "com.cameroplus.engine.camera.CameroCameraModule",
+      "com.cameroplus.engine.edit.CameroCanvasModule",
+      "com.cameroplus.engine.CameroEngineModule"
+    ]
+  }
+}

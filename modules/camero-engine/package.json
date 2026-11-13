@@ -1,0 +1,7 @@
+{
+  "name": "camero-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Camero Plus native camera, grading and editing engine (CameraX, OpenGL ES, Media3)",
+  "main": "index.ts"
+}
