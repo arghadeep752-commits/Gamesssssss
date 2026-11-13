@@ -81,10 +81,19 @@ def mesh_obj(name, V, T, UV=None, smooth=True, collection=None):
     return ob
 
 
+def deselect_all():
+    view_layer.update()
+    for o in list(scene.objects):
+        if o is not None:
+            try:
+                o.select_set(False)
+            except Exception:       # noqa: BLE001
+                pass
+
+
 def set_active(ob, select_only=True):
     if select_only:
-        for o in view_layer.objects:
-            o.select_set(False)
+        deselect_all()
     ob.select_set(True)
     view_layer.objects.active = ob
 
@@ -304,8 +313,7 @@ bake_mat.node_tree.nodes.active = bn
 low.data.materials.append(bake_mat)
 normal_ok = False
 try:
-    for o in view_layer.objects:
-        o.select_set(False)
+    deselect_all()
     high.select_set(True)
     low.select_set(True)
     view_layer.objects.active = low
@@ -528,8 +536,7 @@ actions = animate.build_actions(arm, log)
 # ================================================================================================ 8. export
 bpy.data.objects.remove(high, do_unlink=True)
 meshes = [low, saree, pallu, hair_ob, eyes_ob, teeth_ob, jew, scale_ob]
-for o in view_layer.objects:
-    o.select_set(False)
+deselect_all()
 for o in meshes + [arm]:
     o.select_set(True)
 view_layer.objects.active = arm
