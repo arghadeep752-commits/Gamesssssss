@@ -31,6 +31,7 @@ declare class CameroEngineModule extends NativeModule<EngineEvents> {
   getStorageInfo(): Promise<{ freeBytes: number; totalBytes: number }>;
   setSaveLocation(location: 'dcim' | 'pictures'): Promise<void>;
   clearCache(): Promise<void>;
+  share(uris: string[], mime: string): Promise<boolean>;
 }
 
 declare class CameroCameraModule extends NativeModule<Record<string, never>> {
