@@ -1,7 +1,7 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type NavigationAction } from '@react-navigation/native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-type Action = Parameters<ReturnType<typeof useNavigation>['dispatch']>[0];
+type Action = NavigationAction;
 
 /**
  * Asks before leaving a screen with unsaved work. Covers the back button, the back gesture and

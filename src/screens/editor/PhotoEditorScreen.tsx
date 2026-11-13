@@ -59,6 +59,8 @@ export function PhotoEditorScreen() {
   const [compare, setCompare] = useState(false);
   const [view, setView] = useState({ w: 0, h: 0 });
   const [source, setSource] = useState<{ w: number; h: number } | null>(null);
+  // The canvas works on a downsampled copy; the saved size comes from the full photo.
+  const [full, setFull] = useState<{ w: number; h: number } | null>(null);
   const [aspect, setAspect] = useState<AspectKey>('free');
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -70,6 +72,16 @@ export function PhotoEditorScreen() {
   useEffect(() => {
     loadLooks();
   }, [loadLooks]);
+
+  useEffect(() => {
+    let alive = true;
+    Engine.probeMedia(uri)
+      .then((p) => alive && p.width && p.height && setFull({ w: p.width, h: p.height }))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [uri]);
 
   useEffect(() => {
     if (!looks.length) return;
@@ -88,7 +100,7 @@ export function PhotoEditorScreen() {
   const frame = useMemo(() => fit(view.w, view.h, frameW, frameH, CROP_INSET), [view, frameW, frameH]);
   const frameAspect = frameW > 0 && frameH > 0 ? frameW / frameH : 1;
   const lockRatio = ratioFor(aspect, frameAspect, source ? source.w / source.h : 1);
-  const out = source ? outputSize(source.w, source.h, transform) : null;
+  const out = full ? outputSize(full.w, full.h, transform) : null;
 
   const setGrade = (patch: Partial<UiGrade>, commit: boolean) => h.update((s) => ({ ...s, grade: { ...s.grade, ...patch } }), commit);
   const setTransform = (next: EditTransform) => h.update((s) => ({ ...s, transform: next }), true);

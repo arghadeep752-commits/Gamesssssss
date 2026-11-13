@@ -255,19 +255,22 @@ export function ViewerScreen() {
             <T variant="bodyStrong" numberOfLines={1}>
               {formatDay(asset.creationTime)}
             </T>
-            <T variant="caption" color={palette.ash}>
-              {formatTime(asset.creationTime)}
-            </T>
-          </View>
-          {edit ? (
-            <View style={[styles.tag, { borderColor: accent }]}>
-              <T variant="caption" color={accent}>
-                Edited
+            <View style={styles.subtitle}>
+              <T variant="caption" color={palette.ash}>
+                {formatTime(asset.creationTime)}
               </T>
+              {edit ? (
+                <View style={[styles.tag, { borderColor: accent }]}>
+                  <T variant="caption" color={accent}>
+                    Edited
+                  </T>
+                </View>
+              ) : null}
             </View>
-          ) : (
-            <View style={styles.iconBtn} />
-          )}
+          </View>
+          <Tap onPress={() => nav.navigate('Gallery', { filter })} haptic="selection" style={styles.iconBtn} accessibilityLabel="All photos and videos">
+            <Icon name="gallery" />
+          </Tap>
         </Animated.View>
       ) : null}
 
@@ -315,7 +318,8 @@ const styles = StyleSheet.create({
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, minHeight: 52 },
   iconBtn: { width: 44, height: 52, alignItems: 'center', justifyContent: 'center' },
   titleBox: { flex: 1, alignItems: 'center', paddingVertical: 6 },
-  tag: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, marginRight: space.sm },
+  subtitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  tag: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 0 },
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around', paddingTop: 8 },
   action: { minWidth: 60, alignItems: 'center', paddingVertical: 2 },
   actionLabel: { marginTop: 3 },
