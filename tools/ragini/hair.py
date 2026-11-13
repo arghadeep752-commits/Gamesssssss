@@ -81,7 +81,7 @@ def grow_all(coll, roots, dirs, lengths, seg, rng, clear0, clear1, curl, gravity
     return res
 
 
-def build(body, seed=21, n_cards=240, face_strands=5):
+def build(body, seed=21, n_cards=320, face_strands=6):
     rng = np.random.default_rng(seed)
     head_shapes = [s for s in body.shapes if s.bone in ("head", "jaw", "neck")]
     coll = [s for s in body.shapes if s.bone in ("head", "jaw", "neck", "chest", "spine", "clavicle.L", "clavicle.R",
@@ -102,7 +102,7 @@ def build(body, seed=21, n_cards=240, face_strands=5):
     polys = grow_all(coll, roots, np.array(dirs), np.array(lengths), 0.026, rng,
                      clear0=0.003 + rng.uniform(0, 0.004, N), clear1=rng.uniform(0.012, 0.04, N),
                      curl=rng.uniform(0.15, 0.45, N), gravity=rng.uniform(0.45, 0.7, N))
-    strands = [(P, rng.uniform(0.022, 0.036), int(rng.integers(0, 4))) for P in polys]
+    strands = [(P, rng.uniform(0.016, 0.03), int(rng.integers(0, 4))) for P in polys]
     # strands falling over her face (one eye half hidden)
     fr, fd, fl = [], [], []
     for k in range(face_strands):
@@ -157,17 +157,17 @@ def texture(w=512, h=1024, seed=4):
         x0 = t * tw
         col = np.zeros((h, tw, 4))
         xs = np.arange(tw)[None, :]
-        for k in range(150):
+        for k in range(70):
             cx = rng.uniform(0.08, 0.92) * tw
             amp = rng.uniform(0.5, 3.5)
             freq = rng.uniform(2, 9)
             ph = rng.uniform(0, 6.28)
             length = rng.uniform(0.55, 1.0)
-            wdt = rng.uniform(0.6, 1.6)
+            wdt = rng.uniform(0.5, 1.2)
             x = cx + amp * np.sin(yy * freq * 6.28 + ph) + (yy * rng.uniform(-4, 4))
             dist = np.abs(xs - x)
             a = np.clip(1.0 - dist / wdt, 0, 1) * (yy < length) * np.clip((length - yy) / 0.08, 0, 1)
-            shade = rng.uniform(0.015, 0.09)
+            shade = rng.uniform(0.008, 0.05)
             grey = rng.random() < 0.06
             c = np.array([shade * 1.05, shade, shade * 0.95]) if not grey else np.array([0.32, 0.31, 0.3])
             m = a > col[:, :, 3]

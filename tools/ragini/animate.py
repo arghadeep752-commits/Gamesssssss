@@ -87,7 +87,7 @@ def run(t, T):
     p.r("upper_arm.L", X, 34 * s - 10).r("forearm.L", X, -55)
     # the scale raised high, ready to strike
     p.r("upper_arm.R", X, -95 - 8 * s).r("upper_arm.R", Y, -10).r("forearm.R", X, -35)
-    p.hips = Vector((0.01 * s, 0, -0.03 * (0.5 + 0.5 * math.cos(2 * w))))
+    p.hips = Vector((0.01 * s, 0, -0.085 - 0.03 * (0.5 + 0.5 * math.cos(2 * w))))
     return p
 
 

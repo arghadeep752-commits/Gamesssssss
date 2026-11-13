@@ -140,10 +140,10 @@ def pallu(body, n_len=46, n_wid=14, seed=5):
         [0.115, -0.045, 1.405],
         [0.135, 0.020, 1.430],
         [0.130, 0.085, 1.385],
-        [0.100, 0.120, 1.250],
-        [0.080, 0.135, 1.050],
-        [0.068, 0.140, 0.820],
-        [0.060, 0.140, 0.560],
+        [0.090, 0.120, 1.250],
+        [0.065, 0.132, 1.050],
+        [0.050, 0.136, 0.820],
+        [0.045, 0.136, 0.560],
     ])
     s_ctrl = np.linspace(0, 1, len(ctrl))
     s = np.linspace(0, 1, n_len)
@@ -153,7 +153,7 @@ def pallu(body, n_len=46, n_wid=14, seed=5):
         C[1:-1] = 0.25 * C[:-2] + 0.5 * C[1:-1] + 0.25 * C[2:]
     over_body = C[:, 2] > 1.17                    # part lying on the chest/shoulder/back
     # width: wide at the hip, folded narrow over the shoulder, spread out down the back
-    wid = np.interp(s, [0, 0.2, 0.45, 0.55, 0.7, 1.0], [0.30, 0.24, 0.13, 0.12, 0.26, 0.34])
+    wid = np.interp(s, [0, 0.2, 0.45, 0.55, 0.7, 1.0], [0.30, 0.24, 0.13, 0.12, 0.24, 0.30])
     tang = np.gradient(C, axis=0)
     tang /= np.linalg.norm(tang, axis=1, keepdims=True)
     Cp, nrm = _project(torso, C.copy(), 0.012)

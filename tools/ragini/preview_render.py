@@ -44,9 +44,9 @@ def render_all(scene, arm, meshes, out, log, quick=False):
     bg = world.node_tree.nodes.get("Background")
     bg.inputs[0].default_value = (0.012, 0.012, 0.016, 1.0)
     bg.inputs[1].default_value = 1.0
-    _area("key", (-1.3, -2.2, 2.5), (0, 0, 1.2), 520, 1.6, (1.0, 0.92, 0.85))
-    _area("fill", (1.8, -1.6, 1.3), (0, 0, 1.1), 140, 2.0, (0.75, 0.82, 1.0))
-    _area("rim", (0.6, 2.0, 2.2), (0, 0, 1.3), 380, 1.2, (1.0, 0.75, 0.7))
+    _area("key", (-1.3, -2.2, 2.5), (0, 0, 1.2), 70, 1.6, (1.0, 0.92, 0.85))
+    _area("fill", (1.8, -1.6, 1.3), (0, 0, 1.1), 18, 2.0, (0.75, 0.82, 1.0))
+    _area("rim", (0.6, 2.0, 2.2), (0, 0, 1.3), 55, 1.2, (1.0, 0.75, 0.7))
     floor_me = bpy.data.meshes.new("floor")
     floor_me.from_pydata([(-3, -3, 0), (3, -3, 0), (3, 3, 0), (-3, 3, 0)], [], [(0, 1, 2, 3)])
     floor = bpy.data.objects.new("floor", floor_me)

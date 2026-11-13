@@ -60,8 +60,8 @@ DOORS = [
     ("door_store", "store", "w", 9.75, 1.0, "door", "store_key"),
     ("door_toilet", "toilet", "w", 13.25, 1.0, "door", None),
     ("door_hall", "hall", "s", -2.0, 2.0, "door2", None),
-    ("door_hall2", "hall", "s", -11.0, 1.1, "door", None),
-    ("door_kitchen", "kitchen", "s", 9.5, 1.1, "door", None),
+    ("door_hall_library", "hall", "s", -11.0, 1.1, "door", None),
+    ("door_kitchen", "kitchen", "s", 7.0, 1.1, "door", None),
 ]
 
 # windows: room, side, centre along wall, width (outer walls look onto the yard/outside, inner ones onto the veranda)
@@ -80,13 +80,13 @@ WINDOWS = [
 ]
 
 ITEMS = {
-    # id: (label, candidate spots: (room, x, y, z_hint) - one is picked each game)
-    "office_key": ("OFFICE KEY", [("staff", 5.6, -4.6, "table"), ("class7", -10.6, 2.0, "desk"), ("library", -12.6, 12.4, "table"),
-                                  ("class6", 12.6, -0.4, "desk")]),
-    "store_key": ("STORE ROOM KEY", [("class5", -12.4, -0.2, "desk"), ("hall", 0.0, 20.4, "stage"), ("kitchen", 12.0, 19.0, "table"),
-                                     ("class8", 12.2, 6.6, "desk")]),
-    "hammer": ("HAMMER", [("store", 12.6, 9.4, "floor"), ("store", 10.4, 10.6, "crate")]),
-    "main_key": ("MAIN DOOR KEY", [("principal", -4.8, -4.4, "desk"), ("principal", -6.2, -0.6, "almirah")]),
+    # id: (label, candidate spots - one is picked at random each game): (room, furniture kind) or (room, "floor", x, y)
+    "office_key": ("OFFICE KEY", [("staff", "long_table"), ("class7", "teacher_table"), ("library", "reading_table"),
+                                  ("class6", "desk_bench")]),
+    "store_key": ("STORE ROOM KEY", [("class5", "teacher_table"), ("hall", "stage"), ("kitchen", "kitchen_table"),
+                                     ("class8", "desk_bench")]),
+    "hammer": ("HAMMER", [("store", "floor", 12.7, 9.3), ("store", "crate")]),
+    "main_key": ("MAIN DOOR KEY", [("principal", "principal_desk"), ("principal", "almirah")]),
 }
 
 ROOM_KIND = {"class5": "classroom", "class6": "classroom", "class7": "classroom", "class8": "classroom",
@@ -215,26 +215,31 @@ def build():
             yaw = -90 if front == "w" else 90           # students face the board
             furn.append({"kind": "blackboard", "room": name, "x": fx + s * 0.13, "y": (y0 + y1) / 2, "yaw": yaw + 180})
             furn.append({"kind": "dais", "room": name, "x": fx + s * 1.0, "y": (y0 + y1) / 2, "yaw": yaw + 180})
-            furn.append({"kind": "teacher_table", "room": name, "x": fx + s * 1.2, "y": (y0 + y1) / 2 + 0.9, "yaw": yaw + 180})
-            furn.append({"kind": "teacher_chair", "room": name, "x": fx + s * 0.75, "y": (y0 + y1) / 2 + 0.9, "yaw": yaw})
+            furn.append({"kind": "teacher_table", "room": name, "x": fx + s * 1.25, "y": (y0 + y1) / 2 + 0.7, "yaw": yaw + 180, "z": 0.2})
+            furn.append({"kind": "teacher_chair", "room": name, "x": fx + s * 0.62, "y": (y0 + y1) / 2 + 0.7, "yaw": yaw + 180, "z": 0.2})
             for col in range(2):
                 for row in range(3):
-                    furn.append({"kind": "desk_bench", "room": name, "x": fx + s * (2.6 + row * 1.15),
-                                 "y": (y0 + y1) / 2 + (col - 0.5) * 2.5, "yaw": yaw})
-            furn.append({"kind": "almirah", "room": name, "x": x1 - 0.4 if front == "w" else x0 + 0.4, "y": y1 - 0.45 if name != "class8" else y0 + 0.45, "yaw": 90 if front == "w" else -90})
+                    furn.append({"kind": "desk_bench", "room": name, "x": fx + s * (2.75 + row * 1.2),
+                                 "y": (y0 + y1) / 2 + (col - 0.5) * 2.6, "yaw": yaw})
+            # the almirah stands in the back corner, away from the door, its doors facing the board
+            ax = x1 - 0.3 if front == "w" else x0 + 0.3
+            furn.append({"kind": "almirah", "room": name, "x": ax, "y": y0 + 0.7, "yaw": yaw})
         else:
             fy = y0 if front == "s" else y1
             s = 1 if front == "s" else -1
-            yaw = 180 if front == "s" else 0
+            yaw = 0 if front == "s" else 180
             furn.append({"kind": "blackboard", "room": name, "x": (x0 + x1) / 2, "y": fy + s * 0.13, "yaw": yaw + 180})
             furn.append({"kind": "dais", "room": name, "x": (x0 + x1) / 2, "y": fy + s * 1.0, "yaw": yaw + 180})
-            furn.append({"kind": "teacher_table", "room": name, "x": (x0 + x1) / 2 + 1.0, "y": fy + s * 1.2, "yaw": yaw + 180})
-            furn.append({"kind": "teacher_chair", "room": name, "x": (x0 + x1) / 2 + 1.0, "y": fy + s * 0.75, "yaw": yaw})
-            for col in range(3):
+            furn.append({"kind": "teacher_table", "room": name, "x": (x0 + x1) / 2 + 0.7, "y": fy + s * 1.25, "yaw": yaw + 180, "z": 0.2})
+            furn.append({"kind": "teacher_chair", "room": name, "x": (x0 + x1) / 2 + 0.7, "y": fy + s * 0.62, "yaw": yaw + 180, "z": 0.2})
+            cols = 3 if (x1 - x0) >= 6.5 else 2
+            for col in range(cols):
                 for row in range(3):
-                    furn.append({"kind": "desk_bench", "room": name, "x": (x0 + x1) / 2 + (col - 1) * 1.95,
-                                 "y": fy + s * (2.7 + row * 1.15), "yaw": yaw})
-            furn.append({"kind": "almirah", "room": name, "x": x0 + 0.45, "y": fy + s * 0.5, "yaw": 90})
+                    furn.append({"kind": "desk_bench", "room": name, "x": (x0 + x1) / 2 + (col - (cols - 1) / 2) * 2.1,
+                                 "y": fy + s * (2.8 + row * 1.2), "yaw": yaw})
+            ax = x0 + 0.3
+            ay = fy + s * (y1 - y0 - 0.7)
+            furn.append({"kind": "almirah", "room": name, "x": ax, "y": ay, "yaw": -90})
         furn.append({"kind": "fan", "room": name, "x": (x0 + x1) / 2, "y": (y0 + y1) / 2, "yaw": 0})
     classroom("class5", "w")
     classroom("class6", "e")
@@ -294,9 +299,36 @@ def build():
     furn += [{"kind": "neem_tree", "room": "court", "x": -3.0, "y": 9.5, "yaw": 0},
              {"kind": "flag_platform", "room": "court", "x": 2.5, "y": 6.5, "yaw": 0},
              {"kind": "hand_pump", "room": "court", "x": 4.6, "y": 11.2, "yaw": 200},
-             {"kind": "water_tank", "room": "veranda", "x": 8.4, "y": 13.0, "yaw": -90},
+             {"kind": "water_tank", "room": "veranda", "x": -4.5, "y": 14.58, "yaw": 180},
              {"kind": "gate", "room": "yard", "x": 0.0, "y": -17.0, "yaw": 0},
              {"kind": "sign", "room": "yard", "x": 0.0, "y": -6.12, "yaw": 0}]
+    # item spots: on top of a piece of furniture (a little off its centre) or on the floor
+    import furniture as _f
+    items = {}
+    rr = __import__("random").Random(17)
+    for iid, (label, spots) in ITEMS.items():
+        out = []
+        for sp in spots:
+            if sp[1] == "floor":
+                out.append({"room": sp[0], "x": sp[2], "y": sp[3], "z": 0.0, "on": "floor"})
+                continue
+            cands = [f for f in furn if f["room"] == sp[0] and f["kind"] == sp[1]]
+            if not cands:
+                continue
+            f = cands[rr.randrange(len(cands))]
+            a = math.radians(f["yaw"])
+            ox, oy = rr.uniform(-0.25, 0.25), rr.uniform(-0.08, 0.08)
+            if sp[1] == "almirah":
+                ox, oy = 0.0, 0.05
+            if sp[1] == "desk_bench":
+                oy = -0.17
+            if sp[1] == "stage":
+                ox, oy = rr.uniform(-1.5, 1.5), -0.9
+            wx = f["x"] + ox * math.cos(a) - oy * math.sin(a)
+            wy = f["y"] + ox * math.sin(a) + oy * math.cos(a)
+            out.append({"room": sp[0], "x": round(wx, 3), "y": round(wy, 3), "z": round(f.get("z", 0.0) + _f.TOP_Z.get(sp[1], 0.78), 3),
+                        "on": sp[1]})
+        items[iid] = {"label": label, "spots": out}
     # hiding places: under the teacher tables and in the almirahs
     hides = [{"kind": "under", "furn": i} for i, f in enumerate(furn) if f["kind"] in ("teacher_table", "principal_desk")]
     hides += [{"kind": "inside", "furn": i} for i, f in enumerate(furn) if f["kind"] == "almirah"]
@@ -310,7 +342,7 @@ def build():
         "wall_t": WALL_T, "ceil_h": CEIL_H, "building": BUILDING, "court": COURT, "veranda": VERANDA, "yard": YARD,
         "rooms": [{"name": r[0], "label": r[1], "rect": r[2], "floor": r[3], "dado": r[4], "kind": ROOM_KIND[r[0]]} for r in ROOMS],
         "walls": walls, "doors": doors, "windows": windows, "pillars": pillars, "lights": lights, "furniture": furn,
-        "items": {k: {"label": v[0], "spots": [{"room": s[0], "x": s[1], "y": s[2], "on": s[3]} for s in v[1]]} for k, v in ITEMS.items()},
+        "items": items,
         "hides": hides, "patrol": patrol,
         "spawn": {"x": -10.5, "y": -2.6, "yaw": 90.0, "room": "class5"},       # wakes at a desk in Class V
         "ragini_start": {"x": 0.0, "y": 8.0},
