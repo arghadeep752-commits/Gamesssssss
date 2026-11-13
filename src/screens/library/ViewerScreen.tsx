@@ -132,7 +132,7 @@ export function ViewerScreen() {
     }
   }, [filter]);
 
-  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<MediaLibrary.Asset>[] }) => {
+  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems.find((v) => v.isViewable);
     if (first?.index != null) setIndex(first.index);
   }).current;

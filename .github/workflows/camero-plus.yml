@@ -59,6 +59,11 @@ jobs:
         continue-on-error: true
         run: npx tsc --noEmit 2>&1 | tee tsc.log; exit ${PIPESTATUS[0]}
 
+      - name: Unit tests
+        id: tests
+        continue-on-error: true
+        run: npx --yes tsx --test tests/*.test.ts 2>&1 | tee tests.log; exit ${PIPESTATUS[0]}
+
       - name: Prepare release signing
         env:
           KEYSTORE_B64: ${{ secrets.CAMERO_KEYSTORE_B64 }}
@@ -137,8 +142,9 @@ jobs:
         if: always()
         run: |
           {
-            echo "run=${CI_RUN} sha=${GITHUB_SHA} tsc=${{ steps.tsc.outcome }} release=${{ steps.release.outcome }} debug=${{ steps.debug.outcome }} verify=${{ steps.verify.outcome }}"
+            echo "run=${CI_RUN} sha=${GITHUB_SHA} tsc=${{ steps.tsc.outcome }} tests=${{ steps.tests.outcome }} release=${{ steps.release.outcome }} debug=${{ steps.debug.outcome }} verify=${{ steps.verify.outcome }}"
             echo "===== TSC ====="; tail -n 120 tsc.log 2>/dev/null
+            echo "===== TESTS ====="; grep -E "^# (tests|pass|fail)|^not ok" tests.log 2>/dev/null
             echo "===== EXPO CHECK ====="; tail -n 40 expo-check.log 2>/dev/null
             echo "===== NPM (tail) ====="; tail -n 25 npm.log 2>/dev/null
             echo "===== PREBUILD (tail) ====="; tail -n 40 prebuild.log 2>/dev/null

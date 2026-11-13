@@ -81,13 +81,15 @@ export function GalleryScreen() {
   const [loading, setLoading] = useState(false);
   const cursors = useRef<Record<string, string | undefined> | null>(null);
   const done = useRef(false);
+  const busy = useRef(false);
   const gap = 2;
   const size = Math.floor((width - gap * (columns - 1)) / columns);
 
   const load = useCallback(
     async (reset: boolean) => {
-      if (loading && !reset) return;
+      if (busy.current && !reset) return;
       if (!reset && done.current) return;
+      busy.current = true;
       setLoading(true);
       try {
         if (filter === 'favorites' || filter === 'edited') {
@@ -107,6 +109,7 @@ export function GalleryScreen() {
           setAssets((prev) => (reset ? page.assets : [...prev, ...page.assets]));
         }
       } finally {
+        busy.current = false;
         setLoading(false);
       }
     },
