@@ -1,4 +1,4 @@
-run=1 sha=8852d235f018f42181a6cf118aa53f49b73e6b30 tsc=success release=success debug=success verify=success
+run=2 sha=4506e996cd56dbe9031ee40abd0cb28fa1f0ed4b tsc=success release=failure debug=skipped verify=skipped
 ===== TSC =====
 ===== EXPO CHECK =====
 Dependencies are up to date
@@ -10,7 +10,7 @@ npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and cont
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-added 679 packages in 21s
+added 678 packages in 22s
 ===== PREBUILD (tail) =====
 ! Git branch has uncommitted file changes
 › It's recommended to commit all changes before proceeding in case you want to revert generated changes.
@@ -24,160 +24,94 @@ Git status is dirty but the command will continue because the terminal is not in
 - Running prebuild
 ✔ Finished prebuild
 ===== build-release.log: errors =====
+709:> Task :camero-engine:compileReleaseKotlin FAILED
+710:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraCatalog.kt:203:27 Unresolved reference 'mapNotNull'.
+711:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraCatalog.kt:203:48 Unresolved reference 'it'.
+712:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraCatalog.kt:241:25 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+713:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraCatalog.kt:244:21 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+714:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraCatalog.kt:245:54 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+715:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraSession.kt:424:25 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+716:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraSession.kt:430:19 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+717:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraSession.kt:431:53 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+718:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraSession.kt:434:21 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+719:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/camera/CameraSession.kt:436:60 This declaration needs opt-in. Its usage must be marked with '@androidx.camera.video.ExperimentalHighSpeedVideo' or '@OptIn(androidx.camera.video.ExperimentalHighSpeedVideo::class)'
+720:e: file:///home/runner/work/Gamesssssss/Gamesssssss/modules/camero-engine/android/src/main/java/com/cameroplus/engine/edit/PhotoRenderer.kt:73:29 None of the following candidates is applicable:
+844:* What went wrong:
+845:Execution failed for task ':camero-engine:compileReleaseKotlin'.
+855:org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':camero-engine:compileReleaseKotlin'.
+1110:BUILD FAILED in 8m 10s
 ===== build-release.log: tail =====
-> Task :react-native-reanimated:bundleLibRuntimeToJarRelease
-> Task :react-native-reanimated:processReleaseJavaRes NO-SOURCE
-> Task :react-native-reanimated:createFullJarRelease
-> Task :react-native-reanimated:extractProguardFiles
-> Task :react-native-reanimated:generateReleaseLintModel
-> Task :react-native-reanimated:prepareLintJarForPublish
-> Task :react-native-reanimated:extractDeepLinksForAarRelease
-> Task :react-native-reanimated:extractReleaseAnnotations
-> Task :react-native-reanimated:mergeReleaseGeneratedProguardFiles
-> Task :react-native-reanimated:mergeReleaseConsumerProguardFiles
-> Task :react-native-reanimated:mergeReleaseJavaResource
-> Task :react-native-reanimated:syncReleaseLibJars
-> Task :react-native-reanimated:writeReleaseLintModelMetadata
-> Task :react-native-reanimated:stripReleaseDebugSymbols
-> Task :react-native-reanimated:copyReleaseJniLibsProjectAndLocalJars
-> Task :react-native-reanimated:lintVitalAnalyzeRelease
-> Task :react-native-reanimated:bundleReleaseLocalLintAar
-> Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[arm64-v8a]
-> Task :react-native-reanimated:generateReleaseLintVitalModel
-> Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[armeabi-v7a]
-> Task :react-native-gesture-handler:mergeReleaseNativeLibs
-> Task :react-native-gesture-handler:copyReleaseJniLibsProjectOnly
-> Task :react-native-gesture-handler:stripReleaseDebugSymbols
-> Task :react-native-gesture-handler:copyReleaseJniLibsProjectAndLocalJars
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
+	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
+	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:46)
+	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
+	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
+	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	... 2 more
 
-> Task :react-native-gesture-handler:compileReleaseKotlin
-w: file:///home/runner/work/Gamesssssss/Gamesssssss/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootView.kt:41:43 The corresponding parameter in the supertype 'ReactViewGroup' is named 'ev'. This may cause problems when calling this function with named arguments.
-
-> Task :react-native-gesture-handler:compileReleaseJavaWithJavac
-> Task :react-native-gesture-handler:bundleLibCompileToJarRelease
-> Task :react-native-gesture-handler:bundleLibRuntimeToJarRelease
-> Task :react-native-gesture-handler:processReleaseJavaRes
-> Task :react-native-gesture-handler:createFullJarRelease
-> Task :react-native-gesture-handler:bundleLibRuntimeToDirRelease
-> Task :react-native-gesture-handler:generateReleaseLintModel
-> Task :react-native-gesture-handler:extractReleaseAnnotations
-> Task :react-native-gesture-handler:mergeReleaseGeneratedProguardFiles
-> Task :react-native-gesture-handler:mergeReleaseConsumerProguardFiles
-> Task :react-native-gesture-handler:mergeReleaseJavaResource
-> Task :react-native-gesture-handler:syncReleaseLibJars
-> Task :react-native-gesture-handler:bundleReleaseLocalLintAar
-> Task :react-native-gesture-handler:generateReleaseLintVitalModel
-> Task :app:buildCMakeRelWithDebInfo[arm64-v8a]
-> Task :react-native-gesture-handler:lintVitalAnalyzeRelease
-> Task :app:buildCMakeRelWithDebInfo[armeabi-v7a]
-
-> Task :app:compileReleaseKotlin
-w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:10:8 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:22:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
-w: file:///home/runner/work/Gamesssssss/Gamesssssss/android/app/src/main/java/com/cameroplus/app/MainApplication.kt:22:33 'class ReactNativeHost : Any' is deprecated. Deprecated in Java.
-
-> Task :app:mergeReleaseNativeLibs
-> Task :app:compileReleaseJavaWithJavac
-> Task :app:stripReleaseDebugSymbols
-> Task :app:dexBuilderRelease
-> Task :app:mergeReleaseGlobalSynthetics
-> Task :app:generateReleaseLintVitalReportModel
-> Task :app:processReleaseJavaRes
-> Task :app:extractReleaseNativeSymbolTables
-> Task :app:lintVitalAnalyzeRelease
-> Task :app:lintVitalReportRelease
-> Task :app:lintVitalRelease
-> Task :app:mergeReleaseJavaResource
-> Task :app:mergeReleaseNativeDebugMetadata
-> Task :app:mergeDexRelease
-> Task :app:compileReleaseArtProfile
-> Task :app:packageRelease
-> Task :app:createReleaseApkListingFileRedirect
-> Task :app:assembleRelease
-
-[Incubating] Problems report is available at: file:///home/runner/work/Gamesssssss/Gamesssssss/android/build/reports/problems/problems-report.html
-
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
-
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-
-For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-
-BUILD SUCCESSFUL in 10m 2s
-502 actionable tasks: 502 executed
-===== build-debug.log: errors =====
-===== build-debug.log: tail =====
-> Task :react-native-reanimated:configureCMakeDebug[armeabi-v7a]
-> Task :app:mergeLibDexDebug
-> Task :react-native-reanimated:generateJsonModelDebug
-> Task :react-native-reanimated:prefabDebugConfigurePackage
-> Task :app:mergeProjectDexDebug
-> Task :expo:mergeDebugJniLibFolders
-> Task :expo:mergeDebugNativeLibs NO-SOURCE
-> Task :expo:copyDebugJniLibsProjectOnly
-> Task :expo-constants:mergeDebugJniLibFolders
-> Task :expo-constants:mergeDebugNativeLibs NO-SOURCE
-> Task :expo-constants:copyDebugJniLibsProjectOnly
-> Task :app:mergeDebugJavaResource
-> Task :react-native-async-storage_async-storage:mergeDebugJniLibFolders
-> Task :react-native-async-storage_async-storage:mergeDebugNativeLibs NO-SOURCE
-> Task :react-native-async-storage_async-storage:copyDebugJniLibsProjectOnly
-> Task :app:configureCMakeDebug[arm64-v8a]
-> Task :expo-modules-core:configureCMakeDebug[arm64-v8a]
-> Task :react-native-gesture-handler:configureCMakeDebug[arm64-v8a]
-> Task :app:configureCMakeDebug[armeabi-v7a]
-> Task :app:mergeDebugJniLibFolders
-> Task :react-native-reanimated:mergeDebugJniLibFolders
-> Task :react-native-safe-area-context:mergeDebugJniLibFolders
-> Task :react-native-safe-area-context:mergeDebugNativeLibs NO-SOURCE
-> Task :react-native-safe-area-context:copyDebugJniLibsProjectOnly
-> Task :react-native-gesture-handler:configureCMakeDebug[armeabi-v7a]
-> Task :react-native-gesture-handler:mergeDebugJniLibFolders
-> Task :react-native-svg:mergeDebugJniLibFolders
-> Task :react-native-svg:mergeDebugNativeLibs NO-SOURCE
-> Task :react-native-svg:copyDebugJniLibsProjectOnly
-> Task :app:validateSigningDebug
-> Task :app:writeDebugAppMetadata
-> Task :app:writeDebugSigningConfigVersions
-> Task :react-native-screens:configureCMakeDebug[arm64-v8a]
-> Task :react-native-screens:buildCMakeDebug[arm64-v8a]
-> Task :react-native-screens:configureCMakeDebug[armeabi-v7a]
-> Task :react-native-worklets:buildCMakeDebug[arm64-v8a][worklets]
-> Task :react-native-screens:buildCMakeDebug[armeabi-v7a]
-> Task :react-native-screens:mergeDebugJniLibFolders
-> Task :react-native-screens:mergeDebugNativeLibs
-> Task :expo-modules-core:buildCMakeDebug[arm64-v8a]
-> Task :react-native-screens:copyDebugJniLibsProjectOnly
-> Task :expo-modules-core:configureCMakeDebug[armeabi-v7a]
-> Task :react-native-worklets:buildCMakeDebug[armeabi-v7a][worklets]
-> Task :react-native-worklets:externalNativeBuildDebug
-> Task :react-native-worklets:prefabDebugPackage
-> Task :react-native-worklets:mergeDebugJniLibFolders
-> Task :react-native-worklets:mergeDebugNativeLibs
-> Task :expo-modules-core:buildCMakeDebug[armeabi-v7a]
-> Task :expo-modules-core:mergeDebugJniLibFolders
-> Task :react-native-worklets:copyDebugJniLibsProjectOnly
-> Task :expo-modules-core:mergeDebugNativeLibs
-> Task :expo-modules-core:copyDebugJniLibsProjectOnly
-> Task :react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated]
-> Task :react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated]
-> Task :react-native-reanimated:externalNativeBuildDebug
-> Task :react-native-reanimated:prefabDebugPackage
-> Task :react-native-reanimated:mergeDebugNativeLibs
-> Task :react-native-reanimated:copyDebugJniLibsProjectOnly
-> Task :react-native-gesture-handler:buildCMakeDebug[arm64-v8a]
-> Task :react-native-gesture-handler:buildCMakeDebug[armeabi-v7a]
-> Task :react-native-gesture-handler:mergeDebugNativeLibs
-> Task :react-native-gesture-handler:copyDebugJniLibsProjectOnly
-> Task :app:buildCMakeDebug[arm64-v8a]
-> Task :app:buildCMakeDebug[armeabi-v7a]
-> Task :app:mergeDebugNativeLibs
-> Task :app:stripDebugDebugSymbols
-> Task :app:packageDebug
-> Task :app:createDebugApkListingFileRedirect
-> Task :app:assembleDebug
-
-[Incubating] Problems report is available at: file:///home/runner/work/Gamesssssss/Gamesssssss/android/build/reports/problems/problems-report.html
 
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
 
@@ -185,5 +119,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 5m 42s
-323 actionable tasks: 279 executed, 44 up-to-date
+BUILD FAILED in 8m 10s
+494 actionable tasks: 494 executed
