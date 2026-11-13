@@ -1,0 +1,6 @@
+/build/*
+!/build/.gdignore
+.godot/
+__pycache__/
+*.pyc
+/assets/downloaded/

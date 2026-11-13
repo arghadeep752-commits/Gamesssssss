@@ -1,0 +1,76 @@
+name: Ragini - build
+
+on:
+  push:
+    branches: [ragini]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  BLENDER_VERSION: 4.2.3
+
+jobs:
+  # ----------------------------------------------------------------------------------------- Ragini, built in Blender
+  ragini_model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: CI release (logs and previews, not the game)
+        run: |
+          gh release view ragini-ci -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create ragini-ci -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Ragini CI - logs and previews (not the game)" --notes "Build logs and preview renders of the latest Ragini build."
+      - name: Blender cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+      - name: Install Blender
+        run: |
+          if [ ! -x ~/blender/blender ]; then
+            mkdir -p ~/blender && cd ~/blender
+            V=$BLENDER_VERSION; S=${V%.*}
+            for u in https://download.blender.org/release/Blender$S/blender-$V-linux-x64.tar.xz \
+                     https://mirrors.ocf.berkeley.edu/blender/release/Blender$S/blender-$V-linux-x64.tar.xz; do
+              curl -fsSL --retry 3 --max-time 900 "$u" -o b.tar.xz && break || rm -f b.tar.xz
+            done
+            tar -xJf b.tar.xz --strip-components=1 && rm -f b.tar.xz
+          fi
+          if ! ~/blender/blender -b --version >/dev/null 2>&1; then
+            sudo apt-get update -qq || true
+            sudo apt-get install -y -qq --no-install-recommends libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libgl1 libsm6 libegl1
+          fi
+          ~/blender/blender -b --version | head -2
+      - name: Build Ragini in Blender
+        run: |
+          mkdir -p build/ragini
+          set +e
+          ~/blender/blender -b -noaudio -P tools/ragini/build_ragini.py -- build/ragini > build/ragini_blender.txt 2>&1
+          code=$?
+          set -e
+          grep -E "^\[|Error|Traceback|FAILED|line [0-9]+" build/ragini_blender.txt | tail -150 || true
+          tail -40 build/ragini_blender.txt
+          ls -la build/ragini
+          [ $code -eq 0 ] && [ -f build/ragini/ragini.glb ]
+      - name: Publish logs and previews
+        if: always()
+        run: |
+          cd build
+          [ -f ragini/build_log.txt ] && cp ragini/build_log.txt ragini_build_log.txt
+          for f in ragini_blender.txt ragini_build_log.txt ragini/preview_*.png ragini/ragini_body_albedo.png ragini/ragini_body_normal.png ragini/ragini_saree.png; do
+            [ -f "$f" ] && gh release upload ragini-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ragini-model
+          path: build/ragini
+          if-no-files-found: warn
