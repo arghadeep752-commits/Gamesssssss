@@ -1,0 +1,19 @@
+name: Hyper3D models
+# Runs only on the rodin-handoff branch. It downloads the Hyper3D (Rodin) models into rodin_raw.zip on the
+# ragini-ci release; the download links reach it encrypted (see tools/rodin_fetch.py).
+on:
+  push:
+    branches: [rodin-handoff]
+    paths-ignore: ['handoff/**']
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the Hyper3D models
+        run: python3 tools/rodin_fetch.py
