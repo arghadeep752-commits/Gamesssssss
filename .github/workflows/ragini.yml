@@ -21,7 +21,7 @@ jobs:
   # ----------------------------------------------------------------------------------------- real textures, sounds, fonts
   assets:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
       - name: CI release (logs and previews, not the game)
@@ -41,9 +41,15 @@ jobs:
         run: |
           mkdir -p assets/downloaded
           n=0
-          if curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"; then
-            n=$(unzip -l /tmp/sp.zip | grep -c '\.ogg' || true)
-          fi
+          for i in $(seq 1 50); do
+            if curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"; then
+              n=$(unzip -l /tmp/sp.zip | grep -c '\.ogg' || true)
+            fi
+            [ "$n" -ge 20 ] && break
+            others=$(gh run list -R "$GITHUB_REPOSITORY" -w ragini.yml --status in_progress --json databaseId -q "[.[] | select(.databaseId != $GITHUB_RUN_ID)] | length" 2>/dev/null || echo 0)
+            [ "$others" = "0" ] && break
+            echo "another build is downloading the sounds - waiting for its pack ($i)"; sleep 30
+          done
           if [ "$n" -ge 20 ]; then
             unzip -oq /tmp/sp.zip -d assets/downloaded && echo "reused sound pack ($n files)"
           else
@@ -76,14 +82,23 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Model cache (rebuilt only when the Blender scripts change)
+        id: mcache
+        uses: actions/cache@v4
+        with:
+          path: build/ragini
+          key: ragini-model-v1-${{ hashFiles('tools/common/**', 'tools/ragini/**', 'tools/install_blender.sh') }}
       - name: Blender cache
+        if: steps.mcache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ~/blender
           key: blender-${{ env.BLENDER_VERSION }}-linux-x64
       - name: Install Blender
+        if: steps.mcache.outputs.cache-hit != 'true'
         run: bash tools/install_blender.sh
       - name: Build Ragini in Blender
+        if: steps.mcache.outputs.cache-hit != 'true'
         run: |
           mkdir -p build/ragini
           set +e
@@ -117,14 +132,23 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - name: Model cache (rebuilt only when the Blender scripts change)
+        id: mcache
+        uses: actions/cache@v4
+        with:
+          path: build/school
+          key: school-model-v1-${{ hashFiles('tools/common/**', 'tools/school/**', 'tools/install_blender.sh') }}
       - name: Blender cache
+        if: steps.mcache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ~/blender
           key: blender-${{ env.BLENDER_VERSION }}-linux-x64
       - name: Install Blender
+        if: steps.mcache.outputs.cache-hit != 'true'
         run: bash tools/install_blender.sh
       - name: Build the school in Blender (geometry, baked night lighting)
+        if: steps.mcache.outputs.cache-hit != 'true'
         run: |
           mkdir -p build/school
           set +e
@@ -172,7 +196,10 @@ jobs:
           cp build/ragini/ragini.glb assets/models/
           cp build/school/school.glb build/school/school_meta.json assets/models/
           cp -r build/school/lightmaps assets/models/
-          ls -la assets/models
+          for f in assets/models/lightmaps/*.png; do
+            printf '[remap]\n\nimporter="texture"\ntype="CompressedTexture2D"\n\n[params]\n\ncompress/mode=0\nmipmaps/generate=false\n' > "$f.import"
+          done
+          ls -la assets/models; ls assets/downloaded/sounds | wc -l
       - name: Godot cache
         uses: actions/cache@v4
         with:

@@ -403,10 +403,12 @@ func _start_game(m: int) -> void:
 		return
 	audio.stop_all()
 	audio.loop("night", -13.0)
-	audio.loop("drone", -15.0)
 	audio.loop("wind", -24.0)
+	audio.loop("music_raga", -9.0)        # the intro cutscene plays over a real raga recording
 	_place_start()
 	await _intro()
+	audio.stop("music_raga")
+	audio.loop("drone", -15.0)            # tanpura drone under the night ambience while playing
 	_begin_day()
 
 

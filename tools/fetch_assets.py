@@ -550,11 +550,17 @@ def archive_fetch(name, spec, tmp):
     return None
 
 
+SOUND_DEADLINE = [time.time() + 32 * 60]      # never let the sound search stall the build
+
+
 def fetch_sound(name, spec, tmp):
     tried = set()
     t_start = time.time()
+    if time.time() > SOUND_DEADLINE[0]:
+        REPORT.append("%-12s <- skipped (time budget)" % name)
+        return None
     for q in spec["q"]:
-        if time.time() - t_start > 150:
+        if time.time() - t_start > 110:
             break
         try:
             res = commons_search(q)
@@ -567,7 +573,7 @@ def fetch_sound(name, spec, tmp):
                 continue
             if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]):
                 continue
-            if not (5000 < r["size"] < 40_000_000) or time.time() - t_start > 150:
+            if not (5000 < r["size"] < 40_000_000) or time.time() - t_start > 110:
                 continue
             tried.add(r["url"])
             x = None
@@ -587,7 +593,7 @@ def fetch_sound(name, spec, tmp):
                 continue
             REPORT.append("%-12s <- %s | %s | %s | %.1fs" % (name, r["title"], r["lic"], r["author"], len(x) / SR))
             return "- Sound `%s`: %s - %s - %s (%s)" % (name, r["title"].replace("File:", ""), r["author"] or "unknown", r["lic"], r["page"])
-    c = archive_fetch(name, spec, tmp)
+    c = archive_fetch(name, spec, tmp) if time.time() < SOUND_DEADLINE[0] else None
     if c:
         return c
     REPORT.append("%-12s <- NOTHING FOUND" % name)
