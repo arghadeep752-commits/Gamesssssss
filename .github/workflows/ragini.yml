@@ -21,7 +21,7 @@ jobs:
   # ----------------------------------------------------------------------------------------- real textures, sounds, fonts
   assets:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: CI release (logs and previews, not the game)
@@ -56,15 +56,10 @@ jobs:
 
   # ----------------------------------------------------------------------------------------- Ragini, built in Blender
   ragini_model:
-    needs: assets
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: assets
-          path: .
       - name: Blender cache
         uses: actions/cache@v4
         with:
@@ -76,7 +71,7 @@ jobs:
         run: |
           mkdir -p build/ragini
           set +e
-          ~/blender/blender -b -noaudio -P tools/ragini/build_ragini.py -- build/ragini --tex assets/downloaded/tex > build/ragini_blender.txt 2>&1
+          ~/blender/blender -b -noaudio -P tools/ragini/build_ragini.py -- build/ragini > build/ragini_blender.txt 2>&1
           code=$?
           set -e
           grep -E "^\[|Error|Traceback|FAILED|line [0-9]+" build/ragini_blender.txt | tail -150 || true
@@ -141,3 +136,77 @@ jobs:
             build/school/lightmaps
             build/school/school.blend
             build/school/preview_*.png
+
+  # ----------------------------------------------------------------------------------------- Godot: import and export the APK
+  apk:
+    needs: [assets, ragini_model, school_model]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: assets, path: . }
+      - uses: actions/download-artifact@v4
+        with: { name: ragini-model, path: build/ragini }
+      - uses: actions/download-artifact@v4
+        with: { name: school-model, path: build/school }
+      - name: Put the models in the project
+        run: |
+          mkdir -p assets/models
+          cp build/ragini/ragini.glb assets/models/
+          cp build/school/school.glb build/school/school_meta.json assets/models/
+          cp -r build/school/lightmaps assets/models/
+          ls -la assets/models
+      - name: Godot cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-stable
+      - name: Install Godot and export templates
+        run: |
+          V=$GODOT_VERSION
+          mkdir -p ~/godot && cd ~/godot
+          if [ ! -x godot ]; then
+            curl -fsSL --retry 3 -o g.zip https://github.com/godotengine/godot/releases/download/$V-stable/Godot_v$V-stable_linux.x86_64.zip
+            unzip -q g.zip && mv Godot_v$V-stable_linux.x86_64 godot && rm g.zip
+          fi
+          if [ ! -d templates ]; then
+            curl -fsSL --retry 3 -o t.tpz https://github.com/godotengine/godot/releases/download/$V-stable/Godot_v$V-stable_export_templates.tpz
+            unzip -q t.tpz && rm t.tpz
+          fi
+          mkdir -p ~/.local/share/godot/export_templates/$V.stable
+          cp templates/android_*.apk templates/version.txt ~/.local/share/godot/export_templates/$V.stable/ 2>/dev/null || cp -r templates/* ~/.local/share/godot/export_templates/$V.stable/
+          mkdir -p ~/.config/godot
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_SDK_ROOT" "$JAVA_HOME_17_X64" > ~/.config/godot/editor_settings-4.3.tres
+          ~/godot/godot --version
+      - name: Import and export
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/tools/ragini.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ragini
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ragini123
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/tools/ragini.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: ragini
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: ragini123
+        run: |
+          timeout 900 ~/godot/godot --headless --path . --import > build/import_log.txt 2>&1 || true
+          grep -E "ERROR|SCRIPT ERROR" build/import_log.txt | head -40 || true
+          timeout 900 ~/godot/godot --headless --path . --export-release Android build/Ragini.apk > build/export_log.txt 2>&1 || true
+          tail -40 build/export_log.txt
+          ls -la build/Ragini.apk
+      - name: Publish the game
+        run: |
+          TAG="ragini-v${{ github.run_number }}"
+          cat > build/CREDITS.md << 'EOT'
+          # RAGINI - The Indian Horror Game
+          Game by MXYAN GAMES OFFICIAL. All 3D models (Ragini, the school, furniture, items) were built in Blender
+          by the scripts in this repository (`tools/`). The .blend files are attached.
+
+          Real photographed textures, recorded sounds and fonts used:
+          EOT
+          cat build/CREDITS_AUTO.md >> build/CREDITS.md || true
+          cp build/ragini/ragini.blend build/ragini_character.blend || true
+          cp build/school/school.blend build/ragini_school.blend || true
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "RAGINI - The Indian Horror Game (build ${{ github.run_number }})" \
+            --notes "Download **Ragini.apk** and install it on Android. Escape the school in 3 days: find the hammer for the planks and the main door key. Models built in Blender (.blend files attached)." \
+            build/Ragini.apk build/CREDITS.md build/ragini_character.blend build/ragini_school.blend
+          gh release upload ragini-ci build/import_log.txt build/export_log.txt -R "$GITHUB_REPOSITORY" --clobber || true

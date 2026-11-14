@@ -41,7 +41,7 @@ def log(*a):
     print(*a, flush=True)
 
 
-def http(url, tries=4, timeout=120):
+def http(url, tries=3, timeout=45):
     last = None
     for k in range(tries):
         try:
@@ -467,6 +467,7 @@ def onsets(x, count, length):
 
 def fetch_sound(name, spec, tmp):
     tried = set()
+    t_start = time.time()
     for q in spec["q"]:
         try:
             res = commons_search(q)
@@ -479,7 +480,7 @@ def fetch_sound(name, spec, tmp):
                 continue
             if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]):
                 continue
-            if not (5000 < r["size"] < 25_000_000):
+            if not (5000 < r["size"] < 6_000_000) or time.time() - t_start > 75:
                 continue
             tried.add(r["url"])
             try:
@@ -559,7 +560,7 @@ def derived():
 
 def sounds():
     tmp = tempfile.mkdtemp(prefix="ragini_snd_")
-    with ThreadPoolExecutor(max_workers=5) as ex:
+    with ThreadPoolExecutor(max_workers=10) as ex:
         res = list(ex.map(lambda kv: fetch_sound(kv[0], kv[1], tmp), SOUNDS.items()))
     CREDITS.extend(c for c in res if c)
     derived()
