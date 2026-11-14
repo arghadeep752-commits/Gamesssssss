@@ -50,7 +50,7 @@ def http(url, tries=3, timeout=45):
                 return r.read()
         except Exception as e:      # noqa: BLE001
             last = e
-            time.sleep(2.0 * (k + 1))
+            time.sleep((12.0 if "429" in str(e) else 2.0) * (k + 1))
     raise RuntimeError("download failed %s: %s" % (url, last))
 
 
@@ -393,6 +393,7 @@ def encode(x, path):
     x = np.clip(np.asarray(x, np.float32), -1, 1)
     if len(x):
         LEVELS[os.path.basename(path)] = (20 * np.log10(float(np.sqrt(np.mean(x.astype(np.float64) ** 2))) + 1e-9), len(x) / SR)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".wav"
     with wave.open(tmp, "wb") as w:
         w.setnchannels(1)
@@ -480,7 +481,7 @@ def fetch_sound(name, spec, tmp):
                 continue
             if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]):
                 continue
-            if not (5000 < r["size"] < 6_000_000) or time.time() - t_start > 75:
+            if not (5000 < r["size"] < 6_000_000) or time.time() - t_start > 120:
                 continue
             tried.add(r["url"])
             try:
@@ -560,7 +561,7 @@ def derived():
 
 def sounds():
     tmp = tempfile.mkdtemp(prefix="ragini_snd_")
-    with ThreadPoolExecutor(max_workers=10) as ex:
+    with ThreadPoolExecutor(max_workers=2) as ex:
         res = list(ex.map(lambda kv: fetch_sound(kv[0], kv[1], tmp), SOUNDS.items()))
     CREDITS.extend(c for c in res if c)
     derived()
