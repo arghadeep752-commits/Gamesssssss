@@ -457,29 +457,49 @@ def onsets(x, count, length):
 
 
 _last_req = [0.0]
+FAILS = {"commons": 0, "openverse": 0}
+
+
+def dead(src):
+    return FAILS[src] >= (4 if src == "commons" else 3)
 
 
 def polite_get(url):
-    """Wikimedia asks bots for one request at a time; wait between requests and back off on 429."""
-    for k in range(5):
+    """Wikimedia asks bots for one request at a time; it throttles cloud machines hard, so give up quickly."""
+    if dead("commons"):
+        raise RuntimeError("wikimedia is throttling this machine")
+    last = None
+    for k in range(3):
         gap = time.time() - _last_req[0]
         if gap < 1.3:
             time.sleep(1.3 - gap)
         _last_req[0] = time.time()
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return r.read()
+            with urllib.request.urlopen(req, timeout=40) as r:
+                data = r.read()
+            FAILS["commons"] = 0
+            return data
         except urllib.error.HTTPError as e:
-            if e.code == 429:
-                time.sleep(20 * (k + 1))
-                continue
+            last = e
             if e.code == 404:
                 raise
-            time.sleep(3)
-        except Exception:       # noqa: BLE001
-            time.sleep(3)
-    raise RuntimeError("gave up on " + url)
+            if e.code == 429:
+                FAILS["commons"] += 1
+                if dead("commons"):
+                    log("wikimedia keeps answering 429 - switching to other sources")
+                    break
+                try:
+                    wait = int(e.headers.get("Retry-After", "8"))
+                except Exception:       # noqa: BLE001
+                    wait = 8
+                time.sleep(min(max(wait, 3), 15))
+                continue
+            time.sleep(2)
+        except Exception as e:      # noqa: BLE001
+            last = e
+            time.sleep(2)
+    raise RuntimeError("gave up on %s: %s" % (url, last))
 
 
 def transcoded(url):
@@ -516,6 +536,59 @@ def process(name, spec, x, path_dir):
     return True
 
 
+OV_PREF = {"freesound": 0, "jamendo": 1, "ccmixter": 1, "wikimedia_audio": 3}
+
+
+def openverse_fetch(name, spec, tmp):
+    """Openverse indexes openly licensed recordings (mostly Freesound) and serves direct file links."""
+    for q in spec["q"][:4]:
+        if dead("openverse") or time.time() > SOUND_DEADLINE[0]:
+            return None
+        time.sleep(1.0)
+        url = "https://api.openverse.org/v1/audio/?" + urllib.parse.urlencode(
+            {"q": q, "license": "cc0,pdm,by,by-sa", "page_size": "20", "mature": "false"})
+        try:
+            data = json.loads(http(url, tries=2, timeout=30).decode("utf-8", "replace"))
+            FAILS["openverse"] = 0
+        except Exception as e:      # noqa: BLE001
+            FAILS["openverse"] += 1
+            log("openverse search failed", q, str(e)[:120])
+            continue
+        cands = []
+        for i, r in enumerate(data.get("results", [])):
+            title = (r.get("title") or "").lower()
+            tags = " ".join((t.get("name") or "") for t in (r.get("tags") or [])).lower()
+            if not any(k in title + " " + tags for k in spec["req"]) or any(k in title for k in spec["ban"]):
+                continue
+            d = (r.get("duration") or 0) / 1000.0
+            if d and not (spec["dur"][0] <= d <= spec["dur"][1]):
+                continue
+            src = r.get("source") or r.get("provider") or ""
+            if src == "wikimedia_audio" and dead("commons"):
+                continue
+            if not r.get("url") or (r.get("license") or "").lower() not in ("cc0", "pdm", "by", "by-sa"):
+                continue
+            cands.append((OV_PREF.get(src, 2), i, r))
+        cands.sort(key=lambda c: (c[0], c[1]))
+        for _, _, r in cands[:4]:
+            u = r["url"]
+            ext = os.path.splitext(urllib.parse.urlparse(u).path)[1] or ".mp3"
+            try:
+                src = os.path.join(tmp, re.sub(r"\W", "_", name) + "_ov" + ext)
+                save(src, polite_get(u) if "wikimedia.org" in u else http(u, tries=2, timeout=40))
+                x = decode(src)
+            except Exception as e:      # noqa: BLE001
+                log("  skip", r.get("title"), str(e)[:80])
+                continue
+            if not process(name, spec, x, os.path.join(OUT, "sounds")):
+                continue
+            lic = (r.get("license") or "").upper().replace("BY", "CC BY") if r.get("license") not in ("cc0", "pdm") else r["license"].upper()
+            lic += (" " + r["license_version"]) if r.get("license_version") and r.get("license") != "pdm" else ""
+            REPORT.append("%-12s <- openverse/%s %s | %s | %s | %.1fs" % (name, r.get("source"), r.get("title"), lic, r.get("creator"), len(x) / SR))
+            return "- Sound `%s`: \"%s\" by %s - %s - %s" % (name, r.get("title"), r.get("creator") or "unknown", lic, r.get("foreign_landing_url") or u)
+    return None
+
+
 def archive_fetch(name, spec, tmp):
     """Fallback: public-domain / Creative Commons recordings on the Internet Archive."""
     q = '(%s) AND mediatype:(audio) AND (licenseurl:(*publicdomain*) OR licenseurl:(*creativecommons.org/licenses/by/*) OR licenseurl:(*creativecommons.org/licenses/by-sa/*))' % spec["ia"]
@@ -550,7 +623,7 @@ def archive_fetch(name, spec, tmp):
     return None
 
 
-SOUND_DEADLINE = [time.time() + 32 * 60]      # never let the sound search stall the build
+SOUND_DEADLINE = [time.time() + 30 * 60]      # never let the sound search stall the build
 
 
 def fetch_sound(name, spec, tmp):
@@ -559,8 +632,11 @@ def fetch_sound(name, spec, tmp):
     if time.time() > SOUND_DEADLINE[0]:
         REPORT.append("%-12s <- skipped (time budget)" % name)
         return None
+    c = openverse_fetch(name, spec, tmp)
+    if c:
+        return c
     for q in spec["q"]:
-        if time.time() - t_start > 110:
+        if time.time() - t_start > 110 or dead("commons"):
             break
         try:
             res = commons_search(q)
@@ -642,22 +718,30 @@ def derived():
 
 def sounds():
     tmp = tempfile.mkdtemp(prefix="ragini_snd_")
-    os.makedirs(os.path.join(OUT, "sounds"), exist_ok=True)
-    res = []
-    for kv in SOUNDS.items():
+    sdir = os.path.join(OUT, "sounds")
+    os.makedirs(sdir, exist_ok=True)
+    SOUND_DEADLINE[0] = time.time() + float(os.environ.get("SOUND_BUDGET_MIN", "30")) * 60
+    mpath = os.path.join(sdir, "manifest.json")
+    manifest = json.load(open(mpath)) if os.path.exists(mpath) else {}
+    for name, spec in SOUNDS.items():
+        first = os.path.join(sdir, name + ("_1" if spec.get("steps") else "") + ".ogg")
+        if name in manifest and os.path.exists(first):
+            log("sound %-12s kept from the last build" % name)
+            continue
         try:
-            res.append(fetch_sound(kv[0], kv[1], tmp))
+            c = fetch_sound(name, spec, tmp)
         except Exception as e:      # noqa: BLE001
-            log("sound failed", kv[0], e)
-            res.append(None)
-        log("sound %-12s %s" % (kv[0], "ok" if res[-1] else "MISSING"))
-    CREDITS.extend(c for c in res if c)
+            log("sound failed", name, e)
+            c = None
+        log("sound %-12s %s" % (name, "ok" if c else "MISSING"))
+        if c:
+            manifest[name] = c
+            json.dump(manifest, open(mpath, "w"), indent=1)
     derived()
     REPORT.append("")
-    REPORT.extend("%-20s %6.1f dBFS %5.1fs" % (k, v[0], v[1]) for k, v in sorted(LEVELS.items()))
+    REPORT.append("%d of %d recorded sounds found" % (sum(1 for n in SOUNDS if n in manifest), len(SOUNDS)))
     open(os.path.join(BUILD, "sounds_report.txt"), "w").write("\n".join(REPORT) + "\n")
-    open(os.path.join(OUT, "sounds", "CREDITS_SOUNDS.md"), "w").write("\n".join(c for c in res if c) + "\n")
-    shutil.rmtree(tmp, ignore_errors=True)
+    open(os.path.join(sdir, "CREDITS_SOUNDS.md"), "w").write("\n".join(manifest[n] for n in SOUNDS if n in manifest) + "\n")
 
 
 if __name__ == "__main__":

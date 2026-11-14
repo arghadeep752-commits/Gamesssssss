@@ -18,6 +18,23 @@ env:
   GODOT_VERSION: 4.3
 
 jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Which sound libraries answer from GitHub's servers
+        run: |
+          A="RaginiGameBuild/1.0 (MXYAN GAMES OFFICIAL; contact via github.com/arghadeep752-commits)"
+          for u in "https://api.openverse.org/v1/audio/?q=tanpura&license=cc0,by,by-sa&page_size=3" \
+                   "https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=tanpura&srnamespace=6&format=json" \
+                   "https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg" \
+                   "https://archive.org/advancedsearch.php?q=tanpura&fl%5B%5D=identifier&rows=3&output=json"; do
+            r=$(curl -s -o /tmp/p -w "%{http_code} %{time_total}s" -A "$A" "$u"); echo "== $r  $u"; head -c 700 /tmp/p; echo
+          done
+          curl -s -A "$A" "https://api.openverse.org/v1/audio/?q=ghungroo&license=cc0,by,by-sa&page_size=3" | python3 -c "import json,sys;d=json.load(sys.stdin);[print(r.get('source'),r.get('license'),r.get('title'),r.get('url')) for r in d.get('results',[])]" || true
+          f=$(curl -s -A "$A" "https://api.openverse.org/v1/audio/?q=door%20creak&license=cc0&page_size=1" | python3 -c "import json,sys;print(json.load(sys.stdin)['results'][0]['url'])" 2>/dev/null)
+          [ -n "$f" ] && curl -s -o /tmp/f -w "file %{http_code} %{size_download} bytes %{time_total}s  $f\n" -A "$A" "$f"
+
   # ----------------------------------------------------------------------------------------- real textures, sounds, fonts
   assets:
     runs-on: ubuntu-24.04
@@ -37,28 +54,21 @@ jobs:
       - name: Download real textures, fonts and the night sky
         run: |
           python3 tools/fetch_assets.py textures,sky,fonts assets/downloaded 2>&1 | tee build/assets_log.txt | tail -60
-      - name: Real recorded sounds and music (reuse the last good pack)
+      - name: Real recorded sounds and music (kept between builds, only missing ones are searched)
         run: |
-          mkdir -p assets/downloaded
-          n=0
-          for i in $(seq 1 50); do
-            if curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"; then
-              n=$(unzip -l /tmp/sp.zip | grep -c '\.ogg' || true)
-            fi
-            [ "$n" -ge 20 ] && break
-            others=$(gh run list -R "$GITHUB_REPOSITORY" -w ragini.yml --status in_progress --json databaseId -q "[.[] | select(.databaseId != $GITHUB_RUN_ID)] | length" 2>/dev/null || echo 0)
-            [ "$others" = "0" ] && break
-            echo "another build is downloading the sounds - waiting for its pack ($i)"; sleep 30
-          done
-          if [ "$n" -ge 20 ]; then
-            unzip -oq /tmp/sp.zip -d assets/downloaded && echo "reused sound pack ($n files)"
-          else
-            python3 tools/fetch_assets.py sounds assets/downloaded 2>&1 | tee build/sounds_log.txt | grep -E "^sound |STEP|Traceback" || true
-            (cd assets/downloaded && zip -qr ../../build/sounds_pack.zip sounds)
-            n2=$(unzip -l build/sounds_pack.zip | grep -c '\.ogg' || true)
-            echo "fetched $n2 sound files"
-            if [ "$n2" -ge 20 ]; then gh release upload ragini-ci build/sounds_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
+          mkdir -p assets/downloaded/sounds
+          if curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"; then
+            unzip -oq /tmp/sp.zip -d assets/downloaded && echo "previous sound pack: $(ls assets/downloaded/sounds | wc -l) files"
           fi
+          count() { python3 -c "import json,os;p='assets/downloaded/sounds/manifest.json';print(len(json.load(open(p))) if os.path.exists(p) else 0)"; }
+          before=$(count)
+          timeout 36m python3 -u tools/fetch_assets.py sounds assets/downloaded > build/sounds_log.txt 2>&1 || true
+          grep -E "^sound |STEP|Traceback|429|openverse" build/sounds_log.txt | head -80 || true
+          cat build/sounds_report.txt 2>/dev/null || true
+          after=$(count)
+          echo "recorded sounds: $before -> $after"
+          (cd assets/downloaded && zip -qr ../../build/sounds_pack.zip sounds)
+          if [ "$after" -gt "$before" ]; then gh release upload ragini-ci build/sounds_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
           ls assets/downloaded/sounds
       - name: Publish logs
         if: always()
