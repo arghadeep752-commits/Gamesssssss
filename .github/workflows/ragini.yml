@@ -21,7 +21,7 @@ jobs:
   # ----------------------------------------------------------------------------------------- real textures, sounds, fonts
   assets:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: CI release (logs and previews, not the game)
@@ -34,18 +34,34 @@ jobs:
           sudo apt-get update -qq || true
           sudo apt-get install -y -qq --no-install-recommends ffmpeg
           python3 -c "import numpy, PIL" 2>/dev/null || pip install --break-system-packages -q numpy pillow
-      - name: Download real textures, recorded sounds, fonts
+      - name: Download real textures, fonts and the night sky
         run: |
-          python3 tools/fetch_assets.py all assets/downloaded 2>&1 | tee build/assets_log.txt | tail -120
-          ls -R assets/downloaded | head -150
+          python3 tools/fetch_assets.py textures,sky,fonts assets/downloaded 2>&1 | tee build/assets_log.txt | tail -60
+      - name: Real recorded sounds and music (reuse the last good pack)
+        run: |
+          mkdir -p assets/downloaded
+          n=0
+          if curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"; then
+            n=$(unzip -l /tmp/sp.zip | grep -c '\.ogg' || true)
+          fi
+          if [ "$n" -ge 20 ]; then
+            unzip -oq /tmp/sp.zip -d assets/downloaded && echo "reused sound pack ($n files)"
+          else
+            python3 tools/fetch_assets.py sounds assets/downloaded 2>&1 | tee build/sounds_log.txt | grep -E "^sound |STEP|Traceback" || true
+            (cd assets/downloaded && zip -qr ../../build/sounds_pack.zip sounds)
+            n2=$(unzip -l build/sounds_pack.zip | grep -c '\.ogg' || true)
+            echo "fetched $n2 sound files"
+            if [ "$n2" -ge 20 ]; then gh release upload ragini-ci build/sounds_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
+          fi
+          ls assets/downloaded/sounds
       - name: Publish logs
         if: always()
         run: |
           cd build
-          for f in assets_log.txt sounds_report.txt textures_contact.jpg textures_chosen.json CREDITS_AUTO.md; do
+          for f in assets_log.txt sounds_log.txt sounds_report.txt textures_contact.jpg textures_chosen.json CREDITS_AUTO.md; do
             [ -f "$f" ] && gh release upload ragini-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
           done
-          cd .. && zip -qr build/assets_downloaded.zip assets/downloaded && gh release upload ragini-ci build/assets_downloaded.zip -R "$GITHUB_REPOSITORY" --clobber || true
+          cd .. && zip -qr build/assets_downloaded.zip assets/downloaded -x "*/nor.jpg" "*/rough.jpg" "*/ao.jpg" && gh release upload ragini-ci build/assets_downloaded.zip -R "$GITHUB_REPOSITORY" --clobber || true
       - uses: actions/upload-artifact@v4
         with:
           name: assets
@@ -204,9 +220,10 @@ jobs:
           Real photographed textures, recorded sounds and fonts used:
           EOT
           cat build/CREDITS_AUTO.md >> build/CREDITS.md || true
+          cat assets/downloaded/sounds/CREDITS_SOUNDS.md >> build/CREDITS.md 2>/dev/null || true
           cp build/ragini/ragini.blend build/ragini_character.blend || true
           cp build/school/school.blend build/ragini_school.blend || true
           gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "RAGINI - The Indian Horror Game (build ${{ github.run_number }})" \
-            --notes "Download **Ragini.apk** and install it on Android. Escape the school in 3 days: find the hammer for the planks and the main door key. Models built in Blender (.blend files attached)." \
+            --notes "Download **Ragini.apk** and install it on Android (64-bit). Escape the school in 3 days: find the hammer for the planks and the main door key. Real recorded sound effects and music. Models built in Blender (.blend files attached)." \
             build/Ragini.apk build/CREDITS.md build/ragini_character.blend build/ragini_school.blend
           gh release upload ragini-ci build/import_log.txt build/export_log.txt -R "$GITHUB_REPOSITORY" --clobber || true

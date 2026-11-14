@@ -21,6 +21,7 @@ import sys
 import tempfile
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 import wave
 import zipfile
@@ -303,72 +304,61 @@ OK_LIC = re.compile(r"^(cc0|cc[- ]zero|public domain|pd|cc[- ]by(?![- ]nc)(?![- 
 SR = 44100
 # name: queries, title must contain one of `req`, must not contain `ban`, duration range, seconds kept, options
 SOUNDS = {
-    "footstep":      dict(q=["footsteps concrete", "footsteps on concrete", "footsteps tile floor", "walking footsteps indoor", "footsteps"],
-                          req=["footstep", "foot step", "walking", "steps"], ban=["snow", "gravel", "grass", "leaves", "run", "horse", "march", "stairs", "music"],
-                          dur=(2, 400), out=0.45, steps=6),
-    "payal":         dict(q=["ghungroo", "ghunghroo", "anklet bells", "ankle bells", "jingle bells small", "small bells jingle", "bells shaking"],
-                          req=["ghungr", "anklet", "ankle", "jingle", "bell"], ban=["church", "tower", "alarm", "door", "bicycle", "music", "song", "christmas", "sleigh"],
-                          dur=(0.5, 120), out=1.4),
-    "door_open":     dict(q=["door creak", "creaking door", "door creaking", "squeaky door"], req=["door", "creak", "squeak"],
-                          ban=["music", "song", "slam", "knock", "bell"], dur=(0.8, 60), out=2.6),
-    "door_close":    dict(q=["door close", "door closing", "wooden door shut", "door shut"], req=["door"], ban=["music", "song", "knock", "bell", "creak"],
-                          dur=(0.3, 40), out=1.6),
-    "door_locked":   dict(q=["door handle rattle", "locked door", "door knob rattle", "door handle"], req=["door", "handle", "knob", "lock", "rattle"],
-                          ban=["music", "song", "slam", "bell"], dur=(0.3, 40), out=1.4),
-    "unlock":        dict(q=["key in lock", "unlocking door", "key turning lock", "padlock", "lock click"], req=["key", "lock", "unlock", "padlock"],
-                          ban=["music", "song", "keyboard", "piano"], dur=(0.3, 40), out=1.5),
-    "hammer_hit":    dict(q=["hammer hitting wood", "hammer wood", "hammering nail", "hammer"], req=["hammer", "hammering", "nail"],
-                          ban=["music", "song", "drill", "jack"], dur=(0.3, 120), out=0.7),
-    "plank_fall":    dict(q=["wood plank drop", "wooden plank falling", "wood drop", "plank"], req=["wood", "plank", "board", "timber"],
-                          ban=["music", "song", "creak", "door", "wood pecker", "woodpecker"], dur=(0.3, 40), out=1.5),
-    "nail_creak":    dict(q=["nail pulling", "wood creak", "creaking wood", "wooden creak"], req=["nail", "creak"],
-                          ban=["music", "song", "door"], dur=(0.4, 60), out=1.6),
-    "pickup":        dict(q=["keys jingle", "keys jingling", "bunch of keys", "keys"], req=["key"], ban=["music", "song", "keyboard", "piano", "monkey", "turkey"],
-                          dur=(0.3, 30), out=0.9),
-    "drop":          dict(q=["metal object falling", "drop metal", "metal clang", "metal drop floor"], req=["metal", "drop", "clang", "fall"],
-                          ban=["music", "song", "rain", "heavy metal", "band"], dur=(0.2, 30), out=1.2),
-    "whack":         dict(q=["stick hit", "slap", "wood stick hit", "whip crack", "punch"], req=["hit", "slap", "whip", "punch", "smack", "stick"],
-                          ban=["music", "song", "drum"], dur=(0.1, 20), out=0.8),
-    "scream":        dict(q=["woman screaming", "female scream", "woman scream", "scream"], req=["scream", "shriek"],
-                          ban=["music", "song", "child", "baby", "man ", "male", "boy", "radio"], dur=(0.5, 30), out=2.6, gain=2),
-    "laugh":         dict(q=["woman laughing", "female laugh", "evil laugh", "laughing woman", "witch laugh"], req=["laugh", "cackl"],
-                          ban=["music", "song", "baby", "child", "crowd", "audience", "man ", "male"], dur=(0.8, 40), out=3.0),
-    "whisper":       dict(q=["whispering", "whisper", "whispers"], req=["whisper"], ban=["music", "song"], dur=(0.8, 120), out=5.0),
-    "heartbeat":     dict(q=["heartbeat", "heart beat", "human heartbeat"], req=["heart"], ban=["music", "song", "monitor", "ecg", "act"],
-                          dur=(3, 300), out=8.0, loop=True),
-    "night":         dict(q=["crickets night", "night ambience crickets", "crickets", "night sounds india", "night ambience"],
-                          req=["cricket", "night", "ambien", "insect"], ban=["music", "song", "voice", "speech", "game"], dur=(15, 900), out=40, loop=True, gain=-5),
-    "wind":          dict(q=["wind howling", "wind blowing", "strong wind", "wind ambience"], req=["wind"], ban=["music", "song", "instrument", "chime"],
-                          dur=(8, 900), out=30, loop=True, gain=-7),
-    "fan":           dict(q=["ceiling fan", "fan squeak", "fan creaking", "fan motor"], req=["fan"], ban=["music", "song", "football", "crowd"],
-                          dur=(3, 300), out=10, loop=True, gain=-8),
-    "tube_buzz":     dict(q=["fluorescent light hum", "fluorescent lamp", "electrical hum", "neon hum", "buzz electric"], req=["fluorescent", "hum", "buzz", "neon"],
-                          ban=["music", "song", "bee", "insect"], dur=(2, 300), out=8, loop=True, gain=-10),
-    "chalk":         dict(q=["chalk on blackboard", "chalk blackboard", "chalk writing", "chalkboard"], req=["chalk"], ban=["music", "song"],
-                          dur=(0.5, 60), out=2.5),
-    "bell":          dict(q=["gong", "brass gong", "temple gong", "school bell", "big bell"], req=["gong", "bell"],
-                          ban=["music", "song", "door", "bicycle", "alarm", "phone", "church", "jingle"], dur=(1, 60), out=5.0),
-    "children":      dict(q=["children laughing", "kids playing", "children playground", "school children"], req=["child", "kid", "school", "playground"],
-                          ban=["music", "song", "crying", "baby"], dur=(4, 300), out=8),
-    "dog_howl":      dict(q=["dog howling", "dog howl", "dogs howling night", "howling"], req=["howl"], ban=["music", "song", "wolf whistle", "wind"],
-                          dur=(1, 60), out=5.0),
-    "owl":           dict(q=["owl hooting", "owl", "owl call night"], req=["owl"], ban=["music", "song", "growl", "howl"], dur=(1, 60), out=4.0),
-    "clock":         dict(q=["clock ticking", "ticking clock", "clock tick"], req=["clock", "tick"], ban=["music", "song", "alarm"], dur=(2, 120), out=6, loop=True, gain=-8),
-    "drip":          dict(q=["water dripping", "dripping tap", "water drip", "drops"], req=["drip", "drop"], ban=["music", "song", "rain storm"],
-                          dur=(1, 120), out=6, loop=True, gain=-8),
-    "door_slam":     dict(q=["door slam", "slamming door", "door slamming"], req=["slam"], ban=["music", "song"], dur=(0.3, 30), out=2.0),
-    "drone":         dict(q=["tanpura", "tambura drone", "drone", "dark ambient drone", "harmonium drone"], req=["tanpura", "tambura", "drone", "harmonium"],
-                          ban=["song", "quadcopter", "aircraft", "uav"], dur=(15, 1500), out=60, loop=True, gain=-4),
-    "breath":        dict(q=["heavy breathing", "breathing", "panting"], req=["breath", "pant"], ban=["music", "song"], dur=(1, 60), out=4.0),
+    "footstep":      dict(q=["footsteps concrete", "footsteps on concrete", "footsteps indoor", "walking footsteps"],
+                          req=["footstep", "foot step", "walking", "steps"], ban=["snow", "gravel", "grass", "leaves", "run", "horse", "march", "music"],
+                          dur=(2, 400), out=0.45, steps=6, ia="footsteps concrete"),
+    "payal":         dict(q=["ghungroo", "ghunghroo", "anklet bells", "jingle bells small", "small bells"],
+                          req=["ghungr", "anklet", "ankle", "jingle", "bell"], ban=["church", "tower", "alarm", "door", "bicycle", "song", "christmas"],
+                          dur=(0.5, 120), out=1.4, ia="ghungroo bells"),
+    "door_open":     dict(q=["door creak", "creaking door", "squeaky door"], req=["door", "creak", "squeak"],
+                          ban=["music", "song", "slam", "knock", "bell"], dur=(0.8, 60), out=2.6, ia="door creak"),
+    "door_close":    dict(q=["door close", "door closing", "door shut"], req=["door"], ban=["music", "song", "knock", "bell", "creak"],
+                          dur=(0.3, 40), out=1.6, ia="door close"),
+    "door_locked":   dict(q=["door handle rattle", "locked door", "door handle"], req=["door", "handle", "knob", "lock", "rattle"],
+                          ban=["music", "song", "slam", "bell"], dur=(0.3, 40), out=1.4, ia="door handle"),
+    "unlock":        dict(q=["key in lock", "unlocking door", "padlock", "lock click"], req=["key", "lock", "unlock", "padlock"],
+                          ban=["music", "song", "keyboard", "piano"], dur=(0.3, 40), out=1.5, ia="key lock"),
+    "hammer_hit":    dict(q=["hammer hitting wood", "hammering nail", "hammer"], req=["hammer", "hammering", "nail"],
+                          ban=["music", "song", "drill", "jack"], dur=(0.3, 120), out=0.7, ia="hammer nail"),
+    "plank_fall":    dict(q=["wood plank drop", "wood drop", "plank"], req=["wood", "plank", "board", "timber"],
+                          ban=["music", "song", "creak", "door", "woodpecker"], dur=(0.3, 40), out=1.5, ia="wood drop"),
+    "nail_creak":    dict(q=["nail pulling", "wood creak", "creaking wood"], req=["nail", "creak"], ban=["music", "song", "door"],
+                          dur=(0.4, 60), out=1.6, ia="wood creak"),
+    "pickup":        dict(q=["keys jingle", "keys jingling", "bunch of keys"], req=["key"], ban=["music", "song", "keyboard", "piano", "monkey", "turkey"],
+                          dur=(0.3, 30), out=0.9, ia="keys jingle"),
+    "drop":          dict(q=["metal object falling", "metal clang", "metal drop"], req=["metal", "drop", "clang", "fall"],
+                          ban=["music", "song", "rain", "heavy metal", "band"], dur=(0.2, 30), out=1.2, ia="metal drop"),
+    "whack":         dict(q=["stick hit", "slap", "whip crack", "punch"], req=["hit", "slap", "whip", "punch", "smack", "stick"],
+                          ban=["music", "song", "drum"], dur=(0.1, 20), out=0.8, ia="slap hit"),
+    "scream":        dict(q=["woman screaming", "female scream", "scream"], req=["scream", "shriek"],
+                          ban=["music", "song", "child", "baby", "man ", "male", "boy", "radio"], dur=(0.5, 30), out=2.6, gain=2, ia="woman scream"),
+    "laugh":         dict(q=["woman laughing", "evil laugh", "witch laugh", "laughing woman"], req=["laugh", "cackl"],
+                          ban=["music", "song", "baby", "child", "crowd", "audience", "man ", "male"], dur=(0.8, 40), out=3.0, ia="evil laugh"),
+    "whisper":       dict(q=["whispering", "whisper"], req=["whisper"], ban=["music", "song"], dur=(0.8, 120), out=5.0, ia="whisper"),
+    "heartbeat":     dict(q=["heartbeat", "heart beat"], req=["heart"], ban=["music", "song", "monitor", "ecg"],
+                          dur=(3, 300), out=8.0, loop=True, ia="heartbeat"),
+    "night":         dict(q=["crickets night", "crickets", "night ambience"], req=["cricket", "night", "ambien", "insect"],
+                          ban=["music", "song", "voice", "speech", "game"], dur=(15, 900), out=40, loop=True, gain=-5, ia="crickets night"),
+    "wind":          dict(q=["wind howling", "wind blowing", "wind"], req=["wind"], ban=["music", "song", "instrument", "chime"],
+                          dur=(8, 900), out=30, loop=True, gain=-7, ia="wind howling"),
+    "bell":          dict(q=["gong", "brass gong", "temple bell", "school bell"], req=["gong", "bell"],
+                          ban=["music", "song", "door", "bicycle", "alarm", "phone", "jingle"], dur=(1, 60), out=5.0, ia="gong"),
+    "dog_howl":      dict(q=["dog howling", "dog howl", "howling"], req=["howl"], ban=["music", "song", "wind"], dur=(1, 60), out=5.0, ia="dog howling"),
+    "owl":           dict(q=["owl hooting", "owl"], req=["owl"], ban=["music", "song", "growl", "howl"], dur=(1, 60), out=4.0, ia="owl hoot"),
+    "drone":         dict(q=["tanpura", "tambura", "harmonium drone", "drone"], req=["tanpura", "tambura", "drone", "harmonium"],
+                          ban=["song", "quadcopter", "aircraft", "uav"], dur=(15, 2000), out=60, loop=True, gain=-4, ia="tanpura"),
+    "music_raga":    dict(q=["sarangi", "raga alap", "shehnai", "bansuri", "veena", "sitar raga"],
+                          req=["sarangi", "raga", "alap", "shehnai", "bansuri", "veena", "sitar"], ban=["quadcopter"],
+                          dur=(40, 3000), out=80, loop=True, gain=-3, ia="sarangi raga"),
 }
 LEVELS = {}
 
 
-def commons_search(q, limit=40):
+def commons_search(q, limit=30):
     p = {"action": "query", "format": "json", "generator": "search", "gsrnamespace": "6", "gsrlimit": str(limit),
          "gsrsearch": q + " filetype:audio", "prop": "imageinfo", "iiprop": "url|size|mime|extmetadata",
          "iiextmetadatafilter": "LicenseShortName|Artist", "iiextmetadatamultilang": "0"}
-    data = jget(COMMONS + "?" + urllib.parse.urlencode(p))
+    data = json.loads(polite_get(COMMONS + "?" + urllib.parse.urlencode(p)).decode("utf-8", "replace"))
     out = []
     for pg in (data.get("query") or {}).get("pages", {}).values():
         ii = (pg.get("imageinfo") or [None])[0]
@@ -466,10 +456,106 @@ def onsets(x, count, length):
     return clips
 
 
+_last_req = [0.0]
+
+
+def polite_get(url):
+    """Wikimedia asks bots for one request at a time; wait between requests and back off on 429."""
+    for k in range(5):
+        gap = time.time() - _last_req[0]
+        if gap < 1.3:
+            time.sleep(1.3 - gap)
+        _last_req[0] = time.time()
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                time.sleep(20 * (k + 1))
+                continue
+            if e.code == 404:
+                raise
+            time.sleep(3)
+        except Exception:       # noqa: BLE001
+            time.sleep(3)
+    raise RuntimeError("gave up on " + url)
+
+
+def transcoded(url):
+    m = re.match(r"(https://upload\.wikimedia\.org/wikipedia/commons/)(\w/\w\w/)([^?]+)", url)
+    if not m:
+        return None
+    return m.group(1) + "transcoded/" + m.group(2) + m.group(3) + "/" + m.group(3) + ".mp3"
+
+
+def process(name, spec, x, path_dir):
+    dur = len(x) / SR
+    if not (spec["dur"][0] <= dur <= spec["dur"][1]) or float(np.max(np.abs(x))) < 0.01:
+        return False
+    outn = int(spec["out"] * SR)
+    gain = spec.get("gain", 0.0)
+    path = os.path.join(path_dir, name + ".ogg")
+    if spec.get("steps"):
+        clips = onsets(x, spec["steps"], spec["out"])
+        if len(clips) < 3:
+            return False
+        for i, c in enumerate(clips, 1):
+            encode(normalise(c, -4.0), os.path.join(path_dir, "%s_%d.ogg" % (name, i)))
+    elif spec.get("loop"):
+        y = loudest(x, outn + SR) if len(x) > outn + SR else x
+        encode(normalise(make_loop(y, 1.0), gain), path)
+    else:
+        y = trim(x)
+        y = loudest(y, outn) if len(y) > outn else y
+        f = min(len(y) // 4, int(0.2 * SR))
+        if f > 0:
+            y[-f:] *= np.linspace(1, 0, f, dtype=np.float32)
+        y[:64] *= np.linspace(0, 1, min(64, len(y)), dtype=np.float32)
+        encode(normalise(y, gain), path)
+    return True
+
+
+def archive_fetch(name, spec, tmp):
+    """Fallback: public-domain / Creative Commons recordings on the Internet Archive."""
+    q = '(%s) AND mediatype:(audio) AND (licenseurl:(*publicdomain*) OR licenseurl:(*creativecommons.org/licenses/by/*) OR licenseurl:(*creativecommons.org/licenses/by-sa/*))' % spec["ia"]
+    try:
+        res = jget("https://archive.org/advancedsearch.php?" + urllib.parse.urlencode({"q": q, "fl[]": "identifier", "rows": "8", "output": "json"}))
+    except Exception as e:      # noqa: BLE001
+        log("archive search failed", name, e)
+        return None
+    for doc in res.get("response", {}).get("docs", []):
+        ident = doc["identifier"]
+        try:
+            md = jget("https://archive.org/metadata/" + ident)
+        except Exception:       # noqa: BLE001
+            continue
+        lic = md.get("metadata", {}).get("licenseurl", "")
+        title = md.get("metadata", {}).get("title", ident)
+        creator = md.get("metadata", {}).get("creator", "")
+        if isinstance(creator, list):
+            creator = ", ".join(creator)
+        files = [f for f in md.get("files", []) if f.get("format") in ("VBR MP3", "Ogg Vorbis", "MP3") and 3000 < int(f.get("size", 0) or 0) < 8_000_000]
+        files.sort(key=lambda f: (0 if any(k in f["name"].lower() for k in spec["req"]) else 1, int(f.get("size", 0))))
+        for f in files[:3]:
+            try:
+                src = os.path.join(tmp, re.sub(r"\W", "_", name) + "_ia" + os.path.splitext(f["name"])[1])
+                save(src, http("https://archive.org/download/%s/%s" % (ident, urllib.parse.quote(f["name"]))))
+                x = decode(src)
+            except Exception:       # noqa: BLE001
+                continue
+            if process(name, spec, x, os.path.join(OUT, "sounds")):
+                REPORT.append("%-12s <- archive.org %s / %s | %s" % (name, ident, f["name"], lic))
+                return "- Sound `%s`: %s (%s) - %s - %s https://archive.org/details/%s" % (name, title, f["name"], creator or "unknown", lic, ident)
+    return None
+
+
 def fetch_sound(name, spec, tmp):
     tried = set()
     t_start = time.time()
     for q in spec["q"]:
+        if time.time() - t_start > 150:
+            break
         try:
             res = commons_search(q)
         except Exception as e:      # noqa: BLE001
@@ -481,41 +567,29 @@ def fetch_sound(name, spec, tmp):
                 continue
             if not any(k in t for k in spec["req"]) or any(k in t for k in spec["ban"]):
                 continue
-            if not (5000 < r["size"] < 6_000_000) or time.time() - t_start > 120:
+            if not (5000 < r["size"] < 40_000_000) or time.time() - t_start > 150:
                 continue
             tried.add(r["url"])
-            try:
-                src = os.path.join(tmp, re.sub(r"\W", "_", name) + os.path.splitext(r["url"])[1])
-                save(src, http(r["url"]))
-                x = decode(src)
-            except Exception as e:      # noqa: BLE001
-                log("  skip", r["title"], e)
-                continue
-            dur = len(x) / SR
-            if not (spec["dur"][0] <= dur <= spec["dur"][1]) or float(np.max(np.abs(x))) < 0.01:
-                continue
-            outn = int(spec["out"] * SR)
-            gain = spec.get("gain", 0.0)
-            path = os.path.join(OUT, "sounds", name + ".ogg")
-            if spec.get("steps"):
-                clips = onsets(x, spec["steps"], spec["out"])
-                if len(clips) < 3:
+            x = None
+            for u in ([transcoded(r["url"])] if r["size"] > 1_500_000 and not r["url"].lower().endswith(".mp3") else []) + [r["url"]]:
+                if not u:
                     continue
-                for i, c in enumerate(clips, 1):
-                    encode(normalise(c, -4.0), os.path.join(OUT, "sounds", "%s_%d.ogg" % (name, i)))
-            elif spec.get("loop"):
-                y = loudest(x, outn + SR) if len(x) > outn + SR else x
-                encode(normalise(make_loop(y, 1.0), gain), path)
-            else:
-                y = trim(x)
-                y = loudest(y, outn) if len(y) > outn else y
-                f = min(len(y) // 4, int(0.2 * SR))
-                if f > 0:
-                    y[-f:] *= np.linspace(1, 0, f, dtype=np.float32)
-                y[:64] *= np.linspace(0, 1, min(64, len(y)), dtype=np.float32)
-                encode(normalise(y, gain), path)
-            REPORT.append("%-12s <- %s | %s | %s | %.1fs" % (name, r["title"], r["lic"], r["author"], dur))
+                try:
+                    src = os.path.join(tmp, re.sub(r"\W", "_", name) + os.path.splitext(u)[1])
+                    save(src, polite_get(u))
+                    x = decode(src)
+                    break
+                except Exception as e:      # noqa: BLE001
+                    log("  skip", r["title"], str(e)[:80])
+            if x is None:
+                continue
+            if not process(name, spec, x, os.path.join(OUT, "sounds")):
+                continue
+            REPORT.append("%-12s <- %s | %s | %s | %.1fs" % (name, r["title"], r["lic"], r["author"], len(x) / SR))
             return "- Sound `%s`: %s - %s - %s (%s)" % (name, r["title"].replace("File:", ""), r["author"] or "unknown", r["lic"], r["page"])
+    c = archive_fetch(name, spec, tmp)
+    if c:
+        return c
     REPORT.append("%-12s <- NOTHING FOUND" % name)
     return None
 
@@ -533,8 +607,9 @@ def derived():
                 y[d:] += y[:-d] * g
             encode(normalise(y, -1.0), snd("spotted"))
             REPORT.append("spotted      <- the scream, slowed with an echo")
-        if os.path.exists(snd("drone")):
-            x = decode(snd("drone"))
+        src_music = snd("music_raga") if os.path.exists(snd("music_raga")) else snd("drone")
+        if os.path.exists(src_music):
+            x = decode(src_music)
             idx = np.arange(0, len(x) - 1, 0.84)
             y = np.interp(idx, np.arange(len(x)), x).astype(np.float32)
             acc = 0.0
@@ -550,7 +625,7 @@ def derived():
                 w = np.tile(w, len(wet) // max(1, len(w)) + 1)[: len(wet)]
                 wet = normalise(wet, -2.0) + normalise(w, -12.0)
             encode(normalise(make_loop(wet, 2.0), -3.0), snd("menu_music"))
-            REPORT.append("menu_music   <- the drone recording slowed, low-passed and echoed, with the wind")
+            REPORT.append("menu_music   <- %s slowed, low-passed and echoed, with the wind" % os.path.basename(src_music))
     except Exception as e:      # noqa: BLE001
         log("derived sounds failed:", e)
     for a, b in (("door_close", "door_slam"), ("door_slam", "door_close"), ("unlock", "pickup"), ("nail_creak", "door_open"),
@@ -561,13 +636,21 @@ def derived():
 
 def sounds():
     tmp = tempfile.mkdtemp(prefix="ragini_snd_")
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        res = list(ex.map(lambda kv: fetch_sound(kv[0], kv[1], tmp), SOUNDS.items()))
+    os.makedirs(os.path.join(OUT, "sounds"), exist_ok=True)
+    res = []
+    for kv in SOUNDS.items():
+        try:
+            res.append(fetch_sound(kv[0], kv[1], tmp))
+        except Exception as e:      # noqa: BLE001
+            log("sound failed", kv[0], e)
+            res.append(None)
+        log("sound %-12s %s" % (kv[0], "ok" if res[-1] else "MISSING"))
     CREDITS.extend(c for c in res if c)
     derived()
     REPORT.append("")
     REPORT.extend("%-20s %6.1f dBFS %5.1fs" % (k, v[0], v[1]) for k, v in sorted(LEVELS.items()))
     open(os.path.join(BUILD, "sounds_report.txt"), "w").write("\n".join(REPORT) + "\n")
+    open(os.path.join(OUT, "sounds", "CREDITS_SOUNDS.md"), "w").write("\n".join(c for c in res if c) + "\n")
     shutil.rmtree(tmp, ignore_errors=True)
 
 

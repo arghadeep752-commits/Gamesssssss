@@ -159,7 +159,8 @@ func _follow(dt: float, speed: float) -> bool:
 	if step_t > 1.5:
 		step_t = 0.0
 		if audio:
-			audio.play3d("payal", global_position + Vector3(0, 0.2, 0), -3.0, randf_range(0.95, 1.05))
+			audio.play3d("payal", global_position + Vector3(0, 0.2, 0), -2.0, randf_range(0.95, 1.05))
+			audio.play3d("footstep_%d" % randi_range(1, 6), global_position, -6.0, randf_range(0.78, 0.86))
 	return false
 
 

@@ -15,6 +15,7 @@ var held := ""
 var hide_ref = null
 var skip := false
 var busy := false
+var amb_t := 18.0
 
 var world: Node3D
 var level: Level
@@ -36,6 +37,7 @@ var f_title: Font
 var f_ui: Font
 var f_type: Font
 var shots_dir := ""
+var test_mode := false
 
 
 func _ready() -> void:
@@ -43,6 +45,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--shots="):
 			shots_dir = a.substr(8)
+		if a == "--playtest":
+			test_mode = true
 	f_title = _font("Creepster-Regular.ttf")
 	f_ui = _font("Oswald.ttf")
 	f_type = _font("SpecialElite-Regular.ttf")
@@ -73,11 +77,26 @@ func _ready() -> void:
 	sub.set_anchors_preset(Control.PRESET_FULL_RECT)
 	sub.offset_top = 190
 	menu = Control.new()
-	menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu.mouse_filter = Control.MOUSE_FILTER_IGNORE        # the empty menu layer must never swallow game touches
 	ui.add_child(menu)
 	_show_main_menu()
 	if shots_dir != "":
 		_run_shots()
+	elif test_mode:
+		_run_test()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		match state:
+			S_PLAY:
+				_pause()
+			S_PAUSE:
+				_resume()
+			S_MENU:
+				if menu.get_child_count() > 0 and not busy:
+					_show_main_menu()
 
 
 func _font(n: String) -> Font:
@@ -383,8 +402,9 @@ func _start_game(m: int) -> void:
 		_button(menu, "BACK", 0.6, _show_main_menu)
 		return
 	audio.stop_all()
-	audio.loop("night", -16.0)
-	audio.loop("drone", -20.0)
+	audio.loop("night", -13.0)
+	audio.loop("drone", -15.0)
+	audio.loop("wind", -24.0)
 	_place_start()
 	await _intro()
 	_begin_day()
@@ -432,6 +452,12 @@ func _process(dt: float) -> void:
 		level.set_hide_doors(hide_ref, hide_ref["t"])
 	if audio:
 		audio.loop("heartbeat", -4.0 if ragini.state == Ragini.CHASE else -60.0)
+		amb_t -= dt
+		if amb_t <= 0.0:
+			amb_t = randf_range(22.0, 45.0)
+			var pick: String = ["dog_howl", "owl", "dog_howl", "laugh"][randi() % 4]
+			var off := Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)).normalized() * randf_range(12.0, 22.0)
+			audio.play3d(pick, player.global_position + off + Vector3(0, 3, 0), -10.0 if pick != "laugh" else -14.0)
 
 
 func _crouch() -> void:
@@ -826,4 +852,160 @@ func _run_shots() -> void:
 			bad += 1
 	print("RAGINI patrol points unreachable: ", bad, " items: ", level.items.size(), " doors: ", level.doors.size(), " hides: ", level.hides.size(),
 		" planks: ", level.planks.size(), " anim: ", ragini.anim != null)
+	get_tree().quit()
+
+
+# ============================================================================================== automated play test (build check)
+func _touch(i: int, p: Vector2, pressed: bool) -> void:
+	var e := InputEventScreenTouch.new()
+	e.index = i
+	e.position = p
+	e.pressed = pressed
+	Input.parse_input_event(e)
+
+
+func _drag(i: int, p: Vector2, rel: Vector2) -> void:
+	var e := InputEventScreenDrag.new()
+	e.index = i
+	e.position = p
+	e.relative = rel
+	Input.parse_input_event(e)
+
+
+func _t(msg: String) -> void:
+	print("RAGINI_TEST ", msg)
+
+
+func _run_test() -> void:
+	await get_tree().create_timer(0.3).timeout
+	_t("menu ok")
+	_start_game(1)
+	await get_tree().create_timer(0.6).timeout
+	skip = true
+	while state != S_PLAY:
+		skip = true
+		await get_tree().process_frame
+	_t("day %d started, state play" % day)
+	# real touches on the joystick and the look area
+	var vs := get_viewport().get_visible_rect().size
+	var p0 := player.global_position
+	var jc := hud.joy_center()
+	_touch(0, jc, true)
+	_drag(0, jc + Vector2(0, -80), Vector2(0, -80))
+	await get_tree().create_timer(1.2).timeout
+	_touch(0, jc + Vector2(0, -80), false)
+	_t("joystick moved player %.2f m" % player.global_position.distance_to(p0))
+	var y0 := player.yaw
+	_touch(1, Vector2(vs.x * 0.7, vs.y * 0.5), true)
+	_drag(1, Vector2(vs.x * 0.7 + 120, vs.y * 0.5), Vector2(120, 0))
+	await get_tree().create_timer(0.2).timeout
+	_touch(1, Vector2(vs.x * 0.7 + 120, vs.y * 0.5), false)
+	_t("look drag turned %.2f rad" % absf(player.yaw - y0))
+	# crouch button by touch
+	_touch(2, hud.r_crouch().get_center(), true)
+	_touch(2, hud.r_crouch().get_center(), false)
+	await get_tree().process_frame
+	_t("crouch button -> crouched=%s" % player.crouched)
+	_crouch()
+	# items: walk to each, pick it up with the hand button, drop it
+	for id in ["office_key", "store_key", "hammer", "main_key"]:
+		var it: Dictionary = level.items[id]
+		var ip: Vector3 = it["node"].global_position
+		player.global_position = Vector3(ip.x, 0.05, ip.z) + Vector3(0.9, 0, 0.9)
+		player.face(ip)
+		player.pitch = atan2(ip.y - player.eye - 0.05, Vector2(0.9, 0.9).length())
+		await get_tree().create_timer(0.15).timeout
+		var tg := level.target(player.head(), player.forward(), held)
+		_t("%s target=%s can_interact=%s" % [id, tg.get("label", "-"), hud.can_interact])
+		if hud.can_interact:
+			_touch(3, hud.r_hand().get_center(), true)
+			_touch(3, hud.r_hand().get_center(), false)
+			await get_tree().process_frame
+		_t("  held=%s" % held)
+	_touch(4, hud.r_drop().get_center(), true)
+	_touch(4, hud.r_drop().get_center(), false)
+	await get_tree().process_frame
+	_t("drop button -> held='%s'" % held)
+	# doors: unlock the office with its key
+	var d: Dictionary = level.doors["door_principal"]
+	_pick(level.items["office_key"])
+	player.global_position = d["pos"] + Vector3(1.0, -1.1, 0.0)
+	player.face(d["pos"])
+	player.pitch = 0.0
+	_t("dbg yaw after face=%.2f" % player.yaw)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	_t("dbg yaw after physics=%.2f rot=%.2f" % [player.yaw, player.rotation.y])
+	var tgd := level.target(player.head(), player.forward(), held)
+	var dd: Vector3 = d["pos"] - player.head()
+	_t("dbg head=%s fwd=%s dist=%.2f dot=%.2f lock=%s" % [player.head(), player.forward(), dd.length(), player.forward().dot(dd.normalized()), str(d["lock"])])
+	_t("office door target=%s/%s held=%s pos=%s door=%s" % [tgd.get("kind", "-"), tgd.get("label", "-"), held, player.global_position, d["pos"]])
+	_interact()
+	_t("office door lock after key: %s" % str(d["lock"]))
+	_interact()
+	await get_tree().create_timer(0.8).timeout
+	_t("office door open=%s" % d["open"])
+	# hide in an almirah, Ragini comes by, leave again
+	var h: Dictionary = level.hides[0]
+	_enter_hide(h)
+	_t("hidden=%s" % player.hidden)
+	_leave_hide()
+	_t("left hide, hidden=%s" % player.hidden)
+	# Ragini: patrol for a while, then see the player and catch them
+	player.global_position = Vector3(-4, 0.05, -2.2)
+	ragini.global_position = Vector3(4, 0, -2.2)
+	ragini.freeze(false)
+	ragini._pick_patrol()
+	player.face(ragini.global_position)
+	await get_tree().create_timer(1.0).timeout
+	ragini.rotation.y = atan2(1.0, 0.0)
+	var tw := 0.0
+	while state == S_PLAY and tw < 12.0:
+		await get_tree().process_frame
+		tw += get_process_delta_time()
+	_t("ragini state=%d game state=%d after %.1fs" % [ragini.state, state, tw])
+	while state != S_PLAY:
+		await get_tree().process_frame
+	_t("now day %d" % day)
+	# planks + lock + escape
+	var it2: Dictionary = level.items["hammer"]
+	it2["held"] = false
+	if it2["node"].get_parent() != level.model:
+		it2["node"].get_parent().remove_child(it2["node"])
+		level.model.add_child(it2["node"])
+	_pick(it2)
+	player.global_position = Vector3(0, 0.05, 4.5)
+	for p in level.planks:
+		player.face(p["pos"])
+		player.pitch = atan2(p["pos"].y - player.head().y, (p["pos"] - player.global_position).length())
+		await get_tree().process_frame
+		for k in 2:
+			var tg2 := level.target(player.head(), player.forward(), held)
+			if tg2.get("kind", "") == "plank":
+				_hit_plank(tg2["ref"])
+			else:
+				_hit_plank(p)
+	await get_tree().create_timer(0.6).timeout
+	_t("planks left=%d" % level.planks_left)
+	var mk: Dictionary = level.items["main_key"]
+	mk["held"] = false
+	if mk["node"].get_parent() != level.model:
+		mk["node"].get_parent().remove_child(mk["node"])
+		level.model.add_child(mk["node"])
+	_pick(mk)
+	player.face(level.doors["door_main"]["pos"])
+	player.pitch = 0.0
+	await get_tree().process_frame
+	var tg3 := level.target(player.head(), player.forward(), held)
+	_t("main door target=%s" % tg3.get("kind", "-"))
+	skip = true
+	_interact()
+	var tt := 0.0
+	while state != S_MENU and tt < 30.0:
+		skip = true
+		await get_tree().process_frame
+		tt += get_process_delta_time()
+	_t("after escape state=%d (0 = menu)" % state)
+	_t("sounds available: footstep=%s payal=%s scream=%s menu_music=%s" % [audio.has("footstep_1"), audio.has("payal"), audio.has("scream"), audio.has("menu_music")])
+	_t("done")
 	get_tree().quit()
