@@ -60,7 +60,7 @@ jobs:
           if curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"; then
             unzip -oq /tmp/sp.zip -d assets/downloaded && echo "previous sound pack: $(ls assets/downloaded/sounds | wc -l) files"
           fi
-          count() { python3 -c "import json,os;p='assets/downloaded/sounds/manifest.json';print(len(json.load(open(p))) if os.path.exists(p) else 0)"; }
+          count() { python3 -c "import json,os;p='assets/downloaded/sounds/manifest_v2.json';print(len(json.load(open(p))) if os.path.exists(p) else 0)"; }
           before=$(count)
           timeout 36m python3 -u tools/fetch_assets.py sounds assets/downloaded > build/sounds_log.txt 2>&1 || true
           grep -E "^sound |STEP|Traceback|429|openverse" build/sounds_log.txt | head -80 || true

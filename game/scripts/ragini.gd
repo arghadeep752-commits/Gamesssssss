@@ -51,8 +51,8 @@ func build() -> bool:
 				anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 	eyes_light = OmniLight3D.new()
 	eyes_light.light_color = Color(1.0, 0.12, 0.05)
-	eyes_light.light_energy = 0.7
-	eyes_light.omni_range = 2.2
+	eyes_light.light_energy = 0.4
+	eyes_light.omni_range = 1.6
 	eyes_light.position = Vector3(0, 1.6, -0.25)
 	add_child(eyes_light)
 	play("idle")

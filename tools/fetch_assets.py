@@ -310,12 +310,13 @@ SOUNDS = {
     "payal":         dict(q=["ghungroo", "ghunghroo", "anklet bells", "jingle bells small", "small bells"],
                           req=["ghungr", "anklet", "ankle", "jingle", "bell"], ban=["church", "tower", "alarm", "door", "bicycle", "song", "christmas"],
                           dur=(0.5, 120), out=1.4, ia="ghungroo bells"),
-    "door_open":     dict(q=["door creak", "creaking door", "squeaky door"], req=["door", "creak", "squeak"],
-                          ban=["music", "song", "slam", "knock", "bell"], dur=(0.8, 60), out=2.6, ia="door creak"),
-    "door_close":    dict(q=["door close", "door closing", "door shut"], req=["door"], ban=["music", "song", "knock", "bell", "creak"],
+    "door_open":     dict(q=["wooden door creak", "door creak", "creaking door", "squeaky door"], req=["door", "creak", "squeak"],
+                          ban=["music", "song", "slam", "knock", "bell", "car ", "car door", "vehicle", "truck", "van ", "bus ", "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet"], dur=(0.8, 60), out=2.6, ia="door creak"),
+    "door_close":    dict(q=["wooden door close", "door close", "door closing", "door shut"], req=["door"],
+                          ban=["music", "song", "knock", "bell", "creak", "car ", "car door", "vehicle", "truck", "van ", "bus ", "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet"],
                           dur=(0.3, 40), out=1.6, ia="door close"),
-    "door_locked":   dict(q=["door handle rattle", "locked door", "door handle"], req=["door", "handle", "knob", "lock", "rattle"],
-                          ban=["music", "song", "slam", "bell"], dur=(0.3, 40), out=1.4, ia="door handle"),
+    "door_locked":   dict(q=["locked door handle", "door handle rattle", "locked door", "door handle"], req=["door", "handle", "knob", "lock", "rattle"],
+                          ban=["music", "song", "slam", "bell", "car ", "car door", "vehicle", "truck", "van ", "bus ", "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet"], dur=(0.3, 40), out=1.4, ia="door handle"),
     "unlock":        dict(q=["key in lock", "unlocking door", "padlock", "lock click"], req=["key", "lock", "unlock", "padlock"],
                           ban=["music", "song", "keyboard", "piano"], dur=(0.3, 40), out=1.5, ia="key lock"),
     "hammer_hit":    dict(q=["hammer hitting wood", "hammering nail", "hammer"], req=["hammer", "hammering", "nail"],
@@ -328,7 +329,7 @@ SOUNDS = {
                           dur=(0.3, 30), out=0.9, ia="keys jingle"),
     "drop":          dict(q=["metal object falling", "metal clang", "metal drop"], req=["metal", "drop", "clang", "fall"],
                           ban=["music", "song", "rain", "heavy metal", "band"], dur=(0.2, 30), out=1.2, ia="metal drop"),
-    "whack":         dict(q=["stick hit", "slap", "whip crack", "punch"], req=["hit", "slap", "whip", "punch", "smack", "stick"],
+    "whack":         dict(q=["ruler slap", "wooden stick hit", "slap", "whip crack", "punch"], req=["hit", "slap", "whip", "punch", "smack", "stick", "ruler"],
                           ban=["music", "song", "drum"], dur=(0.1, 20), out=0.8, ia="slap hit"),
     "scream":        dict(q=["woman screaming", "female scream", "scream"], req=["scream", "shriek"],
                           ban=["music", "song", "child", "baby", "man ", "male", "boy", "radio"], dur=(0.5, 30), out=2.6, gain=2, ia="woman scream"),
@@ -432,7 +433,9 @@ def normalise(x, gain_db=0.0, target=-16.0):
         rms = float(np.sqrt(np.median(e[keep])))
     else:
         rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
-    y = x * (10 ** ((target + gain_db) / 20) / (rms + 1e-9))
+    g = 10 ** ((target + gain_db) / 20) / (rms + 1e-9)
+    g = min(g, 1.0 / (float(np.max(np.abs(x))) + 1e-9))      # bells and clicks stay clean instead of being squashed
+    y = x * g
     return (np.tanh(y / 0.95) * 0.95).astype(np.float32)
 
 
@@ -457,6 +460,7 @@ def onsets(x, count, length):
 
 
 _last_req = [0.0]
+MANIFEST = "manifest_v2.json"      # bump to fetch every clip again
 FAILS = {"commons": 0, "openverse": 0}
 
 
@@ -721,7 +725,7 @@ def sounds():
     sdir = os.path.join(OUT, "sounds")
     os.makedirs(sdir, exist_ok=True)
     SOUND_DEADLINE[0] = time.time() + float(os.environ.get("SOUND_BUDGET_MIN", "30")) * 60
-    mpath = os.path.join(sdir, "manifest.json")
+    mpath = os.path.join(sdir, MANIFEST)
     manifest = json.load(open(mpath)) if os.path.exists(mpath) else {}
     for name, spec in SOUNDS.items():
         first = os.path.join(sdir, name + ("_1" if spec.get("steps") else "") + ".ogg")
