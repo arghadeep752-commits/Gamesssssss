@@ -1,0 +1,127 @@
+{
+ "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units).",
+ "models": {
+  "desk_bench": {
+   "gen": "50e297b0-5ebc-4ac2-8876-7088cae0a262",
+   "poly": 3000
+  },
+  "blackboard": {
+   "gen": "3bfcb407-8a66-49bd-9a44-b183ee46d646",
+   "poly": 2000,
+   "turn": 0,
+   "slab": 0.09
+  },
+  "teacher_table": {
+   "gen": "298f9ebe-3716-4558-8fab-a38aad2aae33",
+   "poly": 2500
+  },
+  "teacher_chair": {
+   "gen": "ccbc2e69-0ded-4c4f-93af-d4ce1c198d34",
+   "poly": 3000
+  },
+  "almirah": {
+   "gen": "a3e879d2-6077-44bd-a9c1-1785d1da9051",
+   "poly": 2000
+  },
+  "fan": {
+   "gen": "24e31608-b8ec-417c-8703-4d2a0c48b516",
+   "poly": 2500
+  },
+  "principal_desk": {
+   "gen": "5e7a9686-bd85-4867-b8fa-f46e23a077c3",
+   "poly": 3000
+  },
+  "office_chair": {
+   "gen": "f6bf0319-cd1e-4755-a18c-9c4d3860634e",
+   "poly": 3000
+  },
+  "visitor_chair": {
+   "gen": "8f0e71ed-5873-428d-8782-69c97e91ee41",
+   "poly": 2000
+  },
+  "file_rack": {
+   "gen": "d5f4e599-82b4-4fca-b548-edecbb89732a",
+   "poly": 4000
+  },
+  "wall_clock": {
+   "gen": "a5f9eb72-31c6-482c-94df-cd3a91564cf3",
+   "poly": 1500
+  },
+  "long_table": {
+   "gen": "cf7fb312-57c4-4f01-bab6-1444a2902812",
+   "poly": 2500
+  },
+  "lockers": {
+   "gen": "37214935-1b1e-4815-9bfd-7aaa2e8f9a1b",
+   "poly": 2500
+  },
+  "matka_stand": {
+   "gen": "89ca1ab7-f067-4c44-b13f-326dbe09e924",
+   "poly": 3000
+  },
+  "bench": {
+   "gen": "724f3e60-cfa6-4732-9661-74054fdc7e40",
+   "poly": 2000
+  },
+  "notice_board": {
+   "gen": "0c5f43df-5ce2-4068-8892-90cc50ce3d41",
+   "poly": 2000
+  },
+  "school_bell": {
+   "gen": "ca8cea95-5904-426f-863d-4af28af4bfda",
+   "poly": 2500
+  },
+  "trophy_case": {
+   "gen": "9646fa5d-759b-4475-a0a5-b38c8b3639cc",
+   "poly": 4000
+  },
+  "bookshelf": {
+   "gen": "deee6442-566e-4e1b-bd5f-f836235c832a",
+   "poly": 4500
+  },
+  "reading_table": {
+   "gen": "0712b6cf-c94b-4130-9e5e-3a5651935876",
+   "poly": 2500
+  },
+  "broken_desks": {
+   "gen": "096e8f2a-7365-49c9-b845-c515053af25c",
+   "poly": 6000
+  },
+  "sacks": {
+   "gen": "618b6ff7-d46f-4240-a643-f087da57e467",
+   "poly": 2500
+  },
+  "crate": {
+   "gen": "04bdb21b-dee8-4798-909d-ef319c41df9e",
+   "poly": 1500
+  },
+  "buckets": {
+   "gen": "3a424d00-cbec-45e6-a232-f432a8d62fd8",
+   "poly": 4000
+  },
+  "sinks": {
+   "gen": "291c9364-8e09-4a81-89ff-cc0a0d36c97e",
+   "poly": 4000
+  },
+  "harmonium": {
+   "gen": "69ea2dce-d239-4f22-9a5e-68b864e6e6d5",
+   "poly": 3500
+  },
+  "chulha": {
+   "gen": "af8287fd-1d25-42bd-86b6-4fe74d2cfa7c",
+   "poly": 3500
+  },
+  "vessels": {
+   "gen": "22b8678a-e690-41b2-85dd-08fba32b3038",
+   "poly": 4000
+  },
+  "kitchen_table": {
+   "gen": "7bb6a8e4-6938-4e03-84b3-fb890eb3a2b3",
+   "poly": 2500
+  },
+  "gas_cylinder": {
+   "gen": "fb8f81fc-5a0d-4608-9bbb-4a20a89e838e",
+   "poly": 2000
+  }
+ }
+}

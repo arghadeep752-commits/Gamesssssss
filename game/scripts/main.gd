@@ -448,6 +448,7 @@ func _process(dt: float) -> void:
 		hud.holding = held != ""
 		hud.crouched = player.crouched
 		hud.refresh()
+	hud.peek = move_toward(hud.peek, 1.0 if player.hidden else 0.0, get_process_delta_time() * 4.0)
 	hud.queue_redraw()
 	if hide_ref != null:
 		hide_ref["t"] = move_toward(hide_ref["t"], hide_ref["target"], dt * 3.0)

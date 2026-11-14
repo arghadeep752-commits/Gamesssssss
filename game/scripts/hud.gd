@@ -18,6 +18,7 @@ var holding := false
 var message := ""
 var message_t := 0.0
 var day_text := ""
+var peek := 0.0                     # 1 while hiding in an almirah: you look out through the gap of its doors
 var font: Font
 var font_title: Font
 
@@ -182,8 +183,28 @@ func _draw_gear(r: Rect2) -> void:
 	draw_circle(c, 8 * s, Color(0, 0, 0, 0.75))
 
 
+func _draw_peek() -> void:
+	var w := size.x
+	var h := size.y
+	var gap := w * 0.16
+	var l := (w - gap) / 2.0
+	var a := clampf(peek, 0.0, 1.0)
+	var dark := Color(0.01, 0.01, 0.012, 0.97 * a)
+	draw_rect(Rect2(0, 0, l, h), dark)
+	draw_rect(Rect2(l + gap, 0, w - l - gap, h), dark)
+	for k in 6:                      # soft edges of the steel doors
+		var f := float(k + 1) / 7.0
+		var c := Color(0.01, 0.01, 0.012, 0.75 * a * (1.0 - f))
+		draw_rect(Rect2(l + k * gap * 0.05, 0, gap * 0.05, h), c)
+		draw_rect(Rect2(l + gap - (k + 1) * gap * 0.05, 0, gap * 0.05, h), c)
+	draw_rect(Rect2(l, 0, gap, h * 0.06), Color(0.01, 0.01, 0.012, 0.6 * a))
+	draw_rect(Rect2(l, h * 0.94, gap, h * 0.06), Color(0.01, 0.01, 0.012, 0.6 * a))
+
+
 func _draw() -> void:
 	var s := u()
+	if peek > 0.01:
+		_draw_peek()
 	# joystick
 	var jc := joy_center()
 	draw_arc(jc, 92 * s, 0, TAU, 64, Color(1, 1, 1, 0.55), 4 * s, true)

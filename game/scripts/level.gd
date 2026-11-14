@@ -63,7 +63,10 @@ func build() -> bool:
 		for s in mi.mesh.get_surface_count():
 			var m0 := mi.mesh.surface_get_material(s)
 			var mname := String(m0.resource_name) if m0 != null else "plaster"
-			mi.set_surface_override_material(s, Mats.make(mname, lm_tex, Color(fl, fl, fl * 1.05), gain))
+			var own: Texture2D = null
+			if mname.begins_with("rodin_") and m0 is BaseMaterial3D:
+				own = (m0 as BaseMaterial3D).albedo_texture       # Hyper3D model: keep its own texture
+			mi.set_surface_override_material(s, Mats.make(mname, lm_tex, Color(fl, fl, fl * 1.05), gain, own))
 	_build_colliders()
 	_build_doors()
 	_build_items()

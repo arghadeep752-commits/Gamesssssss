@@ -2,7 +2,8 @@
 
     blender -b -noaudio -P tools/school/build_school.py -- OUT_DIR [--tex DOWNLOADED_TEXTURES] [--no-bake] [--quick]
 
-* geometry from tools/school/layout.py, architecture.py, furniture.py and items.py (all modelled from code)
+* geometry from tools/school/layout.py, architecture.py, furniture.py and items.py (all modelled from code); furniture
+  kinds that have a Hyper3D (Rodin) model in rodin_models.json use that model instead (see rodin.py)
 * painted room labels and chalk writing on the blackboards as 3D text
 * one object per room for the building and one for its furniture, so each gets its own baked lightmap
 * night lighting (tube lights, bare bulbs, moonlight) baked in Cycles into lightmaps (second UV set)
@@ -22,7 +23,9 @@ from mathutils import Euler, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "common"))
 import layout  # noqa: E402
+import rodin  # noqa: E402
 import architecture  # noqa: E402
 import furniture  # noqa: E402
 import items as item_models  # noqa: E402
@@ -101,6 +104,29 @@ def gltf_output_group():
     return ng
 
 
+RODIN_TEX = {}       # material name -> (image bytes, mime) of a Hyper3D model's base colour
+TEXD = os.path.join(OUT, "rodin_tex")
+
+
+def rodin_image(name):
+    """The model's own texture, at most 1024 px, saved as JPEG so it embeds small in school.glb."""
+    data, mime = RODIN_TEX[name]
+    os.makedirs(TEXD, exist_ok=True)
+    src = os.path.join(TEXD, name + ("_src.jpg" if "jpeg" in (mime or "") else "_src.png"))
+    open(src, "wb").write(data)
+    img = bpy.data.images.load(src)
+    w, h = img.size
+    if max(w, h) > 1024:
+        f = 1024.0 / max(w, h)
+        img.scale(max(1, int(w * f)), max(1, int(h * f)))
+    out = os.path.join(TEXD, name + ".jpg")
+    img.file_format = "JPEG"
+    img.filepath_raw = out
+    img.save()
+    img.name = name
+    return img
+
+
 def material(name):
     if name in MATS:
         return MATS[name]
@@ -110,6 +136,17 @@ def material(name):
     b = nt.nodes.get("Principled BSDF")
     c = BASE.get(name, (0.5, 0.5, 0.5))
     b.inputs["Base Color"].default_value = (c[0], c[1], c[2], 1.0)
+    if name in RODIN_TEX:
+        try:
+            uv0 = nt.nodes.new("ShaderNodeUVMap")
+            uv0.uv_map = "UVMap"
+            bc = nt.nodes.new("ShaderNodeTexImage")
+            bc.name = "RODIN_BASE"
+            bc.image = rodin_image(name)
+            nt.links.new(uv0.outputs["UV"], bc.inputs["Vector"])
+            nt.links.new(bc.outputs["Color"], b.inputs["Base Color"])
+        except Exception as e:      # noqa: BLE001
+            log("rodin texture failed for", name, e)
     b.inputs["Roughness"].default_value = 0.35 if name in METAL else 0.85
     b.inputs["Metallic"].default_value = 0.0
     if name in EMIT:
@@ -229,16 +266,34 @@ furn_by_room = {}
 dyn_meta = []
 dyn_objs = {}
 counters = {}
+RODIN = rodin.available()
+rodin_done = {}
+rodin_info = {}
+log("hyper3d models available: %d (%s)" % (len(RODIN), ", ".join(sorted(RODIN))))
 for i, f in enumerate(L["furniture"]):
     fn = furniture.FURN.get(f["kind"])
     if fn is None:
         continue
     try:
-        g, parts = fn()
+        if f["kind"] in RODIN:
+            if f["kind"] not in rodin_done:
+                rg, rparts, info = rodin.load(f["kind"], RODIN[f["kind"]], fn)
+                raw = info.pop("raw")
+                if raw["image"]:
+                    RODIN_TEX["rodin_" + f["kind"]] = (raw["image"], raw["mime"])
+                rodin_done[f["kind"]] = (rg, rparts)
+                rodin_info[f["kind"]] = info
+                log("  hyper3d %-15s %6d tris, turned %5.0f deg, fit scores %s" % (f["kind"], info["tris"], info["yaw"], info["scores"]))
+            g, parts = rodin_done[f["kind"]]
+        else:
+            g, parts = fn()
     except Exception as e:      # noqa: BLE001
         traceback.print_exc()
         log("FURNITURE FAILED", f["kind"], e)
-        continue
+        try:
+            g, parts = fn()
+        except Exception:       # noqa: BLE001
+            continue
     R = rot_z(f["yaw"])
     base = np.array([f["x"], f["y"], f.get("z", 0.0)])
     room_key = f["room"] if f["room"] not in ("court",) else "veranda"
@@ -513,6 +568,7 @@ def gp(x, y, z=0.0):
 meta = {
     "lm_scale": LM_SCALE, "lightmaps": lightmaps, "ceil_h": L["ceil_h"], "base_colors": BASE, "emit": EMIT,
     "footprints": {k: v for k, v in furniture.FOOTPRINT.items() if v},
+    "hyper3d": rodin_info,
     "colliders": navigation.colliders(L),
     "grid": navigation.export_grid(G),
     "doors": [dict(d, pos=gp(d["x"], d["y"]), into_g=[d["into"][0], 0, -d["into"][1]]) for d in L["doors"]],

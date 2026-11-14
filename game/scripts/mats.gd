@@ -119,8 +119,9 @@ static func color_of(mat: String) -> Color:
 	return Color(c[0], c[1], c[2])
 
 
-## lightmap: baked texture or null; flat: light colour used when there is no lightmap
-static func make(mat: String, lightmap: Texture2D, flat: Color, gain: float) -> Material:
+## lightmap: baked texture or null; flat: light colour used when there is no lightmap;
+## own: the model's own colour texture (Hyper3D models), used as it is instead of a photo
+static func make(mat: String, lightmap: Texture2D, flat: Color, gain: float, own: Texture2D = null) -> Material:
 	if mat == "glass" or mat == "glass_dirty":
 		var g := StandardMaterial3D.new()
 		g.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -132,7 +133,11 @@ static func make(mat: String, lightmap: Texture2D, flat: Color, gain: float) -> 
 	m.shader = _shader_ds if mat in TWO_SIDED else _shader
 	var info = MAP.get(mat, ["", 1.0])
 	var c := color_of(mat)
-	if mat == "leaves":
+	if own != null:
+		m.set_shader_parameter("tex", own)
+		m.set_shader_parameter("tint", 0.0)
+		m.set_shader_parameter("base", Vector3(0.5, 0.5, 0.5))
+	elif mat == "leaves":
 		m.set_shader_parameter("tex", _leaf)
 		m.set_shader_parameter("tint", 0.0)
 		m.set_shader_parameter("cutout", 1.0)

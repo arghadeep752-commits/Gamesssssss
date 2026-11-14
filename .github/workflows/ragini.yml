@@ -142,12 +142,21 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Model cache (rebuilt only when the Blender scripts change)
+      - name: Hyper3D models (rodin_raw.zip on the ragini-ci release)
+        id: rodin
+        run: |
+          mkdir -p build/rodin/raw
+          if curl -fsSL -o /tmp/rodin_raw.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/rodin_raw.zip"; then
+            unzip -oq /tmp/rodin_raw.zip -d build/rodin/raw
+          fi
+          echo "hyper3d models: $(ls build/rodin/raw | wc -l)"
+          echo "set=$(ls build/rodin/raw | sort | sha1sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - name: Model cache (rebuilt only when the Blender scripts or the Hyper3D models change)
         id: mcache
         uses: actions/cache@v4
         with:
           path: build/school
-          key: school-model-v1-${{ hashFiles('tools/common/**', 'tools/school/**', 'tools/install_blender.sh') }}
+          key: school-model-v2-${{ steps.rodin.outputs.set }}-${{ hashFiles('tools/common/**', 'tools/school/**', 'tools/install_blender.sh') }}
       - name: Blender cache
         if: steps.mcache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
