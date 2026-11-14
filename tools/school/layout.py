@@ -194,9 +194,9 @@ def build():
             else:
                 lx, ly = (x0 + x1) / 2, (y0 + y1) / 2
             state = "tube"
-            if name in ("class7", "store", "kitchen") and i == 0:
+            if name in ("class7", "kitchen") and i == 0:
                 state = "dead"
-            if name in ("toilet",):
+            if name in ("toilet", "store"):
                 state = "bulb"
             lights.append({"x": lx, "y": ly, "z": CEIL_H - 0.12, "kind": state, "room": name})
     for (lx, ly) in [(0, 2.2), (-7.8, 2.2), (7.8, 2.2), (-7.8, 8.0), (7.8, 8.0), (-7.8, 13.8), (7.8, 13.8), (0, 13.8)]:

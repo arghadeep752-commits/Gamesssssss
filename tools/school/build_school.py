@@ -511,7 +511,8 @@ def gp(x, y, z=0.0):
 
 
 meta = {
-    "lm_scale": LM_SCALE, "lightmaps": lightmaps, "ceil_h": L["ceil_h"],
+    "lm_scale": LM_SCALE, "lightmaps": lightmaps, "ceil_h": L["ceil_h"], "base_colors": BASE, "emit": EMIT,
+    "footprints": {k: v for k, v in furniture.FOOTPRINT.items() if v},
     "colliders": navigation.colliders(L),
     "grid": navigation.export_grid(G),
     "doors": [dict(d, pos=gp(d["x"], d["y"]), into_g=[d["into"][0], 0, -d["into"][1]]) for d in L["doors"]],
