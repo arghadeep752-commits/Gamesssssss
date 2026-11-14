@@ -114,12 +114,16 @@ def crop_slab(raw, half):
     return dict(raw, V=V[used], UV=raw["UV"][used], F=remap[F[keep]])
 
 
-def fit(kind, raw, ref_g, ref_parts, yaw_fix=0.0, turn=None):
-    """-> (V fitted in the piece's own frame, chosen quarter turn, scores)."""
+def fit(kind, raw, ref_g, ref_parts, yaw_fix=0.0, turn=None, height=None):
+    """-> (V fitted in the piece's own frame, chosen quarter turn, scores). height: the real top of the piece when
+    the code-built one has things standing on it (files, a bell) that made its box taller."""
     V0 = raw["V"]
     F = raw["F"]
     refP = _all_points(ref_g, ref_parts)
     rlo, rhi = refP.min(0), refP.max(0)
+    if height:
+        rhi = rhi.copy()
+        rhi[2] = rlo[2] + float(height)
     ref_occ = _occ(_ref_samples(ref_g, ref_parts), rlo - 0.02, rhi + 0.02)
     scores = []
     for k in range(4):
@@ -173,12 +177,21 @@ def fit_fan(raw, ref_g, ref_parts):
 
 
 def to_geo(V, F, UV, mat, name="rodin"):
-    g = Geo(name)
-    g.V = [p for p in np.asarray(V, float)]
-    g.F = [list(map(int, f)) for f in F]
+    """Geo with per-corner UVs; vertices split only for UV seams in the file are welded back together so the
+    model shades smoothly across its seams."""
+    V = np.asarray(V, float)
+    F = np.asarray(F, int)
     UV = np.asarray(UV, float)
-    g.UV = [[(float(UV[i, 0]), float(UV[i, 1])) for i in f] for f in F]
-    g.M = [mat] * len(F)
+    key = np.round(V / 1e-5).astype(np.int64)
+    _, first, inv = np.unique(key, axis=0, return_index=True, return_inverse=True)
+    inv = inv.ravel()
+    Fw = inv[F]
+    ok = (Fw[:, 0] != Fw[:, 1]) & (Fw[:, 1] != Fw[:, 2]) & (Fw[:, 0] != Fw[:, 2])
+    g = Geo(name)
+    g.V = [p for p in V[first]]
+    g.F = [list(map(int, f)) for f in Fw[ok]]
+    g.UV = [[(float(UV[i, 0]), float(UV[i, 1])) for i in f] for f in F[ok]]
+    g.M = [mat] * len(g.F)
     return g
 
 
@@ -194,6 +207,6 @@ def load(kind, entry, furn_fn):
         return Geo("fan"), {"rotor": (rotor, tuple(off))}, {"yaw": 0.0, "scores": [], "tris": len(raw["F"]), "raw": raw}
     if entry.get("slab"):
         raw = crop_slab(raw, float(entry["slab"]))
-    Vf, ang, scores = fit(kind, raw, ref_g, ref_parts, entry.get("yaw", 0.0), entry.get("turn"))
+    Vf, ang, scores = fit(kind, raw, ref_g, ref_parts, entry.get("yaw", 0.0), entry.get("turn"), entry.get("height"))
     g = to_geo(Vf, raw["F"], raw["UV"], mat, kind)
     return g, {}, {"yaw": ang, "scores": [round(float(s), 3) for s in scores], "tris": len(raw["F"]), "raw": raw}

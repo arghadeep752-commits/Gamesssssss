@@ -1,5 +1,5 @@
 {
- "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units).",
+ "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units). 'height' sets the real top (m) when the code-built piece had things standing on it.",
  "models": {
   "desk_bench": {
    "gen": "50e297b0-5ebc-4ac2-8876-7088cae0a262",
@@ -29,7 +29,8 @@
   },
   "principal_desk": {
    "gen": "5e7a9686-bd85-4867-b8fa-f46e23a077c3",
-   "poly": 3000
+   "poly": 3000,
+   "height": 0.78
   },
   "office_chair": {
    "gen": "f6bf0319-cd1e-4755-a18c-9c4d3860634e",
@@ -49,7 +50,8 @@
   },
   "long_table": {
    "gen": "cf7fb312-57c4-4f01-bab6-1444a2902812",
-   "poly": 2500
+   "poly": 2500,
+   "height": 0.78
   },
   "lockers": {
    "gen": "37214935-1b1e-4815-9bfd-7aaa2e8f9a1b",
@@ -117,7 +119,8 @@
   },
   "kitchen_table": {
    "gen": "7bb6a8e4-6938-4e03-84b3-fb890eb3a2b3",
-   "poly": 2500
+   "poly": 2500,
+   "height": 0.82
   },
   "gas_cylinder": {
    "gen": "fb8f81fc-5a0d-4608-9bbb-4a20a89e838e",

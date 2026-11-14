@@ -192,6 +192,9 @@ def geo_object(geo, name, origin=(0, 0, 0)):
     for mname in names:
         me.materials.append(material(mname))
     me.polygons.foreach_set("material_index", np.array([idx[m] for m in geo.M], dtype=np.int32))
+    smooth = np.array([m.startswith("rodin_") for m in geo.M], dtype=bool)
+    if smooth.any():                                   # Hyper3D models are organic meshes: shade them smooth
+        me.polygons.foreach_set("use_smooth", smooth)
     uvl = me.uv_layers.new(name="UVMap")
     flat = np.array([uv for f in geo.UV for uv in f], dtype=np.float32).ravel()
     if len(flat) == len(me.loops) * 2:
@@ -331,6 +334,51 @@ for rk, g in furn_by_room.items():
     if ob is not None:
         static_objs[ob.name] = ob
 log("furniture objects:", len(furn_by_room), "moving parts:", len(dyn_objs))
+
+
+def _surface_z(g, lx, ly):
+    """Height of the highest surface of g straight below (lx, ly), or None."""
+    V = np.asarray(g.V, float)
+    tris = np.array([(f[0], f[i], f[i + 1]) for f in g.F for i in range(1, len(f) - 1)])
+    if not len(tris):
+        return None
+    A, B, C = V[tris[:, 0]], V[tris[:, 1]], V[tris[:, 2]]
+    v0, v1 = B[:, :2] - A[:, :2], C[:, :2] - A[:, :2]
+    v2 = np.array([lx, ly]) - A[:, :2]
+    den = v0[:, 0] * v1[:, 1] - v1[:, 0] * v0[:, 1]
+    ok = np.abs(den) > 1e-12
+    den = np.where(ok, den, 1.0)
+    b1 = (v2[:, 0] * v1[:, 1] - v1[:, 0] * v2[:, 1]) / den
+    b2 = (v0[:, 0] * v2[:, 1] - v2[:, 0] * v0[:, 1]) / den
+    inside = ok & (b1 >= 0) & (b2 >= 0) & (b1 + b2 <= 1)
+    if not inside.any():
+        return None
+    z = A[:, 2] + b1 * (B[:, 2] - A[:, 2]) + b2 * (C[:, 2] - A[:, 2])
+    return float(z[inside].max())
+
+
+# items lying on Hyper3D furniture: put them on the model's real surface (and in front of a closed almirah)
+for ik, iv in L["items"].items():
+    for sp in iv["spots"]:
+        kind = sp.get("on")
+        if kind not in rodin_done:
+            continue
+        cands = [f for f in L["furniture"] if f["kind"] == kind]
+        if not cands:
+            continue
+        f = min(cands, key=lambda f: (f["x"] - sp["x"]) ** 2 + (f["y"] - sp["y"]) ** 2)
+        R = rot_z(f["yaw"])
+        base = np.array([f["x"], f["y"], f.get("z", 0.0)])
+        if kind == "almirah":
+            w = base + R @ np.array([0.0, -0.62, 0.0])
+            sp.update(x=float(w[0]), y=float(w[1]), z=0.0, on="floor")
+            log("  %s: spot moved in front of the almirah (its doors no longer open)" % ik)
+            continue
+        loc = R.T @ (np.array([sp["x"], sp["y"], sp["z"]]) - base)
+        zs = _surface_z(rodin_done[kind][0], loc[0], loc[1])
+        if zs is not None:
+            log("  %s on %s: height %.3f -> %.3f" % (ik, kind, sp["z"], base[2] + zs + 0.004))
+            sp["z"] = float(base[2] + zs + 0.004)
 
 # doors, planks, padlock (from the architecture)
 for name, d in dyn.items():

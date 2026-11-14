@@ -21,6 +21,7 @@ var day_text := ""
 var peek := 0.0                     # 1 while hiding in an almirah: you look out through the gap of its doors
 var font: Font
 var font_title: Font
+var font_scale := 1.0
 
 var _joy_id := -1
 var _joy_origin := Vector2.ZERO
@@ -221,15 +222,17 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([c + Vector2(-18, 4) * s, c + Vector2(18, 4) * s, c + Vector2(0, 26) * s]), WHITE)
 	if font:
 		if label_text != "":
-			var fs := int(34 * s)
+			var fs := int(34 * s * font_scale)
 			var w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_string(font, Vector2(size.x / 2 - w / 2, size.y * 0.69), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95))
 		if message != "":
-			var fs2 := int(30 * s)
+			var fs2 := int(30 * s * font_scale)
 			var w2 := font.get_string_size(message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x
 			draw_string(font, Vector2(size.x / 2 - w2 / 2, size.y * 0.8), message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(1, 1, 1, clampf(message_t, 0, 1)))
 		if day_text != "":
-			draw_string(font, Vector2(size.x - 150 * s, 50 * s), day_text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(28 * s), Color(1, 1, 1, 0.8))
+			var fs3 := int(28 * s * font_scale)
+			var w3 := font.get_string_size(day_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs3).x
+			draw_string(font, Vector2(size.x - w3 - 40 * s, 54 * s), day_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs3, Color(1, 1, 1, 0.85))
 	# centre dot
 	draw_circle(size / 2, 2.5 * s, Color(1, 1, 1, 0.6))
 

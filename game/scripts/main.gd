@@ -34,6 +34,8 @@ var caption: Label
 var big: Label
 var sub: Label
 var f_title: Font
+var f_name: Font                     # the game's name (Baby Doll)
+const CHALK_SCALE := 1.4             # the chalk font draws small for its size
 var f_ui: Font
 var f_type: Font
 var shots_dir := ""
@@ -47,9 +49,12 @@ func _ready() -> void:
 			shots_dir = a.substr(8)
 		if a == "--playtest":
 			test_mode = true
-	f_title = _font("Creepster-Regular.ttf")
-	f_ui = _font("Oswald.ttf")
-	f_type = _font("SpecialElite-Regular.ttf")
+	# DK Midnight Chalker is the game's font everywhere; Baby Doll writes the game's name. Characters a font
+	# lacks (the chalk font has no "4", for one) come from the old fonts.
+	f_ui = _game_font("dk_midnight_chalker.otf", _font("Oswald.ttf"))
+	f_name = _game_font("baby_doll.ttf", _font("Creepster-Regular.ttf"))
+	f_title = f_ui
+	f_type = f_ui
 	var cfg := ConfigFile.new()
 	if cfg.load("user://settings.cfg") == OK:
 		sensitivity = float(cfg.get_value("game", "sensitivity", 1.0))
@@ -59,6 +64,7 @@ func _ready() -> void:
 	add_child(ui)
 	hud = Hud.new()
 	hud.font = f_ui
+	hud.font_scale = CHALK_SCALE if f_ui.resource_path.ends_with("dk_midnight_chalker.otf") else 1.0
 	hud.visible = false
 	ui.add_child(hud)
 	hud.interact.connect(_interact)
@@ -99,6 +105,15 @@ func _notification(what: int) -> void:
 					_show_main_menu()
 
 
+func _game_font(n: String, fallback: Font) -> Font:
+	if ResourceLoader.exists("res://game/fonts/" + n):
+		var f: Font = load("res://game/fonts/" + n)
+		if f is FontFile and fallback != null and fallback != ThemeDB.fallback_font:
+			(f as FontFile).fallbacks = [fallback]
+		return f
+	return fallback
+
+
 func _font(n: String) -> Font:
 	if ResourceLoader.exists(FONT_DIR + n):
 		return load(FONT_DIR + n)
@@ -114,10 +129,14 @@ func _rect(c: Color) -> ColorRect:
 	return r
 
 
+func _sz(f: Font, size: int) -> int:
+	return int(size * CHALK_SCALE) if f == f_ui and f != null and f.resource_path.ends_with("dk_midnight_chalker.otf") else size
+
+
 func _label(f: Font, size: int, c: Color) -> Label:
 	var l := Label.new()
 	l.add_theme_font_override("font", f)
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", _sz(f, size))
 	l.add_theme_color_override("font_color", c)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -144,7 +163,7 @@ func _text(parent: Control, t: String, f: Font, size: int, c: Color, y: float) -
 	var l := Label.new()
 	l.text = t
 	l.add_theme_font_override("font", f)
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", _sz(f, size))
 	l.add_theme_color_override("font_color", c)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.set_anchors_preset(Control.PRESET_TOP_WIDE)
@@ -162,7 +181,7 @@ func _button(parent: Control, t: String, y: float, cb: Callable, size := 46) -> 
 	b.flat = true
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_override("font", f_ui)
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", _sz(f_ui, size))
 	b.add_theme_color_override("font_color", Color(0.92, 0.92, 0.92))
 	b.add_theme_color_override("font_pressed_color", Color(0.8, 0.1, 0.08))
 	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
@@ -239,8 +258,8 @@ func _show_main_menu() -> void:
 	fade.color.a = 0.0
 	_clear_menu()
 	_menu_bg()
-	_text(menu, "RAGINI", f_title, 150, Color(0.72, 0.03, 0.03), 0.09)
-	_text(menu, "THE INDIAN HORROR GAME", f_ui, 30, Color(0.8, 0.8, 0.8), 0.37)
+	_text(menu, "RAGINI", f_name, 150, Color(0.72, 0.03, 0.03), 0.09)
+	_text(menu, "THE INDIAN HORROR GAME", f_name, 34, Color(0.8, 0.8, 0.8), 0.37)
 	_button(menu, "PLAY", 0.5, _show_modes)
 	_button(menu, "SETTINGS", 0.64, _show_settings)
 	_text(menu, "MXYAN GAMES OFFICIAL", f_ui, 24, Color(0.6, 0.6, 0.6), 0.9)
