@@ -4,6 +4,11 @@ on:
   push:
     branches: [moulika-trailer]
   workflow_dispatch:
+    inputs:
+      frames_run:
+        description: "Re-cut only: take the rendered frames and sounds from this earlier run id"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -15,6 +20,7 @@ env:
 jobs:
   # ------------------------------------------------------------------ the trailer's extra sounds (real recordings)
   sounds:
+    if: ${{ !inputs.frames_run }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -39,6 +45,7 @@ jobs:
 
   # ------------------------------------------------------------------ the Blender scene
   scene:
+    if: ${{ !inputs.frames_run }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     outputs:
@@ -122,16 +129,19 @@ jobs:
   # ------------------------------------------------------------------ cut, score and publish
   assemble:
     needs: [render, sounds]
+    if: ${{ !cancelled() && (inputs.frames_run || (needs.render.result == 'success' && needs.sounds.result == 'success')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      FROM_RUN: ${{ inputs.frames_run || github.run_id }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { pattern: "frames-*", path: build/frames, merge-multiple: true }
+        with: { pattern: "frames-*", path: build/frames, merge-multiple: true, run-id: "${{ env.FROM_RUN }}", github-token: "${{ github.token }}" }
       - uses: actions/download-artifact@v4
-        with: { name: trailer-sounds, path: build/trailer_audio }
+        with: { name: trailer-sounds, path: build/trailer_audio, run-id: "${{ env.FROM_RUN }}", github-token: "${{ github.token }}" }
       - uses: actions/download-artifact@v4
-        with: { name: trailer-scene, path: build/trailer }
+        with: { name: trailer-scene, path: build/trailer, run-id: "${{ env.FROM_RUN }}", github-token: "${{ github.token }}" }
       - name: The game's own recorded sounds
         run: |
           curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"

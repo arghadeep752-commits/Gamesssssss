@@ -190,9 +190,10 @@ def mix(events, seconds):
             x[:fi] *= np.linspace(0, 1, min(fi, len(x)))[:, None][: len(x[:fi])]
         if fo > 0 and len(x) > fo:
             x[-fo:] *= np.linspace(1, 0, fo)[:, None]
-        g = 10 ** (gain / 20.0)
+        boost = 0.0 if o.get("hit") else BED_BOOST
+        g = 10 ** ((gain + boost) / 20.0)
         if "gain_to" in o:
-            g2 = 10 ** (o["gain_to"] / 20.0)
+            g2 = 10 ** ((o["gain_to"] + boost) / 20.0)
             x *= np.linspace(g, g2, len(x))[:, None]
         else:
             x *= g
@@ -204,9 +205,14 @@ def mix(events, seconds):
         e = min(len(out), s + len(x))
         out[s:e] += x[: e - s]
     out = out[: int(seconds * SR)]
-    peak = float(np.max(np.abs(out))) + 1e-9
-    out = np.tanh(out / peak * 1.25) / np.tanh(1.25) * 0.89      # gentle limiter, peaks about -1 dB
+    # level set by the loud moments rather than the single loudest peak, then a soft limiter (peaks about -1 dB):
+    # the scare still hits hardest, but the quiet build-up stays audible on a phone speaker
+    ref = float(np.percentile(np.abs(out), 99.9)) + 1e-9
+    out = np.tanh(out / ref * 0.9) * 0.89
     return out
+
+
+BED_BOOST = 7.0      # everything but the scare hits, so the build-up carries on a phone speaker
 
 
 def write_wav(x, path):
@@ -275,10 +281,10 @@ def score_full(total):
         (T("chase_b"), "t_whoosh", -9),
         (T("chase_b", 2.15), "t_whoosh", -4),
         # the lunge: a breath of silence, then everything at once
-        (lunge + 0.28, "t_stinger", -3),
-        (lunge + 0.3, "scream", -2),
-        (lunge + 0.42, "t_boom", -1),
-        (lunge + 0.55, "whack", -5),
+        (lunge + 0.28, "t_stinger", -3, {"hit": True}),
+        (lunge + 0.3, "scream", -2, {"hit": True}),
+        (lunge + 0.42, "t_boom", -1, {"hit": True}),
+        (lunge + 0.55, "whack", -5, {"hit": True}),
     ]
     card = T("lunge") + 1.5 + 1.0
     ev += [
@@ -307,10 +313,10 @@ def score_short(total):
     ev += steps(0.3, T("s_class", 3.3), 0.62, "footstep", -21)
     ev += [
         (scare - 0.35, "t_whoosh", -10),
-        (scare, "t_stinger", -1),
-        (scare + 0.02, "scream", 0),
-        (scare + 0.1, "t_boom", 0),
-        (scare + 0.35, "whack", -3),
+        (scare, "t_stinger", -1, {"hit": True}),
+        (scare + 0.02, "scream", 0, {"hit": True}),
+        (scare + 0.1, "t_boom", 0, {"hit": True}),
+        (scare + 0.35, "whack", -3, {"hit": True}),
     ]
     card = T("s_scare") + 2.7 + 0.8
     ev += [
