@@ -36,8 +36,25 @@ def log(*a):
     print(*a, flush=True)
 
 
+def release_assets():
+    out = subprocess.run(["gh", "release", "view", "ragini-ci", "-R", REPO, "--json", "assets", "-q", ".assets[].name"],
+                         capture_output=True, text=True)
+    return set(out.stdout.split()) if out.returncode == 0 else set()
+
+
+def fetch(url, dst):
+    for k in range(3):
+        if sh("curl", "-fsSL", "--retry", "2", "-o", dst, url, check=False) == 0 and os.path.getsize(dst) > 1000:
+            return True
+        time.sleep(3)
+    return False
+
+
 def main():
     manifest = json.load(open(os.path.join(ROOT, "tools", "school", "rodin_models.json")))["models"]
+    # single files kept on the release under their own names (the rigged enemy): {asset name: generation id}
+    ep = os.path.join(ROOT, "tools", "rodin_extra.json")
+    extra = json.load(open(ep)) if os.path.exists(ep) else {}
     os.makedirs(OUT, exist_ok=True)
     zpath = os.path.join(ROOT, "build", "rodin_raw.zip")
     if sh("curl", "-fsSL", "-o", zpath, "https://github.com/%s/releases/download/ragini-ci/rodin_raw.zip" % REPO, check=False) == 0:
@@ -47,7 +64,10 @@ def main():
     want = {"%s__%s" % (k, v["gen"]): (k, v["gen"]) for k, v in manifest.items()}
     missing = {n: kg for n, kg in want.items() if n not in have}
     log("hyper3d models: %d wanted, %d already on the release, %d missing" % (len(want), len(want) - len(missing), len(missing)))
-    if not missing:
+    on_release = release_assets()
+    extra_missing = {n: g for n, g in extra.items() if n not in on_release}
+    log("single files: %d wanted, %d missing %s" % (len(extra), len(extra_missing), sorted(extra_missing)))
+    if not missing and not extra_missing:
         return 0
 
     tmp = tempfile.mkdtemp(prefix="rodin_")
@@ -79,6 +99,16 @@ def main():
        "-out", os.path.join(tmp, "urls.json"), "-pass", "file:" + os.path.join(tmp, "k.txt"))
     urls = json.load(open(os.path.join(tmp, "urls.json")))      # {generation id: signed url}
     os.remove(os.path.join(tmp, "urls.json"))
+    for name, gen in sorted(extra_missing.items()):
+        u = urls.get("file:" + name)
+        if not u:
+            log("  %-22s no link (not finished yet?)" % name)
+            continue
+        dst = os.path.join(tmp, name)
+        ok = fetch(u, dst)
+        log("  %-22s %s" % (name, ("%.1f MB" % (os.path.getsize(dst) / 1e6)) if ok else "DOWNLOAD FAILED"))
+        if ok:
+            sh("gh", "release", "upload", "ragini-ci", dst, "-R", REPO, "--clobber")
     got = 0
     for name, (kind, gen) in sorted(missing.items()):
         u = urls.get(gen)
