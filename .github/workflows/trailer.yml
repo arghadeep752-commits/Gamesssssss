@@ -1,0 +1,28 @@
+name: Moulika - trailer
+
+on:
+  push:
+    branches: [moulika-trailer]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  BLENDER_VERSION: 4.2.3
+
+jobs:
+  blender_copy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep a copy of Blender on the CI release (for local scene work)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view ragini-ci -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qx "blender-$BLENDER_VERSION-linux-x64.tar.xz"; then
+            echo "already there"; exit 0
+          fi
+          V=$BLENDER_VERSION; S=${V%.*}
+          curl -fsSL --retry 3 -o "blender-$V-linux-x64.tar.xz" "https://download.blender.org/release/Blender$S/blender-$V-linux-x64.tar.xz"
+          ls -la blender-*.tar.xz
+          gh release upload ragini-ci "blender-$V-linux-x64.tar.xz" -R "$GITHUB_REPOSITORY" --clobber
