@@ -310,8 +310,10 @@ SOUNDS = {
     "payal":         dict(q=["ghungroo", "ghunghroo", "anklet bells", "jingle bells small", "small bells"],
                           req=["ghungr", "anklet", "ankle", "jingle", "bell"], ban=["church", "tower", "alarm", "door", "bicycle", "song", "christmas"],
                           dur=(0.5, 120), out=1.4, ia="ghungroo bells"),
-    "door_open":     dict(q=["wooden door creak", "door creak", "creaking door", "squeaky door"], req=["door", "creak", "squeak"],
-                          ban=["music", "song", "slam", "knock", "bell", "car ", "car door", "vehicle", "truck", "van ", "bus ", "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet"], dur=(0.8, 60), out=2.6, ia="door creak"),
+    "door_open":     dict(q=["door open", "wooden door open", "door opening", "opening a door"], req=["door"],
+                          ban=["music", "song", "slam", "knock", "bell", "creak", "squeak", "car ", "car door", "vehicle", "truck", "van ", "bus ",
+                               "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet", "sliding", "alarm"],
+                          dur=(0.4, 20), out=1.3, gain=-3, v=2, ia="door open"),     # v2: a short, soft door opening (no creak)
     "door_close":    dict(q=["wooden door close", "door close", "door closing", "door shut"], req=["door"],
                           ban=["music", "song", "knock", "bell", "creak", "car ", "car door", "vehicle", "truck", "van ", "bus ", "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet"],
                           dur=(0.3, 40), out=1.6, ia="door close"),
@@ -727,9 +729,12 @@ def sounds():
     SOUND_DEADLINE[0] = time.time() + float(os.environ.get("SOUND_BUDGET_MIN", "30")) * 60
     mpath = os.path.join(sdir, MANIFEST)
     manifest = json.load(open(mpath)) if os.path.exists(mpath) else {}
+    def mkey(name, spec):
+        return name + ("@v%d" % spec["v"] if spec.get("v") else "")
+
     for name, spec in SOUNDS.items():
         first = os.path.join(sdir, name + ("_1" if spec.get("steps") else "") + ".ogg")
-        if name in manifest and os.path.exists(first):
+        if mkey(name, spec) in manifest and os.path.exists(first):
             log("sound %-12s kept from the last build" % name)
             continue
         try:
@@ -739,13 +744,13 @@ def sounds():
             c = None
         log("sound %-12s %s" % (name, "ok" if c else "MISSING"))
         if c:
-            manifest[name] = c
+            manifest[mkey(name, spec)] = c
             json.dump(manifest, open(mpath, "w"), indent=1)
     derived()
     REPORT.append("")
-    REPORT.append("%d of %d recorded sounds found" % (sum(1 for n in SOUNDS if n in manifest), len(SOUNDS)))
+    REPORT.append("%d of %d recorded sounds found" % (sum(1 for n, sp in SOUNDS.items() if mkey(n, sp) in manifest), len(SOUNDS)))
     open(os.path.join(BUILD, "sounds_report.txt"), "w").write("\n".join(REPORT) + "\n")
-    open(os.path.join(sdir, "CREDITS_SOUNDS.md"), "w").write("\n".join(manifest[n] for n in SOUNDS if n in manifest) + "\n")
+    open(os.path.join(sdir, "CREDITS_SOUNDS.md"), "w").write("\n".join(manifest[mkey(n, sp)] for n, sp in SOUNDS.items() if mkey(n, sp) in manifest) + "\n")
 
 
 if __name__ == "__main__":

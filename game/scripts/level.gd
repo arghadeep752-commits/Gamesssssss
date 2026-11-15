@@ -173,7 +173,7 @@ func toggle_door(d: Dictionary, by_ragini := false) -> void:
 	d["target"] = 1.0 if d["open"] else 0.0
 	d["shape"].disabled = d["open"]
 	if audio:
-		audio.play3d("door_open" if d["open"] else "door_close", d["pos"], -4.0)
+		audio.play3d("door_open" if d["open"] else "door_close", d["pos"], -11.0)
 	if not by_ragini:
 		noise.emit(d["pos"], 7.0)
 	d["auto_close"] = 0.0
@@ -186,7 +186,7 @@ func open_main() -> void:
 	d["target"] = 1.0
 	d["shape"].disabled = true
 	if audio:
-		audio.play3d("door_open", d["pos"], 0.0)
+		audio.play3d("door_open", d["pos"], -7.0)
 
 
 func _process(dt: float) -> void:

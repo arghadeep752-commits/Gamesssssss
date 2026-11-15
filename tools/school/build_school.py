@@ -275,6 +275,12 @@ def rodin_box(name, lo, hi, mode="exact", mirror=False):
 if "window" in RODIN:
     architecture.WINDOW_MODEL = lambda w, z0, z1: rodin_box("window", (-w / 2, -0.06, z0), (w / 2, 0.06, z1))
     log("  hyper3d window in every window opening")
+if "pillar" in RODIN:
+    architecture.PILLAR_MODEL = lambda h: rodin_box("pillar", (-0.25, -0.25, 0.0), (0.25, 0.25, h))
+    log("  hyper3d veranda pillars")
+if "compound_wall" in RODIN:
+    architecture.WALL_MODEL = lambda length, k: rodin_box("compound_wall", (-length / 2, -0.19, 0.0), (length / 2, 0.19, 1.98), "exact", mirror=bool(k % 2))
+    log("  hyper3d compound wall")
 chunks, dyn = architecture.build(L)
 
 # door leaves, the planks and the padlock of the main door: Hyper3D models in the same boxes
@@ -318,6 +324,42 @@ furn_by_room = {}
 dyn_meta = []
 dyn_objs = {}
 counters = {}
+def _surface_z(g, lx, ly):
+    """Height of the highest surface of g straight below (lx, ly), or None."""
+    V = np.asarray(g.V, float)
+    tris = np.array([(f[0], f[i], f[i + 1]) for f in g.F for i in range(1, len(f) - 1)])
+    if not len(tris):
+        return None
+    A, B, C = V[tris[:, 0]], V[tris[:, 1]], V[tris[:, 2]]
+    v0, v1 = B[:, :2] - A[:, :2], C[:, :2] - A[:, :2]
+    v2 = np.array([lx, ly]) - A[:, :2]
+    den = v0[:, 0] * v1[:, 1] - v1[:, 0] * v0[:, 1]
+    ok = np.abs(den) > 1e-12
+    den = np.where(ok, den, 1.0)
+    b1 = (v2[:, 0] * v1[:, 1] - v1[:, 0] * v2[:, 1]) / den
+    b2 = (v0[:, 0] * v2[:, 1] - v2[:, 0] * v0[:, 1]) / den
+    inside = ok & (b1 >= 0) & (b2 >= 0) & (b1 + b2 <= 1)
+    if not inside.any():
+        return None
+    z = A[:, 2] + b1 * (B[:, 2] - A[:, 2]) + b2 * (C[:, 2] - A[:, 2])
+    return float(z[inside].max())
+
+
+# furniture standing on other furniture (the harmonium on the stage): onto the model's real floor
+for f in L["furniture"]:
+    sup = f.get("on")
+    if sup in RODIN and sup in furniture.FURN:
+        try:
+            sg, sparts, _ = rodin.load(sup, RODIN[sup], furniture.FURN[sup])
+            s_ = min((x for x in L["furniture"] if x["kind"] == sup), key=lambda x: (x["x"] - f["x"]) ** 2 + (x["y"] - f["y"]) ** 2)
+            loc = rot_z(s_["yaw"]).T @ np.array([f["x"] - s_["x"], f["y"] - s_["y"], 0.0])
+            zs = _surface_z(sg, loc[0], loc[1])
+            if zs is not None:
+                log("  %s on the %s: %.3f -> %.3f m" % (f["kind"], sup, f.get("z", 0.0), s_.get("z", 0.0) + zs))
+                f["z"] = float(s_.get("z", 0.0) + zs)
+        except Exception as e:      # noqa: BLE001
+            log("support height failed", f["kind"], e)
+
 rodin_done = {}
 rodin_info = {}
 for i, f in enumerate(L["furniture"]):
@@ -407,27 +449,6 @@ for rk, g in furn_by_room.items():
     if ob is not None:
         static_objs[ob.name] = ob
 log("furniture objects:", len(furn_by_room), "moving parts:", len(dyn_objs))
-
-
-def _surface_z(g, lx, ly):
-    """Height of the highest surface of g straight below (lx, ly), or None."""
-    V = np.asarray(g.V, float)
-    tris = np.array([(f[0], f[i], f[i + 1]) for f in g.F for i in range(1, len(f) - 1)])
-    if not len(tris):
-        return None
-    A, B, C = V[tris[:, 0]], V[tris[:, 1]], V[tris[:, 2]]
-    v0, v1 = B[:, :2] - A[:, :2], C[:, :2] - A[:, :2]
-    v2 = np.array([lx, ly]) - A[:, :2]
-    den = v0[:, 0] * v1[:, 1] - v1[:, 0] * v0[:, 1]
-    ok = np.abs(den) > 1e-12
-    den = np.where(ok, den, 1.0)
-    b1 = (v2[:, 0] * v1[:, 1] - v1[:, 0] * v2[:, 1]) / den
-    b2 = (v0[:, 0] * v2[:, 1] - v2[:, 0] * v0[:, 1]) / den
-    inside = ok & (b1 >= 0) & (b2 >= 0) & (b1 + b2 <= 1)
-    if not inside.any():
-        return None
-    z = A[:, 2] + b1 * (B[:, 2] - A[:, 2]) + b2 * (C[:, 2] - A[:, 2])
-    return float(z[inside].max())
 
 
 # the stage you can climb: its collider top goes where the Hyper3D stage's floor really is

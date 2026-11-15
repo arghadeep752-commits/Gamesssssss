@@ -19,7 +19,6 @@ var holding := false
 var message := ""
 var message_t := 0.0
 var day_text := ""
-var peek := 0.0                     # 1 while hiding in an almirah: you look out through the gap of its doors
 var font: Font
 var font_title: Font
 var font_scale := 1.0
@@ -33,6 +32,8 @@ var tex_gear: Texture2D = load("res://game/ui/gear.png")
 var tex_hand: Texture2D = load("res://game/ui/hand.png")
 
 var _joy_id := -1
+var _joy_target := Vector2.ZERO     # where the stick points (after the dead zone and curve)
+var _knob := Vector2.ZERO           # where the knob is drawn (follows the thumb)
 var _joy_origin := Vector2.ZERO
 var _joy_pos := Vector2.ZERO
 var _look_id := -1
@@ -49,23 +50,23 @@ func u() -> float:
 
 
 func joy_center() -> Vector2:
-	return Vector2(190 * u(), size.y - 175 * u())
+	return Vector2(225 * u(), size.y - 210 * u())
 
 
 func r_gear() -> Rect2:
-	return Rect2(34 * u(), 26 * u(), 74 * u(), 74 * u())
+	return Rect2(34 * u(), 26 * u(), 92 * u(), 92 * u())
 
 
 func r_crouch() -> Rect2:
-	return Rect2(26 * u(), 128 * u(), 90 * u(), 128 * u())
+	return Rect2(24 * u(), 142 * u(), 112 * u(), 160 * u())
 
 
 func r_hand() -> Rect2:
-	return Rect2(size.x - 245 * u(), size.y * 0.36, 150 * u(), 136 * u())
+	return Rect2(size.x - 290 * u(), size.y * 0.33, 188 * u(), 170 * u())
 
 
 func r_drop() -> Rect2:
-	return Rect2(size.x / 2 - 110 * u(), size.y - 118 * u(), 220 * u(), 84 * u())
+	return Rect2(size.x / 2 - 135 * u(), size.y - 135 * u(), 270 * u(), 100 * u())
 
 
 func _tex_in(t: Texture2D, r: Rect2, a: float) -> void:
@@ -88,6 +89,8 @@ func reset_touches() -> void:
 	_joy_id = -1
 	_look_id = -1
 	move = Vector2.ZERO
+	_joy_target = Vector2.ZERO
+	_knob = Vector2.ZERO
 	look = Vector2.ZERO
 
 
@@ -100,7 +103,12 @@ func _process(dt: float) -> void:
 	# keyboard (desktop testing)
 	if _joy_id == -1:
 		var k := Vector2(Input.get_axis(&"ui_left", &"ui_right"), Input.get_axis(&"ui_up", &"ui_down"))
-		move = k
+		_joy_target = k
+		_knob = _knob.lerp(Vector2.ZERO, 1.0 - exp(-dt * 18.0))
+	move = move.lerp(_joy_target, 1.0 - exp(-dt * 14.0))      # eases in and out instead of snapping
+	if move.length() < 0.01 and _joy_target == Vector2.ZERO:
+		move = Vector2.ZERO
+	queue_redraw()
 
 
 func _unhandled_input(e: InputEvent) -> void:
@@ -127,7 +135,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		else:
 			if e.index == _joy_id:
 				_joy_id = -1
-				move = Vector2.ZERO
+				_joy_target = Vector2.ZERO
 			if e.index == _look_id:
 				_look_id = -1
 		queue_redraw()
@@ -148,40 +156,26 @@ func _unhandled_input(e: InputEvent) -> void:
 
 
 func _update_joy() -> void:
-	var d := (_joy_pos - _joy_origin) / (90.0 * u())
+	var d := (_joy_pos - _joy_origin) / (100.0 * u())
 	if d.length() > 1.0:
 		d = d.normalized()
-	move = d if d.length() > 0.12 else Vector2.ZERO
-
-
-func _draw_peek() -> void:
-	var w := size.x
-	var h := size.y
-	var gap := w * 0.16
-	var l := (w - gap) / 2.0
-	var a := clampf(peek, 0.0, 1.0)
-	var dark := Color(0.01, 0.01, 0.012, 0.97 * a)
-	draw_rect(Rect2(0, 0, l, h), dark)
-	draw_rect(Rect2(l + gap, 0, w - l - gap, h), dark)
-	for k in 6:                      # soft edges of the steel doors
-		var f := float(k + 1) / 7.0
-		var c := Color(0.01, 0.01, 0.012, 0.75 * a * (1.0 - f))
-		draw_rect(Rect2(l + k * gap * 0.05, 0, gap * 0.05, h), c)
-		draw_rect(Rect2(l + gap - (k + 1) * gap * 0.05, 0, gap * 0.05, h), c)
-	draw_rect(Rect2(l, 0, gap, h * 0.06), Color(0.01, 0.01, 0.012, 0.6 * a))
-	draw_rect(Rect2(l, h * 0.94, gap, h * 0.06), Color(0.01, 0.01, 0.012, 0.6 * a))
+	_knob = d
+	var m := d.length()
+	if m < 0.08:
+		_joy_target = Vector2.ZERO
+	else:
+		var t := clampf((m - 0.08) / 0.92, 0.0, 1.0)
+		_joy_target = d / m * (t * t * (3.0 - 2.0 * t) * 0.35 + t * 0.65)      # gentle near the centre, full at the rim
 
 
 func _draw() -> void:
 	var s := u()
-	if peek > 0.01:
-		_draw_peek()
 	# joystick: the ring, and the knob that follows your thumb
 	var jc := joy_center()
-	var ring_d := 214 * s
+	var ring_d := 262 * s
 	draw_texture_rect(tex_ring, Rect2(jc - Vector2(ring_d, ring_d) / 2, Vector2(ring_d, ring_d)), false, Color(1, 1, 1, UI_ALPHA * 0.75))
-	var knob_d := 132 * s
-	var kc := jc + move * 52 * s
+	var knob_d := 162 * s
+	var kc := jc + _knob * 64 * s
 	draw_texture_rect(tex_knob, Rect2(kc - Vector2(knob_d, knob_d) / 2, Vector2(knob_d, knob_d)), false, Color(1, 1, 1, UI_ALPHA))
 	# settings gear in its rounded box, the stand / crouch button under it
 	var rg := r_gear()
@@ -194,11 +188,11 @@ func _draw() -> void:
 		if holding:
 			_draw_drop(s)
 		if label_text != "":
-			var fs := int(34 * s * font_scale)
+			var fs := int(40 * s * font_scale)
 			var w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_string(font, Vector2(size.x / 2 - w / 2, size.y * 0.585), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, UI_ALPHA))
 		if message != "":
-			var fs2 := int(30 * s * font_scale)
+			var fs2 := int(34 * s * font_scale)
 			var w2 := font.get_string_size(message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x
 			draw_string(font, Vector2(size.x / 2 - w2 / 2, size.y * 0.72), message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(1, 1, 1, UI_ALPHA * clampf(message_t, 0, 1)))
 	# centre dot
@@ -221,8 +215,8 @@ func _gear_box() -> StyleBoxFlat:
 func _draw_drop(s: float) -> void:
 	"""DROP written at the bottom, with a bigger first letter."""
 	var r := r_drop()
-	var big_fs := int(52 * s * font_scale)
-	var small_fs := int(38 * s * font_scale)
+	var big_fs := int(64 * s * font_scale)
+	var small_fs := int(47 * s * font_scale)
 	var w1 := font.get_string_size("D", HORIZONTAL_ALIGNMENT_LEFT, -1, big_fs).x
 	var w2 := font.get_string_size("ROP", HORIZONTAL_ALIGNMENT_LEFT, -1, small_fs).x
 	var x := r.get_center().x - (w1 + w2) / 2

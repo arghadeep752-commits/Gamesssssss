@@ -77,8 +77,11 @@ func _physics_process(dt: float) -> void:
 	var m := hud.move
 	var dir := (transform.basis * Vector3(m.x, 0, m.y))
 	var sp := CROUCH if crouched else WALK
-	velocity.x = dir.x * sp
-	velocity.z = dir.z * sp
+	var want := Vector2(dir.x, dir.z) * sp
+	var cur := Vector2(velocity.x, velocity.z)
+	cur = cur.lerp(want, 1.0 - exp(-(9.0 if want.length() > cur.length() else 11.0) * dt))     # smooth start and stop
+	velocity.x = cur.x
+	velocity.z = cur.y
 	velocity.y = -4.0 if not is_on_floor() else 0.0
 	move_and_slide()
 	var hv := Vector2(velocity.x, velocity.z).length()

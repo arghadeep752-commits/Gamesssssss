@@ -247,9 +247,9 @@ def build():
     classroom("class8", "n")
     # principal's office
     furn += [{"kind": "principal_desk", "room": "principal", "x": -4.8, "y": -4.0, "yaw": 0},
-             {"kind": "office_chair", "room": "principal", "x": -4.8, "y": -4.9, "yaw": 0},
-             {"kind": "visitor_chair", "room": "principal", "x": -5.4, "y": -2.9, "yaw": 180},
-             {"kind": "visitor_chair", "room": "principal", "x": -4.2, "y": -2.9, "yaw": 180},
+             {"kind": "office_chair", "room": "principal", "x": -4.8, "y": -4.9, "yaw": 180},      # chairs face the desk
+             {"kind": "visitor_chair", "room": "principal", "x": -5.4, "y": -2.9, "yaw": 0},
+             {"kind": "visitor_chair", "room": "principal", "x": -4.2, "y": -2.9, "yaw": 0},
              {"kind": "almirah", "room": "principal", "x": -6.5, "y": -0.6, "yaw": 90},
              {"kind": "file_rack", "room": "principal", "x": -6.55, "y": -3.2, "yaw": 90},
              {"kind": "wall_clock", "room": "principal", "x": -4.8, "y": -5.86, "yaw": 0},
@@ -257,8 +257,8 @@ def build():
     # staff room
     furn += [{"kind": "long_table", "room": "staff", "x": 4.75, "y": -2.8, "yaw": 90}]
     for i in range(3):
-        furn += [{"kind": "visitor_chair", "room": "staff", "x": 4.05, "y": -4.0 + i * 1.2, "yaw": -90},
-                 {"kind": "visitor_chair", "room": "staff", "x": 5.45, "y": -4.0 + i * 1.2, "yaw": 90}]
+        furn += [{"kind": "visitor_chair", "room": "staff", "x": 4.05, "y": -4.0 + i * 1.2, "yaw": 90},      # facing the table
+                 {"kind": "visitor_chair", "room": "staff", "x": 5.45, "y": -4.0 + i * 1.2, "yaw": -90}]
     furn += [{"kind": "lockers", "room": "staff", "x": 6.62, "y": -1.6, "yaw": -90},
              {"kind": "matka_stand", "room": "staff", "x": 6.5, "y": 0.45, "yaw": 0},
              {"kind": "fan", "room": "staff", "x": 4.75, "y": -2.5, "yaw": 0}]
@@ -275,16 +275,16 @@ def build():
              {"kind": "bench", "room": "library", "x": -11.3, "y": 12.3, "yaw": 180},
              {"kind": "fan", "room": "library", "x": -11.5, "y": 11.5, "yaw": 0}]
     # store room
-    furn += [{"kind": "broken_desks", "room": "store", "x": 12.9, "y": 10.6, "yaw": -90},
+    furn += [{"kind": "broken_desks", "room": "store", "x": 12.95, "y": 10.5, "yaw": -90},
              {"kind": "sacks", "room": "store", "x": 13.2, "y": 8.7, "yaw": 0},
              {"kind": "crate", "room": "store", "x": 10.4, "y": 10.9, "yaw": 0},
              {"kind": "buckets", "room": "store", "x": 11.6, "y": 11.0, "yaw": 0}]
     # toilet
     furn += [{"kind": "sinks", "room": "toilet", "x": 11.3, "y": 14.6, "yaw": 0},
-             {"kind": "stalls", "room": "toilet", "x": 13.0, "y": 12.6, "yaw": -90}]
+             {"kind": "stalls", "room": "toilet", "x": 12.75, "y": 12.3, "yaw": -90}]      # clear of the wall and the sinks
     # prayer hall
     furn += [{"kind": "stage", "room": "hall", "x": -4.5, "y": 20.6, "yaw": 0},
-             {"kind": "harmonium", "room": "hall", "x": -4.5, "y": 20.9, "yaw": 0},
+             {"kind": "harmonium", "room": "hall", "x": -4.5, "y": 20.9, "yaw": 0, "z": 0.75, "on": "stage"},
              {"kind": "fan", "room": "hall", "x": -9.0, "y": 18.5, "yaw": 0},
              {"kind": "fan", "room": "hall", "x": 0.0, "y": 18.5, "yaw": 0}]
     for i in range(4):

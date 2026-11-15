@@ -510,7 +510,6 @@ func _process(dt: float) -> void:
 		hud.holding = held != ""
 		hud.crouched = player.crouched
 		hud.refresh()
-	hud.peek = move_toward(hud.peek, 1.0 if player.hidden else 0.0, get_process_delta_time() * 4.0)
 	hud.queue_redraw()
 	if hide_ref != null:
 		hide_ref["t"] = move_toward(hide_ref["t"], hide_ref["target"], dt * 3.0)
@@ -648,7 +647,7 @@ func _enter_hide(h: Dictionary) -> void:
 	var f: Vector3 = h["front"]
 	player.yaw = atan2(-f.x, -f.z)
 	player.pitch = 0.0
-	audio.play3d("door_close", h["pos"], -8.0)
+	audio.play3d("door_close", h["pos"], -14.0)
 
 
 func _leave_hide() -> void:
@@ -659,7 +658,7 @@ func _leave_hide() -> void:
 	player.global_position = h["pos"] + h["front"] * 0.95 + Vector3(0, 0.05, 0)
 	player.hidden = false
 	h["target"] = 0.0
-	audio.play3d("door_open", h["pos"], -8.0)
+	audio.play3d("door_open", h["pos"], -14.0)
 	level.noise.emit(h["pos"], 5.0)
 
 

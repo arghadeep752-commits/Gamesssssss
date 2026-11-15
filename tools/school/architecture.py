@@ -16,6 +16,8 @@ PLINTH_H = 0.45
 
 
 WINDOW_MODEL = None     # optional f(width, z0, z1) -> Geo of a whole window in its own frame (the Hyper3D window)
+PILLAR_MODEL = None     # optional f(height) -> Geo of a veranda pillar centred on (0, 0)
+WALL_MODEL = None       # optional f(length, k) -> Geo of the k-th compound wall section, along x, centred on (0, 0)
 
 
 def inside(rect, x, y, m=0.0):
@@ -154,6 +156,10 @@ def build(L):
     # ------------------------------------------------------------------ veranda pillars and the beam round the courtyard
     for (px, py) in L["pillars"]:
         COLL.append((px - 0.25, px + 0.25, py - 0.25, py + 0.25, 0.0, H))
+        if PILLAR_MODEL is not None:
+            g.merge(PILLAR_MODEL(H - 0.35), T=(px, py, 0.0))
+            g.box((px, py, H - 0.41), (0.46, 0.46, 0.12), "plaster")      # the capital meets the beam
+            continue
         g.box((px, py, 0.15), (0.5, 0.5, 0.3), "plinth")
         g.box((px, py, (H - 0.35) / 2 + 0.15), (0.36, 0.36, H - 0.35 - 0.3), "plaster")
         g.box((px, py, H - 0.41), (0.46, 0.46, 0.12), "plaster")
@@ -193,8 +199,18 @@ def build(L):
         c = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         horiz = abs(b[1] - a[1]) < 1e-6
         size = (L_ + 0.23, 0.23, 1.9) if horiz else (0.23, L_ + 0.23, 1.9)
-        yd.box((c[0], c[1], 0.95), size, "plaster_ext")
         COLL.append((c[0] - size[0] / 2, c[0] + size[0] / 2, c[1] - size[1] / 2, c[1] + size[1] / 2, 0.0, 2.0))
+        if WALL_MODEL is not None:
+            n = max(1, int(round(L_ / 3.0)))
+            seg = (L_ + 0.23) / n
+            for k in range(n):
+                t0 = -(L_ + 0.23) / 2 + (k + 0.5) * seg
+                if horiz:
+                    yd.merge(WALL_MODEL(seg, k), T=(c[0] + t0 * (1 if b[0] >= a[0] else -1), c[1], 0.0))
+                else:
+                    yd.merge(WALL_MODEL(seg, k), R=rot_z(90), T=(c[0], c[1] + t0 * (1 if b[1] >= a[1] else -1), 0.0))
+            continue
+        yd.box((c[0], c[1], 0.95), size, "plaster_ext")
         yd.box((c[0], c[1], 1.93), (size[0] + 0.06 if horiz else 0.3, size[1] + 0.06 if not horiz else 0.3, 0.06), "concrete")
         n = int(L_ / 3.0)
         for k in range(n + 1):
