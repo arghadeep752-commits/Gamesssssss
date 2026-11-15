@@ -1,5 +1,5 @@
 extends Node
-## RAGINI - The Indian Horror Game.  MXYAN GAMES OFFICIAL.
+## MOULIKA - The Indian Horror Game.  MXYAN GAMES OFFICIAL.
 ## Menu -> mode -> intro cutscene -> three days to escape the school -> caught / game over / escape cutscenes.
 
 enum { S_MENU, S_PLAY, S_CUT, S_PAUSE }
@@ -14,6 +14,7 @@ var sensitivity := 1.0
 var held := ""
 var hide_ref = null
 var skip := false
+var skip_btn: Button
 var busy := false
 var amb_t := 18.0
 
@@ -73,19 +74,24 @@ func _ready() -> void:
 	hud.pause.connect(_pause)
 	flash = _rect(Color(0.6, 0, 0, 0))
 	fade = _rect(Color(0, 0, 0, 0))
+	# these labels are already on screen, so their offsets must be set with the anchors: set_anchors_preset alone
+	# keeps their old empty rect, and the "DAY 1" banner and the captions came out squeezed against the left edge
 	caption = _label(f_type, 30, Color(0.92, 0.9, 0.85))
-	caption.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	caption.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	caption.offset_left = 80
+	caption.offset_right = -80
 	caption.offset_top = -150
 	caption.offset_bottom = -60
 	big = _label(f_title, 110, Color(0.75, 0.04, 0.03))
-	big.set_anchors_preset(Control.PRESET_FULL_RECT)
+	big.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	sub = _label(f_ui, 30, Color(0.85, 0.85, 0.85))
-	sub.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sub.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	sub.offset_top = 190
 	menu = Control.new()
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	menu.mouse_filter = Control.MOUSE_FILTER_IGNORE        # the empty menu layer must never swallow game touches
 	ui.add_child(menu)
+	_make_skip_button()
 	_show_main_menu()
 	if shots_dir != "":
 		_run_shots()
@@ -103,6 +109,9 @@ func _notification(what: int) -> void:
 			S_MENU:
 				if menu.get_child_count() > 0 and not busy:
 					_show_main_menu()
+			S_CUT:
+				if skip_btn.visible:
+					_on_skip()
 
 
 func _game_font(n: String, fallback: Font) -> Font:
@@ -289,7 +298,7 @@ func _show_main_menu() -> void:
 	fade.color.a = 0.0
 	_clear_menu()
 	_menu_bg()
-	var title := _text(menu, "RAGINI", f_name, 165, Color(0.70, 0.02, 0.02), 0.12)
+	var title := _text(menu, "MOULIKA", f_name, 165, Color(0.70, 0.02, 0.02), 0.12)
 	title.add_theme_color_override("font_shadow_color", Color(0.55, 0.0, 0.0, 0.32))
 	title.add_theme_constant_override("shadow_outline_size", 22)
 	title.add_theme_constant_override("shadow_offset_x", 0)
@@ -663,9 +672,42 @@ func _leave_hide() -> void:
 
 
 # ============================================================================================== cutscenes
-func _input(e: InputEvent) -> void:
-	if state == S_CUT and e is InputEventScreenTouch and e.pressed:
-		skip = true
+func _make_skip_button() -> void:
+	## SKIP, top right, shown while a story cutscene plays
+	skip_btn = Button.new()
+	skip_btn.text = "SKIP"
+	skip_btn.focus_mode = Control.FOCUS_NONE
+	skip_btn.add_theme_font_override("font", f_ui)
+	skip_btn.add_theme_font_size_override("font_size", _sz(f_ui, 38))
+	for k in ["font_color", "font_hover_color", "font_focus_color"]:
+		skip_btn.add_theme_color_override(k, Color(0.9, 0.9, 0.9, 0.92))
+	skip_btn.add_theme_color_override("font_pressed_color", Color(0.78, 0.06, 0.05))
+	skip_btn.add_theme_color_override("font_hover_pressed_color", Color(0.78, 0.06, 0.05))
+	for k in ["normal", "hover", "pressed", "focus"]:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0, 0, 0, 0.45 if k != "pressed" else 0.65)
+		sb.border_color = Color(1, 1, 1, 0.35)
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(12)
+		sb.content_margin_left = 26
+		sb.content_margin_right = 26
+		sb.content_margin_top = 6
+		sb.content_margin_bottom = 6
+		skip_btn.add_theme_stylebox_override(k, sb)
+	skip_btn.anchor_left = 1.0
+	skip_btn.anchor_right = 1.0
+	skip_btn.offset_left = -250
+	skip_btn.offset_right = -40
+	skip_btn.offset_top = 30
+	skip_btn.offset_bottom = 104
+	skip_btn.visible = false
+	skip_btn.pressed.connect(_on_skip)
+	ui.add_child(skip_btn)
+
+
+func _on_skip() -> void:
+	skip = true
+	skip_btn.visible = false
 
 
 func _wait(t: float) -> void:
@@ -704,6 +746,7 @@ func _shot(from: Vector3, to: Vector3, look_a: Vector3, look_b: Vector3, dur: fl
 func _intro() -> void:
 	state = S_CUT
 	skip = false
+	skip_btn.visible = true
 	_clear_menu()
 	hud.visible = false
 	fade.color.a = 1.0
@@ -716,7 +759,7 @@ func _intro() -> void:
 		"Adarsh Vidyalaya. Locked and forgotten since 1998.")
 	if not skip:
 		await _shot(Vector3(-7.8, 1.5, -2.2), Vector3(-2.0, 1.5, -2.2), Vector3(8, 1.4, -2.2), Vector3(8, 1.4, -2.6), 6.0,
-			"They say Ragini ma'am never left her school.")
+			"They say Moulika ma'am never left her school.")
 	if not skip:
 		var c5 := Vector3(-13.0, 0, 2.5)
 		ragini.global_position = c5
@@ -732,6 +775,7 @@ func _intro() -> void:
 		await _wait(2.6)
 	sub.text = ""
 	sub.offset_top = 190
+	skip_btn.visible = false
 	skip = false
 	_place_start()
 	player.cam.current = true
@@ -805,7 +849,7 @@ func _game_over() -> void:
 		cut_cam.look_at(p + Vector3(0, 1.58, 0))
 	await _fade_to(1.0, 0.25)
 	big.text = "GAME OVER"
-	sub.text = "No one leaves Ragini ma'am's school."
+	sub.text = "No one leaves Moulika ma'am's school."
 	await get_tree().create_timer(3.5).timeout
 	_free_world()
 	_show_main_menu()
@@ -829,14 +873,17 @@ func _escape() -> void:
 	var gate := level.v3(o["gate"])
 	var door := level.v3(o["door"])
 	audio.set_vol("heartbeat", -60.0)
+	skip_btn.visible = true
 	await _shot(door + Vector3(0, 1.6, 1.2), gate + Vector3(0, 1.6, -1.5), gate + Vector3(0, 1.5, 6), gate + Vector3(0, 1.5, 6), 5.0,
 		"The night air. The gate. You ran.")
-	ragini.global_position = door + Vector3(0, 0, -0.6)
-	ragini.rotation.y = PI
-	ragini.play("scream", 0.1)
-	audio.play("scream", 0.0, 0.9)
-	await _shot(gate + Vector3(0.4, 1.6, 0.5), gate + Vector3(0.4, 1.6, 2.5), door + Vector3(0, 1.5, 0), door + Vector3(0, 1.5, 0), 4.0,
-		"She cannot follow you past the door.")
+	if not skip:
+		ragini.global_position = door + Vector3(0, 0, -0.6)
+		ragini.rotation.y = PI
+		ragini.play("scream", 0.1)
+		audio.play("scream", 0.0, 0.9)
+		await _shot(gate + Vector3(0.4, 1.6, 0.5), gate + Vector3(0.4, 1.6, 2.5), door + Vector3(0, 1.5, 0), door + Vector3(0, 1.5, 0), 4.0,
+			"She cannot follow you past the door.")
+	skip_btn.visible = false
 	big.text = "YOU ESCAPED"
 	sub.text = "MXYAN GAMES OFFICIAL"
 	await get_tree().create_timer(4.5).timeout

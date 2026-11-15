@@ -1,4 +1,4 @@
-name: Ragini - build
+name: Moulika - build
 
 on:
   push:
@@ -86,56 +86,6 @@ jobs:
             build/CREDITS_AUTO.md
           if-no-files-found: warn
 
-  # ----------------------------------------------------------------------------------------- Ragini, built in Blender
-  ragini_model:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - name: Model cache (rebuilt only when the Blender scripts change)
-        id: mcache
-        uses: actions/cache@v4
-        with:
-          path: build/ragini
-          key: ragini-model-v1-${{ hashFiles('tools/common/**', 'tools/ragini/**', 'tools/install_blender.sh') }}
-      - name: Blender cache
-        if: steps.mcache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/blender
-          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
-      - name: Install Blender
-        if: steps.mcache.outputs.cache-hit != 'true'
-        run: bash tools/install_blender.sh
-      - name: Build Ragini in Blender
-        if: steps.mcache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p build/ragini
-          set +e
-          ~/blender/blender -b -noaudio -P tools/ragini/build_ragini.py -- build/ragini > build/ragini_blender.txt 2>&1
-          code=$?
-          set -e
-          grep -E "^\[|Error|Traceback|FAILED|line [0-9]+" build/ragini_blender.txt | tail -150 || true
-          ls -la build/ragini
-          [ $code -eq 0 ] && [ -f build/ragini/ragini.glb ]
-      - name: Publish logs and previews
-        if: always()
-        run: |
-          cd build
-          [ -f ragini/build_log.txt ] && cp ragini/build_log.txt ragini_build_log.txt
-          (cd ragini && zip -q ../ragini_model.zip ragini.glb ragini_meta.json) || true
-          for f in ragini_blender.txt ragini_build_log.txt ragini/preview_*.png ragini_model.zip; do
-            [ -f "$f" ] && gh release upload ragini-ci "$f" -R "$GITHUB_REPOSITORY" --clobber || true
-          done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ragini-model
-          path: |
-            build/ragini/ragini.glb
-            build/ragini/ragini_meta.json
-            build/ragini/ragini.blend
-            build/ragini/preview_*.png
-
   # ----------------------------------------------------------------------------------------- the school, built in Blender
   school_model:
     runs-on: ubuntu-24.04
@@ -198,7 +148,7 @@ jobs:
 
   # ----------------------------------------------------------------------------------------- Godot: import and export the APK
   apk:
-    needs: [assets, ragini_model, school_model]
+    needs: [assets, school_model]
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -206,13 +156,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: assets, path: . }
       - uses: actions/download-artifact@v4
-        with: { name: ragini-model, path: build/ragini }
-      - uses: actions/download-artifact@v4
         with: { name: school-model, path: build/school }
       - name: Put the models in the project
         run: |
           mkdir -p assets/models
-          cp build/ragini/ragini.glb assets/models/
+          # Moulika: the Hyper3D Rodin character, rigged and animated by Rodin (fetched by the Hyper3D models workflow)
+          curl -fsSL --retry 3 -o assets/models/moulika.glb "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/moulika_rigged.glb"
           cp build/school/school.glb build/school/school_meta.json assets/models/
           cp -r build/school/lightmaps assets/models/
           for f in assets/models/lightmaps/*.png; do
@@ -252,24 +201,24 @@ jobs:
         run: |
           timeout 900 ~/godot/godot --headless --path . --import > build/import_log.txt 2>&1 || true
           grep -E "ERROR|SCRIPT ERROR" build/import_log.txt | head -40 || true
-          timeout 900 ~/godot/godot --headless --path . --export-release Android build/Ragini.apk > build/export_log.txt 2>&1 || true
+          timeout 900 ~/godot/godot --headless --path . --export-release Android build/Moulika.apk > build/export_log.txt 2>&1 || true
           tail -40 build/export_log.txt
-          ls -la build/Ragini.apk
+          ls -la build/Moulika.apk
       - name: Publish the game
         run: |
-          TAG="ragini-v${{ github.run_number }}"
+          TAG="moulika-v${{ github.run_number }}"
           cat > build/CREDITS.md << 'EOT'
-          # RAGINI - The Indian Horror Game
-          Game by MXYAN GAMES OFFICIAL. All 3D models (Ragini, the school, furniture, items) were built in Blender
-          by the scripts in this repository (`tools/`). The .blend files are attached.
+          # MOULIKA - The Indian Horror Game
+          Game by MXYAN GAMES OFFICIAL. Moulika, the furniture, doors, windows, items, pillars and the compound wall
+          are Hyper3D Rodin models; the school building is built in Blender by the scripts in this repository
+          (`tools/`). The school's .blend file is attached.
 
           Real photographed textures, recorded sounds and fonts used:
           EOT
           cat build/CREDITS_AUTO.md >> build/CREDITS.md || true
           cat assets/downloaded/sounds/CREDITS_SOUNDS.md >> build/CREDITS.md 2>/dev/null || true
-          cp build/ragini/ragini.blend build/ragini_character.blend || true
-          cp build/school/school.blend build/ragini_school.blend || true
-          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "RAGINI - The Indian Horror Game (build ${{ github.run_number }})" \
-            --notes "Download **Ragini.apk** and install it on Android (64-bit). Escape the school in 3 days: find the hammer for the planks and the main door key. Real recorded sound effects and music. Models built in Blender (.blend files attached)." \
-            build/Ragini.apk build/CREDITS.md build/ragini_character.blend build/ragini_school.blend
+          cp build/school/school.blend build/moulika_school.blend || true
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "MOULIKA - The Indian Horror Game (build ${{ github.run_number }})" \
+            --notes "Download **Moulika.apk** and install it on Android (64-bit). Escape Moulika ma'am's school in 3 days: find the hammer for the planks and the main door key. Real recorded sound effects and music. Moulika and the props are Hyper3D Rodin models." \
+            build/Moulika.apk build/CREDITS.md build/moulika_school.blend
           gh release upload ragini-ci build/import_log.txt build/export_log.txt -R "$GITHUB_REPOSITORY" --clobber || true

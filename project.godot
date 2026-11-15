@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 
-config/name="Ragini"
+config/name="Moulika"
 config/description="RAGINI - The Indian Horror Game. MXYAN GAMES OFFICIAL."
 run/main_scene="res://game/main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
