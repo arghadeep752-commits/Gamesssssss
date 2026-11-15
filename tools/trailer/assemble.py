@@ -25,6 +25,14 @@ W, H = 1920, 1080
 OUT = os.path.join(B, "out")
 os.makedirs(OUT, exist_ok=True)
 SHOTS = json.load(open(os.path.join(B, "trailer", "trailer_shots.json")))
+DROP = {d for d in os.environ.get("DROP", "").split(",") if d}
+SHOTS = [s for s in SHOTS if s["name"] not in DROP]
+EDIT = {}
+for seq_first in (0, 1000):
+    t = 0.0
+    for s in [s for s in SHOTS if (s["f0"] < 1000) == (seq_first == 0)]:
+        EDIT[s["name"]] = t
+        t += (s["f1"] - s["f0"] + 1) / 24.0
 
 
 def log(*a):
@@ -166,6 +174,8 @@ def mix(events, seconds):
     out = np.zeros((int(seconds * SR) + SR, 2), np.float32)
     for ev in events:
         t, name, gain = ev[0], ev[1], ev[2]
+        if t is None:
+            continue
         o = ev[3] if len(ev) > 3 else {}
         x = load(name)
         if x is None or t >= seconds:
@@ -237,8 +247,8 @@ def steps(t0, t1, every, name_base, gain, start_gain=None, payal=None, n_var=6):
 
 
 def at(name, dt=0.0, base=None):
-    """seconds from the trailer's start for a moment dt seconds into shot `name`"""
-    return (shot(name)["f0"] - base) / FPS + dt
+    """seconds from the trailer's start for a moment dt seconds into shot `name` (None if the shot was cut)"""
+    return EDIT[name] + dt if name in EDIT else None
 
 
 def score_full(total):
@@ -260,11 +270,10 @@ def score_full(total):
     ]
     ev += steps(T("feet", 0.1), T("feet", 3.0), 0.69, "footstep", -13, payal=1)
     ev += steps(T("corridor", 0.2), T("corridor", 4.5), 0.517, "footstep", -11, start_gain=-24, payal=0)
-    ev += [
-        (T("corridor"), "heartbeat", -13, {"dur": 7.5, "loop": True, "rate": 1.25, "fade_out": 0.5}),
-        (T("hide"), "t_breath", -12, {"dur": 3.0, "fade_in": 0.3, "fade_out": 0.4}),
-    ]
-    ev += steps(T("hide", 0.1), T("hide", 3.0), 0.74, "footstep", -16, payal=2)
+    ev += [(T("corridor"), "heartbeat", -13, {"dur": 7.5, "loop": True, "rate": 1.25, "fade_out": 0.5})]
+    if T("hide") is not None:
+        ev += [(T("hide"), "t_breath", -12, {"dur": 3.0, "fade_in": 0.3, "fade_out": 0.4})]
+        ev += steps(T("hide", 0.1), T("hide", 3.0), 0.74, "footstep", -16, payal=2)
     ev += [
         (T("door"), "t_boom", -9), (T("door", 0.25), "door_locked", -10),
         (T("padlock"), "t_boom", -10), (T("padlock", 0.2), "unlock", -15),

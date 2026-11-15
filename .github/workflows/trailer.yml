@@ -9,6 +9,10 @@ on:
         description: "Re-cut only: take the rendered frames and sounds from this earlier run id"
         required: false
         default: ""
+      drop:
+        description: "Shots to leave out of the cut (comma separated)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -134,6 +138,7 @@ jobs:
     timeout-minutes: 40
     env:
       FROM_RUN: ${{ inputs.frames_run || github.run_id }}
+      DROP: ${{ inputs.drop }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
