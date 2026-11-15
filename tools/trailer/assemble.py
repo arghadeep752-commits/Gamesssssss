@@ -338,9 +338,10 @@ def score_short(total):
 
 
 # ---------------------------------------------------------------------------------------------- encode
-GRADE = ("curves=master='0/0 0.18/0.12 0.45/0.38 0.75/0.70 1/0.97',"
-         "colorbalance=rs=-0.04:gs=0.0:bs=0.07:rm=-0.02:gm=0.0:bm=0.03:rh=0.03:gh=0.01:bh=-0.02,"
-         "eq=saturation=0.86,vignette=PI/5")
+# a cool night grade that keeps the mid-tones where they are, so the shots still read on a phone screen
+GRADE = ("curves=master='0/0 0.12/0.10 0.5/0.5 0.82/0.85 1/1',"
+         "colorbalance=rs=-0.025:bs=0.045:rm=-0.01:bm=0.02:rh=0.02:gh=0.005:bh=-0.015,"
+         "eq=saturation=0.9,vignette=PI/7")
 GRAIN = "noise=alls=3:allf=t+u"
 
 
