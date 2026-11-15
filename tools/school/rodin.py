@@ -7,6 +7,7 @@ Rodin puts the front of its models), then scaled into the code-built piece's bou
 as the model's own proportions allow, never spilling more than a few cm past the footprint. Numpy only, so the
 same fit runs in Blender (build) and in plain Python (previews).
 """
+import itertools
 import json
 import os
 
@@ -82,11 +83,14 @@ def _occ(P, lo, hi, res=22):
     return d2
 
 
-def _place(V, rlo, rhi, kind=""):
-    """Scale V (already turned) into the reference box [rlo, rhi]: exact height, close width/depth."""
+def _place(V, rlo, rhi, kind="", exact=False):
+    """Scale V (already turned) into the reference box [rlo, rhi]: exact height, close width/depth
+    (or stretched exactly to the box, for flat things like floor mats)."""
     lo, hi = V.min(0), V.max(0)
     d = np.maximum(hi - lo, 1e-6)
     rd = rhi - rlo
+    if exact:
+        return (V - lo) / d * rd + rlo
     sz = rd[2] / d[2]
     s = rd / d
     s[2] = sz
@@ -114,7 +118,7 @@ def crop_slab(raw, half):
     return dict(raw, V=V[used], UV=raw["UV"][used], F=remap[F[keep]])
 
 
-def fit(kind, raw, ref_g, ref_parts, yaw_fix=0.0, turn=None, height=None):
+def fit(kind, raw, ref_g, ref_parts, yaw_fix=0.0, turn=None, height=None, exact=False):
     """-> (V fitted in the piece's own frame, chosen quarter turn, scores). height: the real top of the piece when
     the code-built one has things standing on it (files, a bell) that made its box taller."""
     V0 = raw["V"]
@@ -128,7 +132,7 @@ def fit(kind, raw, ref_g, ref_parts, yaw_fix=0.0, turn=None, height=None):
     scores = []
     for k in range(4):
         Vk = V0 @ rot_z(90.0 * k).T
-        Vf = _place(Vk, rlo, rhi, kind)
+        Vf = _place(Vk, rlo, rhi, kind, exact)
         o = _occ(_sample(Vf, F), rlo - 0.02, rhi + 0.02)
         inter = np.logical_and(o, ref_occ).sum()
         union = np.logical_or(o, ref_occ).sum()
@@ -140,7 +144,7 @@ def fit(kind, raw, ref_g, ref_parts, yaw_fix=0.0, turn=None, height=None):
     if scores[kb] > scores[0] * 1.12 + 0.02:
         k = kb
     ang = (90.0 * k if turn is None else float(turn)) + float(yaw_fix)
-    Vf = _place(V0 @ rot_z(ang).T, rlo, rhi, kind)
+    Vf = _place(V0 @ rot_z(ang).T, rlo, rhi, kind, exact)
     return Vf, ang, scores
 
 
@@ -207,6 +211,71 @@ def load(kind, entry, furn_fn):
         return Geo("fan"), {"rotor": (rotor, tuple(off))}, {"yaw": 0.0, "scores": [], "tris": len(raw["F"]), "raw": raw}
     if entry.get("slab"):
         raw = crop_slab(raw, float(entry["slab"]))
-    Vf, ang, scores = fit(kind, raw, ref_g, ref_parts, entry.get("yaw", 0.0), entry.get("turn"), entry.get("height"))
+    Vf, ang, scores = fit(kind, raw, ref_g, ref_parts, entry.get("yaw", 0.0), entry.get("turn"), entry.get("height"),
+                          entry.get("fit") == "exact")
     g = to_geo(Vf, raw["F"], raw["UV"], mat, kind)
     return g, {}, {"yaw": ang, "scores": [round(float(s), 3) for s in scores], "tris": len(raw["F"]), "raw": raw}
+
+
+# ------------------------------------------------------------------------------------------- models for a given box
+# Door leaves, windows, the planks and padlock of the main door, pick-up items and light fittings are not furniture
+# kinds: each just has a box in its own frame that the model must fill.
+
+_RAW = {}
+
+
+def raw(name, entry):
+    if name not in _RAW:
+        _RAW[name] = glb.read(entry["path"])
+    return _RAW[name]
+
+
+def _rots24():
+    out = []
+    for perm in itertools.permutations(range(3)):
+        for signs in itertools.product((1, -1), repeat=3):
+            M = np.zeros((3, 3))
+            for i, (pi, sg) in enumerate(zip(perm, signs)):
+                M[i, pi] = sg
+            if np.linalg.det(M) > 0:
+                out.append(M)
+    return out
+
+
+def orient_to_box(V, dims):
+    """The quarter turn (about any axis) whose box best matches the target's proportions; Rodin builds things
+    upright with the front to -Y, so the model is left as it is unless another turn clearly fits better."""
+    dims = np.maximum(np.asarray(dims, float), 1e-6)
+    best = None
+    for M in _rots24():
+        d = np.maximum(np.ptp(V @ M.T, axis=0), 1e-6)
+        e = np.log(d) - np.log(dims)
+        cost = float(np.sum((e - e.mean()) ** 2)) + 0.03 * (3.0 - float(np.trace(M)))
+        if best is None or cost < best[0]:
+            best = (cost, M)
+    return best[1]
+
+
+def box_geo(name, entry, lo, hi, mode="exact", mirror=False):
+    """-> (Geo filling the box [lo, hi], raw model). mode 'exact' stretches the model to the box (door leaves,
+    windows, planks, fittings); 'fit' keeps its proportions, as large as fits, standing on the box floor."""
+    r = raw(name, entry)
+    lo, hi = np.asarray(lo, float), np.asarray(hi, float)
+    dims = hi - lo
+    V = r["V"] @ orient_to_box(r["V"], dims).T
+    F = r["F"].copy()
+    if mirror:
+        V = V * np.array([-1.0, 1.0, 1.0])
+        F = F[:, [0, 2, 1]]
+    vlo, vhi = V.min(0), V.max(0)
+    d = np.maximum(vhi - vlo, 1e-9)
+    if mode == "exact":
+        V = (V - vlo) / d * dims + lo
+    else:
+        s = float(np.min(dims / d))
+        V = (V - (vlo + vhi) / 2) * s
+        c = (lo + hi) / 2
+        V[:, 0] += c[0]
+        V[:, 1] += c[1]
+        V[:, 2] += lo[2] - V[:, 2].min()
+    return to_geo(V, F, r["UV"], "rodin_" + name, name), r

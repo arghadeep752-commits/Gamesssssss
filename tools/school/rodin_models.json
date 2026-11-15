@@ -1,5 +1,5 @@
 {
- "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units). 'height' sets the real top (m) when the code-built piece had things standing on it.",
+ "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units). 'height' sets the real top (m) when the code-built piece had things standing on it. Besides furniture kinds: door / door_main (door leaves), window, plank and padlock (main door), item_* (pick-up items) and light_tube / light_bulb (fittings around the glowing tube or bulb). 'fit': 'exact' stretches the model to the piece's box (flat things).",
  "models": {
   "desk_bench": {
    "gen": "50e297b0-5ebc-4ac2-8876-7088cae0a262",
@@ -125,6 +125,87 @@
   "gas_cylinder": {
    "gen": "fb8f81fc-5a0d-4608-9bbb-4a20a89e838e",
    "poly": 2000
+  },
+  "door_main": {
+   "gen": "391de7fc-c8de-4a9c-b556-8bad5d29c1ae",
+   "poly": 2000
+  },
+  "door": {
+   "gen": "573d0ed8-1e1a-4e44-87db-59a33dcd2441",
+   "poly": 1500
+  },
+  "window": {
+   "gen": "e3e44616-ecb2-44a1-ae8a-54bc58e95fb6",
+   "poly": 2500
+  },
+  "plank": {
+   "gen": "d47e192d-5a04-4bec-aaf5-c8e81e7cbcaf",
+   "poly": 800
+  },
+  "padlock": {
+   "gen": "6c76b110-7da8-428d-be4c-d01b464bd917",
+   "poly": 1500
+  },
+  "item_main_key": {
+   "gen": "df44d84a-f07d-48de-aecf-ef6a02c01c91",
+   "poly": 1200
+  },
+  "item_office_key": {
+   "gen": "98e7b272-2b16-400a-8d24-452d4fe66471",
+   "poly": 1200
+  },
+  "item_store_key": {
+   "gen": "934575ef-8320-48da-a1a7-aa8cecec64a0",
+   "poly": 1200
+  },
+  "item_hammer": {
+   "gen": "1ee79879-b05e-45d7-80da-1fcdae5ba07d",
+   "poly": 1500
+  },
+  "hand_pump": {
+   "gen": "4ee6f63e-7be1-4820-ace0-eed64bf97ae0",
+   "poly": 3500
+  },
+  "water_tank": {
+   "gen": "1e421f44-0af1-4fac-9405-7e703892553d",
+   "poly": 3000
+  },
+  "neem_tree": {
+   "gen": "13f1db01-8c6b-4d2e-8d44-bfec72a9965b",
+   "poly": 15000
+  },
+  "gate": {
+   "gen": "bc2ef864-2adc-4b5a-9882-c0a758a9efeb",
+   "poly": 5000
+  },
+  "flag_platform": {
+   "gen": "fbd70d85-4214-4135-9156-522bb3ea8678",
+   "poly": 2000
+  },
+  "stage": {
+   "gen": "7e380572-5d70-4487-838e-03a609af64d7",
+   "poly": 4000
+  },
+  "dais": {
+   "gen": "24e9d24c-f4d8-43ef-a19f-8300f77144e5",
+   "poly": 1500
+  },
+  "stalls": {
+   "gen": "bc76e786-f53b-438b-a27e-beb7d5806cc9",
+   "poly": 3000
+  },
+  "mats": {
+   "gen": "3296cd1e-65ed-4975-bb95-bc5bd843f98f",
+   "poly": 800,
+   "fit": "exact"
+  },
+  "light_tube": {
+   "gen": "a1e46ab2-c2e9-4213-862f-7f6c1155875d",
+   "poly": 800
+  },
+  "light_bulb": {
+   "gen": "ebacca45-be5e-47f3-ab9c-f409a2977a67",
+   "poly": 800
   }
  }
 }

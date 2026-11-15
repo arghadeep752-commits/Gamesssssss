@@ -15,6 +15,9 @@ DADO_H = 1.2
 PLINTH_H = 0.45
 
 
+WINDOW_MODEL = None     # optional f(width, z0, z1) -> Geo of a whole window in its own frame (the Hyper3D window)
+
+
 def inside(rect, x, y, m=0.0):
     return rect[0] - m <= x <= rect[2] + m and rect[1] - m <= y <= rect[3] + m
 
@@ -266,6 +269,9 @@ def build(L):
         z0, z1 = 0.9, 0.9 + 1.45
         g = chunks.setdefault(chunk_of(L, wn["room"]), Geo(wn["room"]))
         R = np.eye(3) if o == "h" else rot_z(90)
+        if WINDOW_MODEL is not None:
+            g.merge(WINDOW_MODEL(wdt, z0, z1), R=R, T=(x, y, 0))
+            continue
         f = Geo()
         for (c, s) in (((-wdt / 2 + 0.04, 0, (z0 + z1) / 2), (0.08, 0.12, z1 - z0)), ((wdt / 2 - 0.04, 0, (z0 + z1) / 2), (0.08, 0.12, z1 - z0)),
                        ((0, 0, z1 - 0.04), (wdt, 0.12, 0.08)), ((0, 0, z0 + 0.04), (wdt, 0.12, 0.08)), ((0, 0, (z0 + z1) / 2), (0.06, 0.1, z1 - z0))):

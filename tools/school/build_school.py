@@ -256,7 +256,56 @@ def ensure_lm(ob):
 L = layout.build()
 log("layout: %d walls, %d doors, %d windows, %d furniture, %d lights" % (len(L["walls"]), len(L["doors"]), len(L["windows"]),
                                                                         len(L["furniture"]), len(L["lights"])))
+RODIN = rodin.available()
+RODIN_GEO = {}
+log("hyper3d models available: %d (%s)" % (len(RODIN), ", ".join(sorted(RODIN))))
+
+
+def rodin_box(name, lo, hi, mode="exact", mirror=False):
+    """A Hyper3D model filling the box [lo, hi] (cached per box)."""
+    key = (name, tuple(np.round(lo, 4)), tuple(np.round(hi, 4)), mode, mirror)
+    if key not in RODIN_GEO:
+        g, raw = rodin.box_geo(name, RODIN[name], lo, hi, mode, mirror)
+        if raw["image"] and "rodin_" + name not in RODIN_TEX:
+            RODIN_TEX["rodin_" + name] = (raw["image"], raw["mime"])
+        RODIN_GEO[key] = g
+    return RODIN_GEO[key]
+
+
+if "window" in RODIN:
+    architecture.WINDOW_MODEL = lambda w, z0, z1: rodin_box("window", (-w / 2, -0.06, z0), (w / 2, 0.06, z1))
+    log("  hyper3d window in every window opening")
 chunks, dyn = architecture.build(L)
+
+# door leaves, the planks and the padlock of the main door: Hyper3D models in the same boxes
+for name, d in dyn.items():
+    try:
+        V = np.array(d["geo"].V, float)
+        if "door" in d and ("door_main" if d["door"] == "door_main" else "door") in RODIN:
+            key = "door_main" if d["door"] == "door_main" else "door"
+            Rl = rot_z(90) if d.get("o") == "v" else np.eye(3)
+            V0 = V @ Rl                                  # back into the wall's own frame (along the wall = x)
+            lo, hi = V0.min(0), V0.max(0)
+            lo[1], hi[1] = max(lo[1], -0.03), min(hi[1], 0.03)      # the slab, not the old handles
+            gg = Geo(name)
+            gg.merge(rodin_box(key, lo, hi, "exact", mirror=hi[0] <= 1e-6), R=Rl)   # the second leaf is a mirror image
+            d["geo"] = gg
+        elif "plank" in d and "plank" in RODIN:
+            a = math.radians((-7, 5, -4)[d["plank"]])
+            Rp = np.array([[math.cos(a), 0, -math.sin(a)], [0, 1, 0], [math.sin(a), 0, math.cos(a)]])
+            V0 = V @ Rp
+            lo, hi = V0.min(0), V0.max(0)
+            lo[1], hi[1] = -0.02, 0.02                   # the board, not the old nail heads
+            gg = Geo(name)
+            gg.merge(rodin_box("plank", lo, hi, "exact"), R=Rp)
+            d["geo"] = gg
+        elif name == "padlock" and "padlock" in RODIN:
+            gg = Geo(name)
+            gg.merge(rodin_box("padlock", V.min(0), V.max(0), "fit"))
+            d["geo"] = gg
+    except Exception as e:      # noqa: BLE001
+        traceback.print_exc()
+        log("HYPER3D PART FAILED", name, e)
 static_objs = {}
 for name, g in chunks.items():
     ob = geo_object(g, "arch_" + name)
@@ -269,10 +318,8 @@ furn_by_room = {}
 dyn_meta = []
 dyn_objs = {}
 counters = {}
-RODIN = rodin.available()
 rodin_done = {}
 rodin_info = {}
-log("hyper3d models available: %d (%s)" % (len(RODIN), ", ".join(sorted(RODIN))))
 for i, f in enumerate(L["furniture"]):
     fn = furniture.FURN.get(f["kind"])
     if fn is None:
@@ -316,10 +363,36 @@ for i, f in enumerate(L["furniture"]):
     if parts:
         counters[f["kind"]] = counters.get(f["kind"], 0) + 1
 # light fixtures
+GLOWING = ("tube_glow", "bulb_glow", "tube_dead")
+
+
+def with_fitting(g, key):
+    """Hyper3D fitting in the code-built fixture's box, keeping the code-built tube / bulb (it carries the glow),
+    a little larger so it shows over the model's own glass."""
+    if key not in RODIN:
+        return g
+    V = np.array(g.V, float)
+    out = Geo(g.name)
+    out.merge(rodin_box(key, V.min(0), V.max(0), "exact"))
+    sel = [i for i, m in enumerate(g.M) if m in GLOWING]
+    if sel:
+        used = sorted({v for i in sel for v in g.F[i]})
+        c = V[used].mean(0)
+        glow = Geo("glow")
+        remap = {v: k for k, v in enumerate(used)}
+        glow.V = [c + (V[v] - c) * 1.04 for v in used]
+        glow.F = [[remap[v] for v in g.F[i]] for i in sel]
+        glow.UV = [g.UV[i] for i in sel]
+        glow.M = [g.M[i] for i in sel]
+        out.merge(glow)
+    return out
+
+
 for li, lt in enumerate(L["lights"]):
     if lt["room"] == "yard":
         continue
     g, _ = furniture.tube_light(lt["kind"] == "dead") if lt["kind"] in ("tube", "dead") else furniture.bulb()
+    g = with_fitting(g, "light_tube" if lt["kind"] in ("tube", "dead") else "light_bulb")
     yaw = 0.0
     rk = lt["room"]
     if rk in [r["name"] for r in L["rooms"]]:
@@ -328,7 +401,7 @@ for li, lt in enumerate(L["lights"]):
     fg = furn_by_room.setdefault(rk, Geo("furn_" + rk))
     fg.merge(g, R=rot_z(yaw), T=(lt["x"], lt["y"], L["ceil_h"]))
 g, _ = furniture.bulb()
-furn_by_room.setdefault("yard", Geo("furn_yard")).merge(g, T=(0.0, -6.45, 3.25))
+furn_by_room.setdefault("yard", Geo("furn_yard")).merge(with_fitting(g, "light_bulb"), T=(0.0, -6.45, 3.25))
 for rk, g in furn_by_room.items():
     ob = geo_object(g, "furn_" + rk)
     if ob is not None:
@@ -356,6 +429,15 @@ def _surface_z(g, lx, ly):
     z = A[:, 2] + b1 * (B[:, 2] - A[:, 2]) + b2 * (C[:, 2] - A[:, 2])
     return float(z[inside].max())
 
+
+# the stage you can climb: its collider top goes where the Hyper3D stage's floor really is
+if "stage" in rodin_done and furniture.FOOTPRINT.get("stage"):
+    w_, d_, h_, yo_ = furniture.FOOTPRINT["stage"]
+    zs = [_surface_z(rodin_done["stage"][0], x, y) for x in (-2.0, -1.0, 0.0, 1.0, 2.0) for y in (-0.9, -0.5, -0.1, 0.3)]
+    zs = sorted(z for z in zs if z is not None and z < 1.5)
+    if zs:
+        furniture.FOOTPRINT["stage"] = (w_, d_, round(zs[len(zs) // 2], 3), yo_)
+        log("  stage floor at %.3f m (collider follows)" % furniture.FOOTPRINT["stage"][2])
 
 # items lying on Hyper3D furniture: put them on the model's real surface (and in front of a closed almirah)
 for ik, iv in L["items"].items():
@@ -396,6 +478,16 @@ for name, d in dyn.items():
 # items (placed at the origin; the game puts each on one of its spots)
 item_objs = {}
 for name, g in item_models.all_items().items():
+    if name in RODIN:
+        try:
+            V = np.array(g.V, float)
+            g2 = Geo(name)
+            g2.merge(rodin_box(name, V.min(0), V.max(0), "fit"))      # same size as before, the model's proportions
+            g = g2
+            log("  hyper3d", name)
+        except Exception as e:      # noqa: BLE001
+            traceback.print_exc()
+            log("HYPER3D ITEM FAILED", name, e)
     ob = geo_object(g, name)
     if ob is not None:
         item_objs[name] = ob
