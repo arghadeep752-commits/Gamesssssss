@@ -324,8 +324,8 @@ furn_by_room = {}
 dyn_meta = []
 dyn_objs = {}
 counters = {}
-def _surface_z(g, lx, ly):
-    """Height of the highest surface of g straight below (lx, ly), or None."""
+def _surface_z(g, lx, ly, zmax=1e9):
+    """Height of the highest surface of g straight below (lx, ly) and under zmax (skip curtains, frames), or None."""
     V = np.asarray(g.V, float)
     tris = np.array([(f[0], f[i], f[i + 1]) for f in g.F for i in range(1, len(f) - 1)])
     if not len(tris):
@@ -342,7 +342,8 @@ def _surface_z(g, lx, ly):
     if not inside.any():
         return None
     z = A[:, 2] + b1 * (B[:, 2] - A[:, 2]) + b2 * (C[:, 2] - A[:, 2])
-    return float(z[inside].max())
+    z = z[inside & (z < zmax)]
+    return float(z.max()) if len(z) else None
 
 
 # furniture standing on other furniture (the harmonium on the stage): onto the model's real floor
@@ -353,7 +354,7 @@ for f in L["furniture"]:
             sg, sparts, _ = rodin.load(sup, RODIN[sup], furniture.FURN[sup])
             s_ = min((x for x in L["furniture"] if x["kind"] == sup), key=lambda x: (x["x"] - f["x"]) ** 2 + (x["y"] - f["y"]) ** 2)
             loc = rot_z(s_["yaw"]).T @ np.array([f["x"] - s_["x"], f["y"] - s_["y"], 0.0])
-            zs = _surface_z(sg, loc[0], loc[1])
+            zs = _surface_z(sg, loc[0], loc[1], zmax=1.5)
             if zs is not None:
                 log("  %s on the %s: %.3f -> %.3f m" % (f["kind"], sup, f.get("z", 0.0), s_.get("z", 0.0) + zs))
                 f["z"] = float(s_.get("z", 0.0) + zs)
@@ -478,7 +479,7 @@ for ik, iv in L["items"].items():
             log("  %s: spot moved in front of the almirah (its doors no longer open)" % ik)
             continue
         loc = R.T @ (np.array([sp["x"], sp["y"], sp["z"]]) - base)
-        zs = _surface_z(rodin_done[kind][0], loc[0], loc[1])
+        zs = _surface_z(rodin_done[kind][0], loc[0], loc[1], zmax=loc[2] + 0.45)
         if zs is not None:
             log("  %s on %s: height %.3f -> %.3f" % (ik, kind, sp["z"], base[2] + zs + 0.004))
             sp["z"] = float(base[2] + zs + 0.004)
