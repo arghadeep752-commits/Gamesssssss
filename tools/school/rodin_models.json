@@ -1,5 +1,5 @@
 {
- "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units). 'height' sets the real top (m) when the code-built piece had things standing on it. Besides furniture kinds: door / door_main (door leaves), window, plank and padlock (main door), item_* (pick-up items) and light_tube / light_bulb (fittings around the glowing tube or bulb).",
+ "_note": "Hyper3D Rodin Gen-2.5 models generated for the game (one per furniture kind). 'gen' is the Hyper3D generation id; 'yaw' (degrees, applied after the automatic fit) can correct a model that faces the wrong way. 'turn' fixes the quarter turn instead of choosing it automatically; 'slab' keeps only the flat board (in model units). 'height' sets the real top (m) when the code-built piece had things standing on it. Besides furniture kinds: door / door_main (door leaves), window, plank and padlock (main door), item_* (pick-up items) and light_tube / light_bulb (fittings around the glowing tube or bulb), pillar (veranda pillars) and compound_wall (sections of the yard wall). 'fit': 'exact' stretches the model to the piece's box (flat things).",
  "models": {
   "desk_bench": {
    "gen": "50e297b0-5ebc-4ac2-8876-7088cae0a262",
@@ -196,7 +196,8 @@
   },
   "mats": {
    "gen": "3296cd1e-65ed-4975-bb95-bc5bd843f98f",
-   "poly": 800
+   "poly": 800,
+   "fit": "exact"
   },
   "light_tube": {
    "gen": "a1e46ab2-c2e9-4213-862f-7f6c1155875d",
@@ -205,6 +206,14 @@
   "light_bulb": {
    "gen": "ebacca45-be5e-47f3-ab9c-f409a2977a67",
    "poly": 800
+  },
+  "pillar": {
+   "gen": "413c1d28-0f8f-49f6-a4ce-f998dc541a43",
+   "poly": 1500
+  },
+  "compound_wall": {
+   "gen": "b4028660-9640-4584-8687-19a71ed0578a",
+   "poly": 2500
   }
  }
 }
