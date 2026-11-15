@@ -59,11 +59,11 @@ def ease(t):
 def end_card_frames(plate_path, seconds, dest, start_index):
     plate = Image.open(plate_path).convert("RGB").resize((W, H), Image.LANCZOS)
     plate = plate.filter(ImageFilter.GaussianBlur(16))
-    plate = ImageEnhance.Color(plate).enhance(0.7)
-    plate = ImageEnhance.Brightness(plate).enhance(0.42)
+    plate = ImageEnhance.Color(plate).enhance(0.85)
+    plate = ImageEnhance.Brightness(plate).enhance(0.72)
     a = np.asarray(plate, np.float32)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    v = 1 - 0.5 * np.clip(((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2 - 0.2, 0, None)
+    v = 1 - 0.35 * np.clip(((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2 - 0.3, 0, None)
     plate = Image.fromarray(np.clip(a * v[..., None], 0, 255).astype(np.uint8))
     f_title, f_sub, f_itch = font(250), font(66), font(46)
     tw = f_title.getlength("MOULIKA")
@@ -265,7 +265,7 @@ def score_full(total):
         (T("key"), "t_boom", -10), (T("key", 0.25), "pickup", -12),
         (T("hammer"), "t_boom", -9), (T("hammer", 0.3), "hammer_hit", -14),
         (T("hall", 0.2), "t_riser", -18, {"dur": 3.9, "gain_to": -6, "fade_out": 0.1}),
-        (T("hall", 1.65), "t_braam", -7),
+        (T("chase_a") - 0.04, "t_braam", -7),
         (T("hall", 0.0), "heartbeat", -12, {"dur": 9.0, "loop": True, "rate": 1.55, "fade_out": 0.3}),
         (T("chase_a"), "t_reverse", -10, {"offset": 0.0}),
         (T("chase_a"), "t_breath", -9, {"dur": 5.0, "rate": 1.15, "fade_out": 0.2}),
@@ -326,19 +326,20 @@ def score_short(total):
 GRADE = ("curves=master='0/0 0.18/0.12 0.45/0.38 0.75/0.70 1/0.97',"
          "colorbalance=rs=-0.04:gs=0.0:bs=0.07:rm=-0.02:gm=0.0:bm=0.03:rh=0.03:gh=0.01:bh=-0.02,"
          "eq=saturation=0.86,vignette=PI/5")
-GRAIN = "noise=alls=7:allf=t+u"
+GRAIN = "noise=alls=3:allf=t+u"
 
 
 def encode(name, gdir, cdir, wav, fade_in):
     out = os.path.join(OUT, name + ".mp4")
     fin = "fade=t=in:st=0:d=0.8," if fade_in else ""
-    fc = ("[0:v]%s%s,%s,format=yuv420p[g];[1:v]%s,format=yuv420p[c];[g][c]concat=n=2:v=1:a=0[v]"
-          % (fin, GRADE, GRAIN, GRAIN))
+    fc = ("[0:v]scale=%d:%d:flags=lanczos,%s%s,%s,format=yuv420p[g];[1:v]%s,format=yuv420p[c];[g][c]concat=n=2:v=1:a=0[v]"
+          % (W, H, fin, GRADE, GRAIN, GRAIN))
     cmd = ["ffmpeg", "-v", "error", "-y",
            "-framerate", str(FPS), "-i", os.path.join(gdir, "%05d.png"),
            "-framerate", str(FPS), "-i", os.path.join(cdir, "%05d.png"),
            "-i", wav, "-filter_complex", fc, "-map", "[v]", "-map", "2:a",
-           "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-profile:v", "high", "-pix_fmt", "yuv420p",
+           "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-maxrate", "14M", "-bufsize", "28M",
+           "-profile:v", "high", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out]
     subprocess.run(cmd, check=True)
     log("wrote", out, "%.1f MB" % (os.path.getsize(out) / 1e6))

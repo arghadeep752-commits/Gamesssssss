@@ -644,8 +644,8 @@ def setup_compositor():
     # motion blur from the vector pass
     vb = nt.nodes.new("CompositorNodeVecBlur")
     vb.samples = 16
-    vb.factor = 0.45
-    vb.speed_max = 40
+    vb.factor = 0.22
+    vb.speed_max = 24
     L.new(dof.outputs[0], vb.inputs["Image"])
     L.new(rl.outputs["Depth"], vb.inputs["Z"])
     L.new(rl.outputs["Vector"], vb.inputs["Speed"])
