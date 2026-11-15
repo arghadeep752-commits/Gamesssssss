@@ -1,0 +1,27 @@
+name: Moulika - Play Store screenshots
+
+on:
+  push:
+    branches: [moulika-store]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish the screenshots as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd store
+          zip -q moulika_playstore_screenshots.zip moulika_screenshot_*.jpg
+          gh release delete moulika-store -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          gh release create moulika-store -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+            --title "MOULIKA - Play Store screenshots" \
+            --notes "8 landscape screenshots for Google Play (1920x1080 JPEG, in upload order). Download them one by one, or the zip with all 8." \
+            moulika_screenshot_1.jpg moulika_screenshot_2.jpg moulika_screenshot_3.jpg moulika_screenshot_4.jpg \
+            moulika_screenshot_5.jpg moulika_screenshot_6.jpg moulika_screenshot_7.jpg moulika_screenshot_8.jpg \
+            moulika_playstore_screenshots.zip
