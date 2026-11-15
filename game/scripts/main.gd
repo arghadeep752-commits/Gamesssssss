@@ -11,6 +11,7 @@ var state := S_MENU
 var mode := 1
 var day := 1
 var sensitivity := 1.0
+var floating_joy := true                # joystick starts under the thumb (off: it stays fixed in its corner)
 var held := ""
 var hide_ref = null
 var skip := false
@@ -59,6 +60,7 @@ func _ready() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load("user://settings.cfg") == OK:
 		sensitivity = float(cfg.get_value("game", "sensitivity", 1.0))
+		floating_joy = bool(cfg.get_value("game", "floating_joystick", true))
 	audio = GameAudio.new()
 	add_child(audio)
 	ui = CanvasLayer.new()
@@ -67,6 +69,7 @@ func _ready() -> void:
 	hud.font = f_ui
 	hud.font_scale = CHALK_SCALE if f_ui.resource_path.ends_with("dk_midnight_chalker.otf") else 1.0
 	hud.visible = false
+	hud.floating = floating_joy
 	ui.add_child(hud)
 	hud.interact.connect(_interact)
 	hud.drop.connect(_drop)
@@ -272,10 +275,31 @@ func _slider(parent: Control, y: float) -> void:
 		sensitivity = v
 		if player:
 			player.sensitivity = v
-		var cfg := ConfigFile.new()
-		cfg.set_value("game", "sensitivity", v)
-		cfg.save("user://settings.cfg"))
+		_save_settings())
 	parent.add_child(s)
+
+
+func _save_settings() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("game", "sensitivity", sensitivity)
+	cfg.set_value("game", "floating_joystick", floating_joy)
+	cfg.save("user://settings.cfg")
+
+
+func _joy_label() -> String:
+	return "FLOATING JOYSTICK: " + ("ON" if floating_joy else "OFF")
+
+
+func _joy_toggle(parent: Control, y: float) -> void:
+	## on: the joystick appears under your thumb; off: it stays fixed in the corner
+	var b := _button(parent, _joy_label(), y, func(): pass, 32)
+	b.offset_left = -340
+	b.offset_right = 340
+	b.pressed.connect(func():
+		floating_joy = not floating_joy
+		b.text = _joy_label()
+		hud.floating = floating_joy
+		_save_settings())
 
 
 func _dot(r: int) -> ImageTexture:
@@ -318,8 +342,9 @@ func _show_settings() -> void:
 	_menu_bg()
 	_text(menu, "SETTINGS", _spaced(f_ui, 3), 50, Color(0.9, 0.9, 0.9), 0.12)
 	_divider(menu, 0.255, 220)
-	_slider(menu, 0.33)
-	_button(menu, "BACK", 0.76, _show_main_menu, 38)
+	_slider(menu, 0.3)
+	_joy_toggle(menu, 0.6)
+	_button(menu, "BACK", 0.78, _show_main_menu, 38)
 	_fade_in(menu)
 
 
@@ -348,8 +373,9 @@ func _pause() -> void:
 	_text(menu, "PAUSED", _spaced(f_ui, 3), 46, Color(0.9, 0.9, 0.9), 0.08)
 	_divider(menu, 0.2, 200)
 	_button(menu, "RESUME", 0.24, _resume, 42)
-	_slider(menu, 0.4)
-	_button(menu, "MAIN MENU", 0.8, _quit_to_menu, 36)
+	_slider(menu, 0.38)
+	_joy_toggle(menu, 0.66)
+	_button(menu, "MAIN MENU", 0.82, _quit_to_menu, 36)
 
 
 func _resume() -> void:
@@ -1064,6 +1090,17 @@ func _run_test() -> void:
 	await get_tree().create_timer(1.2).timeout
 	_touch(0, jc + Vector2(0, -80), false)
 	_t("joystick moved player %.2f m" % player.global_position.distance_to(p0))
+	# a press off the stick's centre without dragging: a floating stick starts there (no movement),
+	# a fixed one reads it as a push
+	for fl in [true, false]:
+		hud.floating = fl
+		await get_tree().create_timer(0.3).timeout
+		var q0 := player.global_position
+		_touch(0, jc + Vector2(0, 70), true)          # behind the centre: back the way the player came
+		await get_tree().create_timer(0.6).timeout
+		_touch(0, jc + Vector2(0, 70), false)
+		_t("press off-centre, floating joystick %s: moved %.2f m" % ["on" if fl else "off", player.global_position.distance_to(q0)])
+	hud.floating = floating_joy
 	var y0 := player.yaw
 	_touch(1, Vector2(vs.x * 0.7, vs.y * 0.5), true)
 	_drag(1, Vector2(vs.x * 0.7 + 120, vs.y * 0.5), Vector2(120, 0))

@@ -24,6 +24,7 @@ var font: Font
 var font_title: Font
 var font_scale := 1.0
 var marks: Array = []              # [{"p": screen point, "main": bool}] things you can use
+var floating := true               # the stick starts under the thumb; off: it stays fixed in its corner
 var _pulse := 0.0
 const JOY_R := 78.0                # thumb travel for full speed (on a 720-pixel-high screen)
 
@@ -140,7 +141,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			elif p.x < size.x * 0.4 and p.y > size.y * 0.3 and _joy_id == -1:
 				# the stick starts where the thumb lands, so touching off-centre never jerks you forward
 				_joy_id = e.index
-				_joy_origin = joy_center() if p.distance_to(joy_center()) < 34 * u() else p
+				_joy_origin = p if floating and p.distance_to(joy_center()) >= 34 * u() else joy_center()
 				_joy_pos = p
 				_update_joy()
 			elif _look_id == -1:
@@ -172,8 +173,9 @@ func _update_joy() -> void:
 	var r := JOY_R * u()
 	var off := _joy_pos - _joy_origin
 	if off.length() > r:
-		# past the rim the stick follows the thumb, so turning back responds at once
-		_joy_origin = _joy_pos - off.normalized() * r
+		# past the rim a floating stick follows the thumb, so turning back responds at once
+		if floating:
+			_joy_origin = _joy_pos - off.normalized() * r
 		off = off.normalized() * r
 	var d := off / r
 	_knob = d
