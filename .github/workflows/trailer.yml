@@ -10,19 +10,146 @@ permissions:
 
 env:
   BLENDER_VERSION: 4.2.3
+  CHUNKS: 20
 
 jobs:
-  blender_copy:
+  # ------------------------------------------------------------------ the trailer's extra sounds (real recordings)
+  sounds:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
-      - name: Keep a copy of Blender on the CI release (for local scene work)
+      - uses: actions/checkout@v4
+      - name: Keep the sounds found last time
+        run: |
+          mkdir -p build/trailer_audio
+          curl -fsSL -o /tmp/ts.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/trailer_sounds.zip" \
+            && unzip -oq /tmp/ts.zip -d build/trailer_audio || echo "none yet"
+      - name: Fetch the trailer sound effects
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view ragini-ci -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qx "blender-$BLENDER_VERSION-linux-x64.tar.xz"; then
-            echo "already there"; exit 0
-          fi
-          V=$BLENDER_VERSION; S=${V%.*}
-          curl -fsSL --retry 3 -o "blender-$V-linux-x64.tar.xz" "https://download.blender.org/release/Blender$S/blender-$V-linux-x64.tar.xz"
-          ls -la blender-*.tar.xz
-          gh release upload ragini-ci "blender-$V-linux-x64.tar.xz" -R "$GITHUB_REPOSITORY" --clobber
+          pip install --quiet numpy
+          python3 tools/trailer/trailer_sounds.py build/trailer_audio 2>&1 | tail -40
+          cat build/trailer_audio/trailer_sounds_report.txt || true
+          (cd build/trailer_audio && zip -qr ../trailer_sounds.zip .)
+          gh release upload ragini-ci build/trailer_sounds.zip -R "$GITHUB_REPOSITORY" --clobber
+      - uses: actions/upload-artifact@v4
+        with: { name: trailer-sounds, path: build/trailer_audio, retention-days: 3 }
+
+  # ------------------------------------------------------------------ the Blender scene
+  scene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      chunks: ${{ steps.split.outputs.chunks }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+      - name: Install Blender
+        run: bash tools/install_blender.sh
+      - name: Gather the game's models, textures and sky
+        run: |
+          set -e
+          R="https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci"
+          A=build/trailer/assets
+          mkdir -p $A/school /tmp/dl
+          curl -fsSL -o /tmp/dl/school_model.zip "$R/school_model.zip"
+          unzip -oq /tmp/dl/school_model.zip -d $A/school
+          curl -fsSL -o /tmp/dl/assets_downloaded.zip "$R/assets_downloaded.zip"
+          unzip -oq /tmp/dl/assets_downloaded.zip -d /tmp/dl
+          cp -r /tmp/dl/assets/downloaded/tex $A/tex
+          cp -r /tmp/dl/assets/downloaded/sky $A/sky
+          curl -fsSL -o $A/moulika.glb "$R/moulika_rigged.glb"
+          ls $A $A/school | head -40
+      - name: Build the trailer scene in Blender
+        run: |
+          ~/blender/blender -b -noaudio -P tools/trailer/build_scene.py -- build/trailer/assets build/trailer/trailer.blend 2>&1 | tee build/trailer_scene_log.txt | grep -E "^\[trailer\]|Error|Traceback" | tail -30
+          test -f build/trailer/trailer.blend
+      - name: Split the frames into render jobs
+        id: split
+        run: |
+          python3 - << 'EOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          shots = json.load(open("build/trailer/trailer_shots.json"))
+          frames = [f for s in shots for f in range(s["f0"], s["f1"] + 1)]
+          n = int(os.environ["CHUNKS"])
+          size = -(-len(frames) // n)
+          chunks = []
+          for i in range(n):
+              part = frames[i * size:(i + 1) * size]
+              if part:
+                  chunks.append({"i": i, "frames": " ".join(map(str, part))})
+          json.dump(chunks, open("build/trailer/chunks.json", "w"))
+          print("chunks=" + json.dumps([c["i"] for c in chunks]))
+          EOF
+      - uses: actions/upload-artifact@v4
+        with: { name: trailer-scene, path: build/trailer, retention-days: 3 }
+
+  # ------------------------------------------------------------------ render the frames in parallel
+  render:
+    needs: scene
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: ${{ fromJson(needs.scene.outputs.chunks) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blender cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+      - name: Install Blender
+        run: bash tools/install_blender.sh
+      - uses: actions/download-artifact@v4
+        with: { name: trailer-scene, path: build/trailer }
+      - name: Render chunk ${{ matrix.chunk }}
+        run: |
+          F=$(python3 -c "import json; print([c for c in json.load(open('build/trailer/chunks.json')) if c['i'] == ${{ matrix.chunk }}][0]['frames'])")
+          ~/blender/blender -b build/trailer/trailer.blend -noaudio -P tools/trailer/render_frames.py -- build/frames 100 40 $F 2>&1 \
+            | grep -E "^\[frame\]|Error|Traceback" | tail -80
+          ls build/frames | wc -l
+      - uses: actions/upload-artifact@v4
+        with: { name: "frames-${{ matrix.chunk }}", path: build/frames, retention-days: 3 }
+
+  # ------------------------------------------------------------------ cut, score and publish
+  assemble:
+    needs: [render, sounds]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: "frames-*", path: build/frames, merge-multiple: true }
+      - uses: actions/download-artifact@v4
+        with: { name: trailer-sounds, path: build/trailer_audio }
+      - uses: actions/download-artifact@v4
+        with: { name: trailer-scene, path: build/trailer }
+      - name: The game's own recorded sounds
+        run: |
+          curl -fsSL -o /tmp/sp.zip "https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci/sounds_pack.zip"
+          mkdir -p build/game_sounds && unzip -oq /tmp/sp.zip -d build/game_sounds
+          ls build/frames | wc -l
+      - name: Cut, grade and score the two trailers
+        run: |
+          pip install --quiet numpy pillow
+          python3 tools/trailer/assemble.py build 2>&1 | tail -40
+          ls -la build/out
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd build/out
+          cat ../trailer_audio/CREDITS_TRAILER_SOUNDS.md ../game_sounds/sounds/CREDITS_SOUNDS.md > CREDITS_TRAILER.md 2>/dev/null || true
+          gh release delete moulika-trailer -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          gh release create moulika-trailer -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+            --title "MOULIKA - trailers" \
+            --notes "Two trailers made in Blender from the game's own school and Moulika (1920x1080, 24 fps): the main trailer and a short one with a jump scare. Real recorded sound effects and music (credits attached)." \
+            moulika_trailer.mp4 moulika_short_trailer.mp4 CREDITS_TRAILER.md
+          for f in still_*.jpg; do gh release upload ragini-ci "$f" -R "$GITHUB_REPOSITORY" --clobber; done
