@@ -17,11 +17,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd store
-          zip -q moulika_playstore_screenshots.zip moulika_screenshot_*.jpg
+          zip -q moulika_playstore_screenshots.zip moulika_screenshot_*.jpg moulika_icon_512.png moulika_icon_1024.png
           gh release delete moulika-store -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
           gh release create moulika-store -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
-            --title "MOULIKA - Play Store screenshots" \
-            --notes "8 landscape screenshots for Google Play (1920x1080 JPEG, in upload order). Download them one by one, or the zip with all 8." \
+            --title "MOULIKA - Play Store screenshots and icon" \
+            --notes "8 landscape screenshots for Google Play (1920x1080 JPEG, in upload order) and the app icon (moulika_icon_512.png is the one Google Play asks for; the 1024 one is a bigger copy). Download them one by one, or the zip with everything." \
             moulika_screenshot_1.jpg moulika_screenshot_2.jpg moulika_screenshot_3.jpg moulika_screenshot_4.jpg \
             moulika_screenshot_5.jpg moulika_screenshot_6.jpg moulika_screenshot_7.jpg moulika_screenshot_8.jpg \
-            moulika_playstore_screenshots.zip
+            moulika_icon_512.png moulika_icon_1024.png moulika_playstore_screenshots.zip
