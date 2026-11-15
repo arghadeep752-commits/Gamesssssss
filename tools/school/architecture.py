@@ -66,6 +66,40 @@ def chunk_of(L, space):
 COLL = []          # blocking boxes in Blender axes: (x0, x1, y0, y1, z0, z1)
 
 
+def space_runs(L, a, b, at):
+    """Split a face's span a..b into runs that each look into one space: [(r0, r1, space), ...].
+    A long exterior wall piece can run past a partition into the next room; without this the whole
+    piece took the paint of whichever room held its middle (toilet tiles on the store room wall)."""
+    n = max(1, int(math.ceil((b - a) / 0.05)))
+    mids = [a + (b - a) * (i + 0.5) / n for i in range(n)]
+    runs, start, cur = [], a, at(mids[0])
+    for i in range(1, n):
+        s = at(mids[i])
+        if s == cur:
+            continue
+        lo, hi = mids[i - 1], mids[i]
+        for _ in range(24):
+            m = (lo + hi) / 2
+            if at(m) == cur:
+                lo = m
+            else:
+                hi = m
+        cut = (lo + hi) / 2
+        runs.append((start, cut, cur))
+        start, cur = cut, s
+    runs.append((start, b, cur))
+    # slivers under 1 cm (inside a wall's thickness) join their neighbour
+    out = []
+    for r in runs:
+        if out and r[1] - r[0] < 0.01:
+            out[-1] = (out[-1][0], r[1], out[-1][2])
+        elif out and out[-1][1] - out[-1][0] < 0.01:
+            out[-1] = (out[-1][0], r[1], r[2])
+        else:
+            out.append(r)
+    return out
+
+
 def wall_box(chunks, L, x0, x1, y0, y1, z0, z1, skip_top=True):
     """An axis box of wall; each face goes to the chunk of the space it faces, with the right paint."""
     COLL.append((x0, x1, y0, y1, z0, z1))
@@ -76,22 +110,31 @@ def wall_box(chunks, L, x0, x1, y0, y1, z0, z1, skip_top=True):
         ((0, -1), [(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)]),
         ((0, 1), [(x0, y1, z0), (x0, y1, z1), (x1, y1, z1), (x1, y1, z0)]),
     ]
+    # split each face at the dado line / plinth so each band gets its own paint
+    cuts = [z0, z1]
+    for zc in (PLINTH_H, DADO_H, 1.8):
+        if z0 < zc < z1:
+            cuts.append(zc)
+    cuts = sorted(cuts)
     for (nx, ny), quad in faces:
         if (nx != 0 and x1 - x0 < 1e-4) or (ny != 0 and y1 - y0 < 1e-4):
             continue
         px = (x1 if nx > 0 else x0 if nx < 0 else cx) + nx * 0.3
         py = (y1 if ny > 0 else y0 if ny < 0 else cy) + ny * 0.3
-        sp = space_at(L, px, py)
-        # split the face at the dado line / plinth so each band gets its own paint
-        cuts = [z0, z1]
-        for zc in (PLINTH_H, DADO_H, 1.8):
-            if z0 < zc < z1:
-                cuts.append(zc)
-        cuts = sorted(cuts)
-        g = chunks.setdefault(chunk_of(L, sp), Geo(chunk_of(L, sp)))
-        for a, b in zip(cuts[:-1], cuts[1:]):
-            q = [(p[0], p[1], a if p[2] == z0 else b) for p in quad]
-            g.quad(*q, face_mats(L, sp, a, b))
+        # ... and along its length wherever the space it looks into changes
+        if nx != 0:
+            runs = space_runs(L, y0, y1, lambda t: space_at(L, px, t))
+        else:
+            runs = space_runs(L, x0, x1, lambda t: space_at(L, t, py))
+        for (r0, r1, sp) in runs:
+            if nx != 0:
+                sub = [(p[0], r0 if p[1] == y0 else r1, p[2]) for p in quad]
+            else:
+                sub = [(r0 if p[0] == x0 else r1, p[1], p[2]) for p in quad]
+            g = chunks.setdefault(chunk_of(L, sp), Geo(chunk_of(L, sp)))
+            for a, b in zip(cuts[:-1], cuts[1:]):
+                q = [(p[0], p[1], a if p[2] == z0 else b) for p in sub]
+                g.quad(*q, face_mats(L, sp, a, b))
     if not skip_top:
         g = chunks.setdefault("roof", Geo("roof"))
         g.quad((x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1), "plaster_ext")
