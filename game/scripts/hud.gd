@@ -3,7 +3,8 @@ extends Control
 ## The in-game controls, laid out like Granny: the settings gear top-left, the combined stand/crouch button under
 ## it, the joystick bottom-left, the hand (interact) on the right, DROP written at the bottom while you hold
 ## something, and the name of whatever you are looking at under the centre dot. The icons are the game's own
-## images in game/ui/, drawn slightly see-through.
+## images in game/ui/, drawn slightly see-through. A circle marks what you can use: a bright one on the thing
+## you are aiming at, faint ones on items lying nearby.
 
 signal interact
 signal drop
@@ -22,6 +23,9 @@ var day_text := ""
 var font: Font
 var font_title: Font
 var font_scale := 1.0
+var marks: Array = []              # [{"p": screen point, "main": bool}] things you can use
+var _pulse := 0.0
+const JOY_R := 78.0                # thumb travel for full speed (on a 720-pixel-high screen)
 
 const UI_ALPHA := 0.78               # the whole HUD is a little see-through
 var tex_knob: Texture2D = load("res://game/ui/knob.png")
@@ -34,7 +38,7 @@ var tex_hand: Texture2D = load("res://game/ui/hand.png")
 var _joy_id := -1
 var _joy_target := Vector2.ZERO     # where the stick points (after the dead zone and curve)
 var _knob := Vector2.ZERO           # where the knob is drawn (follows the thumb)
-var _joy_origin := Vector2.ZERO
+var _joy_origin := Vector2.ZERO      # where the stick is while you hold it: under your thumb, not fixed
 var _joy_pos := Vector2.ZERO
 var _look_id := -1
 
@@ -43,6 +47,12 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	resized.connect(_home_joy)
+
+
+func _home_joy() -> void:
+	if _joy_id == -1:
+		_joy_origin = joy_center()
 
 
 func u() -> float:
@@ -92,6 +102,8 @@ func reset_touches() -> void:
 	_joy_target = Vector2.ZERO
 	_knob = Vector2.ZERO
 	look = Vector2.ZERO
+	marks = []
+	_joy_origin = joy_center()
 
 
 func _process(dt: float) -> void:
@@ -100,14 +112,14 @@ func _process(dt: float) -> void:
 		if message_t <= 0.0:
 			message = ""
 		queue_redraw()
+	_pulse += dt
 	# keyboard (desktop testing)
 	if _joy_id == -1:
 		var k := Vector2(Input.get_axis(&"ui_left", &"ui_right"), Input.get_axis(&"ui_up", &"ui_down"))
 		_joy_target = k
 		_knob = _knob.lerp(Vector2.ZERO, 1.0 - exp(-dt * 18.0))
-	move = move.lerp(_joy_target, 1.0 - exp(-dt * 14.0))      # eases in and out instead of snapping
-	if move.length() < 0.01 and _joy_target == Vector2.ZERO:
-		move = Vector2.ZERO
+		_joy_origin = _joy_origin.lerp(joy_center(), 1.0 - exp(-dt * 18.0))
+	move = _joy_target                 # the player eases its speed itself; a second easing here made it sluggish
 	queue_redraw()
 
 
@@ -126,8 +138,9 @@ func _unhandled_input(e: InputEvent) -> void:
 			elif holding and r_drop().grow(12 * u()).has_point(p):
 				drop.emit()
 			elif p.x < size.x * 0.4 and p.y > size.y * 0.3 and _joy_id == -1:
+				# the stick starts where the thumb lands, so touching off-centre never jerks you forward
 				_joy_id = e.index
-				_joy_origin = joy_center()
+				_joy_origin = joy_center() if p.distance_to(joy_center()) < 34 * u() else p
 				_joy_pos = p
 				_update_joy()
 			elif _look_id == -1:
@@ -156,9 +169,13 @@ func _unhandled_input(e: InputEvent) -> void:
 
 
 func _update_joy() -> void:
-	var d := (_joy_pos - _joy_origin) / (100.0 * u())
-	if d.length() > 1.0:
-		d = d.normalized()
+	var r := JOY_R * u()
+	var off := _joy_pos - _joy_origin
+	if off.length() > r:
+		# past the rim the stick follows the thumb, so turning back responds at once
+		_joy_origin = _joy_pos - off.normalized() * r
+		off = off.normalized() * r
+	var d := off / r
 	_knob = d
 	var m := d.length()
 	if m < 0.08:
@@ -170,12 +187,25 @@ func _update_joy() -> void:
 
 func _draw() -> void:
 	var s := u()
-	# joystick: the ring, and the knob that follows your thumb
-	var jc := joy_center()
+	# circles on the things you can use (a dark edge keeps them visible on white walls)
+	var lab_at := Vector2(size.x / 2, size.y * 0.585)
+	for m in marks:
+		var main: bool = m["main"]
+		var mp: Vector2 = m["p"]
+		var rr := (30.0 + 2.5 * sin(_pulse * 5.0)) * s if main else 13.0 * s
+		var wd := (3.0 if main else 2.0) * s
+		draw_arc(mp, rr, 0, TAU, 48, Color(0, 0, 0, 0.35), wd + 2.5 * s, true)
+		draw_arc(mp, rr, 0, TAU, 48, Color(1, 1, 1, UI_ALPHA * (0.95 if main else 0.6)), wd, true)
+		if main:
+			draw_arc(mp, rr + 7 * s, 0, TAU, 48, Color(1, 1, 1, UI_ALPHA * 0.25), 1.5 * s, true)
+			# the name goes under the circle instead of over it
+			lab_at = Vector2(clampf(mp.x, 160 * s, size.x - 160 * s), clampf(mp.y + rr + 52 * s, size.y * 0.4, size.y * 0.82))
+	# joystick: the ring under your thumb (it glides back home when you let go), and the knob that follows it
+	var jc := _joy_origin
 	var ring_d := 262 * s
 	draw_texture_rect(tex_ring, Rect2(jc - Vector2(ring_d, ring_d) / 2, Vector2(ring_d, ring_d)), false, Color(1, 1, 1, UI_ALPHA * 0.75))
 	var knob_d := 162 * s
-	var kc := jc + _knob * 64 * s
+	var kc := jc + _knob * JOY_R * s
 	draw_texture_rect(tex_knob, Rect2(kc - Vector2(knob_d, knob_d) / 2, Vector2(knob_d, knob_d)), false, Color(1, 1, 1, UI_ALPHA))
 	# settings gear in its rounded box, the stand / crouch button under it
 	var rg := r_gear()
@@ -190,7 +220,8 @@ func _draw() -> void:
 		if label_text != "":
 			var fs := int(40 * s * font_scale)
 			var w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			draw_string(font, Vector2(size.x / 2 - w / 2, size.y * 0.585), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, UI_ALPHA))
+			draw_string(font, Vector2(lab_at.x - w / 2 + 2 * s, lab_at.y + 2 * s), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.45))
+			draw_string(font, Vector2(lab_at.x - w / 2, lab_at.y), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, UI_ALPHA))
 		if message != "":
 			var fs2 := int(34 * s * font_scale)
 			var w2 := font.get_string_size(message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x

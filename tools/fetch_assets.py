@@ -350,6 +350,14 @@ SOUNDS = {
     "owl":           dict(q=["owl hooting", "owl"], req=["owl"], ban=["music", "song", "growl", "howl"], dur=(1, 60), out=4.0, ia="owl hoot"),
     "drone":         dict(q=["tanpura", "tambura", "harmonium drone", "drone"], req=["tanpura", "tambura", "drone", "harmonium"],
                           ban=["song", "quadcopter", "aircraft", "uav"], dur=(15, 2000), out=60, loop=True, gain=-4, ia="tanpura"),
+    # the music under the gameplay: low, slow horror suspense, recorded or composed by a person. Only Freesound uploads
+    # from before 2022 (sound ids under 600000), so nothing made by an AI music generator can slip in.
+    "game_music":    dict(q=["dark ambient horror", "horror ambience", "suspense drone", "creepy ambient"],
+                          req=["horror", "suspense", "creepy", "eerie", "ominous", "tension", "sinister", "dark ambient", "haunt", "scary"],
+                          ban=["song", "vocal", "voice", "scream", "laugh", "jumpscare", "jump scare", "8bit", "8-bit", "chiptune", "metal",
+                               "dubstep", "trailer", "stinger", "riser", "impact", "whoosh", "beat", "drum", "music box", "piano", "glitch"],
+                          ban_re=r"\b(ai|a\.i\.|ai[- ]generated|generated|suno|udio|neural)\b", fs_max_id=600000, calm=True,
+                          dur=(60, 1800), out=150, loop=True, gain=-2, v=1, ia="dark ambient horror"),
     "music_raga":    dict(q=["sarangi", "raga alap", "shehnai", "bansuri", "veena", "sitar raga"],
                           req=["sarangi", "raga", "alap", "shehnai", "bansuri", "veena", "sitar"], ban=["quadcopter"],
                           dur=(40, 3000), out=80, loop=True, gain=-3, ia="sarangi raga"),
@@ -515,9 +523,27 @@ def transcoded(url):
     return m.group(1) + "transcoded/" + m.group(2) + m.group(3) + "/" + m.group(3) + ".mp3"
 
 
+def calm_dark(x):
+    """True for audio that stays low and even: most energy below ~1.5 kHz and no sudden loud hits."""
+    w = int(0.05 * SR)
+    n = len(x) // w
+    if n < 40:
+        return False
+    rms = np.sqrt(np.mean(x[: n * w].reshape(n, w) ** 2, axis=1) + 1e-12)
+    spikes = float(np.percentile(rms, 99.5) / (np.median(rms) + 1e-9))
+    seg = x[: min(len(x), 60 * SR)]
+    spec = np.abs(np.fft.rfft(seg * np.hanning(len(seg))))
+    freqs = np.fft.rfftfreq(len(seg), 1.0 / SR)
+    centroid = float(np.sum(freqs * spec) / (np.sum(spec) + 1e-9))
+    log("   calm check: centroid %.0f Hz, loudest/median %.1f" % (centroid, spikes))
+    return centroid < 1500 and spikes < 4.5
+
+
 def process(name, spec, x, path_dir):
     dur = len(x) / SR
     if not (spec["dur"][0] <= dur <= spec["dur"][1]) or float(np.max(np.abs(x))) < 0.01:
+        return False
+    if spec.get("calm") and not calm_dark(x):
         return False
     outn = int(spec["out"] * SR)
     gain = spec.get("gain", 0.0)
@@ -566,6 +592,12 @@ def openverse_fetch(name, spec, tmp):
             tags = " ".join((t.get("name") or "") for t in (r.get("tags") or [])).lower()
             if not any(k in title + " " + tags for k in spec["req"]) or any(k in title for k in spec["ban"]):
                 continue
+            if spec.get("ban_re") and re.search(spec["ban_re"], title + " " + tags):
+                continue
+            if spec.get("fs_max_id"):
+                mfs = re.search(r"freesound\.org/people/[^/]+/sounds/(\d+)", r.get("foreign_landing_url") or "")
+                if not mfs or int(mfs.group(1)) >= spec["fs_max_id"]:
+                    continue
             d = (r.get("duration") or 0) / 1000.0
             if d and not (spec["dur"][0] <= d <= spec["dur"][1]):
                 continue

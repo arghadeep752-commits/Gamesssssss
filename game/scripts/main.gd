@@ -479,7 +479,8 @@ func _start_game(m: int) -> void:
 	_place_start()
 	await _intro()
 	audio.stop("music_raga")
-	audio.loop("drone", -15.0)            # tanpura drone under the night ambience while playing
+	# low horror suspense music under the night ambience while playing (the tanpura drone if it is missing)
+	audio.loop("game_music" if audio.has("game_music") else "drone", -17.0)
 	_begin_day()
 
 
@@ -505,6 +506,7 @@ func _process(dt: float) -> void:
 		return
 	var lab := ""
 	var can := false
+	var marks: Array = []
 	if player.hidden:
 		lab = "Leave"
 		can = true
@@ -513,6 +515,16 @@ func _process(dt: float) -> void:
 		if not t.is_empty():
 			lab = t["label"]
 			can = true
+			_mark(marks, _use_point(t), true)
+		# faint circles on items lying in view nearby
+		_near_t -= dt
+		if _near_t <= 0.0:
+			_near_t = 0.12
+			_near_items()
+		for it in _near:
+			if not it["held"] and (t.is_empty() or t["ref"] != it):
+				_mark(marks, _centre(it["node"]), false)
+	hud.marks = marks
 	if lab != hud.label_text or can != hud.can_interact or hud.holding != (held != "") or hud.crouched != player.crouched:
 		hud.label_text = lab
 		hud.can_interact = can
@@ -531,6 +543,52 @@ func _process(dt: float) -> void:
 			var pick: String = ["dog_howl", "owl", "dog_howl", "laugh"][randi() % 4]
 			var off := Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)).normalized() * randf_range(12.0, 22.0)
 			audio.play3d(pick, player.global_position + off + Vector3(0, 3, 0), -10.0 if pick != "laugh" else -14.0)
+
+
+var _near: Array = []
+var _near_t := 0.0
+
+
+func _mark(marks: Array, wp: Vector3, main: bool) -> void:
+	if not player.cam.is_position_behind(wp):
+		marks.append({"p": player.cam.unproject_position(wp), "main": main})
+
+
+func _centre(n: Node3D) -> Vector3:
+	## middle of a thing's meshes, for the highlight circle
+	var box := AABB()
+	var have := false
+	var stack: Array = [n]
+	while not stack.is_empty():
+		var c: Node = stack.pop_back()
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh:
+			var b: AABB = (c as MeshInstance3D).global_transform * (c as MeshInstance3D).get_aabb()
+			box = b if not have else box.merge(b)
+			have = true
+		stack.append_array(c.get_children())
+	return box.get_center() if have else n.global_position
+
+
+func _use_point(t: Dictionary) -> Vector3:
+	return _centre(t["ref"]["node"]) if t["kind"] == "item" else t["pos"]
+
+
+func _near_items() -> void:
+	_near = []
+	var space := player.get_world_3d().direct_space_state
+	var eye := player.head()
+	for id in level.items:
+		var it: Dictionary = level.items[id]
+		if it["held"] or not (it["node"] as Node3D).visible:
+			continue
+		var c := _centre(it["node"])
+		var to := c - eye
+		var d := to.length()
+		if d > 5.0 or d < 0.2 or player.forward().dot(to / d) < 0.35:
+			continue
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, c, 1))
+		if hit.is_empty() or (hit["position"] as Vector3).distance_to(c) < 0.25:
+			_near.append(it)
 
 
 func _crouch() -> void:

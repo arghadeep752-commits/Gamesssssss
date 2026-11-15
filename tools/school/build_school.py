@@ -547,9 +547,7 @@ try:
     sign = Geo("sign")
     sign.box((0, -6.0 - L["wall_t"] / 2 - 0.05, 3.0), (4.6, 0.06, 0.62), "paint_white")
     so = geo_object(sign, "sign_board")
-    t1 = text_object("ADARSH VIDYALAYA", 0.3, (0, -6.0 - L["wall_t"] / 2 - 0.085, 3.06), (0, -1), "paint_black", extrude=0.004)
-    t2 = text_object("GOVT. SCHOOL   EST. 1962", 0.11, (0, -6.0 - L["wall_t"] / 2 - 0.085, 2.82), (0, -1), "paint_black", extrude=0.003)
-    texts.setdefault("arch_outside", []).extend([so, t1, t2])
+    texts.setdefault("arch_outside", []).append(so)          # a blank board: the school's name has faded away
 except Exception as e:      # noqa: BLE001
     log("sign failed", e)
 for key, objs in texts.items():
