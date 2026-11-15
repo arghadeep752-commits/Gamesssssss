@@ -130,7 +130,34 @@ func _rect(c: Color) -> ColorRect:
 
 
 func _sz(f: Font, size: int) -> int:
-	return int(size * CHALK_SCALE) if f == f_ui and f != null and f.resource_path.ends_with("dk_midnight_chalker.otf") else size
+	var base: Font = (f as FontVariation).base_font if f is FontVariation else f
+	return int(size * CHALK_SCALE) if base == f_ui and base != null and base.resource_path.ends_with("dk_midnight_chalker.otf") else size
+
+
+func _spaced(f: Font, spacing: int) -> Font:
+	var v := FontVariation.new()
+	v.base_font = f
+	v.spacing_glyph = spacing
+	return v
+
+
+func _divider(parent: Control, y: float, w: float) -> void:
+	var r := ColorRect.new()
+	r.color = Color(0.55, 0.03, 0.03, 0.85)
+	r.anchor_left = 0.5
+	r.anchor_right = 0.5
+	r.anchor_top = y
+	r.anchor_bottom = y
+	r.offset_left = -w / 2
+	r.offset_right = w / 2
+	r.offset_bottom = 2
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(r)
+
+
+func _fade_in(c: Control) -> void:
+	c.modulate.a = 0.0
+	create_tween().tween_property(c, "modulate:a", 1.0, 0.7)
 
 
 func _label(f: Font, size: int, c: Color) -> Label:
@@ -182,9 +209,11 @@ func _button(parent: Control, t: String, y: float, cb: Callable, size := 46) -> 
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_override("font", f_ui)
 	b.add_theme_font_size_override("font_size", _sz(f_ui, size))
-	b.add_theme_color_override("font_color", Color(0.92, 0.92, 0.92))
-	b.add_theme_color_override("font_pressed_color", Color(0.8, 0.1, 0.08))
+	b.add_theme_color_override("font_color", Color(0.86, 0.86, 0.86))
+	b.add_theme_color_override("font_pressed_color", Color(0.78, 0.06, 0.05))
 	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	b.add_theme_color_override("font_hover_pressed_color", Color(0.78, 0.06, 0.05))
+	b.add_theme_color_override("font_focus_color", Color(0.86, 0.86, 0.86))
 	b.anchor_left = 0.5
 	b.anchor_right = 0.5
 	b.anchor_top = y
@@ -228,7 +257,9 @@ func _slider(parent: Control, y: float) -> void:
 	sa.content_margin_bottom = 4
 	s.add_theme_stylebox_override("grabber_area", sa)
 	s.add_theme_stylebox_override("grabber_area_highlight", sa)
+	var val := _text(parent, "%.2f" % sensitivity, f_ui, 26, Color(0.6, 0.6, 0.6), y + 0.2)
 	s.value_changed.connect(func(v):
+		val.text = "%.2f" % v
 		sensitivity = v
 		if player:
 			player.sensitivity = v
@@ -258,11 +289,17 @@ func _show_main_menu() -> void:
 	fade.color.a = 0.0
 	_clear_menu()
 	_menu_bg()
-	_text(menu, "RAGINI", f_name, 150, Color(0.72, 0.03, 0.03), 0.09)
-	_text(menu, "THE INDIAN HORROR GAME", f_name, 34, Color(0.8, 0.8, 0.8), 0.37)
-	_button(menu, "PLAY", 0.5, _show_modes)
-	_button(menu, "SETTINGS", 0.64, _show_settings)
-	_text(menu, "MXYAN GAMES OFFICIAL", f_ui, 24, Color(0.6, 0.6, 0.6), 0.9)
+	var title := _text(menu, "RAGINI", f_name, 165, Color(0.70, 0.02, 0.02), 0.12)
+	title.add_theme_color_override("font_shadow_color", Color(0.55, 0.0, 0.0, 0.32))
+	title.add_theme_constant_override("shadow_outline_size", 22)
+	title.add_theme_constant_override("shadow_offset_x", 0)
+	title.add_theme_constant_override("shadow_offset_y", 0)
+	_text(menu, "THE INDIAN HORROR GAME", _spaced(f_name, 7), 30, Color(0.74, 0.74, 0.74), 0.435)
+	_divider(menu, 0.52, 280)
+	_button(menu, "PLAY", 0.55, _show_modes, 50)
+	_button(menu, "SETTINGS", 0.69, _show_settings, 40)
+	_text(menu, "MXYAN GAMES OFFICIAL", _spaced(f_ui, 4), 22, Color(0.55, 0.55, 0.55), 0.915)
+	_fade_in(menu)
 	audio.stop_all()
 	audio.loop("menu_music", -8.0)
 
@@ -270,18 +307,22 @@ func _show_main_menu() -> void:
 func _show_settings() -> void:
 	_clear_menu()
 	_menu_bg()
-	_text(menu, "SETTINGS", f_ui, 54, Color(0.92, 0.92, 0.92), 0.12)
-	_slider(menu, 0.36)
-	_button(menu, "BACK", 0.72, _show_main_menu)
+	_text(menu, "SETTINGS", _spaced(f_ui, 3), 50, Color(0.9, 0.9, 0.9), 0.12)
+	_divider(menu, 0.255, 220)
+	_slider(menu, 0.33)
+	_button(menu, "BACK", 0.76, _show_main_menu, 38)
+	_fade_in(menu)
 
 
 func _show_modes() -> void:
 	_clear_menu()
 	_menu_bg()
-	_text(menu, "SELECT MODE", f_ui, 54, Color(0.92, 0.92, 0.92), 0.1)
+	_text(menu, "SELECT MODE", _spaced(f_ui, 3), 50, Color(0.9, 0.9, 0.9), 0.1)
+	_divider(menu, 0.235, 220)
 	for i in 3:
-		_button(menu, MODES[i], 0.3 + i * 0.14, _start_game.bind(i))
-	_button(menu, "BACK", 0.78, _show_main_menu, 34)
+		_button(menu, MODES[i], 0.3 + i * 0.13, _start_game.bind(i), 46)
+	_button(menu, "BACK", 0.8, _show_main_menu, 34)
+	_fade_in(menu)
 
 
 func _pause() -> void:
@@ -292,12 +333,14 @@ func _pause() -> void:
 	hud.visible = false
 	_clear_menu()
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.8)
+	dim.color = Color(0, 0, 0, 0.85)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	menu.add_child(dim)
-	_button(menu, "RESUME", 0.16, _resume)
-	_slider(menu, 0.36)
-	_button(menu, "MAIN MENU", 0.7, _quit_to_menu)
+	_text(menu, "PAUSED", _spaced(f_ui, 3), 46, Color(0.9, 0.9, 0.9), 0.08)
+	_divider(menu, 0.2, 200)
+	_button(menu, "RESUME", 0.24, _resume, 42)
+	_slider(menu, 0.4)
+	_button(menu, "MAIN MENU", 0.8, _quit_to_menu, 36)
 
 
 func _resume() -> void:

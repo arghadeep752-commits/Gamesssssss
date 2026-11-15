@@ -1,8 +1,9 @@
 class_name Hud
 extends Control
-## The in-game controls, laid out like Granny: a white joystick bottom-left, the combined stand/crouch button
-## top-left, the settings gear top-centre, the hand (interact) and drop buttons on the right, and the name of
-## whatever you are looking at in the middle. Everything is drawn here with plain white shapes.
+## The in-game controls, laid out like Granny: the settings gear top-left, the combined stand/crouch button under
+## it, the joystick bottom-left, the hand (interact) on the right, DROP written at the bottom while you hold
+## something, and the name of whatever you are looking at under the centre dot. The icons are the game's own
+## images in game/ui/, drawn slightly see-through.
 
 signal interact
 signal drop
@@ -23,16 +24,24 @@ var font: Font
 var font_title: Font
 var font_scale := 1.0
 
+const UI_ALPHA := 0.78               # the whole HUD is a little see-through
+var tex_knob: Texture2D = load("res://game/ui/knob.png")
+var tex_ring: Texture2D = load("res://game/ui/ring.png")
+var tex_crouch: Texture2D = load("res://game/ui/crouch.png")
+var tex_stand: Texture2D = load("res://game/ui/stand.png")
+var tex_gear: Texture2D = load("res://game/ui/gear.png")
+var tex_hand: Texture2D = load("res://game/ui/hand.png")
+
 var _joy_id := -1
 var _joy_origin := Vector2.ZERO
 var _joy_pos := Vector2.ZERO
 var _look_id := -1
-const WHITE := Color(1, 1, 1, 0.9)
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 
 
 func u() -> float:
@@ -40,23 +49,33 @@ func u() -> float:
 
 
 func joy_center() -> Vector2:
-	return Vector2(150 * u(), size.y - 150 * u())
-
-
-func r_crouch() -> Rect2:
-	return Rect2(28 * u(), 24 * u(), 84 * u(), 110 * u())
+	return Vector2(190 * u(), size.y - 175 * u())
 
 
 func r_gear() -> Rect2:
-	return Rect2(size.x / 2 - 40 * u(), 14 * u(), 80 * u(), 80 * u())
+	return Rect2(34 * u(), 26 * u(), 74 * u(), 74 * u())
+
+
+func r_crouch() -> Rect2:
+	return Rect2(26 * u(), 128 * u(), 90 * u(), 128 * u())
 
 
 func r_hand() -> Rect2:
-	return Rect2(size.x - 190 * u(), size.y - 330 * u(), 130 * u(), 130 * u())
+	return Rect2(size.x - 245 * u(), size.y * 0.36, 150 * u(), 136 * u())
 
 
 func r_drop() -> Rect2:
-	return Rect2(size.x - 175 * u(), size.y - 170 * u(), 100 * u(), 100 * u())
+	return Rect2(size.x / 2 - 110 * u(), size.y - 118 * u(), 220 * u(), 84 * u())
+
+
+func _tex_in(t: Texture2D, r: Rect2, a: float) -> void:
+	"""Draw t as large as fits in r, centred, keeping its proportions."""
+	if t == null:
+		return
+	var ts := t.get_size()
+	var k := minf(r.size.x / ts.x, r.size.y / ts.y)
+	var sz := ts * k
+	draw_texture_rect(t, Rect2(r.get_center() - sz / 2, sz), false, Color(1, 1, 1, a))
 
 
 func show_message(t: String, secs := 2.5) -> void:
@@ -135,55 +154,6 @@ func _update_joy() -> void:
 	move = d if d.length() > 0.12 else Vector2.ZERO
 
 
-func _capsule(a: Vector2, b: Vector2, w: float, c: Color) -> void:
-	draw_line(a, b, c, w, true)
-	draw_circle(a, w * 0.5, c)
-	draw_circle(b, w * 0.5, c)
-
-
-func _draw_person(r: Rect2, crouching: bool) -> void:
-	var s := r.size.y / 110.0
-	var o := r.position + Vector2(r.size.x / 2, 0)
-	if not crouching:
-		draw_circle(o + Vector2(0, 14) * s, 11 * s, WHITE)
-		_capsule(o + Vector2(0, 34) * s, o + Vector2(0, 62) * s, 22 * s, WHITE)
-		_capsule(o + Vector2(-17, 34) * s, o + Vector2(-19, 62) * s, 8 * s, WHITE)
-		_capsule(o + Vector2(17, 34) * s, o + Vector2(19, 62) * s, 8 * s, WHITE)
-		_capsule(o + Vector2(-6, 68) * s, o + Vector2(-7, 104) * s, 10 * s, WHITE)
-		_capsule(o + Vector2(6, 68) * s, o + Vector2(7, 104) * s, 10 * s, WHITE)
-	else:
-		draw_circle(o + Vector2(8, 40) * s, 11 * s, WHITE)
-		_capsule(o + Vector2(2, 58) * s, o + Vector2(-10, 80) * s, 22 * s, WHITE)
-		_capsule(o + Vector2(10, 60) * s, o + Vector2(22, 76) * s, 8 * s, WHITE)
-		_capsule(o + Vector2(-8, 86) * s, o + Vector2(14, 84) * s, 10 * s, WHITE)
-		_capsule(o + Vector2(14, 84) * s, o + Vector2(10, 104) * s, 10 * s, WHITE)
-		_capsule(o + Vector2(-14, 92) * s, o + Vector2(-2, 104) * s, 10 * s, WHITE)
-
-
-func _draw_hand(r: Rect2, c: Color) -> void:
-	var s := r.size.x / 130.0
-	var o := r.position
-	var palm := PackedVector2Array([o + Vector2(36, 70) * s, o + Vector2(98, 66) * s, o + Vector2(98, 100) * s, o + Vector2(84, 122) * s,
-		o + Vector2(52, 122) * s, o + Vector2(36, 100) * s])
-	draw_colored_polygon(palm, c)
-	var fingers := [[Vector2(44, 72), Vector2(40, 30)], [Vector2(60, 68), Vector2(59, 14)], [Vector2(76, 68), Vector2(78, 18)],
-		[Vector2(91, 72), Vector2(96, 34)]]
-	for f in fingers:
-		_capsule(o + f[0] * s, o + f[1] * s, 13 * s, c)
-	_capsule(o + Vector2(40, 100) * s, o + Vector2(16, 74) * s, 14 * s, c)
-
-
-func _draw_gear(r: Rect2) -> void:
-	var c := r.get_center()
-	var s := r.size.x / 80.0
-	for k in 8:
-		var a := TAU * k / 8.0
-		var d := Vector2(cos(a), sin(a))
-		draw_line(c + d * 14 * s, c + d * 25 * s, WHITE, 10 * s, true)
-	draw_circle(c, 18 * s, WHITE)
-	draw_circle(c, 8 * s, Color(0, 0, 0, 0.75))
-
-
 func _draw_peek() -> void:
 	var w := size.x
 	var h := size.y
@@ -206,35 +176,60 @@ func _draw() -> void:
 	var s := u()
 	if peek > 0.01:
 		_draw_peek()
-	# joystick
+	# joystick: the ring, and the knob that follows your thumb
 	var jc := joy_center()
-	draw_arc(jc, 92 * s, 0, TAU, 64, Color(1, 1, 1, 0.55), 4 * s, true)
-	draw_circle(jc + move * 62 * s, 44 * s, Color(1, 1, 1, 0.85))
-	_draw_person(r_crouch(), crouched)
-	_draw_gear(r_gear())
+	var ring_d := 214 * s
+	draw_texture_rect(tex_ring, Rect2(jc - Vector2(ring_d, ring_d) / 2, Vector2(ring_d, ring_d)), false, Color(1, 1, 1, UI_ALPHA * 0.75))
+	var knob_d := 132 * s
+	var kc := jc + move * 52 * s
+	draw_texture_rect(tex_knob, Rect2(kc - Vector2(knob_d, knob_d) / 2, Vector2(knob_d, knob_d)), false, Color(1, 1, 1, UI_ALPHA))
+	# settings gear in its rounded box, the stand / crouch button under it
+	var rg := r_gear()
+	draw_style_box(_gear_box(), rg)
+	_tex_in(tex_gear, rg.grow(-14 * s), UI_ALPHA)
+	_tex_in(tex_crouch if crouched else tex_stand, r_crouch(), UI_ALPHA)
 	if can_interact:
-		_draw_hand(r_hand(), WHITE)
-	if holding:
-		var r := r_drop()
-		var c := r.get_center()
-		draw_arc(c, 46 * s, 0, TAU, 48, WHITE, 4 * s, true)
-		draw_line(c + Vector2(0, -24) * s, c + Vector2(0, 14) * s, WHITE, 8 * s, true)
-		draw_colored_polygon(PackedVector2Array([c + Vector2(-18, 4) * s, c + Vector2(18, 4) * s, c + Vector2(0, 26) * s]), WHITE)
+		_tex_in(tex_hand, r_hand(), UI_ALPHA)
 	if font:
+		if holding:
+			_draw_drop(s)
 		if label_text != "":
 			var fs := int(34 * s * font_scale)
 			var w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			draw_string(font, Vector2(size.x / 2 - w / 2, size.y * 0.69), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95))
+			draw_string(font, Vector2(size.x / 2 - w / 2, size.y * 0.585), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, UI_ALPHA))
 		if message != "":
 			var fs2 := int(30 * s * font_scale)
 			var w2 := font.get_string_size(message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x
-			draw_string(font, Vector2(size.x / 2 - w2 / 2, size.y * 0.8), message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(1, 1, 1, clampf(message_t, 0, 1)))
-		if day_text != "":
-			var fs3 := int(28 * s * font_scale)
-			var w3 := font.get_string_size(day_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs3).x
-			draw_string(font, Vector2(size.x - w3 - 40 * s, 54 * s), day_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs3, Color(1, 1, 1, 0.85))
+			draw_string(font, Vector2(size.x / 2 - w2 / 2, size.y * 0.72), message, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(1, 1, 1, UI_ALPHA * clampf(message_t, 0, 1)))
 	# centre dot
-	draw_circle(size / 2, 2.5 * s, Color(1, 1, 1, 0.6))
+	draw_arc(size / 2, 5 * s, 0, TAU, 24, Color(1, 1, 1, UI_ALPHA * 0.7), 1.6 * s, true)
+
+
+var _box: StyleBoxFlat
+
+
+func _gear_box() -> StyleBoxFlat:
+	if _box == null:
+		_box = StyleBoxFlat.new()
+		_box.bg_color = Color(0, 0, 0, 0)
+		_box.border_color = Color(1, 1, 1, UI_ALPHA * 0.9)
+		_box.set_border_width_all(int(max(2.0, 3 * u())))
+		_box.set_corner_radius_all(int(10 * u()))
+	return _box
+
+
+func _draw_drop(s: float) -> void:
+	"""DROP written at the bottom, with a bigger first letter."""
+	var r := r_drop()
+	var big_fs := int(52 * s * font_scale)
+	var small_fs := int(38 * s * font_scale)
+	var w1 := font.get_string_size("D", HORIZONTAL_ALIGNMENT_LEFT, -1, big_fs).x
+	var w2 := font.get_string_size("ROP", HORIZONTAL_ALIGNMENT_LEFT, -1, small_fs).x
+	var x := r.get_center().x - (w1 + w2) / 2
+	var base := r.position.y + r.size.y * 0.72
+	var c := Color(1, 1, 1, UI_ALPHA)
+	draw_string(font, Vector2(x, base), "D", HORIZONTAL_ALIGNMENT_LEFT, -1, big_fs, c)
+	draw_string(font, Vector2(x + w1, base), "ROP", HORIZONTAL_ALIGNMENT_LEFT, -1, small_fs, c)
 
 
 func refresh() -> void:
