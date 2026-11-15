@@ -124,7 +124,7 @@ jobs:
       - name: Render chunk ${{ matrix.chunk }}
         run: |
           F=$(python3 -c "import json; print([c for c in json.load(open('build/trailer/chunks.json')) if c['i'] == ${{ matrix.chunk }}][0]['frames'])")
-          ~/blender/blender -b build/trailer/trailer.blend -noaudio -P tools/trailer/render_frames.py -- build/frames 100 40 $F 2>&1 \
+          ~/blender/blender -b build/trailer/trailer.blend -noaudio -P tools/trailer/render_frames.py -- build/frames 100 28 $F 2>&1 \
             | grep -E "^\[frame\]|Error|Traceback" | tail -80
           ls build/frames | wc -l
       - uses: actions/upload-artifact@v4

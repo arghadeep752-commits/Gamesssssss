@@ -703,7 +703,7 @@ def build_shots(mou, start_frames):
 
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:]
-    A, out = argv[0], argv[1]
+    A, out = os.path.abspath(argv[0]), argv[1]
     preview = len(argv) > 2 and argv[2] == "preview"
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
@@ -746,8 +746,11 @@ def main():
     sc.frame_start = 1
     sc.frame_end = max(r["f1"] for r in report)
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
-    bpy.ops.file.make_paths_relative()
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(out), relative_remap=True)
+    # every image goes inside the .blend, so the render machines never look for files that are not there
+    bpy.ops.file.pack_all()
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(out))
+    missing = [i.name for i in bpy.data.images if i.source == "FILE" and not i.packed_file]
+    log("images packed; unpacked file images:", missing)
     with open(os.path.splitext(out)[0] + "_shots.json", "w") as fp:
         json.dump(report, fp, indent=1)
     log("saved %s: %d shots, frames %d-%d" % (out, len(report), sc.frame_start, sc.frame_end))
