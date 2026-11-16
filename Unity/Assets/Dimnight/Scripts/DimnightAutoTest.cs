@@ -171,8 +171,31 @@ public class DimnightAutoTest : MonoBehaviour
         foreach (Canvas cv in canvases) if (cv != null) cv.enabled = true;
     }
 
+    IEnumerator Heartbeat()
+    {
+        // a line every 10 s: frame rate and memory, so a slow or stuck run shows where it is
+        int lastFrame = Time.frameCount;
+        float last = Time.realtimeSinceStartup;
+        while (true)
+        {
+            yield return new WaitForSecondsRealtime(10f);
+            float now = Time.realtimeSinceStartup;
+            float fps = (Time.frameCount - lastFrame) / Mathf.Max(0.01f, now - last);
+            lastFrame = Time.frameCount;
+            last = now;
+            Say("alive: " + fps.ToString("0.0") + " fps, memory " +
+                (UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / 1048576) + " MB used / " +
+                (UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong() / 1048576) + " MB reserved, scene " +
+                SceneManager.GetActiveScene().name);
+        }
+    }
+
     IEnumerator Start()
     {
+        // the emulator's software GPU: smaller textures (top mip levels skipped) and no shadow maps keep it responsive
+        QualitySettings.globalTextureMipmapLimit = 1;
+        QualitySettings.shadows = ShadowQuality.Disable;
+        StartCoroutine(Heartbeat());
         PlayerPrefs.SetString(GameSave.DifficultyKey, "Normal");
         PlayerPrefs.Save();
         Say("files go to " + Application.persistentDataPath);

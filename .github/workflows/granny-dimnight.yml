@@ -295,6 +295,8 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_3a
+          ram-size: 4096M
+          heap-size: 512M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash ci/smoke_test.sh smoke
@@ -305,7 +307,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result*.txt smoke/out/logcat-unity*.txt)
           ls -la smoke/out 2>/dev/null || true
           if [ ${#files[@]} -gt 0 ] && [ -n "$TAG" ]; then
             gh release upload "$TAG" "${files[@]}" --clobber -R "$GITHUB_REPOSITORY"
