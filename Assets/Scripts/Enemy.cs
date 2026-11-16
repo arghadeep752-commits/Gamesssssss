@@ -42,6 +42,7 @@ namespace Moulika
         Material mat;
         readonly Vector4[] lpos = new Vector4[5];
         readonly Vector4[] lcol = new Vector4[5];
+        float[] lampD;
         static readonly Color EyeLight = new Color(0.72f, 0.8f, 1f).linear * 0.35f;
 
         public float Yaw
@@ -326,17 +327,20 @@ namespace Moulika
             int n = 1;
             if (level != null)
             {
+                // the four nearest lamps within reach (no allocations: this runs every frame)
                 Vector3 me = transform.position + Vector3.up;
-                var best = new List<KeyValuePair<float, Level.Lamp>>();
-                foreach (Level.Lamp l in level.lamps)
+                int count = level.lamps.Count;
+                if (lampD == null || lampD.Length != count) lampD = new float[count];
+                for (int i = 0; i < count; i++) lampD[i] = (level.lamps[i].pos - me).sqrMagnitude;
+                for (; n < 5; n++)
                 {
-                    float d = (l.pos - me).sqrMagnitude;
-                    if (d < 7.5f * 7.5f) best.Add(new KeyValuePair<float, Level.Lamp>(d, l));
-                }
-                best.Sort((a, b) => a.Key.CompareTo(b.Key));
-                for (int i = 0; i < best.Count && n < 5; i++, n++)
-                {
-                    Level.Lamp l = best[i].Value;
+                    int best = -1;
+                    float bd = 7.5f * 7.5f;
+                    for (int i = 0; i < count; i++)
+                        if (lampD[i] < bd) { bd = lampD[i]; best = i; }
+                    if (best < 0) break;
+                    lampD[best] = float.MaxValue;
+                    Level.Lamp l = level.lamps[best];
                     lpos[n] = new Vector4(l.pos.x, l.pos.y, l.pos.z, 7.5f);
                     lcol[n] = l.color;
                 }

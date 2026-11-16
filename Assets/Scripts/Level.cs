@@ -510,47 +510,46 @@ namespace Moulika
         }
 
         // ---------------------------------------------------------------------------------------- what the player is looking at
+        readonly Target found = new Target();
+        float bestScore;
+
+        void Consider(string kind, Vector3 pos, string label, object obj, float r, Vector3 camPos, Vector3 fwd)
+        {
+            Vector3 to = pos - camPos;
+            float dist = to.magnitude;
+            if (dist > r || dist < 0.05f) return;
+            float dot = Vector3.Dot(fwd, to / dist);
+            if (dot < (kind != "door" ? 0.9f : 0.8f)) return;
+            float score = dot - dist * 0.03f + (kind == "item" ? 0.03f : 0f) + (kind == "plank" ? 0.02f : 0f);
+            if (score <= bestScore) return;
+            bestScore = score;
+            found.kind = kind;
+            found.pos = pos;
+            found.label = label;
+            found.obj = obj;
+            found.r = r;
+        }
+
+        /// <summary>What the player is aiming at (level.gd target). The result is reused: read it straight away.</summary>
         public Target FindTarget(Vector3 camPos, Vector3 fwd)
         {
-            Target best = null;
-            float bestScore = 0f;
-            var cands = new List<Target>();
+            bestScore = 0f;
+            found.kind = null;
             foreach (Item it in items.Values)
-                if (!it.held && it.node.gameObject.activeInHierarchy)
-                    cands.Add(new Target { kind = "item", pos = it.node.position, label = it.label, obj = it, r = 2.3f });
+                if (!it.held && it.node.gameObject.activeInHierarchy) Consider("item", it.node.position, it.label, it, 2.3f, camPos, fwd);
             foreach (Door d in doors.Values)
-            {
-                if (d.lockId == "main") continue;
-                cands.Add(new Target { kind = "door", pos = d.pos, label = DoorLabel(d), obj = d, r = 2.4f });
-            }
+                if (d.lockId != "main") Consider("door", d.pos, DoorLabel(d), d, 2.4f, camPos, fwd);
             foreach (Hide h in hides)
-                cands.Add(new Target { kind = "hide", pos = h.pos + new Vector3(0f, 1.1f, 0f), label = "Hide", obj = h, r = 2f });
+                Consider("hide", h.pos + new Vector3(0f, 1.1f, 0f), "Hide", h, 2f, camPos, fwd);
             Door main;
             if (doors.TryGetValue("door_main", out main) && main.lockId == "main")
             {
                 foreach (Plank p in planks)
-                    if (!p.gone) cands.Add(new Target { kind = "plank", pos = p.pos, label = "Planks", obj = p, r = 2.3f });
-                if (planksLeft == 0)
-                    cands.Add(new Target { kind = "padlock", pos = main.pos, label = "Main Door Lock", r = 2.3f });
-                else
-                    cands.Add(new Target { kind = "maindoor", pos = main.pos + new Vector3(0f, -0.5f, 0f), label = "Main Door", r = 2f });
+                    if (!p.gone) Consider("plank", p.pos, "Planks", p, 2.3f, camPos, fwd);
+                if (planksLeft == 0) Consider("padlock", main.pos, "Main Door Lock", null, 2.3f, camPos, fwd);
+                else Consider("maindoor", main.pos + new Vector3(0f, -0.5f, 0f), "Main Door", null, 2f, camPos, fwd);
             }
-            foreach (Target c in cands)
-            {
-                Vector3 to = c.pos - camPos;
-                float dist = to.magnitude;
-                if (dist > c.r || dist < 0.05f) continue;
-                float dot = Vector3.Dot(fwd, to / dist);
-                float need = c.kind != "door" ? 0.9f : 0.8f;
-                if (dot < need) continue;
-                float score = dot - dist * 0.03f + (c.kind == "item" ? 0.03f : 0f) + (c.kind == "plank" ? 0.02f : 0f);
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    best = c;
-                }
-            }
-            return best;
+            return found.kind != null ? found : null;
         }
     }
 }

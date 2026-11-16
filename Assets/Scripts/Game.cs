@@ -475,7 +475,7 @@ namespace Moulika
                     NearItems();
                 }
                 foreach (Level.Item it in near)
-                    if (!it.held && (t == null || t.obj != it)) AddMark(Centre(it.node), false);
+                    if (!it.held && (t == null || t.obj != it)) AddMark(Centre(it), false);
             }
             hud.labelText = lab;
             hud.canInteract = can;
@@ -505,11 +505,11 @@ namespace Moulika
             hud.marks.Add(new Hud.Mark { p = new Vector2(sp.x * k, (Screen.height - sp.y) * k), main = main });
         }
 
-        /// <summary>Middle of a thing's meshes, for the highlight circle.</summary>
-        public static Vector3 Centre(Transform n)
+        /// <summary>Middle of an item's meshes, for the highlight circle.</summary>
+        public static Vector3 Centre(Level.Item it)
         {
-            var rs = n.GetComponentsInChildren<Renderer>();
-            if (rs.Length == 0) return n.position;
+            Renderer[] rs = it.rends;
+            if (rs == null || rs.Length == 0) return it.node.position;
             Bounds b = rs[0].bounds;
             for (int i = 1; i < rs.Length; i++) b.Encapsulate(rs[i].bounds);
             return b.center;
@@ -517,7 +517,7 @@ namespace Moulika
 
         Vector3 UsePoint(Level.Target t)
         {
-            return t.kind == "item" ? Centre(((Level.Item)t.obj).node) : t.pos;
+            return t.kind == "item" ? Centre((Level.Item)t.obj) : t.pos;
         }
 
         void NearItems()
@@ -527,7 +527,7 @@ namespace Moulika
             foreach (Level.Item it in level.items.Values)
             {
                 if (it.held || !it.node.gameObject.activeInHierarchy) continue;
-                Vector3 c = Centre(it.node);
+                Vector3 c = Centre(it);
                 Vector3 to = c - eye;
                 float d = to.magnitude;
                 if (d > 5f || d < 0.2f || Vector3.Dot(player.Forward, to / d) < 0.35f) continue;
