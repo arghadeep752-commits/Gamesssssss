@@ -1,0 +1,83 @@
+{
+  "package": "com.AESStudio.Granny4EndGame",
+  "versionCode": "1",
+  "versionName": "1",
+  "label": "Granny 4 EndGame",
+  "minSdk": "22",
+  "targetSdk": "36",
+  "abis": "arm64-v8a armeabi-v7a",
+  "launch_activity": "com.unity3d.player.UnityPlayerActivity",
+  "native_libs": {
+    "arm64-v8a": [
+      "lib_burst_generated.so",
+      "libil2cpp.so",
+      "libmain.so",
+      "libunity.so",
+      "libunitycoherencenative.so"
+    ],
+    "armeabi-v7a": [
+      "lib_burst_generated.so",
+      "libil2cpp.so",
+      "libmain.so",
+      "libunity.so",
+      "libunitycoherencenative.so"
+    ]
+  },
+  "backend": "IL2CPP",
+  "il2cpp_metadata": {
+    "bytes": 6194884,
+    "magic_ok": true,
+    "version": 31
+  },
+  "unity_version_hits": [
+    [
+      "data.unity3d",
+      "2022.3.62f3"
+    ],
+    [
+      "unity default resources",
+      "2022.3.54f1"
+    ],
+    [
+      "libunity.so",
+      "2022.3.62f3"
+    ],
+    [
+      "libunity.so",
+      "2022.3.62f3"
+    ]
+  ],
+  "unity_version": "2022.3.62f3",
+  "files": 201,
+  "mb_by_folder": {
+    "assets/bin/Data": 134.95,
+    "lib": 101.82,
+    "classes.dex": 8.51,
+    "classes2.dex": 4.85,
+    "assets": 1.61,
+    "res": 0.3,
+    "resources.arsc": 0.16,
+    "google": 0.05,
+    "src": 0.05,
+    "META-INF": 0.04,
+    "okhttp3": 0.03,
+    "kotlin": 0.03,
+    "AndroidManifest.xml": 0.02,
+    "DebugProbesKt.bin": 0.0,
+    "play-services-ads-identifier.properties": 0.0
+  },
+  "data_files": [
+    "Managed",
+    "RuntimeInitializeOnLoads.json",
+    "ScriptingAssemblies.json",
+    "boot.config",
+    "data.unity3d",
+    "sharedassets0.resource",
+    "sharedassets1.resource",
+    "sharedassets2.resource",
+    "sharedassets3.resource",
+    "sharedassets4.resource",
+    "unity default resources",
+    "unity_app_guid"
+  ]
+}

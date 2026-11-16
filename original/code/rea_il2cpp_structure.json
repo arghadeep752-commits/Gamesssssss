@@ -1,0 +1,138 @@
+{
+ "evidence_id": "ev_8e28d8164cccdc13ff1045cfc3743f4024e5c1a6d000b8180eb0b8c4dd40cb8b",
+ "subject": {
+  "name": "global-metadata.dat",
+  "digest": {
+   "sha256": "6fce4584f3ae62b87efff0043820c72020305f82a73f47723550d5f88ec403c2"
+  },
+  "local_path": "/home/runner/work/Gamesssssss/Gamesssssss/work/apk/assets/bin/Data/Managed/Metadata/global-metadata.",
+  "format": "file",
+  "architecture": null
+ },
+ "provider": {
+  "id": "il2cpp-metadata",
+  "name": "REA IL2CPP global-metadata reader",
+  "version": "1"
+ },
+ "analysis_profile": null,
+ "predicate_type": "rea.analysis",
+ "operation": "inspect_il2cpp_metadata",
+ "parameters": {
+  "path": "/home/runner/work/Gamesssssss/Gamesssssss/work/apk/assets/bin/Data/Managed/Metadata/global-metadata."
+ },
+ "raw_result": null,
+ "normalized_result": {
+  "artifact": {
+   "path": "/home/runner/work/Gamesssssss/Gamesssssss/work/apk/assets/bin/Data/Managed/Metadata/global-metadata.",
+   "sha256": "6fce4584f3ae62b87efff0043820c72020305f82a73f47723550d5f88ec403c2",
+   "bytes": 6194884
+  },
+  "magic": 4205910959,
+  "metadata_version": 31,
+  "index_widths": {
+   "type_definition": 4,
+   "generic_container": 4,
+   "parameter": 4,
+   "type": 4,
+   "type_width_source": "fixed-width-version"
+  },
+  "sections": [
+   {
+    "name": "stringLiterals",
+    "offset": 256,
+    "size": 59376,
+    "count": null
+   },
+   "... 31 items"
+  ],
+  "images": [
+   {
+    "name": "mscorlib.dll",
+    "type_start": 0,
+    "type_count": 1359
+   },
+   "... 51 items"
+  ],
+  "types": [
+   {
+    "name": "<Module>",
+    "namespace": "",
+    "method_start": -1,
+    "method_count": 0,
+    "nested_type_start": -1,
+    "nested_type_count": 0,
+    "declaring_type": -1
+   },
+   "... 6154 items"
+  ],
+  "methods": [
+   {
+    "name": "GetExceptionForIoErrno",
+    "declaring_type": 8
+   },
+   "... 50383 items"
+  ],
+  "fields": [
+   {
+    "name": "value__",
+    "declaring_type": 1
+   },
+   "... 27460 items"
+  ],
+  "properties": [
+   {
+    "name": "Error",
+    "declaring_type": 2
+   },
+   "... 10128 items"
+  ],
+  "events": [
+   {
+    "name": "AssemblyResolve",
+    "declaring_type": 302
+   },
+   "... 93 items"
+  ],
+  "parameters": [
+   {
+    "name": "errorInfo",
+    "method": 0
+   },
+   "... 58788 items"
+  ],
+  "string_literals": [
+   {
+    "value": "",
+    "value_base64": null
+   },
+   "... 7422 items"
+  ],
+  "binary": null,
+  "method_addresses": [],
+  "return_types": [],
+  "field_types": [],
+  "parameter_types": [],
+  "generic_method_instances": null,
+  "limitations": [
+   "Only unencrypted global-metadata.dat versions 24, 27, 29, 31 and 39 are decoded; names, counts and s",
+   "... 4 items"
+  ]
+ },
+ "confidence": "observed",
+ "authority": "shipped-artifact",
+ "environment": null,
+ "limitations": [
+  "Only unencrypted global-metadata.dat versions 24, 27, 29, 31 and 39 are decoded; names, counts and s",
+  "... 4 items"
+ ],
+ "relationship_coverage": null,
+ "locations": [
+  {
+   "kind": "artifact-path",
+   "path": "/home/runner/work/Gamesssssss/Gamesssssss/work/apk/assets/bin/Data/Managed/Metadata/global-metadata."
+  },
+  "... 12 items"
+ ],
+ "evidence_links": [],
+ "caller_input_path": "/home/runner/work/Gamesssssss/Gamesssssss/work/apk/assets/bin/Data/Managed/Metadata/global-metadata."
+}

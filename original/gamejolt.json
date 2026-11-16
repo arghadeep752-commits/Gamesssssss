@@ -1,0 +1,25 @@
+{
+  "game_id": "1117042",
+  "url": "https://gamejolt.com/games/granny4endgame/1117042",
+  "title": "Granny 4 EndGame",
+  "slug": "granny4endgame",
+  "developer": "AES_Studio",
+  "developer_username": "AES_Studio",
+  "developer_url": "https://gamejolt.com/@AES_Studio",
+  "published_on": null,
+  "modified_on": 1794772685000,
+  "engine_tags": [],
+  "build": {
+    "id": 2074762,
+    "file": "granny-4-endgame.apk",
+    "size": "171907583",
+    "package": null,
+    "version": "1.0.0"
+  },
+  "files": [
+    {
+      "name": "game.apk",
+      "bytes": 171907583
+    }
+  ]
+}

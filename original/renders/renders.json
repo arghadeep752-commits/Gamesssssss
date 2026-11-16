@@ -1,0 +1,264 @@
+{
+ "glb": "Main.glb",
+ "levels": [
+  -16.25,
+  0.0
+ ],
+ "renders": [
+  {
+   "file": "plan_1.jpg",
+   "camera": [
+    -299.64,
+    65.64,
+    -14.45
+   ],
+   "rotation_deg": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "ortho": true,
+   "note": "floor at -16.25 m, 1107 x 515 m"
+  },
+  {
+   "file": "plan_2.jpg",
+   "camera": [
+    -202.89,
+    49.1,
+    1.8
+   ],
+   "rotation_deg": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "ortho": true,
+   "note": "floor at 0.00 m, 840 x 498 m"
+  },
+  {
+   "file": "outside_1.jpg",
+   "camera": [
+    643.7,
+    731.17,
+    610.49
+   ],
+   "rotation_deg": [
+    62.0,
+    0.0,
+    135.0
+   ],
+   "ortho": false,
+   "note": "azimuth 45"
+  },
+  {
+   "file": "outside_2.jpg",
+   "camera": [
+    -895.17,
+    -807.7,
+    610.49
+   ],
+   "rotation_deg": [
+    62.0,
+    0.0,
+    -45.0
+   ],
+   "ortho": false,
+   "note": "azimuth 225"
+  },
+  {
+   "file": "spawn_north.jpg",
+   "camera": [
+    0.0,
+    0.0,
+    1.89
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "ortho": false,
+   "note": "from Player"
+  },
+  {
+   "file": "spawn_west.jpg",
+   "camera": [
+    0.0,
+    0.0,
+    1.89
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    90.0
+   ],
+   "ortho": false,
+   "note": "from Player"
+  },
+  {
+   "file": "spawn_south.jpg",
+   "camera": [
+    0.0,
+    0.0,
+    1.89
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    180.0
+   ],
+   "ortho": false,
+   "note": "from Player"
+  },
+  {
+   "file": "spawn_east.jpg",
+   "camera": [
+    0.0,
+    0.0,
+    1.89
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    270.0
+   ],
+   "ortho": false,
+   "note": "from Player"
+  },
+  {
+   "file": "room_1_view.jpg",
+   "camera": [
+    -1.67,
+    -4.33,
+    1.6
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    67.5
+   ],
+   "ortho": false,
+   "note": "at (-1.7, -4.3, 1.6) looking 68 deg (25.0 m free)"
+  },
+  {
+   "file": "room_2_view.jpg",
+   "camera": [
+    192.42,
+    327.22,
+    -14.93
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    180.0
+   ],
+   "ortho": false,
+   "note": "at (192.4, 327.2, -14.9) looking 180 deg (25.0 m free)"
+  },
+  {
+   "file": "room_3_view.jpg",
+   "camera": [
+    -331.29,
+    -25.37,
+    -14.93
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    180.0
+   ],
+   "ortho": false,
+   "note": "at (-331.3, -25.4, -14.9) looking 180 deg (24.1 m free)"
+  },
+  {
+   "file": "room_4_view.jpg",
+   "camera": [
+    177.02,
+    5.2,
+    1.74
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "ortho": false,
+   "note": "at (177.0, 5.2, 1.7) looking 0 deg (25.0 m free)"
+  },
+  {
+   "file": "room_5_view.jpg",
+   "camera": [
+    254.88,
+    177.56,
+    1.28
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "ortho": false,
+   "note": "at (254.9, 177.6, 1.3) looking 0 deg (25.0 m free)"
+  },
+  {
+   "file": "room_6_view.jpg",
+   "camera": [
+    254.88,
+    261.5,
+    1.27
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "ortho": false,
+   "note": "at (254.9, 261.5, 1.3) looking 0 deg (25.0 m free)"
+  },
+  {
+   "file": "room_7_view.jpg",
+   "camera": [
+    250.58,
+    233.46,
+    1.27
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "ortho": false,
+   "note": "at (250.6, 233.5, 1.3) looking 0 deg (25.0 m free)"
+  },
+  {
+   "file": "room_8_view.jpg",
+   "camera": [
+    252.77,
+    205.54,
+    1.3
+   ],
+   "rotation_deg": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "ortho": false,
+   "note": "at (252.8, 205.5, 1.3) looking 0 deg (25.0 m free)"
+  },
+  {
+   "file": "enemy.jpg",
+   "camera": [
+    72.3,
+    -158.0,
+    113.39
+   ],
+   "rotation_deg": [
+    86.7,
+    0.0,
+    90.0
+   ],
+   "ortho": false,
+   "note": "fllorthird (0.92 m tall)"
+  }
+ ]
+}
