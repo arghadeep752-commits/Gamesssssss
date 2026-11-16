@@ -15,6 +15,15 @@ on:
   push:
     branches: [moulika-unity]
   workflow_dispatch:
+    inputs:
+      apk_run:
+        description: "Only replay the emulator check on the APK of this earlier run (run id); empty = full build"
+        required: false
+        default: ""
+      tag:
+        description: "Release to attach the replayed check's screenshots to (with apk_run)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -30,6 +39,7 @@ env:
 jobs:
   build:
     name: Build APK
+    if: github.event_name != 'workflow_dispatch' || inputs.apk_run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     outputs:
@@ -197,9 +207,11 @@ jobs:
   emulator-test:
     name: Play it in an Android emulator
     needs: build
-    if: needs.build.outputs.tag != ''
+    if: always() && (needs.build.outputs.tag != '' || (github.event_name == 'workflow_dispatch' && inputs.apk_run != ''))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      TAG: ${{ needs.build.outputs.tag || inputs.tag }}
     steps:
       - uses: actions/checkout@v5
 
@@ -208,6 +220,8 @@ jobs:
         with:
           name: emulator-apk
           path: smoke
+          run-id: ${{ inputs.apk_run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Enable KVM
         run: |
@@ -232,8 +246,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          files=(smoke/out/*.png smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result.txt smoke/out/logcat-unity.txt)
           ls -la smoke/out 2>/dev/null || true
-          if [ ${#files[@]} -gt 0 ]; then
-            gh release upload "${{ needs.build.outputs.tag }}" "${files[@]}" --clobber
+          if [ ${#files[@]} -gt 0 ] && [ -n "$TAG" ]; then
+            gh release upload "$TAG" "${files[@]}" --clobber
           fi

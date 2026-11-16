@@ -18,12 +18,18 @@ adb shell input keyevent 82 >/dev/null 2>&1 || true
 echo "Installing $APK"
 adb install -r -g "$APK" 2>&1 | tee "$OUT/install.txt"
 adb logcat -c || true
+# record the first seconds after launch (the Unity splash plays there)
+adb shell screenrecord --time-limit 25 --size 1110x540 --bit-rate 4000000 /sdcard/start.mp4 >/dev/null 2>&1 &
+rec=$!
+sleep 1
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
-# the Unity splash plays first: grab a few frames of it
 for t in 3 6 9 12; do
   sleep 3
   adb exec-out screencap -p > "$OUT/00-start-${t}s.png" 2>/dev/null || true
 done
+wait $rec 2>/dev/null || true
+sleep 2
+adb pull /sdcard/start.mp4 "$OUT/00-start.mp4" >/dev/null 2>&1 && ls -la "$OUT/00-start.mp4" || echo "no start recording"
 
 result="TIMEOUT"
 captured=" "
