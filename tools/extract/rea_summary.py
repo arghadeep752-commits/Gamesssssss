@@ -72,23 +72,33 @@ def main():
     with open(os.path.join(outd, "rea_%s_structure.json" % mode), "w", encoding="utf-8") as f:
         json.dump(skeleton(data), f, indent=1)
 
-    got = collect(data, {"images", "types", "methods", "fields", "properties", "string_literals", "members"})
-    print("rea collections:", {k: len(v) for k, v in got.items()})
+    nr = data.get("normalized_result") if isinstance(data, dict) else None
+    if isinstance(nr, dict) and isinstance(nr.get("types"), list):
+        got = {k: v for k, v in nr.items() if isinstance(v, list)}
+    else:
+        got = collect(data, {"images", "types", "methods", "fields", "properties", "string_literals", "members"})
+    print("rea collections:", {k: len(v) for k, v in got.items() if isinstance(v, list)})
 
-    images = {}
-    for row in got.get("images", []):
-        idx = row.get("index")
-        images[idx] = text(row.get("name")) or str(idx)
+    image_rows = [r for r in got.get("images", []) if isinstance(r, dict)]
+
+    def image_of(ti):
+        for im in image_rows:
+            s0, n = im.get("type_start"), im.get("type_count")
+            if isinstance(s0, int) and isinstance(n, int) and s0 <= ti < s0 + n:
+                return text(im.get("name")) or ""
+        return ""
+
     types = {}
-    for row in got.get("types", []):
-        idx = row.get("index")
-        name = text(row.get("name")) or text(row.get("full_name")) or "?"
-        ns = text(row.get("namespace")) or ""
-        img = row.get("image") if not isinstance(row.get("image"), dict) else row["image"].get("index")
-        img = img if img is not None else row.get("image_index")
-        types[idx] = {"name": name, "ns": ns, "image": images.get(img, text(row.get("image")) or ""),
-                      "parent": text(row.get("parent")) or text(row.get("base_type")) or "",
-                      "fields": [], "methods": [], "props": []}
+    for pos, row in enumerate(got.get("types", [])):
+        idx = row.get("index", pos)
+        types[idx] = {"name": text(row.get("name")) or "?", "ns": text(row.get("namespace")) or "",
+                      "image": image_of(idx), "parent": text(row.get("parent")) or "",
+                      "declaring": row.get("declaring_type", -1), "fields": [], "methods": [], "props": []}
+    for t in types.values():   # nested classes: Outer/Inner
+        d = t["declaring"]
+        if isinstance(d, int) and d in types and d != -1:
+            t["name"] = types[d]["name"] + "/" + t["name"]
+            t["ns"] = t["ns"] or types[d]["ns"]
 
     def owner(row):
         d = row.get("declaring_type")
@@ -107,8 +117,7 @@ def main():
             t = owner(row)
             n = text(row.get("name"))
             if t is not None and n:
-                typ = text(row.get("type")) or text(row.get("field_type")) or text(row.get("return_type")) or ""
-                t[key].append((n + (": " + typ if typ else "")).strip())
+                t[key].append(n)
 
     for row in got.get("members", []):   # managed members: flat rows with a declaring type name
         tn = text(row.get("declaring_type")) or text(row.get("type_name")) or "?"
@@ -118,9 +127,13 @@ def main():
         n = text(row.get("name")) or "?"
         (t["methods"] if "method" in kind else t["props"] if "prop" in kind else t["fields"]).append(n)
 
-    game = [t for t in types.values()
-            if not ENGINE_NS.match(t["ns"] or "") and not ENGINE_IMG.match(t["image"] or "")
-            and not t["name"].startswith("<")]
+    game_images = {t["image"] for t in types.values() if t["image"].lower().startswith("assembly-csharp")}
+    if game_images:
+        game = [t for t in types.values() if t["image"] in game_images and not t["name"].startswith("<")]
+    else:
+        game = [t for t in types.values()
+                if not ENGINE_NS.match(t["ns"] or "") and not ENGINE_IMG.match(t["image"] or "")
+                and not t["name"].startswith("<")]
     game.sort(key=lambda t: (t["image"], t["ns"], t["name"]))
     lines = ["# Game classes found by rea (%s)" % mode, "",
              "%d classes in the game's own code (engine and library classes left out)." % len(game), ""]
@@ -134,7 +147,7 @@ def main():
         if t["props"]:
             lines.append("- properties: " + ", ".join(t["props"][:40]))
         if t["methods"]:
-            lines.append("- methods: " + ", ".join(m.split(":")[0] for m in t["methods"][:80]))
+            lines.append("- methods: " + ", ".join(m for m in t["methods"][:80] if not m.startswith("<")))
         lines.append("")
     with open(os.path.join(outd, "rea_%s_types.md" % mode), "w", encoding="utf-8") as f:
         f.write("\n".join(lines))

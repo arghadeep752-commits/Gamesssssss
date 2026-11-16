@@ -156,6 +156,35 @@ for o in meshes:
     hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
     boxes.append((o, lo, hi))
 
+
+def house_region(bxs):
+    """The house and its yard: the densest cluster of objects (far-away sets, terrain and sky left out)."""
+    small = [b for b in bxs if (b[2] - b[1]).length < 120]
+    pts = [((lo.x + hi.x) / 2, (lo.y + hi.y) / 2) for _o, lo, hi in small]
+    if not pts:
+        return bxs, None
+    cells = collections.Counter((math.floor(x / 4), math.floor(y / 4)) for x, y in pts)
+    (cx, cy), _n = cells.most_common(1)[0]
+    c = ((cx + 0.5) * 4, (cy + 0.5) * 4)
+    for _ in range(8):
+        near = [p for p in pts if math.hypot(p[0] - c[0], p[1] - c[1]) < 30]
+        if not near:
+            break
+        c = (sum(p[0] for p in near) / len(near), sum(p[1] for p in near) / len(near))
+    d = sorted(math.hypot(p[0] - c[0], p[1] - c[1]) for p in pts if math.hypot(p[0] - c[0], p[1] - c[1]) < 80)
+    r = max(10.0, d[int(0.9 * (len(d) - 1))] + 3.0) if d else 40.0
+    inner = [b for b, p in zip(small, pts) if math.hypot(p[0] - c[0], p[1] - c[1]) <= r]
+    return inner, (c, r)
+
+
+house, hreg = house_region(boxes)
+if hreg:
+    log("house region: centre (%.1f, %.1f), radius %.1f m, %d of %d objects" % (hreg[0][0], hreg[0][1], hreg[1], len(house), len(boxes)))
+
+
+def in_house(v):
+    return hreg is None or math.hypot(v.x - hreg[0][0], v.y - hreg[0][1]) <= hreg[1]
+
 up_area = collections.Counter()
 floor_spots = collections.defaultdict(list)
 for o in meshes:
@@ -173,6 +202,8 @@ for o in meshes:
         if n.z > 0.9:
             c = mw @ p.center
             a = p.area * k
+            if a > 400 or not in_house(c):
+                continue
             lvl = round(c.z * 4) / 4
             up_area[lvl] += a
             if 0.3 < a < 400:
@@ -180,11 +211,11 @@ for o in meshes:
 total = sum(up_area.values()) or 1.0
 levels = []
 for lvl, a in sorted(up_area.items(), key=lambda kv: -kv[1]):
-    if a < 0.04 * total:
+    if a < 0.03 * total:
         break
     if all(abs(lvl - x) >= 2.0 for x in levels):
         levels.append(lvl)
-    if len(levels) >= 4:
+    if len(levels) >= 5:
         break
 levels.sort()
 log("floor levels (m):", levels, "of", len(up_area), "heights")
@@ -196,19 +227,17 @@ def pct(vals, f):
 
 
 def bounds(sel):
-    xs = [(lo.x + hi.x) / 2 for _o, lo, hi in sel]
-    ys = [(lo.y + hi.y) / 2 for _o, lo, hi in sel]
-    zs = [(lo.z + hi.z) / 2 for _o, lo, hi in sel]
-    return (Vector((pct(xs, .03), pct(ys, .03), pct(zs, .03))), Vector((pct(xs, .97), pct(ys, .97), pct(zs, .97))))
+    return (Vector((pct([b[1].x for b in sel], .02), pct([b[1].y for b in sel], .02), pct([b[1].z for b in sel], .02))),
+            Vector((pct([b[2].x for b in sel], .98), pct([b[2].y for b in sel], .98), pct([b[2].z for b in sel], .98))))
 
 
 # ---- plans ----------------------------------------------------------------------------------------------------------
 for i, lvl in enumerate(levels):
-    sel = [b for b in boxes if b[1].z < lvl + 1.8 and b[2].z > lvl - 0.3]
+    sel = [b for b in house if b[1].z < lvl + 1.8 and b[2].z > lvl - 0.3]
     if len(sel) < 3:
         continue
     lo, hi = bounds(sel)
-    pad = 2.0
+    pad = 1.5
     cam_data.type = "ORTHO"
     cam_data.ortho_scale = max(hi.x - lo.x, hi.y - lo.y) + 2 * pad
     cam_data.clip_start = 0.01
@@ -218,7 +247,7 @@ for i, lvl in enumerate(levels):
     render("plan_%d" % (i + 1), 1400, 1400, "floor at %.2f m, %.0f x %.0f m" % (lvl, hi.x - lo.x, hi.y - lo.y))
 
 # ---- outside --------------------------------------------------------------------------------------------------------
-lo, hi = bounds(boxes)
+lo, hi = bounds(house)
 center = (lo + hi) / 2
 diag = max((hi - lo).length, 8.0)
 cam_data.type = "PERSP"
@@ -262,7 +291,7 @@ def best_yaw(origin):
 # ---- player start ---------------------------------------------------------------------------------------------------
 pat = re.compile(r"(^player$|fps|first ?person|playercontroller|^player[ _]|spawn|character ?controller)", re.I)
 bad = re.compile(r"(trigger|sound|audio|canvas|text|light|ui|button|cam(era)?$|icon)", re.I)
-cands = [o for o in scene.objects if pat.search(o.name) and not bad.search(o.name)]
+cands = [o for o in scene.objects if pat.search(o.name) and not bad.search(o.name) and in_house(o.matrix_world.translation)]
 cands.sort(key=lambda o: (o.name.lower() != "player", len(o.name)))
 if cands:
     p = cands[0].matrix_world.translation.copy()
@@ -279,14 +308,14 @@ for lvl in levels:
         if abs(key - lvl) <= 0.3:
             spots += [c for c, _a in items]
 inside = []
-for c in spots[:6000]:
+for c in [c for c in spots if in_house(c)][:6000]:
     above, _n, _o = ray(c + Vector((0, 0, 0.2)), Vector((0, 0, 1)), 4.5)
     if above is None:
         continue
     e = c + Vector((0, 0, 1.6))
     clear = min(((ray(e, Vector((math.cos(a), math.sin(a), 0)), 3.0)[0] or (e + Vector((3, 0, 0)))) - e).length
-                for a in (0, math.pi / 2, math.pi, 3 * math.pi / 2))
-    if clear >= 0.7:
+                for a in [k * math.pi / 4 for k in range(8)])
+    if clear >= 1.0:
         inside.append(e)
 chosen = []
 if inside:
@@ -303,7 +332,7 @@ for i, e in enumerate(chosen):
 
 # ---- the enemy ------------------------------------------------------------------------------------------------------
 epat = re.compile(r"(granny|grandma|grandpa|enemy|nun|slendrina|monster|killer|ghost)", re.I)
-enemies = [b for b in boxes if epat.search(b[0].name) or (b[0].parent and epat.search(b[0].parent.name))]
+enemies = [b for b in house if (epat.search(b[0].name) or (b[0].parent and epat.search(b[0].parent.name))) and 0.8 < (b[2].z - b[1].z) < 3.5]
 if enemies:
     o, elo, ehi = max(enemies, key=lambda b: (b[2] - b[1]).length)
     c = (elo + ehi) / 2

@@ -429,8 +429,17 @@ def contact_sheet(paths, title, out, cols=8, cell=160):
     sheet.save(out, quality=82)
 
 
+def project_root(path):
+    """AssetRipper writes the project into <out>/ExportedProject; accept either folder."""
+    for cand in [path, os.path.join(path, "ExportedProject")] + sorted(glob.glob(os.path.join(path, "*"))):
+        if os.path.isdir(os.path.join(cand, "Assets")) and os.path.isdir(os.path.join(cand, "ProjectSettings")):
+            return cand
+    return path
+
+
 def main():
-    root, work, outd = sys.argv[1], sys.argv[2], sys.argv[3]
+    root, work, outd = project_root(sys.argv[1]), sys.argv[2], sys.argv[3]
+    log("project:", root)
     os.makedirs(os.path.join(outd, "scenes"), exist_ok=True)
     os.makedirs(os.path.join(outd, "textures"), exist_ok=True)
     proj = Project(root)
