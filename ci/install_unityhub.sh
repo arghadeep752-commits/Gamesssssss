@@ -11,9 +11,20 @@ echo "deb [signed-by=/usr/share/keyrings/Unity_Technologies_ApS.gpg] https://hub
   | sudo tee /etc/apt/sources.list.d/unityhub.list >/dev/null
 # libgconf-2-4 and libncurses5 only exist in jammy
 echo "deb https://archive.ubuntu.com/ubuntu jammy main universe" | sudo tee /etc/apt/sources.list.d/jammy.list >/dev/null
+# Unity Hub 4 changed its layout and unity-setup no longer finds it: keep the 3.x Hub that works (3.22.6),
+# pinned so that unity-setup's own "apt-get install unityhub" leaves it alone
+printf 'Package: unityhub\nPin: version 3.22.*\nPin-Priority: 1001\n' | sudo tee /etc/apt/preferences.d/unityhub >/dev/null
 sudo apt-get update -qq
-sudo apt-get install -y -qq --no-install-recommends \
+apt-cache madison unityhub | head -n 8 || true
+sudo apt-get install -y -qq --no-install-recommends --allow-downgrades \
   unityhub xvfb ffmpeg libgtk2.0-0 libglu1-mesa libgconf-2-4 libncurses5 pulseaudio
+if ! dpkg -s unityhub 2>/dev/null | grep -q '^Version: 3\.'; then
+  v3="$(apt-cache madison unityhub | awk '{print $3}' | grep '^3\.' | head -n 1)"
+  echo "pinned Hub not installed, trying $v3"
+  printf 'Package: unityhub\nPin: version %s\nPin-Priority: 1001\n' "$v3" | sudo tee /etc/apt/preferences.d/unityhub >/dev/null
+  sudo apt-get install -y -qq --no-install-recommends --allow-downgrades "unityhub=$v3"
+fi
+dpkg -s unityhub | grep '^Version'
 # keep the Hub's error output out of its normal output (the action parses stdout)
 sudo sed -i 's/^\(.*DISPLAY=:.*XAUTHORITY=.*\)\( "\$@" \)2>&1$/\1\2/' /usr/bin/xvfb-run
 
