@@ -52,7 +52,8 @@ namespace Moulika.EditorTools
         public static bool Matches(TextureImporter imp, Rule r)
         {
             return imp.textureType == r.type && imp.sRGBTexture == r.srgb && imp.mipmapEnabled == r.mips && imp.wrapMode == r.wrap
-                   && imp.textureCompression == r.comp && imp.maxTextureSize == r.max && imp.alphaIsTransparency == r.alpha;
+                   && imp.textureCompression == r.comp && imp.maxTextureSize == r.max && imp.alphaIsTransparency == r.alpha
+                   && imp.npotScale == TextureImporterNPOTScale.None;
         }
 
         public static void Apply(TextureImporter imp, Rule r)
@@ -66,6 +67,7 @@ namespace Moulika.EditorTools
             imp.textureCompression = r.comp;
             imp.maxTextureSize = r.max;
             imp.alphaIsTransparency = r.alpha;
+            imp.npotScale = TextureImporterNPOTScale.None;   // keep odd-sized images (the hand icon) their real shape
         }
 
         /// <summary>Re-imports a texture only if its settings are not the right ones yet.</summary>

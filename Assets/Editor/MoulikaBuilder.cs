@@ -202,7 +202,8 @@ namespace Moulika.EditorTools
             var anim = model.AddComponent<Animation>();
             anim.playAutomatically = false;
             anim.cullingType = AnimationCullingType.AlwaysAnimate;
-            foreach (AnimationClip c in clips) anim.AddClip(c, c.name);
+            // AddClip only changes the live state in the editor; SetAnimationClips is what gets saved in the prefab
+            AnimationUtility.SetAnimationClips(anim, clips.ToArray());
             if (clips.Count > 0) anim.clip = clips[0];
 
             var rig = root.AddComponent<MoulikaRig>();

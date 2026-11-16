@@ -22,6 +22,8 @@ namespace Moulika
             Time.timeScale = 0f;
             // the emulator draws in software: make sure the new view has really been drawn before the screenshot
             for (int i = 0; i < 3; i++) yield return null;
+            ScreenCapture.CaptureScreenshot("shot_" + name + ".png");   // exact picture, pulled by the test script
+            yield return null;
             Log("SNAP " + name);
             yield return new WaitForSecondsRealtime(3.2f);
             Time.timeScale = ts;
@@ -53,11 +55,21 @@ namespace Moulika
             yield return new WaitForSecondsRealtime(1f);
             yield return Snap("03-modes");
 
+            // the real start: PLAY -> NORMAL, the intro cutscene with its captions, SKIP, day 1
             float t0 = Time.realtimeSinceStartup;
-            bool ok = game.TestBuildWorld(1);
-            Log("world built: " + ok + " in " + (Time.realtimeSinceStartup - t0).ToString("0.0") + " s");
-            if (!ok) { Log("DONE"); yield break; }
-            game.TestBeginDay();
+            game.StartGame(1);
+            float w = 0f;
+            while (game.state != Game.S.Cut && w < 30f) { w += Time.unscaledDeltaTime; yield return null; }
+            Log("world built and intro started: " + (game.state == Game.S.Cut) + " after " + (Time.realtimeSinceStartup - t0).ToString("0.0") + " s");
+            if (game.level == null) { Log("DONE"); yield break; }
+            yield return new WaitForSecondsRealtime(2.5f);
+            yield return Snap("04-intro");
+            game.OnSkip();
+            w = 0f;
+            while (game.state != Game.S.Play && w < 40f) { w += Time.unscaledDeltaTime; yield return null; }
+            Log("day 1 started: " + (game.state == Game.S.Play));
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Snap("05-day1");
             game.moulika.Freeze(true);
             game.moulika.transform.position = G(0f, 0f, -8f);
             Level lv = game.level;
@@ -66,27 +78,27 @@ namespace Moulika
                 if (lv.FindPath(G(0f, 0f, -8f), Json.GV(p)).Count == 0) bad++;
             Log("items " + lv.items.Count + ", doors " + lv.doors.Count + ", hides " + lv.hides.Count + ", planks " + lv.planks.Count
                 + ", lamps " + lv.lamps.Count + ", patrol points unreachable " + bad + ", moves " + (game.moulika.anim != null ? game.moulika.anim.GetClipCount() : 0));
-            yield return new WaitForSecondsRealtime(1.5f);
+            yield return new WaitForSecondsRealtime(1f);
 
             object[][] views =
             {
-                new object[] { "04-spawn", G(-10.5f, 0f, 2.6f), G(-14f, 1.3f, 2.6f) },
-                new object[] { "05-class-back", G(-13.2f, 0f, 0.6f), G(-8f, 1.0f, 4.5f) },
-                new object[] { "06-main-door", G(0f, 0f, 1.6f), G(0f, 1.3f, 6f) },
-                new object[] { "07-veranda", G(-7.8f, 0f, -2.2f), G(8f, 1.3f, -2.2f) },
-                new object[] { "08-courtyard", G(6.2f, 0f, -13.6f), G(-3f, 1.6f, -7f) },
-                new object[] { "09-principal", G(-3.1f, 0f, 0.4f), G(-5.4f, 0.9f, 4.6f) },
-                new object[] { "10-store", G(9.7f, 0f, -9.7f), G(13.2f, 0.5f, -9.3f) },
-                new object[] { "11-hall", G(2f, 0f, -16f), G(-6f, 1.4f, -21f) },
-                new object[] { "12-library", G(-9.6f, 0f, -11.5f), G(-14f, 1.3f, -11.5f) },
-                new object[] { "13-kitchen", G(6.2f, 0f, -16f), G(12.5f, 1.0f, -21f) },
-                new object[] { "14-staff", G(3.1f, 0f, 0.4f), G(5.5f, 0.9f, 4f) },
+                new object[] { "06-class-back", G(-13.2f, 0f, 0.6f), G(-8f, 1.0f, 4.5f) },
+                new object[] { "07-main-door", G(0f, 0f, 1.6f), G(0f, 1.3f, 6f) },
+                new object[] { "08-veranda", G(-7.8f, 0f, -2.2f), G(8f, 1.3f, -2.2f) },
+                new object[] { "09-courtyard", G(6.2f, 0f, -13.6f), G(-3f, 1.6f, -7f) },
+                new object[] { "10-principal", G(-3.1f, 0f, 0.4f), G(-5.4f, 0.9f, 4.6f) },
+                new object[] { "11-store", G(9.7f, 0f, -9.7f), G(13.2f, 0.5f, -9.3f) },
+                new object[] { "12-hall", G(2f, 0f, -16f), G(-6f, 1.4f, -21f) },
+                new object[] { "13-library", G(-9.6f, 0f, -11.5f), G(-14f, 1.3f, -11.5f) },
+                new object[] { "14-kitchen", G(6.2f, 0f, -16f), G(12.5f, 1.0f, -21f) },
+                new object[] { "15-staff", G(3.1f, 0f, 0.4f), G(5.5f, 0.9f, 4f) },
+                new object[] { "16-outside", G(-2.5f, 0f, 15.5f), G(0f, 2.0f, 6f) },
             };
             foreach (object[] v in views)
             {
                 View((Vector3)v[1], (Vector3)v[2]);
                 yield return new WaitForSecondsRealtime(0.6f);
-                if ((string)v[0] == "07-veranda")
+                if ((string)v[0] == "08-veranda")
                 {
                     int frames = 0;
                     float a = Time.realtimeSinceStartup;
@@ -103,11 +115,11 @@ namespace Moulika
             m.Yaw = -90f;
             m.Play("walk", 0f);
             yield return new WaitForSecondsRealtime(0.8f);
-            yield return Snap("15-moulika");
+            yield return Snap("17-moulika");
             m.transform.position = G(-1.3f, 0f, -2.2f);
             m.Play("attack", 0f);
             yield return new WaitForSecondsRealtime(0.45f);
-            yield return Snap("16-moulika-close");
+            yield return Snap("18-moulika-close");
             m.transform.position = G(0f, 0f, -8f);
             m.Play("idle", 0f);
 
@@ -120,7 +132,7 @@ namespace Moulika
             game.player.Apply();
             yield return new WaitForSecondsRealtime(0.8f);
             Log("looking at: '" + game.hud.labelText + "', can interact " + game.hud.canInteract);
-            yield return Snap("17-item-prompt");
+            yield return Snap("19-item-prompt");
             game.Interact();
             Log("holding: " + game.held);
             game.player.Teleport(G(0f, 0.05f, 3.9f));
@@ -128,7 +140,7 @@ namespace Moulika
             game.player.pitch = -6f;
             game.player.Apply();
             yield return new WaitForSecondsRealtime(0.8f);
-            yield return Snap("18-planks-hammer");
+            yield return Snap("20-planks-hammer");
 
             // the joystick, pushed forward the way a thumb would
             Vector3 p0 = game.player.transform.position;
@@ -143,28 +155,30 @@ namespace Moulika
             // a chase in the veranda: she sees you and runs at you
             game.Drop(true);
             View(G(-6f, 0f, -2.2f), G(3f, 1.6f, -2.2f));
-            m.transform.position = G(3f, 0f, -2.2f);
+            m.transform.position = G(-2f, 0f, -2.2f);
             m.Yaw = -90f;
             m.Freeze(false);
-            float w = 0f;
+            w = 0f;
             while (m.state != Enemy.State.Chase && w < 4f) { w += Time.deltaTime; yield return null; }
             Log("Moulika state after seeing the player: " + m.state);
             yield return new WaitForSeconds(0.7f);
-            yield return Snap("19-chase");
+            yield return Snap("21-chase");
             w = 0f;
-            while (game.state != Game.S.Cut && w < 8f) { w += Time.deltaTime; yield return null; }
+            while (game.state != Game.S.Cut && w < 20f) { w += Time.deltaTime; yield return null; }
             Log("caught: " + (game.state == Game.S.Cut));
             yield return new WaitForSeconds(0.65f);
-            yield return Snap("20-caught");
+            yield return Snap("22-caught");
             w = 0f;
             while (game.state != Game.S.Play && w < 12f) { w += Time.deltaTime; yield return null; }
             Log("after being caught: day " + game.day + ", state " + game.state);
             yield return new WaitForSecondsRealtime(0.5f);
-            yield return Snap("21-day2");
+            yield return Snap("23-day2");
             game.Pause();
             yield return new WaitForSecondsRealtime(0.8f);
             Log("paused: " + (game.state == Game.S.Pause));
-            Log("SNAP 22-pause");
+            ScreenCapture.CaptureScreenshot("shot_24-pause.png");
+            yield return null;
+            Log("SNAP 24-pause");
             yield return new WaitForSecondsRealtime(3.2f);
             game.Resume();
             Log("DONE");

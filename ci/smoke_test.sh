@@ -37,6 +37,13 @@ for _ in $(seq 1 600); do
 done
 sleep 2
 
+# the game saves its own exact screenshots (shot_<name>.png): they replace the screen grabs, which can lag behind
+mkdir -p "$OUT/game"
+adb pull "/sdcard/Android/data/$PKG/files/" "$OUT/game/" >/dev/null 2>&1 || true
+n=0
+for f in $(find "$OUT/game" -name 'shot_*.png'); do mv -f "$f" "$OUT/$(basename "$f" | sed 's/^shot_//')"; n=$((n+1)); done
+echo "game screenshots: $n"
+rm -rf "$OUT/game"
 adb logcat -d > "$OUT/logcat-full.log" 2>/dev/null || true
 grep -E "Unity|MOULIKA|AndroidRuntime|DEBUG|libc|$PKG" "$OUT/logcat-full.log" | tail -n 4000 > "$OUT/logcat-unity.txt" || true
 grep "MOULIKA-TEST" "$OUT/logcat-full.log" > "$OUT/test-result.txt" || true
