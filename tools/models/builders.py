@@ -4,6 +4,7 @@ fills ctx.m in the builder frame: x across (-w/2..w/2), y up (0..h), z depth (-d
 are not furniture-shaped set ctx.raw and build straight in the object's canonical bounds (fr.cmin..fr.cmax).
 """
 import math
+import random
 import re
 
 import numpy as np
@@ -79,10 +80,113 @@ def floor_plane(ctx):
     surface(ctx)
 
 
+def plane_boxes(ctx, mat=None):
+    """Flat shapes that are not plain rectangles (a wall with a window hole, a gable triangle, a frame): boxes over
+    the filled area of the original outline, with the original thickness - holes stay holes."""
+    pr = ctx.e["plane"]
+    a, b = pr["axes"]
+    t = pr["thin_axis"]
+    fr = ctx.fr
+    lo = np.array(ctx.e["local_min"], float) * fr.scale
+    hi = np.array(ctx.e["local_max"], float) * fr.scale
+    mat = mat or surface_material(ctx)
+    ctx.raw = True
+    for r in pr["rects"]:
+        p0 = np.zeros(3)
+        p1 = np.zeros(3)
+        p0[a], p0[b] = max(r[0], lo[a]), max(r[1], lo[b])
+        p1[a], p1[b] = min(r[2], hi[a]), min(r[3], hi[b])
+        p0[t], p1[t] = lo[t], hi[t]
+        if p1[t] - p0[t] < 0.004:
+            p0[t] -= 0.002
+            p1[t] += 0.002
+        if p1[a] <= p0[a] or p1[b] <= p0[b]:
+            continue
+        ca = fr.canon_of_local_metric(p0)
+        cb = fr.canon_of_local_metric(p1)
+        ctx.m.box(np.minimum(ca, cb), np.maximum(ca, cb), mat, T(mat))
+
+
 def surface_or_columns(ctx):
+    pr = ctx.e.get("plane")
+    if pr and pr.get("fill", 1) < 0.97 and pr.get("rects"):
+        return plane_boxes(ctx)
     if (ctx.e.get("tris") or 0) > 16 and not ctx.e.get("builtin"):
         return columns(ctx)
     return surface(ctx)
+
+
+def fabric_columns(ctx):
+    """Upholstered pieces with their own shape (an L-shaped sofa, a sofa without frame): the original silhouette
+    in soft fabric."""
+    fab = "fabric_red" if re.search(r"soviet|red", " ".join(ctx.mats + [ctx.e["path"]]), re.I) else "fabric_green"
+    columns(ctx, fab, solid=True, soft=True)
+
+
+def wood_columns(ctx):
+    columns(ctx, "wood_walnut")
+
+
+def counter_columns(ctx):
+    """Worktop with its backsplash (and the hole for the sink): the original outline in white tiles."""
+    columns(ctx, "tiles_white")
+
+
+def table_lamp(ctx):
+    """Bedside lamp: round base, thin stem, fabric shade."""
+    ctx.set_front("+z")
+    w, h, d = ctx.dims
+    m = ctx.m
+    r = min(w, d) / 2
+    m.cylinder((0, 0, 0), r * 0.42, h * 0.035, "brass", segs=16, radius2=r * 0.36)
+    m.cylinder((0, h * 0.035, 0), r * 0.045, h * 0.5, "brass", segs=8)
+    m.sphere((0, h * 0.5, 0), r * 0.12, "bulb", segs=10, rings=6)
+    m.lathe([(r, h * 0.42), (r * 0.58, h)], (0, 0, 0), "lamp_shade", segs=18, close_bottom=False, close_top=False)
+    m.lathe([(r * 0.58, h), (r, h * 0.42)], (0, 0, 0), "lamp_shade", segs=18, close_bottom=False, close_top=False)
+
+
+def tv_antenna(ctx):
+    """Rabbit-ear antenna: two thin rods in a V from a small base."""
+    ctx.raw = True
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    size = mx - mn
+    c = (mn + mx) / 2
+    wide = 0 if size[0] >= size[2] else 2
+    base = c.copy()
+    base[1] = mn[1]
+    m = ctx.m
+    m.cylinder(base, 0.03, 0.02, "plastic_black", segs=10)
+    for s in (-1, 1):
+        tip = c.copy()
+        tip[1] = mx[1]
+        tip[wide] = c[wide] + s * size[wide] / 2
+        m.rod(base + np.array([0, 0.02, 0]), tip, 0.004, "chrome")
+        m.sphere(tip, 0.008, "chrome", segs=6, rings=4)
+
+
+def cutter_part(ctx):
+    """Bolt cutter (chain cutter): long handles with rubber grips, short steel jaws."""
+    ctx.raw = True
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    size = mx - mn
+    ax = int(np.argmax(size))
+    c = (mn + mx) / 2
+    r = max(0.006, min(size[(ax + 1) % 3], size[(ax + 2) % 3]) / 2)
+    if size[ax] > 0.4:
+        p = c.copy()
+        p[ax] = mn[ax]
+        ctx.m.cylinder(p, r * 0.55, size[ax] * 0.62, "steel_dark", axis="xyz"[ax], segs=8)
+        p[ax] = mn[ax] + size[ax] * 0.62
+        ctx.m.cylinder(p, r * 0.8, size[ax] * 0.38, "rubber", axis="xyz"[ax], segs=8)
+    else:
+        lo2, hi2 = mn.copy(), mx.copy()
+        ctx.m.bevel_box(lo2, hi2, "steel", min(0.006, 0.3 * size.min()))
+
+
+def lighter_body(ctx):
+    ctx.raw = True
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    ctx.m.bevel_box(mn, mx, "plastic_red", min(0.01, 0.3 * (mx - mn).min()))
 
 
 def stair_ramp(ctx):
@@ -256,7 +360,36 @@ def drawer_chest_body(ctx):
 
 
 def bedside_body(ctx):
+    """Chest with the drawers on top (separate objects) and open shelves below."""
     drawer_chest_body(ctx)
+    w, h, d = ctx.dims
+    for f in (0.3, 0.58):
+        ctx.m.box((-w / 2 + 0.02, h * f, -d / 2 + 0.02), (w / 2 - 0.02, h * f + 0.022, d / 2 - 0.01), "wood_oak")
+
+
+def nightstand(ctx):
+    """Bedside table in one piece: drawer on top, open shelf below, short legs."""
+    ctx.set_front(ctx.front_by_walls("+z"))
+    w, h, d = ctx.dims
+    m = ctx.m
+    mat = "wood_oak"
+    leg = min(0.05, w * 0.08)
+    foot = min(0.1, h * 0.12)
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            m.box((sx * (w / 2 - leg / 2) - leg / 2, 0, sz * (d / 2 - leg / 2) - leg / 2),
+                  (sx * (w / 2 - leg / 2) + leg / 2, foot, sz * (d / 2 - leg / 2) + leg / 2), mat)
+    t = 0.025
+    m.box((-w / 2, foot, -d / 2), (w / 2, foot + t, d / 2), mat)                      # bottom shelf
+    m.box((-w / 2, foot, -d / 2), (-w / 2 + t, h - 0.03, d / 2), mat)                  # sides
+    m.box((w / 2 - t, foot, -d / 2), (w / 2, h - 0.03, d / 2), mat)
+    m.box((-w / 2, foot, -d / 2), (w / 2, h - 0.03, -d / 2 + t), mat)                  # back
+    dr = h * 0.3
+    m.box((-w / 2 + t, h - 0.03 - dr, -d / 2 + t), (w / 2 - t, h - 0.03, d / 2 - 0.01), mat)
+    m.box((-w / 2 + t + 0.006, h - 0.03 - dr + 0.008, d / 2 - 0.01), (w / 2 - t - 0.006, h - 0.038, d / 2 + 0.008), "wood_cherry")
+    m.sphere((0, h - 0.03 - dr / 2, d / 2 + 0.02), 0.018, "brass", segs=8, rings=5)
+    m.box((-w / 2 + t, h * 0.42, -d / 2 + t), (w / 2 - t, h * 0.42 + t, d / 2 - 0.01), mat)  # middle shelf
+    m.bevel_box((-w / 2 - 0.01, h - 0.03, -d / 2 - 0.005), (w / 2 + 0.01, h, d / 2 + 0.015), mat, 0.006)
 
 
 def oven_front(ctx):
@@ -357,14 +490,50 @@ def plinth(ctx):
     ctx.m.box(ctx.fr.cmin, ctx.fr.cmax, "paint_black")
 
 
+def worktop_with_holes(ctx, mat, t):
+    """If the original's top has an opening (for a sink), builds the worktop from its height map with the opening
+    kept, in this builder's frame, and returns True; otherwise builds nothing and returns False."""
+    hm = np.array(ctx.e.get("hmap_c_max") or [], float)
+    if hm.ndim != 2 or hm.size == 0:
+        return False
+    n = hm.shape[0]
+    top = hm >= 0.9
+    inner = np.zeros_like(top)
+    inner[2:n - 2, 2:n - 2] = True
+    hole = inner & ~top
+    if hole.sum() < max(4, 0.02 * n * n):
+        return False
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    sz = mx - mn
+    tmp = Mesh()
+    used = np.zeros_like(top)
+    for r in range(n):
+        for c in range(n):
+            if not top[r, c] or used[r, c]:
+                continue
+            c1 = c
+            while c1 + 1 < n and top[r, c1 + 1] and not used[r, c1 + 1]:
+                c1 += 1
+            r1 = r
+            while r1 + 1 < n and top[r1 + 1, c:c1 + 1].all() and not used[r1 + 1, c:c1 + 1].any():
+                r1 += 1
+            used[r:r1 + 1, c:c1 + 1] = True
+            tmp.box((mn[0] + sz[0] * c / n, mx[1] - t, mn[2] + sz[2] * r / n),
+                    (mn[0] + sz[0] * (c1 + 1) / n, mx[1], mn[2] + sz[2] * (r1 + 1) / n), mat, T(mat))
+    ctx.m.add(tmp, ctx.canon_to_builder())
+    return True
+
+
 def kitchen_unit(ctx):
     """A full kitchen cabinet (KitchenSet): carcass with doors and a worktop."""
     ctx.set_front(ctx.front_by_walls("+z"))
     w, h, d = ctx.dims
     m = ctx.m
-    m.box((-w / 2, 0.08, -d / 2), (w / 2, h - 0.04, d / 2 - 0.02), "wood_oak")
+    holes = worktop_with_holes(ctx, "tiles_floor", 0.04)
+    m.box((-w / 2, 0.08, -d / 2), (w / 2, h - 0.04, d / 2 - 0.02), "wood_oak", skip=("+y",) if holes else ())
     m.box((-w / 2 + 0.02, 0, -d / 2), (w / 2 - 0.02, 0.08, d / 2 - 0.06), "paint_black")
-    m.bevel_box((-w / 2 - 0.01, h - 0.04, -d / 2), (w / 2 + 0.01, h, d / 2 + 0.02), "tiles_floor", 0.006)
+    if not holes:
+        m.bevel_box((-w / 2 - 0.01, h - 0.04, -d / 2), (w / 2 + 0.01, h, d / 2 + 0.02), "tiles_floor", 0.006)
     n = max(1, int(round(w / 0.5)))
     for i in range(n):
         x0 = -w / 2 + w * i / n + 0.004
@@ -631,7 +800,7 @@ def vase(ctx):
 
 
 def tv_body(ctx):
-    ctx.set_front(ctx.front_by_walls("+z"))
+    ctx.set_front(ctx.front_thin_axis("+z"))
     w, h, d = ctx.dims
     m = ctx.m
     m.bevel_box((-w / 2, 0, -d / 2), (w / 2, h, d / 2), "wood_walnut", 0.02)
@@ -934,12 +1103,87 @@ def toilet(ctx):
     m.box((w * 0.2, h - 0.08, -d / 2 + d * 0.28), (w * 0.3, h - 0.06, -d / 2 + d * 0.28 + 0.03), "chrome")
 
 
+def kitchen_sink_small(ctx):
+    sink_auto(ctx, "steel", "steel")
+
+
 def wash_basin(ctx):
-    ctx.set_front(ctx.front_by_walls("+z"))
-    w, h, d = ctx.dims
+    sink_auto(ctx, "ceramic", "ceramic")
+
+
+def sink_auto(ctx, rim_mat="steel", basin_mat="steel"):
+    """Sink read from the original's height map: the rim at its level, a recessed basin where the original dips,
+    and a tap where it rises above the rim."""
+    hm = np.array(ctx.e.get("hmap_c_max") or [], float)
+    if hm.ndim != 2 or hm.size == 0 or (hm >= 0).sum() < 6:
+        return surface(ctx)
+    ctx.raw = True
     m = ctx.m
-    m.bevel_box((-w / 2, h * 0.3, -d / 2), (w / 2, h, d / 2), "ceramic", 0.03)
-    m.box((-w * 0.35, h - 0.005, -d * 0.3), (w * 0.35, h + 0.001, d * 0.35), "steel_dark")
+    n = hm.shape[0]
+    occ = hm >= 0
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    sz = np.maximum(mx - mn, 1e-6)
+    rows = np.where(occ.any(axis=1))[0]
+    cols = np.where(occ.any(axis=0))[0]
+    r0, r1, c0, c1 = rows.min(), rows.max(), cols.min(), cols.max()
+    ring = np.zeros_like(occ)
+    ring[r0, :] = ring[r1, :] = True
+    ring[:, c0] = ring[:, c1] = True
+    ring &= occ
+    vals = hm[ring] if ring.any() else hm[occ]
+    rim = float(np.median(vals))
+    inner = occ & ~ring
+    basin = inner & (hm < rim - 0.08)
+    tap = occ & (hm > rim + 0.12)
+
+    def X(c):
+        return mn[0] + sz[0] * c / n
+
+    def Z(r):
+        return mn[2] + sz[2] * r / n
+
+    def Y(f):
+        return mn[1] + sz[1] * f
+    yr = Y(rim)
+    t = min(0.03, sz[1] * 0.2)
+    ox0, ox1, oz0, oz1 = X(c0), X(c1 + 1), Z(r0), Z(r1 + 1)
+    if basin.sum() >= 2:
+        br = np.where(basin.any(axis=1))[0]
+        bc = np.where(basin.any(axis=0))[0]
+        bx0, bx1, bz0, bz1 = X(bc.min()), X(bc.max() + 1), Z(br.min()), Z(br.max() + 1)
+        yb = Y(max(0.0, float(hm[basin].min())))
+        m.box((ox0, yr - t, oz0), (ox1, yr, bz0), rim_mat)
+        m.box((ox0, yr - t, bz1), (ox1, yr, oz1), rim_mat)
+        m.box((ox0, yr - t, bz0), (bx0, yr, bz1), rim_mat)
+        m.box((bx1, yr - t, bz0), (ox1, yr, bz1), rim_mat)
+        w = 0.01
+        m.box((bx0, yb, bz0), (bx1, yb + w, bz1), basin_mat)
+        m.box((bx0, yb, bz0), (bx0 + w, yr, bz1), basin_mat)
+        m.box((bx1 - w, yb, bz0), (bx1, yr, bz1), basin_mat)
+        m.box((bx0, yb, bz0), (bx1, yr, bz0 + w), basin_mat)
+        m.box((bx0, yb, bz1 - w), (bx1, yr, bz1), basin_mat)
+        m.cylinder(((bx0 + bx1) / 2, yb + w, (bz0 + bz1) / 2), min(0.03, (bx1 - bx0) * 0.12), 0.003, "steel_dark", segs=10)
+        bcen = np.array([(bx0 + bx1) / 2, yr, (bz0 + bz1) / 2])
+    else:
+        m.bevel_box((ox0, yr - t, oz0), (ox1, yr, oz1), rim_mat, 0.01)
+        m.box(((ox0 * 3 + ox1) / 4, yr, (oz0 * 3 + oz1) / 4), ((ox0 + ox1 * 3) / 4, yr + 0.002, (oz0 + oz1 * 3) / 4), "steel_dark")
+        bcen = np.array([(ox0 + ox1) / 2, yr, (oz0 + oz1) / 2])
+    if tap.sum() >= 1:
+        tr = np.where(tap.any(axis=1))[0]
+        tc = np.where(tap.any(axis=0))[0]
+        tx, tz = (X(tc.min()) + X(tc.max() + 1)) / 2, (Z(tr.min()) + Z(tr.max() + 1)) / 2
+        ytop = Y(float(hm[tap].max()))
+        r = 0.016
+        m.cylinder((tx, yr, tz), r * 1.8, 0.02, "chrome", segs=10)
+        m.cylinder((tx, yr, tz), r, ytop - yr - 0.02, "chrome", segs=10)
+        head = np.array([tx, ytop - 0.02, tz])
+        to = bcen - head
+        to[1] = 0
+        L = np.linalg.norm(to)
+        if L > 1e-6:
+            tip = head + to / L * min(L, 0.18)
+            m.rod(head, tip, r * 0.9, "chrome", sides=8)
+            m.rod(tip, tip - np.array([0, 0.05, 0]), r * 0.9, "chrome", sides=8)
 
 
 def basin_cabinet(ctx):
@@ -994,25 +1238,77 @@ def drain(ctx):
 
 # ----------------------------------------------------------------------------------------------- car
 def car_body(ctx):
-    ctx.set_front("+z")
-    w, h, d = ctx.dims
-    if w > d:
-        ctx.set_front("+x")
-        w, h, d = ctx.dims
+    """Car body from the original's side silhouette: painted lower body, glass cabin, painted roof, chrome bumpers
+    and lights - an old rounded sedan in low poly."""
+    hm = np.array(ctx.e.get("hmap_c_max") or [], float)
+    hn = np.array(ctx.e.get("hmap_c_min") or [], float)
+    ctx.raw = True
+    fr = ctx.fr
+    mn, mx = fr.cmin, fr.cmax
+    sz = mx - mn
+    long_ax = 0 if sz[0] > sz[2] else 2
+    side_ax = 2 - long_ax
+    if hm.ndim != 2 or hm.size == 0:
+        return ctx.m.bevel_box(mn, mx, "car_paint", 0.06)
+    n = hm.shape[0]
+    occ = hm >= 0
+    if long_ax == 0:
+        top = np.where(occ, hm, -1).max(axis=0)
+        bot = np.where(occ & (hn >= 0), hn, 2).min(axis=0)
+    else:
+        top = np.where(occ, hm, -1).max(axis=1)
+        bot = np.where(occ & (hn >= 0), hn, 2).min(axis=1)
+    top = np.convolve(np.pad(np.maximum(top, 0), 1, mode="edge"), np.ones(3) / 3, mode="valid")
+    bot = np.clip(np.where(bot > 1.5, 0.3, bot), 0.15, 0.35)
+    belt = 0.56
+    H = sz[1]
+    L = sz[long_ax]
+    W = sz[side_ax]
+    cs = (mn[side_ax] + mx[side_ax]) / 2
+    pts_lo_top, pts_lo_bot, cabin = [], [], []
+    for i in range(n):
+        u = mn[long_ax] + L * (i + 0.5) / n
+        if i == 0:
+            u = mn[long_ax]
+        if i == n - 1:
+            u = mx[long_ax]
+        t = max(bot[i] + 0.05, min(top[i], belt))
+        pts_lo_top.append((u, mn[1] + H * t))
+        pts_lo_bot.append((u, mn[1] + H * bot[i]))
+        if top[i] > belt + 0.06:
+            cabin.append((u, mn[1] + H * top[i]))
+    plane = "xy" if long_ax == 0 else "zy"
+    poly = pts_lo_bot + pts_lo_top[::-1]
     m = ctx.m
-    paint = "car_paint"
-    # lower body
-    m.bevel_box((-w / 2, h * 0.18, -d / 2), (w / 2, h * 0.55, d / 2), paint, 0.06)
-    # cabin
-    m.bevel_box((-w * 0.45, h * 0.55, -d * 0.2), (w * 0.45, h * 0.95, d * 0.22), paint, 0.05)
-    m.box((-w * 0.451, h * 0.6, -d * 0.17), (w * 0.451, h * 0.9, d * 0.19), "glass_dark")
-    m.box((-w * 0.42, h * 0.6, d * 0.22), (w * 0.42, h * 0.9, d * 0.225), "glass_dark")
-    m.box((-w * 0.42, h * 0.6, -d * 0.205), (w * 0.42, h * 0.9, -d * 0.2), "glass_dark")
-    for s in (-1, 1):
-        m.box((s * w * 0.32 - 0.12, h * 0.42, d / 2), (s * w * 0.32 + 0.12, h * 0.5, d / 2 + 0.01), "glass")
-        m.box((s * w * 0.32 - 0.1, h * 0.42, -d / 2 - 0.01), (s * w * 0.32 + 0.1, h * 0.48, -d / 2), "plastic_red")
-    m.box((-w / 2 - 0.01, h * 0.18, d / 2 - 0.05), (w / 2 + 0.01, h * 0.26, d / 2 + 0.04), "chrome")
-    m.box((-w / 2 - 0.01, h * 0.18, -d / 2 - 0.04), (w / 2 + 0.01, h * 0.26, -d / 2 + 0.05), "chrome")
+    m.extrude(poly, W * 0.98, "car_paint", plane=plane, offset=cs)
+    if len(cabin) >= 3:
+        u0, u1 = cabin[0][0], cabin[-1][0]
+        roof = [(u, y) for u, y in cabin]
+        glass = [(u0, mn[1] + H * belt)] + [(u, y - H * 0.06) for u, y in roof] + [(u1, mn[1] + H * belt)]
+        m.extrude(glass, W * 0.84, "glass_dark", plane=plane, offset=cs)
+        cap = [(u, y - H * 0.065) for u, y in roof] + [(u, y) for u, y in roof[::-1]]
+        m.extrude(cap, W * 0.86, "car_paint", plane=plane, offset=cs)
+        # pillars between the windows
+        for f in (0.0, 0.5, 1.0):
+            k = int(round(f * (len(roof) - 1)))
+            u, y = roof[k]
+            pw = L * 0.012
+            m.extrude([(u - pw, mn[1] + H * belt), (u + pw, mn[1] + H * belt), (u + pw, y), (u - pw, y)], W * 0.85,
+                      "car_paint", plane=plane, offset=cs)
+    # bumpers and lights at both ends
+    for end, sgn in ((mn[long_ax], 1), (mx[long_ax], -1)):
+        a = np.zeros(3)
+        b = np.zeros(3)
+        a[long_ax], b[long_ax] = (end - 0.03, end + 0.06) if sgn > 0 else (end - 0.06, end + 0.03)
+        a[side_ax], b[side_ax] = cs - W * 0.5, cs + W * 0.5
+        a[1], b[1] = mn[1] + H * 0.2, mn[1] + H * 0.28
+        m.box(a, b, "chrome")
+        for s in (-1, 1):
+            a2 = a.copy()
+            b2 = b.copy()
+            a2[side_ax], b2[side_ax] = cs + s * W * 0.32 - 0.1, cs + s * W * 0.32 + 0.1
+            a2[1], b2[1] = mn[1] + H * 0.36, mn[1] + H * 0.46
+            m.box(a2, b2, "glass" if sgn < 0 else "plastic_red")
 
 
 def car_wheels(ctx):
@@ -1631,6 +1927,101 @@ def balustrade(ctx):
                     p, "plaster_white", segs=8)
 
 
+def slabs(ctx, mat):
+    """Stacked horizontal plates read from the original (floors of a house, landings, steps): each top face gets a
+    slab down to its matching bottom face, or to the next level below (steps), at most 0.25 m thick."""
+    layers = ctx.e.get("layers") or []
+    if not layers:
+        return False
+    ctx.raw = True
+    mn = ctx.fr.cmin
+    tops = [L for L in layers if L["up"] > 0]
+    bots = [L for L in layers if L["up"] < 0]
+
+    def bbox(L):
+        r = np.array(L["rects"], float)
+        return r[:, 0].min(), r[:, 1].min(), r[:, 2].max(), r[:, 3].max()
+
+    def overlap(a, b):
+        return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+    used_b = set()
+    for L in tops:
+        bb = bbox(L)
+        below = [M for M in layers if M["y"] < L["y"] - 0.005 and overlap(bb, bbox(M))]
+        pair = [M for M in below if M["up"] < 0 and L["y"] - M["y"] <= 0.6]
+        if pair:
+            M = max(pair, key=lambda q: q["y"])
+            y0 = M["y"]
+            used_b.add(id(M))
+        elif below:
+            y0 = max(L["y"] - 0.25, max(M["y"] for M in below))
+        else:
+            y0 = L["y"] - min(0.25, max(0.04, L["y"]))
+        y0 = min(y0, L["y"] - 0.02)
+        for r in L["rects"]:
+            ctx.m.box((mn[0] + r[0], mn[1] + y0, mn[2] + r[1]), (mn[0] + r[2], mn[1] + L["y"], mn[2] + r[3]), mat, T(mat))
+    for M in bots:
+        if id(M) in used_b:
+            continue
+        for r in M["rects"]:
+            ctx.m.box((mn[0] + r[0], mn[1] + M["y"], mn[2] + r[1]), (mn[0] + r[2], mn[1] + M["y"] + 0.06, mn[2] + r[3]), mat, T(mat))
+    return True
+
+
+def tree_bare(ctx):
+    """Leafless trees (one or several in one original mesh): tapered trunk and forked branches at each peak of
+    the original's height map."""
+    hm = np.array(ctx.e.get("hmap_c_max") or [], float)
+    if hm.ndim != 2 or hm.size == 0:
+        return tree_trunk(ctx)
+    ctx.raw = True
+    n = hm.shape[0]
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    sz = mx - mn
+    tall = hm >= 0.55 * hm.max()
+    lab = -np.ones((n, n), int)
+    peaks = []
+    for r in range(n):
+        for c in range(n):
+            if tall[r, c] and lab[r, c] < 0:
+                stack = [(r, c)]
+                lab[r, c] = len(peaks)
+                best = (hm[r, c], r, c)
+                while stack:
+                    a, b = stack.pop()
+                    if hm[a, b] > best[0]:
+                        best = (hm[a, b], a, b)
+                    for da in (-1, 0, 1):
+                        for db in (-1, 0, 1):
+                            x, y = a + da, b + db
+                            if 0 <= x < n and 0 <= y < n and tall[x, y] and lab[x, y] < 0:
+                                lab[x, y] = len(peaks)
+                                stack.append((x, y))
+                peaks.append(best)
+    rnd = random.Random(int(ctx.e["id"]) & 0xFFFFFFFF)
+    m = ctx.m
+    for hgt, r, c in peaks[:6]:
+        base = np.array([mn[0] + sz[0] * (c + 0.5) / n, mn[1], mn[2] + sz[2] * (r + 0.5) / n])
+        H = sz[1] * hgt
+        r0 = max(0.08, H * 0.035)
+        m.lathe([(r0 * 1.3, 0), (r0, H * 0.08), (r0 * 0.75, H * 0.45), (r0 * 0.35, H * 0.85), (r0 * 0.12, H)],
+                tuple(base), "bark", segs=8)
+        for k in range(7):
+            t = 0.35 + 0.08 * k
+            p0 = base + np.array([0, H * t, 0])
+            ang = rnd.uniform(0, 2 * math.pi)
+            L = H * rnd.uniform(0.22, 0.35) * (1.1 - t * 0.6)
+            d = np.array([math.cos(ang), rnd.uniform(0.7, 1.2), math.sin(ang)])
+            d /= np.linalg.norm(d)
+            p1 = p0 + d * L
+            m.rod(p0, p1, r0 * 0.35 * (1.0 - t * 0.5), "bark", sides=5)
+            for j in range(2):
+                a2 = ang + rnd.uniform(-0.9, 0.9)
+                d2 = np.array([math.cos(a2), rnd.uniform(0.6, 1.4), math.sin(a2)])
+                d2 /= np.linalg.norm(d2)
+                m.rod(p1, p1 + d2 * L * 0.5, r0 * 0.15, "bark", sides=4)
+
+
 def mansion_part(ctx):
     """Big parts of the ending scene's house: clean boxes in plaster / roof / glass."""
     j = " ".join(ctx.mats) + " " + ctx.name
@@ -1643,6 +2034,16 @@ def mansion_part(ctx):
         mat = "roof_tiles"
     elif re.search(r"Deco|Column", j):
         mat = "plaster_cream"
+    if re.search(r"bark04|rsgergr", j):
+        return tree_bare(ctx)
+    if re.search(r"tree_outside", j):
+        return columns(ctx, "leaves", solid=True, soft=True)
+    if re.search(r"Floor|Base", j) and slabs(ctx, mat):
+        return
+    if re.search(r"Window", j):
+        return columns(ctx, "iron_black")
+    if (ctx.e.get("tris") or 0) > 16:
+        return columns(ctx, mat)
     raw_box(ctx, mat)
 
 
@@ -1652,41 +2053,123 @@ def generic_wood(ctx):
     ctx.m.bevel_box(mn, mx, "wood_walnut", min(0.01, 0.2 * float(np.min(mx - mn))))
 
 
-def columns(ctx):
-    """Detailed shapes without a dedicated builder: wooden blocks that follow the original's footprint and heights
-    (a grid of columns from the lowest to the highest surface in each cell), so tables keep their legs and sparse
-    parts stay sparse."""
-    ctx.raw = True
-    hmx = np.array(ctx.e.get("hmap_max") or [], float)
-    hmn = np.array(ctx.e.get("hmap_min") or [], float)
-    mat = surface_material(ctx, "wood_walnut")
-    if hmx.ndim != 2 or hmx.size == 0:
-        return surface(ctx)
-    n = hmx.shape[0]
-    # local x / z -> canonical axes
-    fr = ctx.fr
-    lo_l = np.array(ctx.e["local_min"], float) * fr.scale
-    hi_l = np.array(ctx.e["local_max"], float) * fr.scale
+def _snap_levels(vals, tol, use_max):
+    """Groups close values (sorted runs no wider than tol) and replaces each by its group's max (or min)."""
+    out = {}
+    u = sorted(set(round(float(v), 3) for v in vals))
+    i = 0
+    while i < len(u):
+        j = i
+        while j + 1 < len(u) and u[j + 1] - u[i] <= tol:
+            j += 1
+        rep = u[j] if use_max else u[i]
+        for k in range(i, j + 1):
+            out[u[k]] = rep
+        i = j + 1
+    return out
+
+
+def _legs(ctx, occ, top, bot, n, mn, sz, mat):
+    """Several small separate groups of cells (table legs, posts): one turned leg each, full height of the group."""
+    if occ.mean() > 0.2:
+        return False
+    lab = np.full((n, n), -1, dtype=np.int64)
+    comps = []
     for r in range(n):
         for c in range(n):
-            if hmx[r, c] < 0:
+            if occ[r, c] and lab[r, c] < 0:
+                stack = [(r, c)]
+                lab[r, c] = len(comps)
+                cells = []
+                while stack:
+                    a, b = stack.pop()
+                    cells.append((a, b))
+                    for da, db in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                        x, y = a + da, b + db
+                        if 0 <= x < n and 0 <= y < n and occ[x, y] and lab[x, y] < 0:
+                            lab[x, y] = len(comps)
+                            stack.append((x, y))
+                comps.append(cells)
+    if len(comps) < 2 or len(comps) > 12:
+        return False
+    sizes = [len(cs) for cs in comps]
+    if max(sizes) > 4 * max(1, min(sizes)) or max(sizes) > n * n * 0.06:
+        return False
+    m = ctx.m
+    for cs in comps:
+        rs = [a for a, _ in cs]
+        cc = [b for _, b in cs]
+        x0, x1 = mn[0] + sz[0] * min(cc) / n, mn[0] + sz[0] * (max(cc) + 1) / n
+        z0, z1 = mn[2] + sz[2] * min(rs) / n, mn[2] + sz[2] * (max(rs) + 1) / n
+        y0 = mn[1] + sz[1] * min(bot[a, b] for a, b in cs)
+        y1 = mn[1] + sz[1] * max(top[a, b] for a, b in cs)
+        rad = 0.5 * min(x1 - x0, z1 - z0)
+        cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+        hgt = y1 - y0
+        if hgt > 4 * rad:
+            prof = [(rad * 0.8, 0), (rad * 0.8, hgt * 0.06), (rad * 0.55, hgt * 0.1), (rad * 0.75, hgt * 0.35),
+                    (rad * 0.5, hgt * 0.55), (rad * 0.62, hgt * 0.8), (rad * 0.9, hgt * 0.86), (rad * 0.9, hgt)]
+            m.lathe(prof, (cx, y0, cz), mat, segs=10)
+        else:
+            m.box((x0, y0, z0), (x1, y1, z1), mat, T(mat))
+    return True
+
+
+def columns(ctx, mat=None, solid=False, soft=False):
+    """Detailed shapes without a dedicated builder: blocks that follow the original's footprint and heights in the
+    upright frame. Heights are snapped to a few levels and equal cells merged into rectangles, so a desk is a top on
+    legs, stairs are steps and a sofa is a seat and a back - clean low-poly blocks, no noise."""
+    hmx = np.array(ctx.e.get("hmap_c_max") or [], float)
+    hmn = np.array(ctx.e.get("hmap_c_min") or [], float)
+    if hmx.ndim != 2 or hmx.size == 0 or (hmx >= 0).sum() == 0:
+        return surface(ctx)
+    ctx.raw = True
+    mat = mat or surface_material(ctx, "wood_walnut")
+    n = hmx.shape[0]
+    occ = hmx >= 0
+    top = np.where(occ, hmx, 0.0)
+    bot = np.where(occ & (hmn >= 0), hmn, 0.0)
+    if solid:
+        bot[:] = 0.0
+    bot[bot < 0.12] = 0.0
+    tmap = _snap_levels(top[occ], 0.07, True)
+    bmap = _snap_levels(bot[occ], 0.07, False)
+    key = np.full((n, n), -1, dtype=np.int64)
+    levels = {}
+    for r in range(n):
+        for c in range(n):
+            if occ[r, c]:
+                t = tmap[round(float(top[r, c]), 3)]
+                b = bmap[round(float(bot[r, c]), 3)]
+                if t - b < 0.02:
+                    b = max(0.0, t - 0.02)
+                k = levels.setdefault((t, b), len(levels))
+                key[r, c] = k
+    inv = {v: k for k, v in levels.items()}
+    mn, mx = ctx.fr.cmin, ctx.fr.cmax
+    sz = np.maximum(mx - mn, 1e-6)
+    if not soft and _legs(ctx, occ, top, bot, n, mn, sz, mat):
+        return
+    used = np.zeros((n, n), bool)
+    for r in range(n):
+        for c in range(n):
+            if key[r, c] < 0 or used[r, c]:
                 continue
-            h0 = max(0.0, hmn[r, c]) if hmn[r, c] >= 0 else 0.0
-            h1 = hmx[r, c]
-            a = lo_l.copy()
-            b = hi_l.copy()
-            sz = hi_l - lo_l
-            a[0] = lo_l[0] + sz[0] * c / n
-            b[0] = lo_l[0] + sz[0] * (c + 1) / n
-            a[2] = lo_l[2] + sz[2] * r / n
-            b[2] = lo_l[2] + sz[2] * (r + 1) / n
-            a[1] = lo_l[1] + sz[1] * h0
-            b[1] = lo_l[1] + sz[1] * h1
-            if b[1] - a[1] < 0.02:
-                a[1] = b[1] - 0.02
-            ca = fr.canon_of_local_metric(a)
-            cb = fr.canon_of_local_metric(b)
-            ctx.m.box(np.minimum(ca, cb), np.maximum(ca, cb), mat, T(mat))
+            k = key[r, c]
+            c1 = c
+            while c1 + 1 < n and key[r, c1 + 1] == k and not used[r, c1 + 1]:
+                c1 += 1
+            r1 = r
+            while r1 + 1 < n and (key[r1 + 1, c:c1 + 1] == k).all() and not used[r1 + 1, c:c1 + 1].any():
+                r1 += 1
+            used[r:r1 + 1, c:c1 + 1] = True
+            t, b = inv[k]
+            a = np.array([mn[0] + sz[0] * c / n, mn[1] + sz[1] * b, mn[2] + sz[2] * r / n])
+            e = np.array([mn[0] + sz[0] * (c1 + 1) / n, mn[1] + sz[1] * t, mn[2] + sz[2] * (r1 + 1) / n])
+            if soft:
+                ctx.m.bevel_box(a, e, mat, min(0.04, 0.25 * float((e - a).min())))
+            else:
+                ctx.m.box(a, e, mat, T(mat))
 
 
 def chair_frame(ctx):
@@ -1748,24 +2231,26 @@ RULES = [
     (r"^Syphon$", None, None, "sink_basin"),
     (r"^Tap$", None, None, "faucet"),
     (r"^Air_Vent$", None, None, "range_hood"),
+    (r"^Table$", r"Table_tex", None, "counter_columns"),
     (r"^Table$", None, r"^Kitchen", "countertop"),
     (r"^Basement$", None, None, "plinth"),
     (r"^KitchenSet0\d_0$", None, None, "kitchen_unit"),
     (r"^KitchenSet0\d_1$", None, None, "surface"),
-    (r"^KitchenSet0\d_2$", r"F2244", None, "armchair"),
+    (r"^KitchenSet0\d_2$", r"F2244", None, "kitchen_sink_small"),
     (r"^KitchenSet0\d_2$", None, None, "knob"),
     # bedrooms and living room
     (r"^bed$|^playerbed$", None, None, "bed"),
     (r"^Sofa_SA$", None, None, "armchair"),
-    (r"^Sofa_(fa|wo)_low", None, None, "sofa"),
+    (r"^Sofa_fa_low", None, None, "fabric_columns"),
+    (r"^Sofa_wo_low", None, None, "wood_columns"),
     (r"^Box00[5-9]$|^Box01[0-3]$", None, r"Sofa", "cushion"),
-    (r"^Box004$", None, r"Sofa", "sofa_part"),
+    (r"^Box004$", None, r"Sofa", "fabric_columns"),
     (r"^playerrromtable(death)?$", None, None, "desk"),
     (r"^BasicTable_Low$", None, None, "table"),
     (r"^table_hightop$", None, None, "round_stool"),
     (r"^defaultMaterial$", r"small_table|1001", None, "small_table_part"),
-    (r"^defaultMaterial$", r"laamp_cover", None, "lamp_shade"),
-    (r"^defaultMaterial$", r"lamp_table", None, "lamp_table"),
+    (r"^defaultMaterial$", r"laamp_cover", None, "table_lamp"),
+    (r"^defaultMaterial$", r"lamp_table", None, "nightstand"),
     (r"^defaultMaterial$", r"watch", None, "clock"),
     (r"^Object_2$", r"^lamp", None, "floor_lamp"),
     (r"^lampoutsideshade$", None, None, "outdoor_lamp"),
@@ -1777,11 +2262,13 @@ RULES = [
     (r"^default$", r"slen_books", None, "secret_book"),
     (r"^Vase", None, None, "vase"),
     (r"^tv_low", None, None, "tv_body"),
-    (r"^(tv-b|h1|h2|h3|sign|top)_low_tv", None, None, "tv_part"),
+    (r"^sign_low_tv", None, None, "tv_antenna"),
+    (r"^(tv-b|h1|h2|h3|top)_low_tv", None, None, "tv_part"),
     (r"^tvcabinet5(death)?$", None, None, "tv_cabinet"),
     (r"^default$", r"tabletext12", r"Cabinet_empty", "wardrobe"),
     (r"^default$", r"TexturesCom_Wood", None, "table"),
     (r"^default$", r"stair_wood", None, "wardrobe"),
+    (r"^default$", r"bathroom_floor1", r"toilet", "toilet"),
     (r"^default$", r"bathroom_floor1", None, "basin_cabinet"),
     (r"^Storage_cabinet$", None, None, "storage_cabinet"),
     (r"^metalshelf$", None, None, "metal_shelf"),
@@ -1811,7 +2298,7 @@ RULES = [
     (r"^Dynamite$", None, None, "dynamite"),
     # bathroom
     (r"^SM_Bathtub", None, None, "bathtub"),
-    (r"^PolyMesh_1_1$", None, None, "toilet"),
+    (r"^PolyMesh_1_1$", None, None, "basin_cabinet"),
     (r"^PolyMesh_2$", None, None, "wash_basin"),
     (r"^PolyMesh_1_7$", None, None, "bath_mat"),
     (r"^PolyMesh", None, None, "bath_small"),
@@ -1847,7 +2334,9 @@ RULES = [
     (r"^\d$", None, r"PadlockCode", "digit"),
     (r"^Cylinder$", r"Duct", None, "duct_tape"),
     (r"^Cube_Cube$", None, None, "tape_tab"),
-    (r"^Cube$", r"buttons|blue_color|met2|main2|large_pliers|lighermetal|lighter1", None, "small_metal"),
+    (r"^Cube$", r"large_pliers", None, "cutter_part"),
+    (r"^Cube$", r"lighter1", None, "lighter_body"),
+    (r"^Cube$", r"buttons|blue_color|met2|main2|lighermetal", None, "small_metal"),
     (r"^Cylinder$|^Vert$", r"lighermetal", None, "small_round"),
     (r"^Cylinder$", None, None, "small_round"),
     # ending scene (outdoors)

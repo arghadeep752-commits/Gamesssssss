@@ -161,28 +161,41 @@ class Ctx:
         back = min(known, key=known.get)
         return {"+x": "-x", "-x": "+x", "+z": "-z", "-z": "+z"}[back]
 
-    def front_by_height(self, default=None):
-        """The tall side (backrest, headboard) is the back."""
-        hm = np.array(self.e.get("hmap_max") or [[-1]], float)
+    def front_thin_axis(self, default="+z"):
+        """Screens, cabinets, sinks: the front faces along the thinner horizontal side, away from the nearer wall."""
+        w = self.fr.cmax[0] - self.fr.cmin[0]
+        d = self.fr.cmax[2] - self.fr.cmin[2]
+        if abs(w - d) < 0.12 * max(w, d):
+            return self.front_by_walls(default)
+        ax = "x" if w < d else "z"
+        wd = self.scene.wall_distances(self.e, self.fr)
+        pos, neg = wd.get("+" + ax), wd.get("-" + ax)
+        if pos is None and neg is None:
+            f = self.front_by_walls(default)
+            return f if f[1] == ax else "+" + ax
+        if pos is None:
+            return "+" + ax
+        if neg is None:
+            return "-" + ax
+        return "+" + ax if pos > neg else "-" + ax
+
+    def front_by_height(self, default=None, min_diff=0.12):
+        """The tall side (backrest, headboard) is the back. Uses the upright height map (cols: x, rows: z): the axis
+        whose two halves differ most decides, the higher half is the back."""
+        hm = np.array(self.e.get("hmap_c_max") or [[-1]], float)
         if hm.ndim != 2 or hm.shape[0] < 4:
             return default
-        half = hm.shape[0] // 2 + 1
-        # rows: local z, cols: local x  ->  convert to canonical via the frame mapping
-        vals = {}
-        loc_axes = {0: hm.max(axis=0), 2: hm.max(axis=1)}  # per local x column / per local z row
-        for key, k, s in (("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1)):
-            ax, sign = self.fr.c2l[k]
-            if ax == 1:
-                return default
-            prof = loc_axes[ax]
-            if sign * s < 0:
-                prof = prof[::-1]
-            vals[key] = float(np.mean(prof[half:]))   # the half towards +direction
-        hi = max(vals, key=vals.get)
-        lo = min(vals, key=vals.get)
-        if vals[hi] - vals[lo] < 0.12:
+        n = hm.shape[0]
+        q = max(1, n // 3)
+        cols = hm.max(axis=0)
+        rows = hm.max(axis=1)
+        dx = float(np.mean(cols[n - q:]) - np.mean(cols[:q]))
+        dz = float(np.mean(rows[n - q:]) - np.mean(rows[:q]))
+        if max(abs(dx), abs(dz)) < min_diff:
             return default
-        return {"+x": "-x", "-x": "+x", "+z": "-z", "-z": "+z"}[hi]
+        if abs(dx) >= abs(dz):
+            return "-x" if dx > 0 else "+x"
+        return "-z" if dz > 0 else "+z"
 
     def front_away_from(self, point_world, axes=("x", "z")):
         mn, mx = np.array(self.e["world_min"]), np.array(self.e["world_max"])
@@ -218,6 +231,13 @@ class Ctx:
         inv = rot_y(-ang)
         ob = inv[:3, :3] @ o
         return "left" if ob[0] < 0 else "right"
+
+    def canon_to_builder(self):
+        """Matrix taking canonical metric coordinates into this builder's frame (after set_front)."""
+        ang = {"+z": 0, "-z": 180, "+x": 90, "-x": -90}[self.front]
+        c = (self.fr.cmin + self.fr.cmax) / 2
+        T = translate(c[0], self.fr.cmin[1], c[2]) @ rot_y(ang)
+        return np.linalg.inv(T)
 
     def place(self):
         """Builder-frame mesh -> canonical metric mesh inside the object's bounds."""

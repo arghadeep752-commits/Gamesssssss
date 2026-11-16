@@ -92,6 +92,31 @@ class Mesh:
             m = (mats or {}).get(k, mat)
             self.quad(*pts, n, m, tile)
 
+    def rod(self, p0, p1, r, mat, sides=6):
+        """Thin prism between two points in any direction (antennas, wires, struts)."""
+        p0 = np.asarray(p0, float)
+        p1 = np.asarray(p1, float)
+        ax = p1 - p0
+        L = np.linalg.norm(ax)
+        if L < 1e-9:
+            return
+        ax = ax / L
+        ref = np.array([0.0, 1.0, 0.0]) if abs(ax[1]) < 0.9 else np.array([1.0, 0.0, 0.0])
+        u = np.cross(ax, ref)
+        u /= np.linalg.norm(u)
+        v = np.cross(ax, u)
+        ring = [(math.cos(2 * math.pi * i / sides), math.sin(2 * math.pi * i / sides)) for i in range(sides)]
+        for i in range(sides):
+            c0, s0 = ring[i]
+            c1, s1 = ring[(i + 1) % sides]
+            n0 = u * c0 + v * s0
+            n1 = u * c1 + v * s1
+            a, b = p0 + r * n0, p0 + r * n1
+            c, d = p1 + r * n1, p1 + r * n0
+            self.quad(a, b, c, d, _norm(n0 + n1), mat)
+        self.tri_fan([p1 + r * (u * c + v * s) for c, s in ring], ax, mat)
+        self.tri_fan([p0 + r * (u * c + v * s) for c, s in ring[::-1]], -ax, mat)
+
     def bevel_box(self, mn, mx, mat, r=0.01, tile=1.0, skip_bottom=False):
         """Box with chamfered edges (a soft, finished look for furniture)."""
         mn = np.asarray(mn, float)

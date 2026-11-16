@@ -142,6 +142,103 @@ def height_map(pts, lo, hi, n=8):
     return np.round(mx, 2).tolist(), np.round(mn, 2).tolist()
 
 
+def sample_surface(sp, tris, mw, seed):
+    """Vertices plus points spread over every triangle (by area) and along every edge, dense enough for a 24 x 24
+    height map of the object, so big flat faces and thin panels are measured everywhere, not just at corners."""
+    if not len(tris):
+        return sp
+    cp = canonical_points(sp, mw)
+    ext = cp.max(axis=0) - cp.min(axis=0)
+    step = max(0.006, min(ext[0], ext[2]) / 60.0, max(ext[0], ext[2]) / 300.0)
+    A, B, C = sp[tris[:, 0]], sp[tris[:, 1]], sp[tris[:, 2]]
+    area = 0.5 * np.linalg.norm(np.cross(B - A, C - A), axis=1)
+    k = np.clip(np.ceil(area / (step * step)), 1, 4000).astype(np.int64)
+    if k.sum() > 600000:
+        k = np.maximum(1, (k * (600000.0 / k.sum())).astype(np.int64))
+    rng = np.random.default_rng(seed & 0xFFFFFFFF)
+    idx = np.repeat(np.arange(len(tris)), k)
+    u = rng.random(len(idx))[:, None]
+    v = rng.random(len(idx))[:, None]
+    flip = (u + v) > 1
+    u = np.where(flip, 1 - u, u)
+    v = np.where(flip, 1 - v, v)
+    pts = A[idx] + u * (B - A)[idx] + v * (C - A)[idx]
+    out = [sp, pts]
+    for P, Q in ((A, B), (B, C), (C, A)):
+        ln = np.linalg.norm(Q - P, axis=1)
+        ke = np.clip(np.ceil(ln / step), 1, 400).astype(np.int64)
+        if ke.sum() > 300000:
+            ke = np.maximum(1, (ke * (300000.0 / ke.sum())).astype(np.int64))
+        ie = np.repeat(np.arange(len(P)), ke)
+        start = np.repeat(np.cumsum(ke) - ke, ke)
+        t = ((np.arange(len(ie)) - start) + 0.5) / ke[ie]
+        out.append(P[ie] + t[:, None] * (Q - P)[ie])
+    return np.concatenate(out)
+
+
+def horizontal_layers(sp, tris, mw):
+    """Flat horizontal faces grouped by height (upright frame): for each level its height (m above the bottom),
+    whether it faces up or down, and its footprint as rectangles (m from the min corner). Floors, shelves, steps."""
+    cp = canonical_points(sp, mw)
+    lo = cp.min(axis=0)
+    ext = cp.max(axis=0) - lo
+    A, B, C = cp[tris[:, 0]], cp[tris[:, 1]], cp[tris[:, 2]]
+    nrm = np.cross(B - A, C - A)
+    ln = np.linalg.norm(nrm, axis=1)
+    ok = ln > 1e-12
+    ny = np.zeros(len(tris))
+    ny[ok] = nrm[ok, 1] / ln[ok]
+    # the mapping may mirror (det < 0): then the winding, and so the face direction, flips
+    sc = np.linalg.norm(mw[:3, :3], axis=0)
+    if np.linalg.det(mw[:3, :3] / np.maximum(sc, 1e-12)) < 0:
+        ny = -ny
+    hor = np.abs(ny) > 0.92
+    if hor.sum() < 2:
+        return None
+    area = 0.5 * ln
+    y = (A[:, 1] + B[:, 1] + C[:, 1]) / 3 - lo[1]
+    foot = max(1e-6, ext[0] * ext[2])
+    idx = np.where(hor)[0]
+    order = idx[np.argsort(y[idx])]
+    tol = max(0.02, ext[1] * 0.01)
+    groups = []
+    for i in order:
+        if groups and y[i] - groups[-1]["y0"] <= tol and np.sign(ny[i]) == groups[-1]["s"]:
+            groups[-1]["ids"].append(i)
+        else:
+            groups.append({"y0": y[i], "s": np.sign(ny[i]), "ids": [i]})
+    out = []
+    cell = float(np.clip(max(ext[0], ext[2]) / 64.0, 0.04, 0.5))
+    for g in groups:
+        ids = np.array(g["ids"])
+        a = float(area[ids].sum())
+        if a < max(0.04, 0.01 * foot):
+            continue
+        tri_pts = np.stack([A[ids], B[ids], C[ids]], axis=1) - lo
+        pr = plane_rects(tri_pts, (0, 2), np.zeros(3), ext, cell)
+        if not pr or not pr["rects"]:
+            continue
+        out.append({"y": round(float(np.mean(y[ids])), 4), "up": int(g["s"]), "area": round(a, 3),
+                    "rects": pr["rects"]})
+    out.sort(key=lambda L: -L["area"])
+    return out[:16] or None
+
+
+def canonical_points(pts, mw):
+    """Local metric points -> upright frame (x, y = world up, z), the same mapping as build.Frame."""
+    sc = np.linalg.norm(mw[:3, :3], axis=0)
+    sc[sc < 1e-12] = 1e-12
+    R = mw[:3, :3] / sc
+    up = int(np.argmax(np.abs(R[1, :])))
+    up_sign = 1.0 if R[1, up] >= 0 else -1.0
+    a, b = [i for i in range(3) if i != up]
+    if abs(R[0, a]) + 1e-9 < abs(R[0, b]):
+        a, b = b, a
+    sa = 1.0 if R[0, a] >= 0 else -1.0
+    sb = 1.0 if R[2, b] >= 0 else -1.0
+    return np.stack([sa * pts[:, a], up_sign * pts[:, up], sb * pts[:, b]], axis=1)
+
+
 def plane_rects(tri_pts, axes, lo, hi, cell):
     """Rasterises triangles projected on two local axes and merges the filled cells into rectangles (greedy)."""
     a, b = axes
@@ -322,26 +419,23 @@ def main():
                     else:
                         tris = tri_list(m)
                     info["tris"] = int(len(tris))
-                    samp = sp
-                    if len(tris):
-                        A, B, C = sp[tris[:, 0]], sp[tris[:, 1]], sp[tris[:, 2]]
-                        rng = np.random.default_rng(int(go) & 0xFFFFFFFF)
-                        k = 24
-                        u = rng.random((len(tris), k, 1))
-                        v = rng.random((len(tris), k, 1))
-                        flip = (u + v) > 1
-                        u = np.where(flip, 1 - u, u)
-                        v = np.where(flip, 1 - v, v)
-                        pts_s = A[:, None, :] + u * (B - A)[:, None, :] + v * (C - A)[:, None, :]
-                        samp = np.concatenate([sp, pts_s.reshape(-1, 3)])
+                    samp = sample_surface(sp, tris, mw, int(go))
                     hmx, hmn = height_map(samp, lo_m, hi_m, 12)
                     info["hmap_max"], info["hmap_min"] = hmx, hmn
+                    # the same in the upright frame build.Frame uses (x, y = world up, z), so heights are real heights
+                    cp = canonical_points(samp, mw)
+                    hcx, hcn = height_map(cp, cp.min(axis=0), cp.max(axis=0), 24 if len(tris) > 16 else 12)
+                    info["hmap_c_max"], info["hmap_c_min"] = hcx, hcn
+                    if len(tris) > 16:
+                        lv = horizontal_layers(sp, tris, mw)
+                        if lv:
+                            info["layers"] = lv
                     if DUMP is not None and len(tris) > 12:
                         DUMP[str(go)] = (sp.astype(np.float32), tris.astype(np.int32))
                     ext = hi_m - lo_m
                     thin = int(np.argmin(ext))
                     big = sorted(set(range(3)) - {thin})
-                    if len(tris) > 12 and ext[thin] < 0.25 * min(ext[big[0]], ext[big[1]]) and min(ext[big[0]], ext[big[1]]) > 0.3:
+                    if len(tris) >= 1 and ext[thin] < 0.25 * min(ext[big[0]], ext[big[1]]) and min(ext[big[0]], ext[big[1]]) > 0.3:
                         cell = float(np.clip(max(ext[big[0]], ext[big[1]]) / 160.0, 0.04, 0.2))
                         pr = plane_rects(sp[tris], big, lo_m, hi_m, cell)
                         if pr is not None:
