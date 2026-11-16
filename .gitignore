@@ -1,0 +1,37 @@
+# Unity (generated on every build)
+/Library/
+/Temp/
+/Obj/
+/obj/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Build/
+/Builds/
+
+# made by the build: converted game assets (tools/unity/convert_assets.py) and what the editor builds from them
+/Assets/Game/
+/Assets/Game.meta
+/Assets/Resources/
+/Assets/Resources.meta
+/Assets/Generated/
+/Assets/Generated.meta
+/Assets/Scenes/
+/Assets/Scenes.meta
+
+# CI
+/ci-keystore/
+/smoke/
+/godot/
+/ragini-ci/
+
+# IDE
+*.csproj
+*.sln
+*.user
+.vs/
+.idea/
+.vscode/
+
+# Python
+__pycache__/

@@ -1,0 +1,237 @@
+# Builds "Moulika - The Indian Horror Game" with Unity 6 into an Android APK in the cloud - no PC needed.
+#
+# The game is the Unity 6 version of the Godot game on the ragini branch: same school (school.glb with the night
+# lighting baked in Blender), same Moulika (Hyper3D Rodin, rigged and animated), same sounds, fonts and controls.
+# Those files come from the ragini-ci release and the ragini branch and are converted by tools/unity/convert_assets.py.
+#
+# Needs the repository secrets UNITY_EMAIL and UNITY_PASSWORD (Unity account, two-step verification off).
+# Every push to the moulika-unity branch: converts the assets, installs Unity 6 with Android support, activates a
+# free Personal license, builds the APK, publishes it as a GitHub release (moulika-unity-v<n>), then plays an
+# emulator build of it and attaches the screenshots to the release.
+
+name: Moulika - Unity 6 APK
+
+on:
+  push:
+    branches: [moulika-unity]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: moulika-unity
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 6000.0.85f1
+  APK_NAME: Moulika
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+
+      - name: The Godot game's fonts, interface images and icon
+        uses: actions/checkout@v5
+        with:
+          ref: ragini
+          path: godot
+          sparse-checkout: |
+            game/fonts
+            game/ui
+            game/icons
+
+      - name: The school, Moulika, the sounds and the photos (the files the Godot build uses)
+        run: |
+          mkdir -p ragini-ci && cd ragini-ci
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/ragini-ci"
+          for f in school_model.zip moulika_rigged.glb sounds_pack.zip assets_downloaded.zip; do
+            curl -fsSL --retry 3 -o "$f" "$base/$f"
+          done
+          mkdir -p school && unzip -oq school_model.zip -d school
+          unzip -oq sounds_pack.zip -d .
+          unzip -oq assets_downloaded.zip -d .
+          ls school | head; ls sounds | wc -l; ls assets/downloaded/tex | wc -l
+
+      - name: Convert them for Unity
+        run: |
+          python3 -m pip install --quiet --break-system-packages numpy pillow
+          python3 tools/unity/convert_assets.py --school ragini-ci/school --moulika ragini-ci/moulika_rigged.glb \
+            --tex ragini-ci/assets/downloaded/tex --sounds ragini-ci/sounds \
+            --fonts godot/game/fonts ragini-ci/assets/downloaded/fonts --ui godot/game/ui --icons godot/game/icons --out .
+          du -sh Assets/Game Assets/Resources
+
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        id: unity
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: false
+
+      - name: Match package versions to the editor
+        run: |
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > ProjectSettings/ProjectVersion.txt
+
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Restore the signing key (keeps updates installable over older builds)
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: moulika-unity-keystore-v1
+
+      - name: Create the signing key (first build only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/moulika.keystore -alias moulika \
+            -keyalg RSA -keysize 2048 -validity 10000 -storepass moulikagame -keypass moulikagame \
+            -dname "CN=MXYAN GAMES, O=MXYAN GAMES"
+
+      - name: Build the APK with Unity
+        env:
+          MOULIKA_KEYSTORE: ${{ github.workspace }}/ci-keystore/moulika.keystore
+          MOULIKA_KEYSTORE_PASS: moulikagame
+          MOULIKA_KEY_ALIAS: moulika
+        run: |
+          mkdir -p Logs Build
+          set +e
+          # UNITY_THISISABUILDMACHINE would point Unity 6's Gradle build at Unity's private Maven mirrors
+          env -u UNITY_THISISABUILDMACHINE timeout 120m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android \
+            -executeMethod Moulika.EditorTools.MoulikaBuild.BuildAndroid \
+            -buildNumber ${{ github.run_number }} \
+            -testApk "Build/${APK_NAME}-emulator.apk" \
+            -logFile "$GITHUB_WORKSPACE/Logs/build.log"
+          status=$?
+          echo "Unity exited with code $status"
+          grep -E "\[MOULIKA" Logs/build.log | tail -n 80 || true
+          if [ $status -ne 0 ]; then
+            echo "---------------- errors ----------------"
+            grep -nE "error CS[0-9]+|Shader error|BuildFailedException|CommandInvokationFailure|FAILURE:|What went wrong|Exception:|executeMethod" Logs/build.log | head -n 80 || true
+            echo "---------------- end of log ----------------"
+            tail -n 60 Logs/build.log || true
+          fi
+          grep -nE "Shader error|shader compil|Moulika/(School|Character|Glass)" Logs/build.log | head -n 20 || true
+          exit $status
+
+      - name: Upload the Unity log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build-log
+          path: Logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Check the APK
+        run: |
+          ls -la Build
+          test -f "Build/${APK_NAME}.apk"
+          unzip -l "Build/${APK_NAME}.apk" | grep -E "lib/arm64|libil2cpp|data.unity3d" | head -n 10 || true
+
+      - name: Keep the emulator APK for the test job
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: Build/${{ env.APK_NAME }}-emulator.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
+
+      - name: Publish the APK as a GitHub release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="moulika-unity-v${{ github.run_number }}"
+          APK="Moulika-Unity-${{ github.run_number }}.apk"
+          cp "Build/${APK_NAME}.apk" "$APK"
+          cp Assets/Game/CREDITS_SOUNDS.md CREDITS.md 2>/dev/null || echo "Sounds: see the ragini-ci release" > CREDITS.md
+          printf 'MOULIKA - The Indian Horror Game, Unity 6 version (build %s, Unity %s, commit %s).\n\nSame school, same Moulika ma'"'"'am, same sounds and controls as the Godot game, rebuilt in Unity 6 and drawn at your phone'"'"'s full screen resolution with 4x anti-aliasing.\n\nOpen this page on your Android phone, download **%s** and tap it to install (Android 6 or newer, 64-bit). If Android says the app is already installed, uninstall the older Moulika first.\n\nThe screenshots below come from an automatic play-through on an Android emulator (software graphics, so they look rougher than on a phone).\n' \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" "$APK" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" CREDITS.md --target "$GITHUB_SHA" --latest=false \
+            --title "MOULIKA (Unity 6) build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+  emulator-test:
+    name: Play it in an Android emulator
+    needs: build
+    if: needs.build.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download the emulator APK
+        uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: smoke
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the game in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+
+      - name: Attach screenshots and the log to the release
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(smoke/out/*.png smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          ls -la smoke/out 2>/dev/null || true
+          if [ ${#files[@]} -gt 0 ]; then
+            gh release upload "${{ needs.build.outputs.tag }}" "${files[@]}" --clobber
+          fi
