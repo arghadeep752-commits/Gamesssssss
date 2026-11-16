@@ -39,7 +39,17 @@ sleep 2
 
 # the game saves its own exact screenshots (shot_<name>.png): they replace the screen grabs, which can lag behind
 mkdir -p "$OUT/game"
-adb pull "/sdcard/Android/data/$PKG/files/" "$OUT/game/" >/dev/null 2>&1 || true
+dir="$(adb logcat -d -s Unity 2>/dev/null | grep -o 'files go to [^ ]*' | tail -n 1 | awk '{print $4}' | tr -d '\r')"
+[ -z "$dir" ] && dir="/sdcard/Android/data/$PKG/files"
+echo "game files in: $dir"
+adb shell ls -la "$dir" 2>&1 | head -n 40
+adb pull "$dir/." "$OUT/game/" 2>&1 | tail -n 3 || true
+if ! ls "$OUT"/game/shot_*.png >/dev/null 2>&1; then
+  # the app's private folder: copy out through a shell the app can read
+  for f in $(adb shell ls "$dir" 2>/dev/null | tr -d '\r' | grep '^shot_'); do
+    adb exec-out cat "$dir/$f" > "$OUT/game/$f" 2>/dev/null || true
+  done
+fi
 n=0
 for f in $(find "$OUT/game" -name 'shot_*.png'); do mv -f "$f" "$OUT/$(basename "$f" | sed 's/^shot_//')"; n=$((n+1)); done
 echo "game screenshots: $n"

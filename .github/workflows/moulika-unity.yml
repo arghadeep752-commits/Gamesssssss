@@ -96,7 +96,7 @@ jobs:
           version-file: None
           build-targets: Android
           auto-update-hub: false
-          cache-installation: false
+          cache-installation: true
 
       - name: Match package versions to the editor
         run: |

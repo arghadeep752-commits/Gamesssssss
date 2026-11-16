@@ -24,8 +24,9 @@ namespace Moulika
             for (int i = 0; i < 3; i++) yield return null;
             ScreenCapture.CaptureScreenshot("shot_" + name + ".png");   // exact picture, pulled by the test script
             yield return null;
-            Log("SNAP " + name);
-            yield return new WaitForSecondsRealtime(3.2f);
+            yield return null;
+            Log("SNAP " + name + (System.IO.File.Exists(System.IO.Path.Combine(Application.persistentDataPath, "shot_" + name + ".png")) ? " (saved)" : ""));
+            yield return new WaitForSecondsRealtime(5f);
             Time.timeScale = ts;
         }
 
@@ -45,6 +46,7 @@ namespace Moulika
             game = GetComponent<Game>();
             QualitySettings.antiAliasing = 0;      // the emulator's software GPU is slow enough without it
             yield return new WaitForSecondsRealtime(2f);
+            Log("files go to " + Application.persistentDataPath);
             Log("start " + Screen.width + "x" + Screen.height + " gpu=" + SystemInfo.graphicsDeviceName + " api=" + SystemInfo.graphicsDeviceType
                 + " msaa=" + QualitySettings.antiAliasing);
             yield return Snap("01-menu");
@@ -178,8 +180,9 @@ namespace Moulika
             Log("paused: " + (game.state == Game.S.Pause));
             ScreenCapture.CaptureScreenshot("shot_24-pause.png");
             yield return null;
+            yield return null;
             Log("SNAP 24-pause");
-            yield return new WaitForSecondsRealtime(3.2f);
+            yield return new WaitForSecondsRealtime(5f);
             game.Resume();
             Log("DONE");
         }

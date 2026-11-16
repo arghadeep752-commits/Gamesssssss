@@ -4,15 +4,6 @@ using UnityEngine;
 
 namespace Moulika
 {
-    /// <summary>Data the editor puts on the Moulika prefab: how fast her walk and run clips travel.</summary>
-    public class MoulikaRig : MonoBehaviour
-    {
-        public float walkNat = 1.25f;    // metres per second the walk clip covers at speed 1
-        public float runNat = 3.3f;
-        public Animation anim;
-        public Renderer body;
-    }
-
     /// <summary>
     /// Moulika ma'am, the school's ghost (a Hyper3D Rodin character, rigged and animated by Rodin).
     /// She patrols the school, follows noises, and chases you when she sees you. Port of game/scripts/ragini.gd.
@@ -130,6 +121,9 @@ namespace Moulika
             path = level.FindPath(transform.position, pos);
             pathI = 0;
             repathT = 0.6f;
+            // skip the cells she is already standing on, so a new path never costs her a step
+            Vector3 me = transform.position;
+            while (pathI < path.Count - 1 && new Vector2(path[pathI].x - me.x, path[pathI].z - me.z).magnitude < 0.25f) pathI++;
         }
 
         public void PickPatrol()
