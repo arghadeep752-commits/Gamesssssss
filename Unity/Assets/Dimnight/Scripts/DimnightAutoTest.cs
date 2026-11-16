@@ -93,6 +93,84 @@ public class DimnightAutoTest : MonoBehaviour
         return best;
     }
 
+    static object GetProp(Component c, string name)
+    {
+        if (c == null) return null;
+        var p = c.GetType().GetProperty(name);
+        return p != null ? p.GetValue(c) : null;
+    }
+
+    static void SetProp(Component c, string name, object value)
+    {
+        if (c == null) return;
+        var p = c.GetType().GetProperty(name);
+        if (p != null && p.CanWrite) p.SetValue(c, value);
+    }
+
+    /// <summary>Finds out why the 3D view might not show: cameras, overlays, post-processing, lighting.</summary>
+    IEnumerator Diagnose(Transform player)
+    {
+        foreach (Camera c in FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            Component data = c.GetComponent("UniversalAdditionalCameraData");
+            Say("camera " + c.name + " active=" + c.gameObject.activeInHierarchy + " enabled=" + c.enabled + " depth=" + c.depth
+                + " clear=" + c.clearFlags + " mask=0x" + c.cullingMask.ToString("X") + " near=" + c.nearClipPlane + " far=" + c.farClipPlane
+                + " pos=" + c.transform.position + " rot=" + c.transform.eulerAngles + " type=" + GetProp(data, "renderType")
+                + " post=" + GetProp(data, "renderPostProcessing") + " target=" + (c.targetTexture != null ? c.targetTexture.name : "screen"));
+        }
+        int visible = 0, total = 0;
+        foreach (Renderer r in FindObjectsByType<Renderer>(FindObjectsSortMode.None)) { total++; if (r.isVisible) visible++; }
+        Say("renderers visible " + visible + " of " + total + ", fog " + RenderSettings.fog + " " + RenderSettings.fogMode + " " + RenderSettings.fogDensity
+            + ", ambient " + RenderSettings.ambientMode + " " + RenderSettings.ambientLight + " x" + RenderSettings.ambientIntensity);
+        foreach (UnityEngine.UI.Graphic g in FindObjectsByType<UnityEngine.UI.Graphic>(FindObjectsSortMode.None))
+        {
+            Canvas cv = g.canvas;
+            if (g.color.a > 0.3f && g.rectTransform.rect.width * g.rectTransform.lossyScale.x > Screen.width * 0.8f)
+                Say("big UI graphic " + g.name + " on canvas " + (cv != null ? cv.name + " order " + cv.sortingOrder : "?") + " color " + g.color + " enabled " + g.enabled);
+        }
+
+        Camera main = Camera.main;
+        var canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        foreach (Canvas cv in canvases) cv.enabled = false;
+        yield return Snap("diag-3d-only");
+
+        Component mainData = main != null ? main.GetComponent("UniversalAdditionalCameraData") : null;
+        object post = GetProp(mainData, "renderPostProcessing");
+        SetProp(mainData, "renderPostProcessing", false);
+        yield return Snap("diag-no-post");
+        if (post is bool b) SetProp(mainData, "renderPostProcessing", b);
+
+        var others = new System.Collections.Generic.List<Camera>();
+        foreach (Camera c in FindObjectsByType<Camera>(FindObjectsSortMode.None))
+            if (c != main && c.enabled) { c.enabled = false; others.Add(c); }
+        Say("other cameras switched off: " + others.Count);
+        yield return Snap("diag-main-camera-only");
+
+        bool fog = RenderSettings.fog;
+        var ambientMode = RenderSettings.ambientMode;
+        Color ambient = RenderSettings.ambientLight;
+        RenderSettings.fog = false;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = Color.white;
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
+        if (unlit != null)
+        {
+            var m = new Material(unlit);
+            m.SetColor("_BaseColor", Color.magenta);
+            cube.GetComponent<Renderer>().sharedMaterial = m;
+        }
+        if (main != null) cube.transform.position = main.transform.position + main.transform.forward * 1.2f;
+        cube.transform.localScale = Vector3.one * 0.4f;
+        yield return Snap("diag-bright-cube");
+        Destroy(cube);
+        RenderSettings.fog = fog;
+        RenderSettings.ambientMode = ambientMode;
+        RenderSettings.ambientLight = ambient;
+        foreach (Camera c in others) c.enabled = true;
+        foreach (Canvas cv in canvases) if (cv != null) cv.enabled = true;
+    }
+
     IEnumerator Start()
     {
         PlayerPrefs.SetString(GameSave.DifficultyKey, "Normal");
@@ -108,7 +186,15 @@ public class DimnightAutoTest : MonoBehaviour
         yield return Snap("day-1");
         yield return new WaitForSecondsRealtime(4f);
         yield return Snap("waking-up");
-        yield return new WaitForSecondsRealtime(6f);
+
+        PlayerWakeUp wake = FindFirstObjectByType<PlayerWakeUp>();
+        float waitStart = Time.realtimeSinceStartup;
+        int framesStart = Time.frameCount;
+        while (wake != null && wake.IsWakingUp && Time.realtimeSinceStartup - waitStart < 150f)
+            yield return new WaitForSecondsRealtime(1f);
+        float waited = Time.realtimeSinceStartup - waitStart;
+        Say("wake-up finished after " + waited.ToString("0") + " s, " + ((Time.frameCount - framesStart) / Mathf.Max(0.1f, waited)).ToString("0.0") + " fps");
+        yield return new WaitForSecondsRealtime(1.5f);
 
         GameObject playerObject = GameSave.PlayerObject();
         if (playerObject == null) { Say("no player found"); Say("DONE"); yield break; }
@@ -116,6 +202,7 @@ public class DimnightAutoTest : MonoBehaviour
         FPSController fps = player.GetComponent<FPSController>();
         Say("player at " + player.position + ", controls " + (fps != null && fps.enabled ? "on" : "off"));
         yield return Snap("gameplay-bed");
+        yield return Diagnose(player);
 
         // Granny stays where she is for the tour, so she can't catch the camera mid-way
         GrannyAI granny = GrannyAI.Instance != null ? GrannyAI.Instance : FindFirstObjectByType<GrannyAI>();

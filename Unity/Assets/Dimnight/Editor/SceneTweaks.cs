@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace Dimnight.EditorTools
@@ -25,13 +26,130 @@ namespace Dimnight.EditorTools
             int renamed = RenameTexts(roots);
             int blood = HideBlood(roots);
             int navmeshes = BakeNavMeshes(scene, roots);
+            int occlusion = ClearOcclusionData(scene.name);
             Report(scene.name, roots);
-            if (renamed + blood + navmeshes > 0)
+            ReportCamerasAndVolumes(scene.name, roots);
+            ReportNavMeshReach(scene.name, roots);
+            if (renamed + blood + navmeshes + occlusion > 0)
             {
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene);
             }
             Log(scene.name + ": " + renamed + " texts renamed, " + blood + " blood decals hidden, " + navmeshes + " navmeshes baked");
+        }
+
+        /// <summary>
+        /// Occlusion data exported from the original build points at the old scene's renderers: it can hide the whole
+        /// house from the camera, so it is cleared (the house is small, Unity's frustum culling is enough).
+        /// </summary>
+        static int ClearOcclusionData(string sceneName)
+        {
+            int size = StaticOcclusionCulling.umbraDataSize;
+            if (size <= 0) return 0;
+            StaticOcclusionCulling.Clear();
+            Log(sceneName + ": old occlusion culling data cleared (" + size + " bytes)");
+            return 1;
+        }
+
+        static string Path(Transform t)
+        {
+            string p = t.name;
+            while (t.parent != null) { t = t.parent; p = t.name + "/" + p; }
+            return p;
+        }
+
+        static void ReportCamerasAndVolumes(string sceneName, GameObject[] roots)
+        {
+            foreach (GameObject root in roots)
+            {
+                foreach (Camera c in root.GetComponentsInChildren<Camera>(true))
+                {
+                    string urp = "";
+                    var data = c.GetComponent("UniversalAdditionalCameraData");
+                    if (data != null)
+                    {
+                        var so = new SerializedObject(data);
+                        var type = so.FindProperty("m_CameraType");
+                        var stack = so.FindProperty("m_Cameras");
+                        var post = so.FindProperty("m_RenderPostProcessing");
+                        urp = " urpType=" + (type != null ? type.intValue.ToString() : "?") + " stack=" + (stack != null ? stack.arraySize.ToString() : "?")
+                            + " post=" + (post != null ? post.boolValue.ToString() : "?");
+                    }
+                    Log(sceneName + ": camera " + Path(c.transform) + " active=" + c.gameObject.activeInHierarchy + " enabled=" + c.enabled
+                        + " depth=" + c.depth + " clear=" + c.clearFlags + " bg=" + c.backgroundColor + " mask=0x" + c.cullingMask.ToString("X")
+                        + " near=" + c.nearClipPlane + " far=" + c.farClipPlane + " occl=" + c.useOcclusionCulling
+                        + " target=" + (c.targetTexture != null ? c.targetTexture.name : "screen") + urp);
+                }
+                foreach (Component v in root.GetComponentsInChildren(typeof(Behaviour), true))
+                {
+                    if (v == null || v.GetType().Name != "Volume") continue;
+                    var so = new SerializedObject(v);
+                    var profile = so.FindProperty("sharedProfile")?.objectReferenceValue as ScriptableObject;
+                    var global = so.FindProperty("m_IsGlobal");
+                    var weight = so.FindProperty("weight");
+                    Log(sceneName + ": volume " + Path(v.transform) + " active=" + v.gameObject.activeInHierarchy + " global=" + (global != null && global.boolValue)
+                        + " weight=" + (weight != null ? weight.floatValue : -1f) + " profile=" + (profile != null ? profile.name : "none"));
+                    if (profile == null) continue;
+                    var comps = new SerializedObject(profile).FindProperty("components");
+                    if (comps == null) continue;
+                    for (int i = 0; i < comps.arraySize; i++)
+                    {
+                        var comp = comps.GetArrayElementAtIndex(i).objectReferenceValue as ScriptableObject;
+                        if (comp == null) { Log("    (missing volume component)"); continue; }
+                        var cso = new SerializedObject(comp);
+                        var it = cso.GetIterator();
+                        var parts = new List<string>();
+                        bool enter = true;
+                        while (it.NextVisible(enter))
+                        {
+                            enter = false;
+                            if (it.name == "m_Script") continue;
+                            var ov = it.FindPropertyRelative("m_OverrideState");
+                            var val = it.FindPropertyRelative("m_Value");
+                            if (ov == null || val == null || !ov.boolValue) continue;
+                            string vs = val.propertyType == SerializedPropertyType.Float ? val.floatValue.ToString("0.###")
+                                : val.propertyType == SerializedPropertyType.Color ? val.colorValue.ToString()
+                                : val.propertyType == SerializedPropertyType.Vector4 ? val.vector4Value.ToString()
+                                : val.propertyType == SerializedPropertyType.Boolean ? val.boolValue.ToString()
+                                : val.propertyType == SerializedPropertyType.Integer || val.propertyType == SerializedPropertyType.Enum ? val.intValue.ToString()
+                                : val.propertyType.ToString();
+                            parts.Add(it.name + "=" + vs);
+                        }
+                        Log("    " + comp.GetType().Name + " active=" + new SerializedObject(comp).FindProperty("active")?.boolValue + " " + string.Join(" ", parts));
+                    }
+                }
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name != "Player") continue;
+                    var r = t.GetComponent<Renderer>();
+                    if (r == null) continue;
+                    var m = r.sharedMaterial;
+                    Log(sceneName + ": Player renderer enabled=" + r.enabled + " material=" + (m != null ? m.name + " (" + m.shader.name + ", cull " + (m.HasProperty("_Cull") ? m.GetFloat("_Cull").ToString() : "?") + ")" : "none"));
+                }
+            }
+            Log(sceneName + ": quality " + QualitySettings.names[QualitySettings.GetQualityLevel()] + ", pipeline "
+                + (GraphicsSettings.defaultRenderPipeline != null ? GraphicsSettings.defaultRenderPipeline.name : "none") + " / "
+                + (QualitySettings.renderPipeline != null ? QualitySettings.renderPipeline.name : "default"));
+        }
+
+        static void ReportNavMeshReach(string sceneName, GameObject[] roots)
+        {
+            var tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            if (tri.vertices == null || tri.vertices.Length == 0) return;
+            Bounds b = new Bounds(tri.vertices[0], Vector3.zero);
+            foreach (Vector3 v in tri.vertices) b.Encapsulate(v);
+            Log(sceneName + ": navmesh bounds " + b.min + " .. " + b.max);
+            foreach (GameObject root in roots)
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    string n = t.name;
+                    bool interesting = n == "GrannyAI" || n == "GrannySpawnPoint" || n == "WakeUpPoint" || n.EndsWith(" Point") || n == "GrannyCrashRespawnPoint";
+                    if (!interesting) continue;
+                    var agent = t.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                    string a = agent != null ? " agentType=" + agent.agentTypeID + " r=" + agent.radius + " h=" + agent.height + " baseOffset=" + agent.baseOffset : "";
+                    bool ok = UnityEngine.AI.NavMesh.SamplePosition(t.position, out UnityEngine.AI.NavMeshHit hit, 10f, UnityEngine.AI.NavMesh.AllAreas);
+                    Log(sceneName + ": " + n + " at " + t.position + (ok ? " -> navmesh " + hit.distance.ToString("0.00") + " m away at " + hit.position : " -> NO navmesh within 10 m") + a);
+                }
         }
 
         /// <summary>
@@ -63,8 +181,17 @@ namespace Dimnight.EditorTools
                     AssetDatabase.CreateAsset(data, path);
                     EditorUtility.SetDirty(surface);
                     var tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+                    var sso = new SerializedObject(surface);
+                    string settings = "";
+                    foreach (string f in new[] { "m_AgentTypeID", "m_CollectObjects", "m_UseGeometry", "m_DefaultArea", "m_OverrideVoxelSize", "m_MinRegionArea" })
+                    {
+                        var prop = sso.FindProperty(f);
+                        if (prop != null) settings += " " + f.Substring(2) + "=" + (prop.propertyType == SerializedPropertyType.Float ? prop.floatValue.ToString() : prop.propertyType == SerializedPropertyType.Boolean ? prop.boolValue.ToString() : prop.intValue.ToString());
+                    }
+                    var mask = sso.FindProperty("m_LayerMask");
+                    if (mask != null) settings += " LayerMask=0x" + mask.intValue.ToString("X");
                     Log(scene.name + ": navmesh baked on " + surface.name + " in " + timer.ElapsedMilliseconds + " ms, "
-                        + (tri.indices.Length / 3) + " triangles");
+                        + (tri.indices.Length / 3) + " triangles," + settings + ", surface at " + surface.transform.position);
                     n++;
                 }
             return n;
