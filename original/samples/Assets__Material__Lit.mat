@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Lit
-  m_Shader: {fileID: 4800000, guid: b02c8572452c274469797d0a16b09ad0, type: 3}
+  m_Shader: {fileID: 4800000, guid: a42d239c8e175ed4ea700e4bacd55db4, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []

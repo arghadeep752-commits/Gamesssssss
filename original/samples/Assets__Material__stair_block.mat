@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: stair_block
-  m_Shader: {fileID: 4800000, guid: b02c8572452c274469797d0a16b09ad0, type: 3}
+  m_Shader: {fileID: 4800000, guid: a42d239c8e175ed4ea700e4bacd55db4, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,7 +25,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
       _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 09bd7b497dd3a8e4e912c7962a3e5c81, type: 3}
+        m_Texture: {fileID: 2800000, guid: ba605ed6663580141904904f7414d91e, type: 3}
         m_Scale: {x: 5, y: 5}
         m_Offset: {x: 0, y: 0}
       _BumpMap:
@@ -49,7 +49,7 @@ Material:
         m_Scale: {x: 5, y: 5}
         m_Offset: {x: 0, y: 0}
       _MainTex:
-        m_Texture: {fileID: 2800000, guid: 09bd7b497dd3a8e4e912c7962a3e5c81, type: 3}
+        m_Texture: {fileID: 2800000, guid: ba605ed6663580141904904f7414d91e, type: 3}
         m_Scale: {x: 5, y: 5}
         m_Offset: {x: 0, y: 0}
       _MetallicGlossMap:

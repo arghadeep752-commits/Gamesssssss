@@ -13,31 +13,31 @@ MonoBehaviour:
   m_Name: 2_Renderer
   m_EditorClassIdentifier:
   debugShaders:
-    debugReplacementPS: {fileID: 4800000, guid: f4e804abdbfc7144e9a071868c2c50a2, type: 3}
-    hdrDebugViewPS: {fileID: 4800000, guid: f44e4945db5fe674caee71df5bc4cfa0, type: 3}
+    debugReplacementPS: {fileID: 4800000, guid: 24ef143dc11fb754ebfee4d7729ed3bf, type: 3}
+    hdrDebugViewPS: {fileID: 4800000, guid: a11b89e789dda7a4f9668c00ebdf759d, type: 3}
   m_RendererFeatures: []
   m_RendererFeatureMap:
   m_UseNativeRenderPass: 0
-  postProcessData: {fileID: 11400000, guid: c1ed73a03f8136b4db5ecc975233298e, type: 2}
-  xrSystemData: {fileID: 11400000, guid: 5a8619e2355381442ba18cd59e9e2845, type: 2}
+  postProcessData: {fileID: 11400000, guid: 3a082cfb597ce184ab3b551f271f5a9a, type: 2}
+  xrSystemData: {fileID: 11400000, guid: f9331d883a3311447a33d558301e2595, type: 2}
   shaders:
-    blitPS: {fileID: 4800000, guid: bfc997fce3dcd8641a363219183ac8c2, type: 3}
-    copyDepthPS: {fileID: 4800000, guid: e3fde0b7b1fd4d84c87b12650103aacb, type: 3}
+    blitPS: {fileID: 4800000, guid: c54e329cef995104abc39a7da52b1cee, type: 3}
+    copyDepthPS: {fileID: 4800000, guid: a19a135c34104b8409b628d33c12960f, type: 3}
     screenSpaceShadowPS: {fileID: 0}
-    samplingPS: {fileID: 4800000, guid: 5c40f84f7ae22b64d9b3f7257dc7aa21, type: 3}
-    stencilDeferredPS: {fileID: 4800000, guid: a709224e0129a2f48b82f4d9319342e4, type: 3}
-    fallbackErrorPS: {fileID: 4800000, guid: 4aa3f6da6eb7e374f83e55dad40a5b64, type: 3}
-    fallbackLoadingPS: {fileID: 4800000, guid: 0c1a06eb2d47ef3499058fa1ee6c36c8, type: 3}
-    materialErrorPS: {fileID: 4800000, guid: 765d47b2694b08f46b4b6a35cf336a86, type: 3}
-    coreBlitPS: {fileID: 4800000, guid: a7f77d479bff77043986531279e9b931, type: 3}
-    coreBlitColorAndDepthPS: {fileID: 4800000, guid: b9514ab9bd56952499c96143c58358ae, type: 3}
-    blitHDROverlay: {fileID: 4800000, guid: bb36762be23f1c540ae72d4116feeb06, type: 3}
-    cameraMotionVector: {fileID: 4800000, guid: 0adcf2943de463042b7a9780d3fa3f91, type: 3}
-    objectMotionVector: {fileID: 4800000, guid: e87e59f2a9fbc63468790d47ab8fa77a, type: 3}
-    dataDrivenLensFlare: {fileID: 4800000, guid: 24d9ad381b3655541b239a19a670301a, type: 3}
-    terrainDetailLitPS: {fileID: 4800000, guid: 9fad79f0fb012bb4ca9bb896e79a6a84, type: 3}
-    terrainDetailGrassPS: {fileID: 4800000, guid: cd98de092d49715488b13181fad5b6a6, type: 3}
-    terrainDetailGrassBillboardPS: {fileID: 4800000, guid: 7c75e4e2521031e4cb2f4de6e794f3fc, type: 3}
+    samplingPS: {fileID: 4800000, guid: 5809a9fd4064c134f84738af7d210ed9, type: 3}
+    stencilDeferredPS: {fileID: 4800000, guid: c91624e6e3118d94291a67a829505106, type: 3}
+    fallbackErrorPS: {fileID: 4800000, guid: 5ea0562b3323d604382677eb80a5c857, type: 3}
+    fallbackLoadingPS: {fileID: 4800000, guid: 9ce9515b182034140b56a399f33d829d, type: 3}
+    materialErrorPS: {fileID: 4800000, guid: 760f0e968a5907e4ea0f5f1f525fe466, type: 3}
+    coreBlitPS: {fileID: 4800000, guid: a769e4b6da709e54a8555c588206e22c, type: 3}
+    coreBlitColorAndDepthPS: {fileID: 4800000, guid: a96f2b35d9467104ba71148a5e486f1d, type: 3}
+    blitHDROverlay: {fileID: 4800000, guid: 81097f70cc8c6074bab6e852783be5be, type: 3}
+    cameraMotionVector: {fileID: 4800000, guid: 697397660c9effd46b0dae21ca449398, type: 3}
+    objectMotionVector: {fileID: 4800000, guid: ec7726c3fd08cf4469640f170522b9ed, type: 3}
+    dataDrivenLensFlare: {fileID: 4800000, guid: 5823d327e79f72f45ac6976dbfe045f2, type: 3}
+    terrainDetailLitPS: {fileID: 4800000, guid: 74cc698c7bf31394ca0228b83e234711, type: 3}
+    terrainDetailGrassPS: {fileID: 4800000, guid: a0b246cd8f7eccb4a910e274a55e9aa2, type: 3}
+    terrainDetailGrassBillboardPS: {fileID: 4800000, guid: 5c085e50ec65b894389c1131147a7d7d, type: 3}
   m_AssetVersion: 2
   m_OpaqueLayerMask:
     serializedVersion: 2

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Global Volume Profile 1
   m_EditorClassIdentifier:
   components:
-  - {fileID: 11400000, guid: 720038c8097523a4f999861b9f28a760, type: 2}
-  - {fileID: 11400000, guid: 2125368e302bc6549a72db1f90e4ac9f, type: 2}
-  - {fileID: 11400000, guid: f3ffc0b311e26cb4392c7c863a4641ab, type: 2}
-  - {fileID: 11400000, guid: 440ffd9eda301794b96e05cb2ab875a3, type: 2}
+  - {fileID: 11400000, guid: fab036e7f849a27469db533120f8f6d5, type: 2}
+  - {fileID: 11400000, guid: d4d6f8afc5f027e4a97a77e20be72816, type: 2}
+  - {fileID: 11400000, guid: 9405055b03996124d9a382b8bbcfeb50, type: 2}
+  - {fileID: 11400000, guid: 26539dec3fe3a5d40b677499da91d88e, type: 2}

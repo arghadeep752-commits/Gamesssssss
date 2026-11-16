@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ballontexts
-  m_Shader: {fileID: 4800000, guid: 194a2b1beaa2e3d4e89b2d4086bcdbd4, type: 3}
+  m_Shader: {fileID: 4800000, guid: c61fd7ce8d404ab4a960ea0982ae119c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,11 +25,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
       _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 044c6ca330e23c441ab5c5ce22224631, type: 3}
+        m_Texture: {fileID: 2800000, guid: 26a5c114be770194aa8f27e53f559fe4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
       _MainTex:
-        m_Texture: {fileID: 2800000, guid: 044c6ca330e23c441ab5c5ce22224631, type: 3}
+        m_Texture: {fileID: 2800000, guid: 26a5c114be770194aa8f27e53f559fe4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: {}
