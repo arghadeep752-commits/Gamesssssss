@@ -1,0 +1,40 @@
+# Granny Dimnight: keeps a private copy of the original APK (a draft release, visible only to the repository owner) so
+# the model-building tools can study the house geometry. Runs when tools/fetch/request.txt changes.
+
+name: Granny Dimnight - private copy of the original APK
+
+on:
+  push:
+    branches: [granny-dimnight]
+    paths:
+      - tools/fetch/request.txt
+      - .github/workflows/granny-dimnight-fetch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    name: Download and keep privately
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download from Game Jolt
+        run: |
+          python3 tools/extract/gamejolt_fetch.py 1117042 work
+          ls -la work/input
+
+      - name: Keep it in a private draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.tag_name=="granny-dimnight-input") | .id' | head -n 1)"
+          if [ -z "$id" ]; then
+            gh release create granny-dimnight-input --draft --target "$GITHUB_SHA" \
+              --title "Granny Dimnight input (private draft - do not publish)" \
+              --notes "The original Granny 4 End Game APK, kept private for the model-building tools."
+          fi
+          gh release upload granny-dimnight-input work/input/*.apk --clobber
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.tag_name=="granny-dimnight-input") | .draft, ([.assets[] | .name + " " + (.size|tostring)] | join(", "))'
