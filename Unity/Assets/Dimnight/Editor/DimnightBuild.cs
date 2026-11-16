@@ -66,9 +66,13 @@ namespace Dimnight.EditorTools
             bool ok = BuildApk(scenes, output, false);
             if (ok && !string.IsNullOrEmpty(testApk))
             {
-                // x86_64 copy with the automatic play-through compiled in, only for the emulator check
+                // x86_64 copy with the automatic play-through compiled in, only for the emulator check. The emulator's
+                // software GPU draws URP's HDR / MSAA intermediate image as pure black, so that copy renders straight
+                // to the screen (the phone APK above keeps the game's own settings).
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+                var restore = EmulatorFriendlyRendering();
                 if (!BuildApk(scenes, testApk, true)) Log("emulator test APK failed to build (the phone APK is fine)");
+                restore();
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             }
             return ok;
@@ -203,6 +207,44 @@ namespace Dimnight.EditorTools
             }
             AssetDatabase.SaveAssets();
             Log("renderers pointed at the URP 17 post-processing resources: " + n);
+        }
+
+        static System.Action EmulatorFriendlyRendering()
+        {
+            var undo = new List<System.Action>();
+            foreach (string guid in AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset"))
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GUIDToAssetPath(guid));
+                if (asset == null) continue;
+                var so = new SerializedObject(asset);
+                foreach (var (name, value) in new (string, object)[] {
+                    ("m_SupportsHDR", false), ("m_MSAA", 1), ("m_RenderScale", 1f),
+                    ("m_RequireDepthTexture", false), ("m_RequireOpaqueTexture", false) })
+                {
+                    SerializedProperty prop = so.FindProperty(name);
+                    if (prop == null) continue;
+                    if (prop.propertyType == SerializedPropertyType.Boolean) { bool old = prop.boolValue; prop.boolValue = (bool)value; undo.Add(() => SetAndSave(asset, name, old)); }
+                    else if (prop.propertyType == SerializedPropertyType.Integer) { int old = prop.intValue; prop.intValue = (int)value; undo.Add(() => SetAndSave(asset, name, old)); }
+                    else if (prop.propertyType == SerializedPropertyType.Float) { float old = prop.floatValue; prop.floatValue = (float)value; undo.Add(() => SetAndSave(asset, name, old)); }
+                }
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(asset);
+            }
+            AssetDatabase.SaveAssets();
+            Log("emulator copy: URP HDR, MSAA and intermediate textures off");
+            return () => { foreach (var u in undo) u(); AssetDatabase.SaveAssets(); };
+        }
+
+        static void SetAndSave(ScriptableObject asset, string name, object value)
+        {
+            var so = new SerializedObject(asset);
+            SerializedProperty prop = so.FindProperty(name);
+            if (prop == null) return;
+            if (value is bool b) prop.boolValue = b;
+            else if (value is int i) prop.intValue = i;
+            else if (value is float f) prop.floatValue = f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(asset);
         }
 
         static void ConfigureQuality()

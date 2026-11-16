@@ -183,6 +183,13 @@ public class DimnightAutoTest : MonoBehaviour
         SceneManager.LoadScene("Main");
         yield return new WaitForSecondsRealtime(3f);
         Say("house loaded: " + SceneManager.GetActiveScene().name);
+        // the emulator's software GPU can't show URP's HDR / MSAA / post-processing image: draw straight to the screen
+        foreach (Camera c in FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            c.allowHDR = false;
+            c.allowMSAA = false;
+            SetProp(c.GetComponent("UniversalAdditionalCameraData"), "renderPostProcessing", false);
+        }
         yield return Snap("day-1");
         yield return new WaitForSecondsRealtime(4f);
         yield return Snap("waking-up");

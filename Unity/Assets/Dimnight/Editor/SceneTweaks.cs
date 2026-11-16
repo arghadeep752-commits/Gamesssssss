@@ -152,6 +152,71 @@ namespace Dimnight.EditorTools
                 }
         }
 
+
+        /// <summary>
+        /// The scenes contain stray geometry tens of kilometres away; baking "All" spans all of it, and the house itself
+        /// ends up with no walkable surface. The bake is limited to a box around the player's spawn and Granny's points.
+        /// </summary>
+        static void LimitBakeToPlayArea(string sceneName, Component surface, GameObject[] roots)
+        {
+            Vector3? anchor = null;
+            var points = new List<Vector3>();
+            foreach (GameObject root in roots)
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    string n = t.name;
+                    if (n == "WakeUpPoint" || n == "GrannySpawnPoint" || n == "GrannyAI" || n == "Player" || n.EndsWith(" Point") || n == "GrannyCrashRespawnPoint")
+                    {
+                        points.Add(t.position);
+                        if (anchor == null && (n == "Player" || n == "GrannyAI")) anchor = t.position;
+                    }
+                }
+            if (anchor == null && points.Count > 0) anchor = points[0];
+            if (anchor == null)
+                foreach (GameObject root in roots)
+                    foreach (Camera c in root.GetComponentsInChildren<Camera>(true)) { anchor = c.transform.position; break; }
+            if (anchor == null) { Log(sceneName + ": no anchor for the navmesh box, baking everything"); return; }
+
+            Vector3 a = anchor.Value;
+            Bounds box = new Bounds(a, Vector3.one * 4f);
+            foreach (Vector3 p in points)
+                if (Vector3.Distance(p, a) < 120f) box.Encapsulate(p);
+            int used = 0;
+            foreach (GameObject root in roots)
+                foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer)) continue;
+                    Bounds rb = r.bounds;
+                    if (rb.size.magnitude > 400f) continue;   // giant planes or skies
+                    Vector3 d = rb.center - a;
+                    if (Mathf.Abs(d.x) > 90f || Mathf.Abs(d.z) > 90f || Mathf.Abs(d.y) > 30f) continue;
+                    box.Encapsulate(rb);
+                    used++;
+                }
+            box.Expand(new Vector3(6f, 4f, 6f));
+
+            var so = new SerializedObject(surface);
+            var collect = so.FindProperty("m_CollectObjects");
+            var size = so.FindProperty("m_Size");
+            var center = so.FindProperty("m_Center");
+            if (collect == null || size == null || center == null) { Log(sceneName + ": NavMeshSurface has no volume settings"); return; }
+            Transform st = surface.transform;
+            Vector3 scale = st.lossyScale;
+            Vector3 localCenter = st.InverseTransformPoint(box.center);
+            Vector3 localSize = new Vector3(box.size.x / Mathf.Max(0.0001f, Mathf.Abs(scale.x)), box.size.y / Mathf.Max(0.0001f, Mathf.Abs(scale.y)), box.size.z / Mathf.Max(0.0001f, Mathf.Abs(scale.z)));
+            if (Quaternion.Angle(st.rotation, Quaternion.identity) > 1f)
+            {
+                // a rotated surface: use a cube big enough for the box in any orientation
+                float m = Mathf.Max(localSize.x, localSize.z);
+                localSize = new Vector3(m * 1.5f, localSize.y, m * 1.5f);
+            }
+            collect.intValue = 1;   // CollectObjects.Volume
+            center.vector3Value = localCenter;
+            size.vector3Value = localSize;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Log(sceneName + ": navmesh limited to the play area " + box.min + " .. " + box.max + " (" + used + " meshes, " + points.Count + " points)");
+        }
+
         /// <summary>
         /// The exported game has no NavMesh data (AssetRipper does not bring it back), so Granny's walkable area is
         /// baked again here from each NavMeshSurface's own settings and saved next to the scene.
@@ -169,6 +234,7 @@ namespace Dimnight.EditorTools
                 foreach (Component surface in root.GetComponentsInChildren(surfaceType, true))
                 {
                     if (!((Behaviour)surface).isActiveAndEnabled) continue;
+                    LimitBakeToPlayArea(scene.name, surface, roots);
                     var timer = System.Diagnostics.Stopwatch.StartNew();
                     try { build.Invoke(surface, null); }
                     catch (System.Exception e) { Log("navmesh bake failed on " + surface.name + ": " + e.InnerException?.Message); continue; }
