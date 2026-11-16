@@ -36,9 +36,20 @@ Every push that changes `Unity/`, `tools/unity/` or `ci/` runs:
    stand-in DLLs and dummy shaders at the real UGUI / TextMeshPro / URP / AI Navigation / Timeline files
    (class ids from `original/dll_classes.json`, computed with `tools/common/unity_ids.py`);
 6. `Dimnight.EditorTools.DimnightBuild.BuildAndroid` (`Unity/Assets/Dimnight/Editor/`): Granny Dimnight name and
-   package `com.anomynousdevs.grannydimnight`, URP materials, renamed texts, no blood, IL2CPP ARM64 APK;
-7. the APK is published as the release `granny-dimnight-v<n>`; an emulator build walks a camera through every room
-   and its screenshots are attached to the same release.
+   package `com.anomynousdevs.grannydimnight`, URP materials, renamed texts, no blood, Granny's navmesh baked again
+   (the export has none), URP 17 post-processing resources, IL2CPP ARM64 APK;
+7. the APK is published as the release `granny-dimnight-v<n>`; an emulator build plays the start of the game (menu,
+   Day 1, waking up, a walk through every room, a look at Granny) and its screenshots are attached to the same release.
+
+## The game scripts (`Unity/Overrides/Assembly-CSharp/`)
+
+The original's code is IL2CPP, so only its class, field and method names survive. Every gameplay script is written
+again from those names, the scene settings and the game's text strings: the player and touch controls, the hand
+button (pick up, use, drop), doors, drawers, keys and planks, hiding (beds, coffin, cabinet, car), Granny's patrol,
+hearing, sight, chase and the kill and bed/coffin/car jumpscares, the five days, the main-door locks (plank, code
+padlock, padlock, chain, secret bookshelf) and the master key ending, the hot air balloon escape (duct tape, gas
+cylinder, lighter, cutting the anchor ropes), Extreme mode's lever and fence, creaking floors, the doorbell tripwire,
+falling paintings and crashing furniture, settings, music and the endings. There are no ads.
 
 ## Credits
 
