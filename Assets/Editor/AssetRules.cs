@@ -38,6 +38,15 @@ namespace Moulika.EditorTools
                 return true;
             }
             if (path.StartsWith("Assets/Game/Sky/")) return true;
+            if (path.StartsWith("Assets/Branding/"))
+            {
+                // app icons: kept exactly as drawn (Unity scales them for every screen density itself)
+                r.mips = false;
+                r.alpha = true;
+                r.wrap = TextureWrapMode.Clamp;
+                r.comp = TextureImporterCompression.Uncompressed;
+                return true;
+            }
             if (path.StartsWith("Assets/Resources/UI/"))
             {
                 r.alpha = true;

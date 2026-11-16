@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/checkout@v5
 
-      - name: The Godot game's fonts, interface images and icon
+      - name: The Godot game's fonts and interface images
         uses: actions/checkout@v5
         with:
           ref: ragini
@@ -52,7 +52,6 @@ jobs:
           sparse-checkout: |
             game/fonts
             game/ui
-            game/icons
 
       - name: The school, Moulika, the sounds and the photos (the files the Godot build uses)
         run: |
@@ -71,7 +70,7 @@ jobs:
           python3 -m pip install --quiet --break-system-packages numpy pillow
           python3 tools/unity/convert_assets.py --school ragini-ci/school --moulika ragini-ci/moulika_rigged.glb \
             --tex ragini-ci/assets/downloaded/tex --sounds ragini-ci/sounds \
-            --fonts godot/game/fonts ragini-ci/assets/downloaded/fonts --ui godot/game/ui --icons godot/game/icons \
+            --fonts godot/game/fonts ragini-ci/assets/downloaded/fonts --ui godot/game/ui \
             --sky ragini-ci/assets/downloaded/sky/night.hdr --out .
           du -sh Assets/Game Assets/Resources
 
@@ -166,6 +165,8 @@ jobs:
           ls -la Build
           test -f "Build/${APK_NAME}.apk"
           unzip -l "Build/${APK_NAME}.apk" | grep -E "lib/arm64|libil2cpp|data.unity3d" | head -n 10 || true
+          echo "icons in the APK:"
+          unzip -l "Build/${APK_NAME}.apk" | grep -E "res/.*(app_icon|mipmap)" | head -n 30 || true
 
       - name: Keep the emulator APK for the test job
         uses: actions/upload-artifact@v4

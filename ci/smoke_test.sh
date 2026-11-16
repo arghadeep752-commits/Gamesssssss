@@ -19,6 +19,11 @@ echo "Installing $APK"
 adb install -r -g "$APK" 2>&1 | tee "$OUT/install.txt"
 adb logcat -c || true
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+# the Unity splash plays first: grab a few frames of it
+for t in 3 6 9 12; do
+  sleep 3
+  adb exec-out screencap -p > "$OUT/00-start-${t}s.png" 2>/dev/null || true
+done
 
 result="TIMEOUT"
 captured=" "

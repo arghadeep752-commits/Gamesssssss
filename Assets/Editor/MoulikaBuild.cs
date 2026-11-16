@@ -111,18 +111,19 @@ namespace Moulika.EditorTools
             // full screen edge to edge, rendered at the screen's own resolution
             PlayerSettings.Android.renderOutsideSafeArea = true;
             PlayerSettings.Android.startInFullscreen = true;
-            PlayerSettings.SplashScreen.show = false;
-            PlayerSettings.SplashScreen.showUnityLogo = false;
             EditorUserBuildSettings.buildAppBundle = false;
 
-            UseLegacyInputManager();
+            // the Unity splash: white Unity logo on black, before the game's own black menu
+            PlayerSettings.SplashScreen.show = true;
+            PlayerSettings.SplashScreen.showUnityLogo = true;
+            PlayerSettings.SplashScreen.unityLogoStyle = PlayerSettings.SplashScreen.UnityLogoStyle.LightOnDark;
+            PlayerSettings.SplashScreen.backgroundColor = Color.black;
+            PlayerSettings.SplashScreen.animationMode = PlayerSettings.SplashScreen.AnimationMode.Dolly;
+            PlayerSettings.SplashScreen.drawMode = PlayerSettings.SplashScreen.DrawMode.UnityLogoBelow;
+            PlayerSettings.SplashScreen.overlayOpacity = 1f;
 
-            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Game/Icons/icon_192.png");
-            if (icon != null)
-            {
-                PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
-                Debug.Log("[MOULIKA] app icon set");
-            }
+            UseLegacyInputManager();
+            SetIcons();
 
             string keystore = System.Environment.GetEnvironmentVariable("MOULIKA_KEYSTORE");
             if (!string.IsNullOrEmpty(keystore) && File.Exists(keystore))
@@ -140,6 +141,45 @@ namespace Moulika.EditorTools
                 PlayerSettings.Android.useCustomKeystore = false;
                 Debug.Log("[MOULIKA] signing with a debug key");
             }
+        }
+
+        /// <summary>
+        /// The Moulika icon made for the Play Store (her face, red eyes, the MX badge): the square icon for older
+        /// launchers, an adaptive icon (artwork behind, badge in front inside the safe circle) for Android 8+, and a
+        /// round one for Android 7.1 (tools/icon/make_adaptive.py).
+        /// </summary>
+        static void SetIcons()
+        {
+            const string dir = "Assets/Branding/";
+            Texture2D legacy = IconTex(dir + "moulika_icon_1024.png");
+            Texture2D bg = IconTex(dir + "moulika_icon_bg.png");
+            Texture2D fg = IconTex(dir + "moulika_icon_fg.png");
+            Texture2D round = IconTex(dir + "moulika_icon_round.png");
+            if (legacy == null)
+            {
+                Debug.LogWarning("[MOULIKA] app icon missing in " + dir);
+                return;
+            }
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { legacy }, IconKind.Any);
+            foreach (PlatformIconKind kind in PlayerSettings.GetSupportedIconKinds(NamedBuildTarget.Android))
+            {
+                string name = kind.ToString();
+                PlatformIcon[] icons = PlayerSettings.GetPlatformIcons(NamedBuildTarget.Android, kind);
+                foreach (PlatformIcon icon in icons)
+                {
+                    if (name.Contains("Adaptive") && bg != null && fg != null) icon.SetTextures(bg, fg);   // background, foreground
+                    else if (name.Contains("Round") && round != null) icon.SetTexture(round);
+                    else icon.SetTexture(legacy);
+                }
+                PlayerSettings.SetPlatformIcons(NamedBuildTarget.Android, kind, icons);
+                Debug.Log("[MOULIKA] icon " + name + ": " + icons.Length + " sizes");
+            }
+        }
+
+        static Texture2D IconTex(string path)
+        {
+            AssetRules.Ensure(path);
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
         // the touch controls read UnityEngine.Input, so make sure the classic input manager is active
