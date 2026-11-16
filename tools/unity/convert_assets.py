@@ -544,6 +544,66 @@ def convert_moulika(glb_path, out_root):
     print("moulika: %d vertices, %d triangles, %d bones, scale %.3f, %d moves" % (len(POS), len(IDX) // 3, len(rest), scale, len(clips_out)))
 
 
+# ------------------------------------------------------------------------------------------------ the night sky
+def read_hdr(path):
+    """Radiance .hdr (32-bit_rle_rgbe) -> float32 array [h, w, 3]."""
+    data = open(path, "rb").read()
+    pos = 0
+    while True:
+        end = data.index(b"\n", pos)
+        line = data[pos:end].decode("ascii", "replace")
+        pos = end + 1
+        if line.startswith("-Y") or line.startswith("+Y"):
+            parts = line.split()
+            h, w = int(parts[1]), int(parts[3])
+            break
+    img = np.zeros((h, w, 4), np.uint8)
+    for y in range(h):
+        if data[pos] == 2 and data[pos + 1] == 2 and (data[pos + 2] << 8 | data[pos + 3]) == w:
+            pos += 4
+            for c in range(4):
+                x = 0
+                while x < w:
+                    n = data[pos]
+                    pos += 1
+                    if n > 128:
+                        n -= 128
+                        img[y, x:x + n, c] = data[pos]
+                        pos += 1
+                    else:
+                        img[y, x:x + n, c] = np.frombuffer(data, np.uint8, n, pos)
+                        pos += n
+                    x += n
+        else:  # flat scanline
+            img[y] = np.frombuffer(data, np.uint8, w * 4, pos).reshape(w, 4)
+            pos += w * 4
+    e = img[..., 3].astype(np.int32)
+    scale = np.where(e > 0, np.ldexp(1.0, e - 136), 0.0)
+    return img[..., :3].astype(np.float32) * scale[..., None]
+
+
+def filmic(c):
+    A, B, C, D, E, F, W = 0.22 * 4.0, 0.30 * 2.0, 0.10, 0.20, 0.01, 0.30, 1.0
+    t = ((c * (A * c + C * B) + D * E) / (c * (A * c + B) + D * F)) - E / F
+    w = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F
+    return t / w
+
+
+def convert_sky(hdr_path, out_root):
+    """The Godot sky (night.hdr panorama at energy 0.5, filmic tone curve) as an ordinary picture for Unity's
+    panoramic skybox. Flipped left to right like everything else (the Z mirror)."""
+    if not hdr_path or not os.path.exists(hdr_path) or Image is None:
+        print("sky: none")
+        return
+    rgb = read_hdr(hdr_path) * 0.5
+    out = filmic(np.maximum(rgb, 0.0))
+    srgb = np.where(out <= 0.0031308, out * 12.92, 1.055 * np.power(np.clip(out, 0, None), 1 / 2.4) - 0.055)
+    srgb = np.clip(srgb, 0.0, 1.0)[:, ::-1]
+    d = ensure(os.path.join(out_root, "Assets", "Game", "Sky"))
+    Image.fromarray((srgb * 255.0 + 0.5).astype(np.uint8), "RGB").save(os.path.join(d, "night_sky.png"))
+    print("sky: %dx%d" % (srgb.shape[1], srgb.shape[0]))
+
+
 # ------------------------------------------------------------------------------------------------ the rest
 def copy_dir(src, dst, exts):
     ensure(dst)
@@ -564,10 +624,12 @@ def main():
     ap.add_argument("--fonts", nargs="+", required=True)
     ap.add_argument("--ui", required=True)
     ap.add_argument("--icons", default="")
+    ap.add_argument("--sky", default="")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     convert_school(a.school, a.tex, a.out)
     convert_moulika(a.moulika, a.out)
+    convert_sky(a.sky, a.out)
     res = os.path.join(a.out, "Assets", "Resources")
     n = copy_dir(a.sounds, os.path.join(res, "Sounds"), {".ogg", ".wav"})
     for extra in ("CREDITS_SOUNDS.md",):

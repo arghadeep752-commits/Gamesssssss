@@ -21,22 +21,6 @@ namespace Moulika.EditorTools
 
         public static bool Available { get { return File.Exists(Folder + "/school.bytes") && File.Exists(Folder + "/materials.json"); } }
 
-        static void Tex(string path, bool srgb, bool mips, TextureWrapMode wrap, bool compress, int maxSize = 2048)
-        {
-            var imp = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (imp == null) return;
-            imp.textureType = TextureImporterType.Default;
-            imp.sRGBTexture = srgb;
-            imp.mipmapEnabled = mips;
-            imp.wrapMode = wrap;
-            imp.filterMode = mips ? FilterMode.Trilinear : FilterMode.Bilinear;
-            imp.anisoLevel = mips ? 4 : 1;
-            imp.maxTextureSize = maxSize;
-            imp.alphaIsTransparency = false;
-            imp.textureCompression = compress ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
-            imp.SaveAndReimport();
-        }
-
         static IEnumerable<string> Files(string dir, params string[] exts)
         {
             if (!Directory.Exists(dir)) yield break;
@@ -52,12 +36,9 @@ namespace Moulika.EditorTools
             AssetDatabase.StartAssetEditing();
             try
             {
-                foreach (string f in Files(Folder + "/Photos", ".jpg", ".png"))
-                    Tex(f, true, true, TextureWrapMode.Repeat, true, 1024);
-                foreach (string f in Files(Folder + "/Textures", ".jpg", ".png"))
-                    Tex(f, true, true, TextureWrapMode.Repeat, true, 1024);
-                foreach (string f in Files(Folder + "/Lightmaps", ".png"))
-                    Tex(f, true, false, TextureWrapMode.Clamp, false, 1024);
+                foreach (string f in Files(Folder + "/Photos", ".jpg", ".png")) AssetRules.Ensure(f);
+                foreach (string f in Files(Folder + "/Textures", ".jpg", ".png")) AssetRules.Ensure(f);
+                foreach (string f in Files(Folder + "/Lightmaps", ".png")) AssetRules.Ensure(f);
             }
             finally
             {

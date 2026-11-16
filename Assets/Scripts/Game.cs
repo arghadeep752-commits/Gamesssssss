@@ -352,7 +352,7 @@ namespace Moulika
             cutCam.fieldOfView = 55f;
             cutCam.nearClipPlane = 0.05f;
             cutCam.farClipPlane = 150f;
-            cutCam.clearFlags = CameraClearFlags.SolidColor;
+            cutCam.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             cutCam.backgroundColor = SkyColor;
             cutCam.allowHDR = false;
             cutCam.enabled = false;

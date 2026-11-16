@@ -71,7 +71,8 @@ jobs:
           python3 -m pip install --quiet --break-system-packages numpy pillow
           python3 tools/unity/convert_assets.py --school ragini-ci/school --moulika ragini-ci/moulika_rigged.glb \
             --tex ragini-ci/assets/downloaded/tex --sounds ragini-ci/sounds \
-            --fonts godot/game/fonts ragini-ci/assets/downloaded/fonts --ui godot/game/ui --icons godot/game/icons --out .
+            --fonts godot/game/fonts ragini-ci/assets/downloaded/fonts --ui godot/game/ui --icons godot/game/icons \
+            --sky ragini-ci/assets/downloaded/sky/night.hdr --out .
           du -sh Assets/Game Assets/Resources
 
       - name: Check Unity login secrets

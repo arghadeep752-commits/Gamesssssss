@@ -26,20 +26,10 @@ namespace Moulika.EditorTools
             return System.Text.Encoding.UTF8.GetString(r.ReadBytes(n));
         }
 
-        static Texture2D Tex(string file, bool srgb, bool normal)
+        static Texture2D Tex(string file)
         {
             string path = Folder + "/" + file;
-            var imp = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (imp == null) return null;
-            imp.textureType = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
-            imp.sRGBTexture = srgb && !normal;
-            imp.mipmapEnabled = true;
-            imp.wrapMode = TextureWrapMode.Repeat;
-            imp.filterMode = FilterMode.Trilinear;
-            imp.anisoLevel = 4;
-            imp.maxTextureSize = 2048;
-            imp.textureCompression = TextureImporterCompression.CompressedHQ;
-            imp.SaveAndReimport();
+            AssetRules.Ensure(path);
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
@@ -59,9 +49,9 @@ namespace Moulika.EditorTools
             if (!AssetDatabase.IsValidFolder("Assets/Resources")) AssetDatabase.CreateFolder("Assets", "Resources");
 
             string fa = FileFor("albedo"), fn = FileFor("normal"), fm = FileFor("mr");
-            Texture2D albedo = fa != null ? Tex(fa, true, false) : null;
-            Texture2D normal = fn != null ? Tex(fn, false, true) : null;
-            Texture2D mr = fm != null ? Tex(fm, false, false) : null;
+            Texture2D albedo = fa != null ? Tex(fa) : null;
+            Texture2D normal = fn != null ? Tex(fn) : null;
+            Texture2D mr = fm != null ? Tex(fm) : null;
 
             Shader sh = Shader.Find("Moulika/Character");
             if (sh == null) throw new Exception("Moulika/Character shader missing");

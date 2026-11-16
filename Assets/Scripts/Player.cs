@@ -59,7 +59,7 @@ namespace Moulika
             p.cam.fieldOfView = 68f;
             p.cam.nearClipPlane = 0.05f;
             p.cam.farClipPlane = 120f;
-            p.cam.clearFlags = CameraClearFlags.SolidColor;
+            p.cam.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             p.cam.backgroundColor = Game.SkyColor;
             p.cam.allowMSAA = true;
             p.cam.allowHDR = false;

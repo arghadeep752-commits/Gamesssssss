@@ -190,34 +190,20 @@ namespace Moulika.EditorTools
             var creepster = AssetDatabase.LoadAssetAtPath<Font>("Assets/Resources/Fonts/Creepster-Regular.ttf");
             SetFallback("Assets/Resources/Fonts/dk_midnight_chalker.otf", oswald);
             SetFallback("Assets/Resources/Fonts/baby_doll.ttf", creepster);
-            // UI images
-            foreach (string f in Directory.GetFiles("Assets/Resources/UI", "*.png"))
-            {
-                var imp = AssetImporter.GetAtPath(f.Replace('\\', '/')) as TextureImporter;
-                if (imp == null) continue;
-                imp.textureType = TextureImporterType.Default;
-                imp.sRGBTexture = true;
-                imp.alphaIsTransparency = true;
-                imp.mipmapEnabled = true;
-                imp.wrapMode = TextureWrapMode.Clamp;
-                imp.filterMode = FilterMode.Trilinear;
-                imp.textureCompression = TextureImporterCompression.Uncompressed;
-                imp.SaveAndReimport();
-            }
-            // long recordings stream from storage instead of sitting decompressed in memory
+            // UI images and sounds (normally already right: AssetRulesImporter sets them on the first import)
+            foreach (string f in Directory.GetFiles("Assets/Resources/UI", "*.png")) AssetRules.Ensure(f.Replace('\\', '/'));
             foreach (string f in Directory.GetFiles("Assets/Resources/Sounds", "*.ogg"))
             {
                 string p = f.Replace('\\', '/');
                 var imp = AssetImporter.GetAtPath(p) as AudioImporter;
                 if (imp == null) continue;
-                string n = Path.GetFileNameWithoutExtension(p);
+                AudioClipLoadType want = AssetRules.LongSound(Path.GetFileNameWithoutExtension(p)) ? AudioClipLoadType.Streaming : AudioClipLoadType.DecompressOnLoad;
+                if (imp.defaultSampleSettings.loadType == want) continue;
                 AudioImporterSampleSettings s = imp.defaultSampleSettings;
-                bool longOne = n.Contains("music") || n.Contains("raga") || n == "night" || n == "wind" || n == "drone" || n == "heartbeat";
-                s.loadType = longOne ? AudioClipLoadType.Streaming : AudioClipLoadType.DecompressOnLoad;
+                s.loadType = want;
                 s.compressionFormat = AudioCompressionFormat.Vorbis;
                 s.quality = 0.8f;
                 imp.defaultSampleSettings = s;
-                imp.forceToMono = false;
                 imp.SaveAndReimport();
             }
             SchoolBuilder.Build();
@@ -242,7 +228,25 @@ namespace Moulika.EditorTools
             RenderSettings.fog = false;
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = Color.black;
+            // the night sky of the Godot version (night.hdr panorama, converted to a picture by convert_assets.py)
             RenderSettings.skybox = null;
+            const string skyTex = "Assets/Game/Sky/night_sky.png";
+            AssetRules.Ensure(skyTex);
+            var sky = AssetDatabase.LoadAssetAtPath<Texture2D>(skyTex);
+            Shader pano = Shader.Find("Skybox/Panoramic");
+            if (sky != null && pano != null)
+            {
+                var mat = new Material(pano) { name = "Night sky" };
+                mat.SetTexture("_MainTex", sky);
+                mat.SetFloat("_Mapping", 1f);       // latitude-longitude layout
+                mat.SetFloat("_ImageType", 0f);     // 360 degrees
+                mat.SetFloat("_Exposure", 1f);
+                mat.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+                AssetDatabase.DeleteAsset("Assets/Generated/Night sky.mat");
+                AssetDatabase.CreateAsset(mat, "Assets/Generated/Night sky.mat");
+                RenderSettings.skybox = mat;
+                Debug.Log("[MOULIKA] night sky set");
+            }
             var go = new GameObject("Game");
             go.AddComponent<Game>();
             EditorSceneManager.SaveScene(scene, ScenePath);
