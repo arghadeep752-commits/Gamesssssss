@@ -80,6 +80,7 @@ namespace Dimnight.EditorTools
             ConfigureQuality();
             int fixedMats = MaterialFixer.FixAll();
             Log("materials moved to URP shaders: " + fixedMats);
+            FixRendererData();
             string[] scenes = EditorBuildSettings.scenes.Where(s => s.enabled && File.Exists(s.path)).Select(s => s.path).ToArray();
             if (scenes.Length == 0)
                 scenes = AssetDatabase.FindAssets("t:Scene", new[] { "Assets" }).Select(AssetDatabase.GUIDToAssetPath).ToArray();
@@ -175,6 +176,33 @@ namespace Dimnight.EditorTools
                 settings.ApplyModifiedPropertiesWithoutUndo();
                 Log("classic input manager on (the game's touch controls use it)");
             }
+        }
+
+        /// <summary>
+        /// The game's renderer still points at the old URP 14 post-processing resources, which miss shaders URP 17 needs
+        /// ("Missing shader. PostProcessing render passes will not execute"): point it at the package's own set so the
+        /// game's colour grading and vignette show again.
+        /// </summary>
+        static void FixRendererData()
+        {
+            const string ppPath = "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset";
+            var pp = AssetDatabase.LoadAssetAtPath<ScriptableObject>(ppPath);
+            if (pp == null) { Log("package PostProcessData not found at " + ppPath); return; }
+            int n = 0;
+            foreach (string guid in AssetDatabase.FindAssets("t:UniversalRendererData"))
+            {
+                var data = AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GUIDToAssetPath(guid));
+                if (data == null) continue;
+                var so = new SerializedObject(data);
+                SerializedProperty prop = so.FindProperty("postProcessData") ?? so.FindProperty("m_PostProcessData");
+                if (prop == null) { Log("no postProcessData field on " + data.name); continue; }
+                prop.objectReferenceValue = pp;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(data);
+                n++;
+            }
+            AssetDatabase.SaveAssets();
+            Log("renderers pointed at the URP 17 post-processing resources: " + n);
         }
 
         static void ConfigureQuality()

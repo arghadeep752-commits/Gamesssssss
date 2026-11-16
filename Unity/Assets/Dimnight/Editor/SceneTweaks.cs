@@ -24,13 +24,50 @@ namespace Dimnight.EditorTools
             GameObject[] roots = scene.GetRootGameObjects();
             int renamed = RenameTexts(roots);
             int blood = HideBlood(roots);
+            int navmeshes = BakeNavMeshes(scene, roots);
             Report(scene.name, roots);
-            if (renamed + blood > 0)
+            if (renamed + blood + navmeshes > 0)
             {
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene);
             }
-            Log(scene.name + ": " + renamed + " texts renamed, " + blood + " blood decals hidden");
+            Log(scene.name + ": " + renamed + " texts renamed, " + blood + " blood decals hidden, " + navmeshes + " navmeshes baked");
+        }
+
+        /// <summary>
+        /// The exported game has no NavMesh data (AssetRipper does not bring it back), so Granny's walkable area is
+        /// baked again here from each NavMeshSurface's own settings and saved next to the scene.
+        /// </summary>
+        static int BakeNavMeshes(Scene scene, GameObject[] roots)
+        {
+            System.Type surfaceType = System.AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("Unity.AI.Navigation.NavMeshSurface", false))
+                .FirstOrDefault(t => t != null);
+            if (surfaceType == null) { Log("NavMeshSurface type not found - navmesh not baked"); return 0; }
+            var build = surfaceType.GetMethod("BuildNavMesh", System.Type.EmptyTypes);
+            var dataProp = surfaceType.GetProperty("navMeshData");
+            int n = 0;
+            foreach (GameObject root in roots)
+                foreach (Component surface in root.GetComponentsInChildren(surfaceType, true))
+                {
+                    if (!((Behaviour)surface).isActiveAndEnabled) continue;
+                    var timer = System.Diagnostics.Stopwatch.StartNew();
+                    try { build.Invoke(surface, null); }
+                    catch (System.Exception e) { Log("navmesh bake failed on " + surface.name + ": " + e.InnerException?.Message); continue; }
+                    var data = dataProp.GetValue(surface) as Object;
+                    if (data == null) { Log("navmesh bake gave no data on " + surface.name); continue; }
+                    const string dir = "Assets/Dimnight/NavMesh";
+                    if (!AssetDatabase.IsValidFolder(dir)) AssetDatabase.CreateFolder("Assets/Dimnight", "NavMesh");
+                    string path = dir + "/" + scene.name + "-" + surface.name + "-" + n + ".asset";
+                    AssetDatabase.DeleteAsset(path);
+                    AssetDatabase.CreateAsset(data, path);
+                    EditorUtility.SetDirty(surface);
+                    var tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+                    Log(scene.name + ": navmesh baked on " + surface.name + " in " + timer.ElapsedMilliseconds + " ms, "
+                        + (tri.indices.Length / 3) + " triangles");
+                    n++;
+                }
+            return n;
         }
 
         static string NewName(Match m)
