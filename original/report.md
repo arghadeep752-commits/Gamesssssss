@@ -46,16 +46,16 @@
   - point `Directional Light` colour [1.0, 1.0, 1.0] intensity 1.5 range 10 shadows 2 at [-8.743, 4.776, -53.66]
   - point `Directional Light MOON` colour [1.0, 1.0, 1.0] intensity 80 range 8.052368 shadows 2 at [-48.01, 33.56, -53.66]
 - scripts on objects:
-  - `Unity.RenderPipelines.Universal.Runtime.dll#-1431003440` x6 (Directional Light, Directional Light (1), Directional Light (2), Directional Light (3), Directional Light MOON, Directional LightGRANNY)
-  - `UnityEngine.UI.dll#708705254` x1 (YouEscaped)
-  - `Unity.RenderPipelines.Universal.Runtime.dll#938447500` x1 (Cutscene_Camera)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalLightData` x6 (Directional Light, Directional Light (1), Directional Light (2), Directional Light (3), Directional Light MOON, Directional LightGRANNY)
+  - `UnityEngine.UI.Text` x1 (YouEscaped)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalCameraData` x1 (Cutscene_Camera)
   - `GrannyStyleEnding` x1 (Cutscene_Camera)
-  - `UnityEngine.UI.dll#1301386320` x1 (Canvas)
-  - `UnityEngine.UI.dll#1980459831` x1 (Canvas)
-  - `UnityEngine.UI.dll#-619905303` x1 (EventSystem)
-  - `UnityEngine.UI.dll#1077351063` x1 (EventSystem)
-  - `Unity.RenderPipelines.Core.Runtime.dll#1520420858` x1 (Global Volume)
-  - `UnityEngine.UI.dll#-765806418` x1 (ScreenFadeOverlay)
+  - `UnityEngine.UI.GraphicRaycaster` x1 (Canvas)
+  - `UnityEngine.UI.CanvasScaler` x1 (Canvas)
+  - `UnityEngine.EventSystems.EventSystem` x1 (EventSystem)
+  - `UnityEngine.EventSystems.StandaloneInputModule` x1 (EventSystem)
+  - `UnityEngine.Rendering.Volume` x1 (Global Volume)
+  - `UnityEngine.UI.Image` x1 (ScreenFadeOverlay)
 - most common object names: Plane x7, grassAS-01 x7, Directional Light x4, Cube x3, Tree_Branches_02_Tree_Branches_02_0 x2, Cube.015 x2, Bip01 Neck x2, Bip01 R UpperArm x2, Bip01 L Foot x2, Bip01 L Thigh x2, Bip01 Spine1 x2, GrannyHeadPos x2, Bip01 R Calf x2, Bip01 R Clavicle x2, Bip01 R Toe01 x2, Bip01 L Forearm x2, Bip01 R Thigh x2, Bip01 L Hand x2, Bip01 R Hand x2, Bip01 R Toe0 x2, Bip01 Head x2, Bip01 R Finger0 x2, Bip01 R Foot x2, Bip01 L Toe0 x2, Bip01 L UpperArm x2, Bip01 R Toe02 x2, Bip01 L Toe01 x2, Bip01 Pelvis x2, Bip01 L Calf x2, Bip01 L Finger0 x2, Bip01 Spine2 x2, Bip01 L Toe02 x2, Bip01 R Forearm x2, Bip01 L Clavicle x2, Bip01 Spine3 x2, Bip01 Spine x2, Camera_Target_Position x1, Camera_Target_Position first x1, Directional LightGRANNY x1, YouEscaped x1
 - top level: Plane (2), Camera_Target_Position, Camera_Target_Position first, Directional Light (3), Plane (4), Plane, Plane (5), Directional Light (1), Directional Light (2), Plane (1), Directional Light, Cutscene_Camera, Canvas, Directional Light MOON, EventSystem, Plane (3), Global Volume, grassAS-01 (3), grassAS-01 (1), grassAS-01, grassAS-01 (5), grassAS-01 (6), grassAS-01 (4), escapescene, grassAS-01 (2), Nosferatu, GrannyParent (merge), tree.003_4
 
@@ -71,18 +71,18 @@
   - area `Area Light Death` colour [1.0, 1.0, 1.0] intensity 1.33 range 10 shadows 2 at [-20.667, 3.96, -70.22]
   - area `Area Light` colour [1.0, 1.0, 1.0] intensity 1 range 0.63 shadows 2 at [-13.382, 0.188, -58.801]
 - scripts on objects:
-  - `Unity.RenderPipelines.Universal.Runtime.dll#-1431003440` x4 (Area Light, Area Light Death, Directional Light, Point Light)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalLightData` x4 (Area Light, Area Light Death, Directional Light, Point Light)
   - `DayManager` x1 (DayManager)
-  - `Unity.RenderPipelines.Universal.Runtime.dll#938447500` x1 (Main Camera)
-  - `UnityEngine.UI.dll#1301386320` x1 (Canvas)
-  - `UnityEngine.UI.dll#1980459831` x1 (Canvas)
-  - `UnityEngine.UI.dll#-619905303` x1 (EventSystem)
-  - `UnityEngine.UI.dll#1077351063` x1 (EventSystem)
-  - `Unity.TextMeshPro.dll#1453722849` x1 (Text (TMP))
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalCameraData` x1 (Main Camera)
+  - `UnityEngine.UI.GraphicRaycaster` x1 (Canvas)
+  - `UnityEngine.UI.CanvasScaler` x1 (Canvas)
+  - `UnityEngine.EventSystems.EventSystem` x1 (EventSystem)
+  - `UnityEngine.EventSystems.StandaloneInputModule` x1 (EventSystem)
+  - `TMPro.TextMeshProUGUI` x1 (Text (TMP))
   - `CoffinDoorInteractable` x1 (Coffin_Pivot)
-  - `UnityEngine.UI.dll#-765806418` x1 (Image)
-  - `Unity.RenderPipelines.Core.Runtime.dll#1520420858` x1 (Global Volume)
-  - `Unity.AI.Navigation.dll#-91948227` x1 (GameObject)
+  - `UnityEngine.UI.Image` x1 (Image)
+  - `UnityEngine.Rendering.Volume` x1 (Global Volume)
+  - `Unity.AI.Navigation.NavMeshSurface` x1 (GameObject)
   - `TimelineGameOverController` x1 (GameOverManager)
   - `GrannyAI` x1 (GrannyAI)
   - `SecretBookshelfDoor` x1 (Bookshelfdeath)
@@ -110,26 +110,26 @@
   - directional `Directional Light` colour [1.0, 1.0, 1.0] intensity 1 range 10 shadows 2 at [0.0, 3.0, 0.0]
 - scripts on objects:
   - `InteractableItem` x38 (CarKey, CarKey (1), CarKey (2), Chain Cutter, Chain Cutter (1), Chain Cutter (2))
-  - `Unity.RenderPipelines.Universal.Runtime.dll#-1431003440` x36 (Area Light, Area Light (1), Area Light (10), Area Light (11), Area Light (12), Area Light (13))
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalLightData` x36 (Area Light, Area Light (1), Area Light (10), Area Light (11), Area Light (12), Area Light (13))
   - `DoorInteractable` x28 (Door_Pivot-bathroom_door, Door_Pivot-bedroom1_door, Door_Pivot-bedroom2_door, Door_Pivot-bedrrom_door, Door_Pivot-nosfera_room_door, Door_Pivot-outside_door)
-  - `UnityEngine.UI.dll#-765806418` x26 (?, Background, BlackFadePanel, BlackScreen, Checkmark, CloseSettingsButton)
+  - `UnityEngine.UI.Image` x26 (?, Background, BlackFadePanel, BlackScreen, Checkmark, CloseSettingsButton)
   - `ItemSway` x14 (Car Key_HoldPoint, Chain Cutter_HoldPoint, Cylinder_HoldPoint, Duct Tape_Hold Point, Gold Key_HoldPoint, Hammer_HoldPoint)
-  - `UnityEngine.UI.dll#1392445389` x11 (?, CloseSettingsButton, CrouchButton, HideButton, HideButtonCar, HideButtonCoffin)
+  - `UnityEngine.UI.Button` x11 (?, CloseSettingsButton, CrouchButton, HideButton, HideButtonCar, HideButtonCoffin)
   - `CreakingFloor` x11 (Cube, Cube (1), Cube (10), Cube (2), Cube (3), Cube (4))
   - `DrawerInteractable` x8 (Esfera.001, Esfera.002)
   - `HidingSpotDistanceTracker` x7 (Cabinet_empty, TriggerZone, bed (1), bed (2), cargranny, playerbed)
   - `EscapeLockElement` x6 (Chain, Master Key, Padlock, PadlockCode, Place Here, Plank)
-  - `UnityEngine.UI.dll#1301386320` x5 (Canvas, DeathCanvas, FadeCanvas, FadeScreen, MobileControlsCanvas)
-  - `UnityEngine.UI.dll#1980459831` x5 (Canvas, DeathCanvas, FadeCanvas, FadeScreen, MobileControlsCanvas)
+  - `UnityEngine.UI.GraphicRaycaster` x5 (Canvas, DeathCanvas, FadeCanvas, FadeScreen, MobileControlsCanvas)
+  - `UnityEngine.UI.CanvasScaler` x5 (Canvas, DeathCanvas, FadeCanvas, FadeScreen, MobileControlsCanvas)
   - `GrannyPatrolWaypoint` x5 (BedRoomLeft Point, BedRoomRight Point, InnerNosferaRoom Point, PlayerBedRoom Point, SecretBookRoom Point)
   - `HidingSpot` x5 (Cabinet_empty, bed (1), bed (2), cargranny, playerbed)
-  - `Unity.RenderPipelines.Universal.Runtime.dll#938447500` x4 (CrashCutsceneCamera, CutSceneCamera, HeldItemCamera, Main Camera)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalCameraData` x4 (CrashCutsceneCamera, CutSceneCamera, HeldItemCamera, Main Camera)
   - `PhysicsPropHolder` x4 (Painting_Holder, Painting_Holder (1), Painting_Holder (2), Painting_Holder (3))
   - `DistractionObject` x4 (Chair_low (5), Object_2, lamp (1), table_hightop)
-  - `UnityEngine.UI.dll#708705254` x3 (ItemNameText, LockedNotificationText, Warning Text Display)
+  - `UnityEngine.UI.Text` x3 (ItemNameText, LockedNotificationText, Warning Text Display)
   - `FallingLockSound` x3 (Chain, Padlock, PadlockCode)
   - `ItemSpawnPoint` x2 (SpawnPoint_Bedroom_Table, SpawnPoint_Garage_Shelf)
-  - `Unity.TextMeshPro.dll#1453722849` x2 (Day 1, Music)
+  - `TMPro.TextMeshProUGUI` x2 (Day 1, Music)
   - `script:0` x2 (Chain Static, Chain Static (1))
   - `SilentGroundZone` x1 (SilentGround_Outside)
   - `SmoothRope` x1 (Dynamic_Rope)
@@ -156,14 +156,14 @@
   - `ObjectPresetManager` x1 (ObjectPresetManager)
   - `ItemRespawnZone` x1 (RespawnZone_UnderFloor)
   - `EscapeSequenceManager` x1 (EscapeSequenceManager)
-  - `UnityEngine.UI.dll#-619905303` x1 (EventSystem)
-  - `UnityEngine.UI.dll#1077351063` x1 (EventSystem)
+  - `UnityEngine.EventSystems.EventSystem` x1 (EventSystem)
+  - `UnityEngine.EventSystems.StandaloneInputModule` x1 (EventSystem)
   - `JumpscareCoordinator` x1 (JumpscareManager)
   - `CoffinDoorInteractable` x1 (Coffin_Pivot)
-  - `UnityEngine.UI.dll#2109663825` x1 (MusicToggle)
-  - `Unity.RenderPipelines.Core.Runtime.dll#1520420858` x1 (Global Volume)
-  - `Unity.AI.Navigation.dll#-91948227` x1 (GameObject)
-  - `UnityEngine.UI.dll#-113659843` x1 (SensitivitySlider)
+  - `UnityEngine.UI.Toggle` x1 (MusicToggle)
+  - `UnityEngine.Rendering.Volume` x1 (Global Volume)
+  - `Unity.AI.Navigation.NavMeshSurface` x1 (GameObject)
+  - `UnityEngine.UI.Slider` x1 (SensitivitySlider)
   - `BalloonBurnerZone` x1 (Interaction_BurnerUnit)
   - `AdsManager` x1 (UnityAdsManager)
   - `TripwireTrap` x1 (Doorbell_Tripwire)
@@ -179,21 +179,21 @@
 - lights: 1 directional
   - directional `Directional Light` colour [1.0, 0.957, 0.839] intensity 1 range 10 shadows 2 at [0.0, 3.0, 0.0]
 - scripts on objects:
-  - `UnityEngine.UI.dll#-765806418` x27 (Arrow, Background, Button_Easy, Button_Extreme, Button_Hard, Button_Normal)
-  - `Unity.TextMeshPro.dll#1453722849` x18 (DifficultyDescription, Item Label, Label, LoadingText, Quality, Text (TMP))
-  - `UnityEngine.UI.dll#1392445389` x9 (Button_Easy, Button_Extreme, Button_Hard, Button_Normal, Button_Practice, Continue)
-  - `UnityEngine.UI.dll#2109663825` x4 (Darker Mode Toggle, Item, Music Toggle, Toggle_ExtraLocks)
-  - `UnityEngine.UI.dll#-1200242548` x1 (Viewport)
-  - `Unity.TextMeshPro.dll#1148083418` x1 (Quality Dropdown)
+  - `UnityEngine.UI.Image` x27 (Arrow, Background, Button_Easy, Button_Extreme, Button_Hard, Button_Normal)
+  - `TMPro.TextMeshProUGUI` x18 (DifficultyDescription, Item Label, Label, LoadingText, Quality, Text (TMP))
+  - `UnityEngine.UI.Button` x9 (Button_Easy, Button_Extreme, Button_Hard, Button_Normal, Button_Practice, Continue)
+  - `UnityEngine.UI.Toggle` x4 (Darker Mode Toggle, Item, Music Toggle, Toggle_ExtraLocks)
+  - `UnityEngine.UI.Mask` x1 (Viewport)
+  - `TMPro.TMP_Dropdown` x1 (Quality Dropdown)
   - `MainMenuManager` x1 (MainMenuManagerObject)
-  - `Unity.RenderPipelines.Universal.Runtime.dll#938447500` x1 (Main Camera)
-  - `UnityEngine.UI.dll#-619905303` x1 (EventSystem)
-  - `UnityEngine.UI.dll#1077351063` x1 (EventSystem)
-  - `Unity.RenderPipelines.Universal.Runtime.dll#-1431003440` x1 (Directional Light)
-  - `UnityEngine.UI.dll#-2061169968` x1 (Scrollbar)
-  - `UnityEngine.UI.dll#1367256648` x1 (Template)
-  - `UnityEngine.UI.dll#1301386320` x1 (MainMenuCanvas)
-  - `UnityEngine.UI.dll#1980459831` x1 (MainMenuCanvas)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalCameraData` x1 (Main Camera)
+  - `UnityEngine.EventSystems.EventSystem` x1 (EventSystem)
+  - `UnityEngine.EventSystems.StandaloneInputModule` x1 (EventSystem)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalLightData` x1 (Directional Light)
+  - `UnityEngine.UI.Scrollbar` x1 (Scrollbar)
+  - `UnityEngine.UI.ScrollRect` x1 (Template)
+  - `UnityEngine.UI.GraphicRaycaster` x1 (MainMenuCanvas)
+  - `UnityEngine.UI.CanvasScaler` x1 (MainMenuCanvas)
 - most common object names: Text (TMP) x13, Background x3, Checkmark x3, Continue x2, LoadingPanel x2, OptionBackground x1, Item Background x1, Toggle_ExtraLocks x1, Quality x1, Viewport x1, Item Label x1, Handle x1, MenuBackground x1, MainMenuPanel x1, Item Checkmark x1, DifficultyDescription x1, GoodLuckPanel x1, Image x1, Content x1, Quality Dropdown x1, OptionsChoosePanel x1, Button_Normal x1, Quit x1, MainMenuManagerObject x1, Main Camera x1, EventSystem x1, MenuBackgroundMusic x1, Play x1, Directional Light x1, Arrow x1, Button_Easy x1, Button_Extreme x1, Music Toggle x1, LoadingBackground x1, Darker Mode Toggle x1, Scrollbar x1, Item x1, Sliding Area x1, Label x1, Template x1
 - top level: MainMenuManagerObject, Main Camera, EventSystem, MenuBackgroundMusic, Directional Light, MainMenuCanvas
 
@@ -208,28 +208,28 @@
   - area `Point Light (1)` colour [1.0, 1.0, 1.0] intensity 1 range 10 shadows 2 at [2.04, 1.36, -63.46]
   - directional `Sun` colour [1.0, 1.0, 1.0] intensity 5.13 range 10 shadows 1 at [6.87, -0.56, -63.621]
 - scripts on objects:
-  - `UnityEngine.UI.dll#-765806418` x24 (?, Background, BlackFadePanel, BlackScreen, Checkmark, CloseSettingsButton)
-  - `UnityEngine.UI.dll#1392445389` x10 (?, CloseSettingsButton, CrouchButton, HideButton, HideButtonCoffin, InteractButton)
-  - `UnityEngine.UI.dll#1301386320` x5 (Canvas, DeathCanvas, FadeCanvas, MobileControlsCanvas)
-  - `UnityEngine.UI.dll#1980459831` x5 (Canvas, DeathCanvas, FadeCanvas, MobileControlsCanvas)
-  - `UnityEngine.UI.dll#708705254` x3 (ItemNameText, LockedNotificationText, Warning Text Display)
-  - `Unity.TextMeshPro.dll#1453722849` x3 (Day 1, Music, Text (TMP))
-  - `Unity.RenderPipelines.Universal.Runtime.dll#938447500` x3 (CutSceneCamera, PLAYERCAMERA, Vcam1)
-  - `Unity.RenderPipelines.Universal.Runtime.dll#-1431003440` x3 (Point Light, Point Light (1), Sun)
+  - `UnityEngine.UI.Image` x24 (?, Background, BlackFadePanel, BlackScreen, Checkmark, CloseSettingsButton)
+  - `UnityEngine.UI.Button` x10 (?, CloseSettingsButton, CrouchButton, HideButton, HideButtonCoffin, InteractButton)
+  - `UnityEngine.UI.GraphicRaycaster` x5 (Canvas, DeathCanvas, FadeCanvas, MobileControlsCanvas)
+  - `UnityEngine.UI.CanvasScaler` x5 (Canvas, DeathCanvas, FadeCanvas, MobileControlsCanvas)
+  - `UnityEngine.UI.Text` x3 (ItemNameText, LockedNotificationText, Warning Text Display)
+  - `TMPro.TextMeshProUGUI` x3 (Day 1, Music, Text (TMP))
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalCameraData` x3 (CutSceneCamera, PLAYERCAMERA, Vcam1)
+  - `UnityEngine.Rendering.Universal.UniversalAdditionalLightData` x3 (Point Light, Point Light (1), Sun)
   - `DayManager` x1 (GameManager)
   - `BalloonCylinderSlot` x1 (Interaction_CylinderSlot)
-  - `Unity.Timeline.dll#-1490623707` x1 (Anim)
-  - `Unity.RenderPipelines.Core.Runtime.dll#1520420858` x1 (Global Volume)
+  - `UnityEngine.Timeline.SignalReceiver` x1 (Anim)
+  - `UnityEngine.Rendering.Volume` x1 (Global Volume)
   - `EscapeSceneController` x1 (EscapeController)
   - `DoorInteractable` x1 (Door_Pivot-outside_door)
   - `GameSettingsManager` x1 (SettingsManager)
   - `EscapeSequenceManager` x1 (EscapeSequenceManager)
-  - `UnityEngine.UI.dll#-619905303` x1 (EventSystem)
-  - `UnityEngine.UI.dll#1077351063` x1 (EventSystem)
+  - `UnityEngine.EventSystems.EventSystem` x1 (EventSystem)
+  - `UnityEngine.EventSystems.StandaloneInputModule` x1 (EventSystem)
   - `JumpscareCoordinator` x1 (JumpscareManager)
-  - `UnityEngine.UI.dll#2109663825` x1 (MusicToggle)
-  - `Unity.AI.Navigation.dll#-91948227` x1 (GameObject)
-  - `UnityEngine.UI.dll#-113659843` x1 (SensitivitySlider)
+  - `UnityEngine.UI.Toggle` x1 (MusicToggle)
+  - `Unity.AI.Navigation.NavMeshSurface` x1 (GameObject)
+  - `UnityEngine.UI.Slider` x1 (SensitivitySlider)
   - `BalloonBurnerZone` x1 (Interaction_BurnerUnit)
   - `MobileJoystick` x1 (JoystickBackground)
   - `HotAirBalloonEscape` x1 (HotAirBalloon_Parent)
@@ -240,49 +240,52 @@
 
 185 materials; most used:
 
-- `stair_block` x53 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `ballontexts` x39 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `Lit` x38 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `stair_wood` x38 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `WoodFinedark` x37 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `Cupboard_Upper_01_tex` x37 - shader builtin:10752 - texture - - colour None
-- `walltext` x36 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `lighermetal` x35 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `Image_0.001` x20 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `the-rich-dark-grain-of-polished-rosewood-reveals-intricate-patterns-and-textures-creating-a-warm-and-sophisticated-surface-perfect-for-backgrounds-or-designs-photo` x20 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `wall3` x19 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `WoodFineLight` x19 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `Drawer_tex` x16 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `tabletext12` x15 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `window 2` x14 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `TexturesCom_Wood_Wenge_1K_albedo` x13 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `window` x12 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `secret_room` x12 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `buttons` x12 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `books01` x12 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `large_pliers` x12 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `wood_text` x11 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `wall2` x11 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `outside_roomwall` x11 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `wall8` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `Bathroom_wall` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `Wall` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `F2244` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `carred` x10 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `wall7` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `numbers` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `well` x10 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `Rocks` x8 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `GrannyLeg` x8 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `floor` x8 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `underwall` x8 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `outsidewall` x8 - shader Universal Render Pipeline_Lit - texture - - colour None
-- `Cupboard_Upper_02_tex` x8 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `barrels` x8 - shader Universal Render Pipeline_Unlit - texture - - colour None
-- `pProcessGrass-t_diffuseOriginal` x7 - shader Universal Render Pipeline_Lit - texture - - colour None
+- `stair_block` x53 - shader Universal Render Pipeline_Lit - texture stair_block.png - colour [1.0, 1.0, 1.0, 1.0]
+- `ballontexts` x39 - shader Universal Render Pipeline_Unlit - texture ballontexts.png - colour [0.577, 0.577, 0.577, 1.0]
+- `Lit` x38 - shader Universal Render Pipeline_Lit - texture - - colour [0.5, 0.5, 0.5, 1.0]
+- `stair_wood` x38 - shader Universal Render Pipeline_Lit - texture stair_wood.png - colour [1.0, 1.0, 1.0, 1.0]
+- `WoodFinedark` x37 - shader Universal Render Pipeline_Unlit - texture WoodFinedark.png - colour [1.0, 1.0, 1.0, 1.0]
+- `Cupboard_Upper_01_tex` x37 - shader builtin:10752 - texture Cupboard_Upper_01_tex.png - colour [1.0, 1.0, 1.0, 1.0]
+- `walltext` x36 - shader Universal Render Pipeline_Lit - texture stair_wood.png - colour [1.0, 1.0, 1.0, 1.0]
+- `lighermetal` x35 - shader Universal Render Pipeline_Unlit - texture lighermetal.png - colour [0.679, 0.679, 0.679, 1.0]
+- `Image_0.001` x20 - shader Universal Render Pipeline_Lit - texture Image_0.001.png - colour [1.0, 1.0, 1.0, 1.0]
+- `the-rich-dark-grain-of-polished-rosewood-reveals-intricate-patterns-and-textures-creating-a-warm-and-sophisticated-surface-perfect-for-backgrounds-or-designs-photo` x20 - shader Universal Render Pipeline_Lit - texture stair_wood.png - colour [0.811, 0.811, 0.811, 1.0]
+- `wall3` x19 - shader Universal Render Pipeline_Lit - texture wall3.png - colour [1.0, 1.0, 1.0, 1.0]
+- `WoodFineLight` x19 - shader Universal Render Pipeline_Unlit - texture WoodFineLight.png - colour [0.858, 0.858, 0.858, 1.0]
+- `Drawer_tex` x16 - shader Universal Render Pipeline_Unlit - texture Drawer_tex.png - colour [1.0, 1.0, 1.0, 1.0]
+- `tabletext12` x15 - shader Universal Render Pipeline_Unlit - texture tabletext12.png - colour [0.67, 0.67, 0.67, 1.0]
+- `window 2` x14 - shader Universal Render Pipeline_Unlit - texture window 2.png - colour [0.698, 0.698, 0.698, 1.0]
+- `TexturesCom_Wood_Wenge_1K_albedo` x13 - shader Universal Render Pipeline_Unlit - texture TexturesCom_Wood_Wenge_1K_albedo.png - colour [1.0, 1.0, 1.0, 1.0]
+- `window` x12 - shader Universal Render Pipeline_Unlit - texture window.png - colour [0.708, 0.708, 0.708, 1.0]
+- `secret_room` x12 - shader Universal Render Pipeline_Lit - texture secret_room.png - colour [1.0, 1.0, 1.0, 1.0]
+- `buttons` x12 - shader Universal Render Pipeline_Lit - texture - - colour [1.0, 1.0, 1.0, 1.0]
+- `books01` x12 - shader Universal Render Pipeline_Unlit - texture books01.png - colour [0.802, 0.802, 0.802, 1.0]
+- `large_pliers` x12 - shader Universal Render Pipeline_Unlit - texture large_pliers.png - colour [0.736, 0.736, 0.736, 1.0]
+- `wood_text` x11 - shader Universal Render Pipeline_Lit - texture wood_text.png - colour [1.0, 1.0, 1.0, 1.0]
+- `wall2` x11 - shader Universal Render Pipeline_Lit - texture wall2.png - colour [1.0, 1.0, 1.0, 1.0]
+- `outside_roomwall` x11 - shader Universal Render Pipeline_Unlit - texture outside_roomwall.png - colour [1.0, 1.0, 1.0, 1.0]
+- `wall8` x10 - shader Universal Render Pipeline_Lit - texture wall8.png - colour [1.0, 1.0, 1.0, 1.0]
+- `Bathroom_wall` x10 - shader Universal Render Pipeline_Lit - texture Bathroom_wall.png - colour [1.0, 1.0, 1.0, 1.0]
+- `Wall` x10 - shader Universal Render Pipeline_Lit - texture wall.png - colour [1.0, 1.0, 1.0, 1.0]
+- `F2244` x10 - shader Universal Render Pipeline_Lit - texture F2244.png - colour [1.0, 1.0, 1.0, 1.0]
+- `carred` x10 - shader Universal Render Pipeline_Unlit - texture carred.png - colour [0.764, 0.764, 0.764, 1.0]
+- `wall7` x10 - shader Universal Render Pipeline_Lit - texture wall7.png - colour [1.0, 1.0, 1.0, 1.0]
+- `numbers` x10 - shader Universal Render Pipeline_Lit - texture - - colour [1.0, 1.0, 1.0, 1.0]
+- `well` x10 - shader Universal Render Pipeline_Lit - texture well.png - colour [1.0, 1.0, 1.0, 1.0]
+- `Rocks` x8 - shader Universal Render Pipeline_Lit - texture - - colour [0.8, 0.8, 0.8, 1.0]
+- `GrannyLeg` x8 - shader Universal Render Pipeline_Lit - texture GrannyLeg.png - colour [1.0, 1.0, 1.0, 1.0]
+- `floor` x8 - shader Universal Render Pipeline_Lit - texture floor.png - colour [1.0, 1.0, 1.0, 1.0]
+- `underwall` x8 - shader Universal Render Pipeline_Lit - texture underwall.png - colour [1.0, 1.0, 1.0, 1.0]
+- `outsidewall` x8 - shader Universal Render Pipeline_Lit - texture outsidewall.png - colour [1.0, 1.0, 1.0, 1.0]
+- `Cupboard_Upper_02_tex` x8 - shader Universal Render Pipeline_Unlit - texture Cupboard_Upper_02_tex.png - colour [1.0, 1.0, 1.0, 1.0]
+- `barrels` x8 - shader Universal Render Pipeline_Unlit - texture barrels.png - colour [0.84, 0.84, 0.84, 1.0]
+- `pProcessGrass-t_diffuseOriginal` x7 - shader Universal Render Pipeline_Lit - texture pProcessGrass-t_diffuseOriginal.png - colour [1.0, 1.0, 1.0, 1.0]
 
 ## Textures
 
+![materials_1.jpg](textures/materials_1.jpg)
+![materials_2.jpg](textures/materials_2.jpg)
+![materials_3.jpg](textures/materials_3.jpg)
 ![other_1.jpg](textures/other_1.jpg)
 ![other_2.jpg](textures/other_2.jpg)
 
@@ -299,6 +302,85 @@ Bats2.ogg, BirdSeedRamlar.ogg, BodyFallsGrus.ogg, BordRamlar.ogg, BurdoorOpen.og
 ## Fonts
 
 Anton.ttf, Bangers.ttf, Electronic Highway Sign.ttf, LiberationSans.ttf, Oswald-Bold.ttf, PerfectDOSVGA437.ttf, Roboto-Bold.ttf
+
+## Project inventory
+
+**Plugin DLLs:** System.Runtime.CompilerServices.Unsafe.dll, Unity.AI.Navigation.dll, Unity.Burst.Unsafe.dll, Unity.Burst.dll, Unity.Mathematics.dll, Unity.RenderPipeline.Universal.ShaderLibrary.dll, Unity.RenderPipelines.Core.Runtime.dll, Unity.RenderPipelines.Universal.Runtime.dll, Unity.TextMeshPro.dll, Unity.Timeline.dll, UnityEngine.Advertisements.dll, UnityEngine.UI.dll, __Generated.dll
+
+**Shaders (52):** Hidden/Core/FallbackError, Hidden/ProBuilder/EdgePicker, Hidden/ProBuilder/FacePicker, Hidden/ProBuilder/HideVertices, Hidden/ProBuilder/VertexPicker, Hidden/TerrainEngine/Details/UniversalPipeline/BillboardWavingDoublePass, Hidden/TerrainEngine/Details/UniversalPipeline/Vertexlit, Hidden/TerrainEngine/Details/UniversalPipeline/WavingDoublePass, Hidden/Universal Render Pipeline/Blit, Hidden/Universal Render Pipeline/Bloom, Hidden/Universal Render Pipeline/BokehDepthOfField, Hidden/Universal Render Pipeline/CameraMotionBlur, Hidden/Universal Render Pipeline/CameraMotionVectors, Hidden/Universal Render Pipeline/CopyDepth, Hidden/Universal Render Pipeline/Debug/DebugReplacement, Hidden/Universal Render Pipeline/Edge Adaptive Spatial Upsampling, Hidden/Universal Render Pipeline/FallbackError, Hidden/Universal Render Pipeline/FallbackLoading, Hidden/Universal Render Pipeline/FinalPost, Hidden/Universal Render Pipeline/GaussianDepthOfField, Hidden/Universal Render Pipeline/LensFlareDataDriven, Hidden/Universal Render Pipeline/LutBuilderHdr, Hidden/Universal Render Pipeline/LutBuilderLdr, Hidden/Universal Render Pipeline/MaterialError, Hidden/Universal Render Pipeline/ObjectMotionVectors, Hidden/Universal Render Pipeline/PaniniProjection, Hidden/Universal Render Pipeline/Sampling, Hidden/Universal Render Pipeline/Scaling Setup, Hidden/Universal Render Pipeline/StencilDeferred, Hidden/Universal Render Pipeline/Stop NaN, Hidden/Universal Render Pipeline/SubpixelMorphologicalAntialiasing, Hidden/Universal Render Pipeline/TemporalAA, Hidden/Universal Render Pipeline/UberPost, Hidden/Universal Render Pipeline/XR/XRMirrorView, Hidden/Universal Render Pipeline/XR/XROcclusionMesh, Hidden/Universal/BlitHDROverlay, Hidden/Universal/CoreBlit, Hidden/Universal/CoreBlitColorAndDepth, Hidden/Universal/HDRDebugView, ProBuilder/Standard Vertex Color, ProBuilder/UnlitVertexColor, TextMeshPro/Distance Field (Surface), TextMeshPro/Distance Field, TextMeshPro/Mobile/Distance Field (Surface), TextMeshPro/Mobile/Distance Field - Masking, TextMeshPro/Mobile/Distance Field Overlay, TextMeshPro/Mobile/Distance Field, TextMeshPro/Sprite, Universal Render Pipeline/Lit, Universal Render Pipeline/Particles/Unlit, Universal Render Pipeline/Simple Lit, Universal Render Pipeline/Unlit
+
+**MonoBehaviour assets:**
+
+- `2` - UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset
+- `2_Renderer` - UnityEngine.Rendering.Universal.UniversalRendererData
+- `ColorAdjustments` - UnityEngine.Rendering.Universal.ColorAdjustments
+- `Global Volume Profile 1` - UnityEngine.Rendering.VolumeProfile
+- `LiftGammaGain` - UnityEngine.Rendering.Universal.LiftGammaGain
+- `PostProcessData` - UnityEngine.Rendering.Universal.PostProcessData
+- `Sig_LoadMainMenul` - UnityEngine.Timeline.SignalAsset
+- `Signal Emitter` - UnityEngine.Timeline.SignalEmitter
+- `SplitToning` - UnityEngine.Rendering.Universal.SplitToning
+- `UniversalRenderPipelineGlobalSettings` - UnityEngine.Rendering.Universal.UniversalRenderPipelineGlobalSettings
+- `Vignette` - UnityEngine.Rendering.Universal.Vignette
+- `XRSystemData` - UnityEngine.Rendering.Universal.XRSystemData
+- `TMP Settings` - TMPro.TMP_Settings
+- `Blue to Purple - Vertical` - TMPro.TMP_ColorGradient
+- `Dark to Light Green - Vertical` - TMPro.TMP_ColorGradient
+- `Light to Dark Green - Vertical` - TMPro.TMP_ColorGradient
+- `Yellow to Orange - Vertical` - TMPro.TMP_ColorGradient
+- `Anton SDF` - TMPro.TMP_FontAsset
+- `Bangers SDF` - TMPro.TMP_FontAsset
+- `Electronic Highway Sign SDF` - TMPro.TMP_FontAsset
+- `LiberationSans SDF - Fallback` - TMPro.TMP_FontAsset
+- `LiberationSans SDF` - TMPro.TMP_FontAsset
+- `Oswald Bold SDF` - TMPro.TMP_FontAsset
+- `Roboto-Bold SDF` - TMPro.TMP_FontAsset
+- `Default Sprite Asset` - TMPro.TMP_SpriteAsset
+- `DropCap Numbers` - TMPro.TMP_SpriteAsset
+- `EmojiOne` - TMPro.TMP_SpriteAsset
+- `Default Style Sheet` - TMPro.TMP_StyleSheet
+
+**Prefabs:**
+
+- `DebugUIBitField.prefab` (166 objects) - UnityEngine.Rendering.UI.DebugUIHandlerBitField, UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerIndirectToggle, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.Toggle, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIButton.prefab` (2 objects) - UnityEngine.Rendering.UI.DebugUIHandlerButton, UnityEngine.UI.Button, UnityEngine.UI.Image, UnityEngine.UI.Text
+- `DebugUIColor.prefab` (19 objects) - UnityEngine.Rendering.UI.DebugUIHandlerColor, UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIEnumField.prefab` (6 objects) - UnityEngine.Rendering.UI.DebugUIHandlerEnumField, UnityEngine.UI.Button, UnityEngine.UI.Text
+- `DebugUIEnumHistory.prefab` (3 objects) - UnityEngine.Rendering.UI.DebugUIHandlerEnumHistory, UnityEngine.UI.Text
+- `DebugUIFloatField.prefab` (8 objects) - UnityEngine.Rendering.UI.DebugUIHandlerFloatField, UnityEngine.UI.Button, UnityEngine.UI.Text
+- `DebugUIFoldout.prefab` (6 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerFoldout, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIGroup.prefab` (4 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerGroup, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIHBox.prefab` (1 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerHBox, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.HorizontalLayoutGroup
+- `DebugUIIntField.prefab` (8 objects) - UnityEngine.Rendering.UI.DebugUIHandlerIntField, UnityEngine.UI.Button, UnityEngine.UI.Text
+- `DebugUIMessageBox.prefab` (2 objects) - UnityEngine.Rendering.UI.DebugUIHandlerMessageBox, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIObject.prefab` (3 objects) - UnityEngine.Rendering.UI.DebugUIHandlerObject, UnityEngine.UI.Text
+- `DebugUIObjectList.prefab` (6 objects) - UnityEngine.Rendering.UI.DebugUIHandlerObjectList, UnityEngine.UI.Button, UnityEngine.UI.Text
+- `DebugUIObjectPopupField.prefab` (6 objects) - UnityEngine.Rendering.UI.DebugUIHandlerObjectPopupField, UnityEngine.UI.Button, UnityEngine.UI.Text
+- `DebugUIPanel.prefab` (21 objects) - UnityEngine.EventSystems.EventTrigger, UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerPanel, UnityEngine.UI.Button, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.LayoutElement, UnityEngine.UI.Mask, UnityEngine.UI.ScrollRect, UnityEngine.UI.Scrollbar, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIProgressBar.prefab` (5 objects) - UnityEngine.Rendering.UI.DebugUIHandlerProgressBar, UnityEngine.UI.Image, UnityEngine.UI.Text
+- `DebugUIRow.prefab` (6 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerRow, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIToggle.prefab` (5 objects) - UnityEngine.Rendering.UI.DebugUIHandlerToggle, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.Toggle
+- `DebugUIToggleHistory.prefab` (5 objects) - UnityEngine.Rendering.UI.DebugUIHandlerToggleHistory, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.Toggle
+- `DebugUIUIntField.prefab` (8 objects) - UnityEngine.Rendering.UI.DebugUIHandlerUIntField, UnityEngine.UI.Button, UnityEngine.UI.Text
+- `DebugUIVBox.prefab` (1 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerVBox, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIValue.prefab` (3 objects) - UnityEngine.Rendering.UI.DebugUIHandlerValue, UnityEngine.UI.Text
+- `DebugUIValuePersistent.prefab` (3 objects) - UnityEngine.Rendering.UI.DebugUIHandlerValue, UnityEngine.UI.Text
+- `DebugUIValueTuple.prefab` (3 objects) - UnityEngine.Rendering.UI.DebugUIHandlerValueTuple, UnityEngine.UI.Text
+- `DebugUIVector2.prefab` (12 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField, UnityEngine.Rendering.UI.DebugUIHandlerVector2, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIVector3.prefab` (15 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField, UnityEngine.Rendering.UI.DebugUIHandlerVector3, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUIVector4.prefab` (18 objects) - UnityEngine.Rendering.UI.DebugUIHandlerContainer, UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField, UnityEngine.Rendering.UI.DebugUIHandlerVector4, UnityEngine.Rendering.UI.UIFoldout, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.Image, UnityEngine.UI.Text, UnityEngine.UI.VerticalLayoutGroup
+- `DebugUICanvas.prefab` (1 objects) - UnityEngine.Rendering.UI.DebugUIHandlerCanvas, UnityEngine.UI.CanvasScaler, UnityEngine.UI.GraphicRaycaster
+- `DebugUIPersistentCanvas.prefab` (2 objects) - UnityEngine.Rendering.UI.DebugUIHandlerPersistentCanvas, UnityEngine.UI.CanvasScaler, UnityEngine.UI.ContentSizeFitter, UnityEngine.UI.GraphicRaycaster, UnityEngine.UI.Image, UnityEngine.UI.VerticalLayoutGroup
+
+**Animator controllers:** BallonEscapeGranny.controller, FadeController.controller, Granny.controller, NosFeratu.controller, balloon.controller
+
+**Animations:** Balloon_Deflated.anim, Balloon_Idle_Ready.anim, Balloon_Inflating.anim, FadeToBlack.anim, FadeToClear.anim, Hit.anim, Look.anim, Recorded (1).anim, Recorded (1)_0.anim, Recorded (2).anim, Recorded (2)_0.anim, Recorded (3).anim, Recorded (3)_0.anim, Recorded.anim, Recorded_0.anim, Walk.anim, idle.anim, idle_0.anim, idle_1.anim, idle_1_0.anim, idle_2.anim, lookBed.anim
+
+**Timelines:** Escape_Balloon.playable, GameOverManagerTimeline.playable, HotAirBalloon_ParentTimeline.playable
+
+**Tags:** ['Floor', 'Granny']
+
+**Layers:** [(0, 'Default'), (1, 'TransparentFX'), (2, 'Ignore Raycast'), (4, 'Water'), (5, 'UI'), (6, 'Interactable'), (7, 'GrannyAI'), (8, 'Weapon'), (9, 'InteractableItem'), (10, 'Enemy'), (11, 'Floor'), (12, 'Car'), (13, 'Stairs'), (14, 'HeldItem')]
 
 ## Files by type
 

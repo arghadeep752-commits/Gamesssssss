@@ -4,18 +4,135 @@
   "path": "Assets/Material/stair_block.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/stair_block.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/stair_block.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "ballontexts",
   "path": "Assets/Material/ballontexts.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/ballontexts.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/ballontexts.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.577,
+    0.577,
+    0.577,
+    1.0
+   ],
+   "_Color": [
+    0.577,
+    0.577,
+    0.577,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Lit",
@@ -23,53 +140,369 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.5,
+    0.5,
+    0.5,
+    1.0
+   ],
+   "_Color": [
+    0.5,
+    0.5,
+    0.5,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "stair_wood",
   "path": "Assets/Material/stair_wood.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     15.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     15.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "WoodFinedark",
   "path": "Assets/Material/WoodFinedark.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/WoodFinedark.png",
+    "scale": [
+     9.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/WoodFinedark.png",
+    "scale": [
+     9.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Cupboard_Upper_01_tex",
   "path": "Assets/Material/Cupboard_Upper_01_tex.mat",
   "shader": "builtin:10752",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Cupboard_Upper_01_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "walltext",
   "path": "Assets/Material/walltext.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "lighermetal",
   "path": "Assets/Material/lighermetal.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/lighermetal.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/lighermetal.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.679,
+    0.679,
+    0.679,
+    1.0
+   ],
+   "_Color": [
+    0.679,
+    0.679,
+    0.679,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Image_0.001",
@@ -79,18 +512,135 @@
    "_SPECULAR_SETUP",
    "_SURFACE_TYPE_TRANSPARENT"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Image_0.001.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Image_0.001.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 1
+  }
  },
  {
   "name": "the-rich-dark-grain-of-polished-rosewood-reveals-intricate-patterns-and-textures-creating-a-warm-and-sophisticated-surface-perfect-for-backgrounds-or-designs-photo",
   "path": "Assets/Material/the-rich-dark-grain-of-polished-rosewood-reveals-intricate-patterns-and-textures-creating-a-warm-and-sophisticated-surface-perfect-for-backgrounds-or-designs-photo.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     2.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     2.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.811,
+    0.811,
+    0.811,
+    1.0
+   ],
+   "_Color": [
+    0.811,
+    0.811,
+    0.811,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall3",
@@ -99,63 +649,481 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall3.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall3_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall3.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "WoodFineLight",
   "path": "Assets/Material/WoodFineLight.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/WoodFineLight.png",
+    "scale": [
+     9.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/WoodFineLight.png",
+    "scale": [
+     9.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.858,
+    0.858,
+    0.858,
+    1.0
+   ],
+   "_Color": [
+    0.858,
+    0.858,
+    0.858,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Drawer_tex",
   "path": "Assets/Material/Drawer_tex.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Drawer_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Drawer_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "tabletext12",
   "path": "Assets/Material/tabletext12.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/tabletext12.png",
+    "scale": [
+     15.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/tabletext12.png",
+    "scale": [
+     15.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.67,
+    0.67,
+    0.67,
+    1.0
+   ],
+   "_Color": [
+    0.67,
+    0.67,
+    0.67,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "window 2",
   "path": "Assets/Material/window 2.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/window 2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/window 2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.698,
+    0.698,
+    0.698,
+    1.0
+   ],
+   "_Color": [
+    0.698,
+    0.698,
+    0.698,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "TexturesCom_Wood_Wenge_1K_albedo",
   "path": "Assets/Material/TexturesCom_Wood_Wenge_1K_albedo.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/TexturesCom_Wood_Wenge_1K_albedo.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/TexturesCom_Wood_Wenge_1K_albedo.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "window",
   "path": "Assets/Material/window.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/window.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/window.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.708,
+    0.708,
+    0.708,
+    1.0
+   ],
+   "_Color": [
+    0.708,
+    0.708,
+    0.708,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "secret_room",
@@ -164,9 +1132,79 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/secret_room.png",
+    "scale": [
+     9.0,
+     4.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/secret_room_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/secret_room.png",
+    "scale": [
+     9.0,
+     4.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "buttons",
@@ -174,35 +1212,245 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.64,
+    0.64,
+    0.64,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.96000004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.96000004,
+   "_Surface": 0
+  }
  },
  {
   "name": "books01",
   "path": "Assets/Material/books01.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/books01.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/books01.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_Color": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "large_pliers",
   "path": "Assets/Material/large_pliers.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/large_pliers.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/large_pliers.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.736,
+    0.736,
+    0.736,
+    1.0
+   ],
+   "_Color": [
+    0.736,
+    0.736,
+    0.736,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "wood_text",
   "path": "Assets/Material/wood_text.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wood_text.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wood_text.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall2",
@@ -211,18 +1459,146 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall2.png",
+    "scale": [
+     9.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall2_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall2.png",
+    "scale": [
+     9.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "outside_roomwall",
   "path": "Assets/Material/outside_roomwall.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/outside_roomwall.png",
+    "scale": [
+     1.0,
+     8.0
+    ],
+    "offset": [
+     0.47,
+     1.56
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/outside_roomwall.png",
+    "scale": [
+     1.0,
+     8.0
+    ],
+    "offset": [
+     0.47,
+     1.56
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall8",
@@ -231,9 +1607,79 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall8.png",
+    "scale": [
+     10.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall8_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall8.png",
+    "scale": [
+     10.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Bathroom_wall",
@@ -242,9 +1688,79 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Bathroom_wall.png",
+    "scale": [
+     10.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/Bathroom_wall_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Bathroom_wall.png",
+    "scale": [
+     10.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Wall",
@@ -253,27 +1769,213 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall.png",
+    "scale": [
+     7.0,
+     3.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall.png",
+    "scale": [
+     7.0,
+     3.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "F2244",
   "path": "Assets/Material/F2244.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/F2244.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/F2244.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "carred",
   "path": "Assets/Material/carred.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/carred.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/carred.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.764,
+    0.764,
+    0.764,
+    1.0
+   ],
+   "_Color": [
+    0.764,
+    0.764,
+    0.764,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall7",
@@ -282,9 +1984,79 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall7.png",
+    "scale": [
+     5.0,
+     3.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall7_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall7.png",
+    "scale": [
+     5.0,
+     3.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "numbers",
@@ -292,17 +2064,111 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.489,
+    0.5,
+    0.62,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.98,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.98,
+   "_Surface": 0
+  }
  },
  {
   "name": "well",
   "path": "Assets/Material/well.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/well.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/well.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Rocks",
@@ -312,17 +2178,111 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "GrannyLeg",
   "path": "Assets/Material/GrannyLeg.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/GrannyLeg.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/GrannyLeg.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "floor",
@@ -331,18 +2291,146 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/floor.png",
+    "scale": [
+     9.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/floor_new_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/floor.png",
+    "scale": [
+     9.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "underwall",
   "path": "Assets/Material/underwall.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/underwall.png",
+    "scale": [
+     20.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/underwall.png",
+    "scale": [
+     20.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "outsidewall",
@@ -351,27 +2439,212 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/outsidewall.png",
+    "scale": [
+     0.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/outsidewall_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/outsidewall.png",
+    "scale": [
+     0.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Cupboard_Upper_02_tex",
   "path": "Assets/Material/Cupboard_Upper_02_tex.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Cupboard_Upper_02_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Cupboard_Upper_02_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "barrels",
   "path": "Assets/Material/barrels.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/barrels.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/barrels.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.84,
+    0.84,
+    0.84,
+    1.0
+   ],
+   "_Color": [
+    0.84,
+    0.84,
+    0.84,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "pProcessGrass-t_diffuseOriginal",
@@ -381,9 +2654,67 @@
    "_ALPHAPREMULTIPLY_ON",
    "_SURFACE_TYPE_TRANSPARENT"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/pProcessGrass-t_diffuseOriginal.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/pProcessGrass-t_diffuseOriginal.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 1
+  }
  },
  {
   "name": "wall6",
@@ -392,18 +2723,147 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall6.png",
+    "scale": [
+     20.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall6_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall6.png",
+    "scale": [
+     20.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "door",
   "path": "Assets/Material/door.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/door.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/door.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.651,
+    0.651,
+    0.651,
+    1.0
+   ],
+   "_Color": [
+    0.651,
+    0.651,
+    0.651,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall9",
@@ -412,9 +2872,79 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall9.png",
+    "scale": [
+     12.0,
+     8.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall9_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall9.png",
+    "scale": [
+     12.0,
+     8.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "tv-retro",
@@ -424,35 +2954,245 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "lighter1",
   "path": "Assets/Material/lighter1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/lighter1.png",
+    "scale": [
+     2.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/lighter1.png",
+    "scale": [
+     2.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.755,
+    0.755,
+    0.755,
+    1.0
+   ],
+   "_Color": [
+    0.755,
+    0.755,
+    0.755,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Cupboard_Big_tex",
   "path": "Assets/Material/Cupboard_Big_tex.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Cupboard_Big_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Cupboard_Big_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "red_cyinder",
   "path": "Assets/Material/red_cyinder.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/red_cyinder.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/red_cyinder.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.708,
+    0.708,
+    0.708,
+    1.0
+   ],
+   "_Color": [
+    0.708,
+    0.708,
+    0.708,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Black_plastic_PL.009",
@@ -460,17 +3200,111 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.39999998,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.39999998,
+   "_Surface": 0
+  }
  },
  {
   "name": "istockphoto-809971888-612x612",
   "path": "Assets/Material/istockphoto-809971888-612x612.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/istockphoto-809971888-612x612.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/istockphoto-809971888-612x612.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Background_Tree_Atlas",
@@ -480,44 +3314,313 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "coffin1",
   "path": "Assets/Material/coffin1.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/coffin1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/coffin1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "TandUppe",
   "path": "Assets/Material/TandUppe.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/TandUppe.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/TandUppe.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "WoodPlanksClean0039_1_M",
   "path": "Assets/Material/WoodPlanksClean0039_1_M.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/WoodPlanksClean0039_1_M.png",
+    "scale": [
+     6.0,
+     6.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/WoodPlanksClean0039_1_M.png",
+    "scale": [
+     6.0,
+     6.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.858,
+    0.858,
+    0.858,
+    1.0
+   ],
+   "_Color": [
+    0.858,
+    0.858,
+    0.858,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.02795085,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.02795085,
+   "_Surface": 0
+  }
  },
  {
   "name": "elevator_lever_BaseColor",
   "path": "Assets/Material/elevator_lever_BaseColor.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/elevator_lever_BaseColor.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/elevator_lever_BaseColor.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "images",
@@ -526,18 +3629,146 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/SRN16222-5.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/SRN16222-5_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/SRN16222-5.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "fence",
   "path": "Assets/Material/fence.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/fence.png",
+    "scale": [
+     9.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/fence.png",
+    "scale": [
+     9.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "floor_new",
@@ -546,9 +3777,78 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/floor_new.png",
+    "scale": [
+     15.0,
+     25.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/floor_new_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/floor_new.png",
+    "scale": [
+     15.0,
+     25.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Deco",
@@ -558,8 +3858,43 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Material.001",
@@ -567,35 +3902,245 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.54,
+    0.54,
+    0.54,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "outside_wallroom.ong",
   "path": "Assets/Material/outside_wallroom.ong.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/outside_wallroom.ong.png",
+    "scale": [
+     15.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/outside_wallroom.ong.png",
+    "scale": [
+     15.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "laamp_cover",
   "path": "Assets/Material/laamp_cover.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/laamp_cover.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/laamp_cover.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Cooktop_tex",
   "path": "Assets/Material/Cooktop_tex.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Cooktop_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Cooktop_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall10",
@@ -604,79 +4149,551 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall10.png",
+    "scale": [
+     5.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/wall10_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall10.png",
+    "scale": [
+     5.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Duct Tape",
   "path": "Assets/Material/Duct Tape.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Duct Tape.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Duct Tape.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.783,
+    0.783,
+    0.783,
+    1.0
+   ],
+   "_Color": [
+    0.783,
+    0.783,
+    0.783,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "small_table",
   "path": "Assets/Material/small_table.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/small_table.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/small_table.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "storage_roomwall",
   "path": "Assets/Material/storage_roomwall.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/storage_roomwall.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/storage_roomwall.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Fabric_1",
   "path": "Assets/Material/Fabric_1.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Fabric_1.png",
+    "scale": [
+     5.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Fabric_1.png",
+    "scale": [
+     5.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "CarKey99",
   "path": "Assets/Material/CarKey99.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/CarKey99.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/CarKey99.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_Color": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "code 1",
   "path": "Assets/Material/code 1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/code.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/code.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.651,
+    0.651,
+    0.651,
+    1.0
+   ],
+   "_Color": [
+    0.651,
+    0.651,
+    0.651,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "slen_books",
   "path": "Assets/Material/slen_books.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/slen_books.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/slen_books.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.764,
+    0.764,
+    0.764,
+    1.0
+   ],
+   "_Color": [
+    0.764,
+    0.764,
+    0.764,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "HouseKey",
   "path": "Assets/Material/HouseKey.mat",
   "shader": "builtin:10752",
   "keywords": [],
-  "textures": {},
+  "textures": {
+   "_MainTex": {
+    "texture": "Assets/Texture2D/HouseKey.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
   "colors": {},
   "floats": {}
  },
@@ -685,7 +4702,19 @@
   "path": "Assets/Material/HanglockKey.mat",
   "shader": "builtin:10752",
   "keywords": [],
-  "textures": {},
+  "textures": {
+   "_MainTex": {
+    "texture": "Assets/Texture2D/HanglockKey.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
   "colors": {},
   "floats": {}
  },
@@ -694,9 +4723,67 @@
   "path": "Assets/Material/gold.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/gold.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/gold.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.783,
+    0.783,
+    0.783,
+    1.0
+   ],
+   "_Color": [
+    0.783,
+    0.783,
+    0.783,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Cube_Cube.006Mat",
@@ -704,26 +4791,179 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Hammer",
   "path": "Assets/Material/Hammer.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Hammer.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Hammer.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.708,
+    0.708,
+    0.708,
+    1.0
+   ],
+   "_Color": [
+    0.708,
+    0.708,
+    0.708,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "SRN16222-5",
   "path": "Assets/Material/SRN16222-5.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/SRN16222-5.png",
+    "scale": [
+     7.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/SRN16222-5.png",
+    "scale": [
+     7.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Columns2",
@@ -733,8 +4973,43 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "No Name",
@@ -742,107 +5017,772 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Image_10",
   "path": "Assets/Material/Image_10.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/stair_wood.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "TandUppe 1",
   "path": "Assets/Material/TandUppe 1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/TandUppe.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/TandUppe.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "TandNere 1",
   "path": "Assets/Material/TandNere 1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/TandNere.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/TandNere.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "Eye 1",
   "path": "Assets/Material/Eye 1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Eye.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Eye.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "NosAtlas7",
   "path": "Assets/Material/NosAtlas7.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/NosAtlas7.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/NosAtlas7.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.811,
+    0.811,
+    0.811,
+    1.0
+   ],
+   "_Color": [
+    0.811,
+    0.811,
+    0.811,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "HairMap1 1",
   "path": "Assets/Material/HairMap1 1.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/HairMap1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/HairMap1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "Blood 1",
   "path": "Assets/Material/Blood 1.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Blood.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Blood.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "ASHSEN_2",
   "path": "Assets/Material/ASHSEN_2.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/ASHSEN_2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/ASHSEN_2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.02795085,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.02795085,
+   "_Surface": 0
+  }
  },
  {
   "name": "mat_player",
   "path": "Assets/Material/mat_player.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/mat_player.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/mat_player.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Eye",
   "path": "Assets/Material/Eye.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Eye.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Eye.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "GrannyBakeLight11",
   "path": "Assets/Material/GrannyBakeLight11.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/GrannyTexturePainted5.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/GrannyTexturePainted5.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.1,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.1,
+   "_Surface": 0
+  }
  },
  {
   "name": "HairMap1",
@@ -851,18 +5791,135 @@
   "keywords": [
    "_SURFACE_TYPE_TRANSPARENT"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/HairMap1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/HairMap1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 1
+  }
  },
  {
   "name": "wooden_door",
   "path": "Assets/Material/wooden_door.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wooden_door.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wooden_door.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "07c2b8bcad9fb6a6efb8d3c62e5f3084",
@@ -872,18 +5929,145 @@
    "_NORMALMAP",
    "_SPECULAR_SETUP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/07c2b8bcad9fb6a6efb8d3c62e5f3080.png",
+    "scale": [
+     9.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/07c2b8bcad9fb6a6efb8d3c62e5f3080 1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/07c2b8bcad9fb6a6efb8d3c62e5f3080.png",
+    "scale": [
+     9.0,
+     9.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Sink_tex",
   "path": "Assets/Material/Sink_tex.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Sink_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Sink_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "floor_new 1",
@@ -892,72 +6076,527 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/floor_new 1.png",
+    "scale": [
+     2.0,
+     14.2
+    ],
+    "offset": [
+     0.0,
+     0.032
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/floor_new_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/floor_new 1.png",
+    "scale": [
+     2.0,
+     14.2
+    ],
+    "offset": [
+     0.0,
+     0.032
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "underwall2",
   "path": "Assets/Material/underwall2.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/underwall2.png",
+    "scale": [
+     5.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/underwall2.png",
+    "scale": [
+     5.0,
+     15.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "garage_floor",
   "path": "Assets/Material/garage_floor.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/garage_floor.png",
+    "scale": [
+     20.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/garage_floor.png",
+    "scale": [
+     20.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.453,
+    0.453,
+    0.453,
+    1.0
+   ],
+   "_Color": [
+    0.453,
+    0.453,
+    0.453,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "EyeLockTexture",
   "path": "Assets/Material/EyeLockTexture.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/EyeLockTextureTrailer.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "soviet_sofa",
   "path": "Assets/Material/soviet_sofa.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/soviet_sofa.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/soviet_sofa.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "bed 1",
   "path": "Assets/Material/bed 1.mat",
   "shader": "builtin:10752",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_MainTex": {
+    "texture": "Assets/Texture2D/bed.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "nor_wall_woodenWall01_Alb",
   "path": "Assets/Material/nor_wall_woodenWall01_Alb.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/nor_wall_woodenWall01_Alb.png",
+    "scale": [
+     5.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/nor_wall_woodenWall01_Alb.png",
+    "scale": [
+     5.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "watch",
   "path": "Assets/Material/watch.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/watch.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/watch.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Armchair",
@@ -965,17 +6604,111 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.299,
+    0.299,
+    0.299,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.39999998,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.39999998,
+   "_Surface": 0
+  }
  },
  {
   "name": "lamp_table",
   "path": "Assets/Material/lamp_table.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/lamp_table.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/lamp_table.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Material.020",
@@ -983,44 +6716,301 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.679,
+    0.679,
+    0.679,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.39999998,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.39999998,
+   "_Surface": 0
+  }
  },
  {
   "name": "lamp",
   "path": "Assets/Material/lamp.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/lamp.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/lamp.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "crate_2__pbr_diffuse",
   "path": "Assets/Material/crate_2__pbr_diffuse.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/crate_2__pbr_diffuse.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/crate_2__pbr_diffuse.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "crate_1__pbr_diffuse",
   "path": "Assets/Material/crate_1__pbr_diffuse.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/crate_1__pbr_diffuse.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/crate_1__pbr_diffuse.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "walltext 1",
   "path": "Assets/Material/walltext 1.mat",
   "shader": "builtin:10752",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_MainTex": {
+    "texture": "Assets/Texture2D/walltext.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Material",
@@ -1028,26 +7018,178 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.77941173,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.77941173,
+   "_Surface": 0
+  }
  },
  {
   "name": "07c2b8bcad9fb6a6efb8d3c62e5f3083",
   "path": "Assets/Material/07c2b8bcad9fb6a6efb8d3c62e5f3083.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/07c2b8bcad9fb6a6efb8d3c62e5f3080.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/07c2b8bcad9fb6a6efb8d3c62e5f3080.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.3,
+   "_Surface": 0
+  }
  },
  {
   "name": "2999-v4",
   "path": "Assets/Material/2999-v4.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/2999-v4.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/2999-v4.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "bark04",
@@ -1055,8 +7197,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Base",
@@ -1066,8 +7244,43 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "tree_outside",
@@ -1076,9 +7289,67 @@
   "keywords": [
    "_SURFACE_TYPE_TRANSPARENT"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/tree_outside.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/tree_outside.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 1
+  }
  },
  {
   "name": "Tree_Branches_01.001",
@@ -1088,17 +7359,110 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "GrannyTexturePainted5",
   "path": "Assets/Material/GrannyTexturePainted5.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/GrannyTexturePainted5.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/GrannyTexturePainted5.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "rsgergr5eg55h35hh5h5h5h5h5h",
@@ -1108,8 +7472,44 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Balustrade14",
@@ -1119,8 +7519,43 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_Color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "SlendrinaSkugga2",
@@ -1130,144 +7565,1030 @@
    "_ALPHAPREMULTIPLY_ON",
    "_SURFACE_TYPE_TRANSPARENT"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/SlendrinaSkugga2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/SlendrinaSkugga2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 1
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 7",
   "path": "Assets/Material/royal-purple-pattern-stockcake 7.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 11",
   "path": "Assets/Material/royal-purple-pattern-stockcake 11.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 8",
   "path": "Assets/Material/royal-purple-pattern-stockcake 8.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 10",
   "path": "Assets/Material/royal-purple-pattern-stockcake 10.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 9",
   "path": "Assets/Material/royal-purple-pattern-stockcake 9.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "artwall_slen",
   "path": "Assets/Material/artwall_slen.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/artwall_slen.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/artwall_slen.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Air_Vent_tex",
   "path": "Assets/Material/Air_Vent_tex.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Air_Vent_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Air_Vent_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Basement_tex",
   "path": "Assets/Material/Basement_tex.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Basement_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Basement_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "HouseBakedTexture2Test6_2-sharedassets2.assets-699",
   "path": "Assets/Material/HouseBakedTexture2Test6_2-sharedassets2.assets-699.mat",
   "shader": "builtin:10752",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_MainTex": {
+    "texture": "Assets/Texture2D/HouseBakedTexture2Test6_2-sharedassets2.assets-699.png",
+    "scale": [
+     9.19,
+     5.41
+    ],
+    "offset": [
+     1.39,
+     12.53
+    ]
+   }
+  },
+  "colors": {
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  "floats": {
+   "_BumpScale": 1,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0
+  }
  },
  {
   "name": "main_door_master_key",
   "path": "Assets/Material/main_door_master_key.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/main_door_master_key.png",
+    "scale": [
+     1.42,
+     1.37
+    ],
+    "offset": [
+     0.76,
+     -0.2
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/main_door_master_key.png",
+    "scale": [
+     1.42,
+     1.37
+    ],
+    "offset": [
+     0.76,
+     -0.2
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "wall5",
   "path": "Assets/Material/wall5.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wall5.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wall5.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "vase_newa",
   "path": "Assets/Material/vase_newa.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/vase_newa.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/vase_newa.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Tap_tex",
   "path": "Assets/Material/Tap_tex.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Tap_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Tap_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "walltext 10",
   "path": "Assets/Material/walltext 10.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/walltext.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/walltext.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.679,
+    0.679,
+    0.679,
+    1.0
+   ],
+   "_Color": [
+    0.679,
+    0.679,
+    0.679,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "artwall_grannyl",
   "path": "Assets/Material/artwall_grannyl.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/artwall_grannyl.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/artwall_grannyl.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "bathroom_floor",
@@ -1276,9 +8597,79 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/bathroom_floor1.png",
+    "scale": [
+     10.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/bathroom_floor1_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/bathroom_floor1.png",
+    "scale": [
+     10.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "x",
@@ -1287,45 +8678,335 @@
   "keywords": [
    "_SURFACE_TYPE_TRANSPARENT"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/x-removebg-preview.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/x-removebg-preview.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 1
+  }
  },
  {
   "name": "Oven_tex",
   "path": "Assets/Material/Oven_tex.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Oven_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Oven_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.868,
+    0.868,
+    0.868,
+    1.0
+   ],
+   "_Color": [
+    0.868,
+    0.868,
+    0.868,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "main_door",
   "path": "Assets/Material/main_door.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/main_door.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/main_door.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "artwallgranny",
   "path": "Assets/Material/artwallgranny.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/artwallgranny.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/artwallgranny.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Gas_Cock_tex",
   "path": "Assets/Material/Gas_Cock_tex.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Gas_Cock_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Gas_Cock_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Gas_cock_mat",
@@ -1333,8 +9014,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.55833334,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.55833334,
+   "_Surface": 0
+  }
  },
  {
   "name": "builtin:0",
@@ -1345,27 +9062,201 @@
   "path": "Assets/Material/iron_plate.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/iron_plate.png",
+    "scale": [
+     9.11,
+     1.0
+    ],
+    "offset": [
+     4.07,
+     0.97
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/iron_plate.png",
+    "scale": [
+     9.11,
+     1.0
+    ],
+    "offset": [
+     4.07,
+     0.97
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Table_tex",
   "path": "Assets/Material/Table_tex.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Table_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Table_tex.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Image_0",
   "path": "Assets/Material/Image_0.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Image_0.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Image_0.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "met2",
@@ -1373,26 +9264,178 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.046,
+    0.097,
+    0.127,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.87704915,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.87704915,
+   "_Surface": 0
+  }
  },
  {
   "name": "storage_room",
   "path": "Assets/Material/storage_room.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/storage_room.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/storage_room.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "garage_shutter",
   "path": "Assets/Material/garage_shutter.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/garage_shutter.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/garage_shutter.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 0,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Bronze.001",
@@ -1400,8 +9443,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.737,
+    0.631,
+    0.29,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Iron",
@@ -1409,8 +9488,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.475,
+    0.475,
+    0.482,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Bronze.003",
@@ -1418,8 +9533,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.584,
+    0.49,
+    0.267,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Wood_dark",
@@ -1427,8 +9578,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.247,
+    0.176,
+    0.102,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.1442663,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.1442663,
+   "_Surface": 0
+  }
  },
  {
   "name": "Bronze",
@@ -1436,17 +9623,111 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.773,
+    0.694,
+    0.322,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "wardrobe",
   "path": "Assets/Material/wardrobe.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/wardrobe.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/wardrobe.png",
+    "scale": [
+     5.0,
+     5.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.877,
+    0.877,
+    0.877,
+    1.0
+   ],
+   "_Color": [
+    0.877,
+    0.877,
+    0.877,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "wood",
@@ -1454,53 +9735,363 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.643,
+    0.447,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "EstanteriaMetalica_Copias_DefaultMaterial_ 2",
   "path": "Assets/Material/EstanteriaMetalica_Copias_DefaultMaterial_ 2.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/EstanteriaMetalica_Copias_DefaultMaterial_.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/EstanteriaMetalica_Copias_DefaultMaterial_.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "nosfera_mat",
   "path": "Assets/Material/nosfera_mat.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/nosfera_mat.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/nosfera_mat.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "prayermat2",
   "path": "Assets/Material/prayermat2.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/prayermat2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/prayermat2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.585,
+    0.585,
+    0.585,
+    1.0
+   ],
+   "_Color": [
+    0.585,
+    0.585,
+    0.585,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Roughness",
   "path": "Assets/Material/Roughness.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/ASHSEN_2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/ASHSEN_2.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "bathtub",
   "path": "Assets/Material/bathtub.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/bathtub.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/bathtub.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "main2",
@@ -1508,8 +10099,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.034,
+    0.084,
+    0.14,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "back-screen",
@@ -1520,8 +10147,44 @@
    "_SURFACE_TYPE_TRANSPARENT"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.047,
+    0.088,
+    0.127,
+    0.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.98,
+   "_Metallic": 0,
+   "_Mode": 3,
+   "_Smoothness": 0.98,
+   "_Surface": 1
+  }
  },
  {
   "name": "main",
@@ -1529,17 +10192,95 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.4,
+    0.343,
+    0.389,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "woodentext",
   "path": "Assets/Material/woodentext.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/woodentext.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/woodentext.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.755,
+    0.755,
+    0.755,
+    1.0
+   ],
+   "_Color": [
+    0.755,
+    0.755,
+    0.755,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 5",
@@ -1548,9 +10289,78 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "PolyMesh_1_7Mat",
@@ -1558,8 +10368,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "fawcetcollarMat",
@@ -1567,8 +10413,44 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "garagefloor",
@@ -1577,18 +10459,145 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/garagefloor.png",
+    "scale": [
+     20.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/garagefloor_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/garagefloor.png",
+    "scale": [
+     20.0,
+     20.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "artwall_slenfam",
   "path": "Assets/Material/artwall_slenfam.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/artwall_slenfam.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/artwall_slenfam.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 6",
@@ -1597,9 +10606,78 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     4.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 4",
@@ -1608,9 +10686,78 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "DrainMat",
@@ -1618,17 +10765,111 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "vase",
   "path": "Assets/Material/vase.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/vase.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/vase.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.764,
+    0.764,
+    0.764,
+    1.0
+   ],
+   "_Color": [
+    0.764,
+    0.764,
+    0.764,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "1001",
@@ -1638,8 +10879,44 @@
    "_NORMALMAP"
   ],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.5,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 2",
@@ -1648,45 +10925,344 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "NosAtlas2 1",
   "path": "Assets/Material/NosAtlas2 1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/NosAtlas7.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/NosAtlas7.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_Color": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "beowulf_color",
   "path": "Assets/Material/beowulf_color.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/slen_books.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/slen_books.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_Color": [
+    0.802,
+    0.802,
+    0.802,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "bathroom_floor1",
   "path": "Assets/Material/bathroom_floor1.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/bathroom_floor1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/bathroom_floor1.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "Klockdel_38_baseColor 1",
   "path": "Assets/Material/Klockdel_38_baseColor 1.mat",
   "shader": "Universal Render Pipeline_Simple Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Klockdel_38_baseColor.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Klockdel_38_baseColor.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Smoothness": 0.5,
+   "_Surface": 0
+  }
  },
  {
   "name": "royal-purple-pattern-stockcake 3",
@@ -1695,18 +11271,145 @@
   "keywords": [
    "_NORMALMAP"
   ],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_BumpMap": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake_N.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/royal-purple-pattern-stockcake.png",
+    "scale": [
+     7.0,
+     2.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "blue_color",
   "path": "Assets/Material/blue_color.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/blue_color.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/blue_color.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_Color": [
+    0.792,
+    0.792,
+    0.792,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "PolyMesh_3Mat",
@@ -1714,34 +11417,246 @@
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
   "textures": {},
-  "colors": {},
-  "floats": {}
+  "colors": {
+   "_BaseColor": [
+    0.906,
+    0.906,
+    0.906,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Chair_Roughness",
   "path": "Assets/Material/Chair_Roughness.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Chair_Roughness.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Chair_Roughness.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0,
+   "_Metallic": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  },
  {
   "name": "Dynamite",
   "path": "Assets/Material/Dynamite.mat",
   "shader": "Universal Render Pipeline_Lit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/Dynamite.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/Dynamite.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.083666004,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0.083666004,
+   "_Surface": 0
+  }
  },
  {
   "name": "GrannyBakeLight11 1",
   "path": "Assets/Material/GrannyBakeLight11 1.mat",
   "shader": "Universal Render Pipeline_Unlit",
   "keywords": [],
-  "textures": {},
-  "colors": {},
-  "floats": {}
+  "textures": {
+   "_BaseMap": {
+    "texture": "Assets/Texture2D/GrannyTexturePainted5.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   },
+   "_MainTex": {
+    "texture": "Assets/Texture2D/GrannyTexturePainted5.png",
+    "scale": [
+     1.0,
+     1.0
+    ],
+    "offset": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "colors": {
+   "_BaseColor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_Color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "_EmissionColor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_SpecColor": [
+    0.2,
+    0.2,
+    0.2,
+    1.0
+   ]
+  },
+  "floats": {
+   "_AlphaClip": 0,
+   "_Blend": 0,
+   "_BumpScale": 1,
+   "_Cull": 2,
+   "_Cutoff": 0.5,
+   "_Glossiness": 0.1,
+   "_Metallic": 0,
+   "_Mode": 0,
+   "_Smoothness": 0,
+   "_Surface": 0
+  }
  }
 ]

@@ -1,0 +1,866 @@
+{
+ "plugins": [
+  "Assets/Plugins/System.Runtime.CompilerServices.Unsafe.dll",
+  "Assets/Plugins/Unity.AI.Navigation.dll",
+  "Assets/Plugins/Unity.Burst.Unsafe.dll",
+  "Assets/Plugins/Unity.Burst.dll",
+  "Assets/Plugins/Unity.Mathematics.dll",
+  "Assets/Plugins/Unity.RenderPipeline.Universal.ShaderLibrary.dll",
+  "Assets/Plugins/Unity.RenderPipelines.Core.Runtime.dll",
+  "Assets/Plugins/Unity.RenderPipelines.Universal.Runtime.dll",
+  "Assets/Plugins/Unity.TextMeshPro.dll",
+  "Assets/Plugins/Unity.Timeline.dll",
+  "Assets/Plugins/UnityEngine.Advertisements.dll",
+  "Assets/Plugins/UnityEngine.UI.dll",
+  "Assets/Plugins/__Generated.dll"
+ ],
+ "shaders": [
+  {
+   "file": "Assets/Shader/Hidden_Core_FallbackError.shader",
+   "name": "Hidden/Core/FallbackError",
+   "guid": "88ca8ed545fb9c341b6828811b2210bf"
+  },
+  {
+   "file": "Assets/Shader/Hidden_ProBuilder_EdgePicker.shader",
+   "name": "Hidden/ProBuilder/EdgePicker",
+   "guid": "2baf5028d9154d6439c7330ab21f4a68"
+  },
+  {
+   "file": "Assets/Shader/Hidden_ProBuilder_FacePicker.shader",
+   "name": "Hidden/ProBuilder/FacePicker",
+   "guid": "83fc2ca9e0645db499bcd77eaf47f8f0"
+  },
+  {
+   "file": "Assets/Shader/Hidden_ProBuilder_HideVertices.shader",
+   "name": "Hidden/ProBuilder/HideVertices",
+   "guid": "9dc39efae848acd42b507efc35a0c5be"
+  },
+  {
+   "file": "Assets/Shader/Hidden_ProBuilder_VertexPicker.shader",
+   "name": "Hidden/ProBuilder/VertexPicker",
+   "guid": "c624725b7f55f2440b01cbfb1458af10"
+  },
+  {
+   "file": "Assets/Shader/Hidden_TerrainEngine_Details_UniversalPipeline_BillboardWavingDoublePass.shader",
+   "name": "Hidden/TerrainEngine/Details/UniversalPipeline/BillboardWavingDoublePass",
+   "guid": "7c75e4e2521031e4cb2f4de6e794f3fc"
+  },
+  {
+   "file": "Assets/Shader/Hidden_TerrainEngine_Details_UniversalPipeline_Vertexlit.shader",
+   "name": "Hidden/TerrainEngine/Details/UniversalPipeline/Vertexlit",
+   "guid": "9fad79f0fb012bb4ca9bb896e79a6a84"
+  },
+  {
+   "file": "Assets/Shader/Hidden_TerrainEngine_Details_UniversalPipeline_WavingDoublePass.shader",
+   "name": "Hidden/TerrainEngine/Details/UniversalPipeline/WavingDoublePass",
+   "guid": "cd98de092d49715488b13181fad5b6a6"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Blit.shader",
+   "name": "Hidden/Universal Render Pipeline/Blit",
+   "guid": "bfc997fce3dcd8641a363219183ac8c2"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Bloom.shader",
+   "name": "Hidden/Universal Render Pipeline/Bloom",
+   "guid": "c51408b73d8b5c748a561b563948e2ce"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_BokehDepthOfField.shader",
+   "name": "Hidden/Universal Render Pipeline/BokehDepthOfField",
+   "guid": "83e4fd2041917e84689cc83623ff53e5"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_CameraMotionBlur.shader",
+   "name": "Hidden/Universal Render Pipeline/CameraMotionBlur",
+   "guid": "c1f6b1d0554392a47a223cc4222ff0cd"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_CameraMotionVectors.shader",
+   "name": "Hidden/Universal Render Pipeline/CameraMotionVectors",
+   "guid": "0adcf2943de463042b7a9780d3fa3f91"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_CopyDepth.shader",
+   "name": "Hidden/Universal Render Pipeline/CopyDepth",
+   "guid": "e3fde0b7b1fd4d84c87b12650103aacb"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Debug_DebugReplacement.shader",
+   "name": "Hidden/Universal Render Pipeline/Debug/DebugReplacement",
+   "guid": "f4e804abdbfc7144e9a071868c2c50a2"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Edge Adaptive Spatial Upsampling.shader",
+   "name": "Hidden/Universal Render Pipeline/Edge Adaptive Spatial Upsampling",
+   "guid": "15d5d80d03ce72c4588c0fe7c1b83150"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_FallbackError.shader",
+   "name": "Hidden/Universal Render Pipeline/FallbackError",
+   "guid": "4aa3f6da6eb7e374f83e55dad40a5b64"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_FallbackLoading.shader",
+   "name": "Hidden/Universal Render Pipeline/FallbackLoading",
+   "guid": "0c1a06eb2d47ef3499058fa1ee6c36c8"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_FinalPost.shader",
+   "name": "Hidden/Universal Render Pipeline/FinalPost",
+   "guid": "daebe41db17334147852f7ae22f76e74"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_GaussianDepthOfField.shader",
+   "name": "Hidden/Universal Render Pipeline/GaussianDepthOfField",
+   "guid": "cb97dbbdbc4b4624f8f3e09165af67f3"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_LensFlareDataDriven.shader",
+   "name": "Hidden/Universal Render Pipeline/LensFlareDataDriven",
+   "guid": "24d9ad381b3655541b239a19a670301a"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_LutBuilderHdr.shader",
+   "name": "Hidden/Universal Render Pipeline/LutBuilderHdr",
+   "guid": "8bdc8a2e1363d9143a20c235adc12933"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_LutBuilderLdr.shader",
+   "name": "Hidden/Universal Render Pipeline/LutBuilderLdr",
+   "guid": "c7347a21358760d4a9b76811a7832635"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_MaterialError.shader",
+   "name": "Hidden/Universal Render Pipeline/MaterialError",
+   "guid": "765d47b2694b08f46b4b6a35cf336a86"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_ObjectMotionVectors.shader",
+   "name": "Hidden/Universal Render Pipeline/ObjectMotionVectors",
+   "guid": "e87e59f2a9fbc63468790d47ab8fa77a"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_PaniniProjection.shader",
+   "name": "Hidden/Universal Render Pipeline/PaniniProjection",
+   "guid": "647e5e8b9e056434c97c19a6a1eec688"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Sampling.shader",
+   "name": "Hidden/Universal Render Pipeline/Sampling",
+   "guid": "5c40f84f7ae22b64d9b3f7257dc7aa21"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Scaling Setup.shader",
+   "name": "Hidden/Universal Render Pipeline/Scaling Setup",
+   "guid": "24bbfbd36f91a7c43a55f551e967bda9"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_StencilDeferred.shader",
+   "name": "Hidden/Universal Render Pipeline/StencilDeferred",
+   "guid": "a709224e0129a2f48b82f4d9319342e4"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_Stop NaN.shader",
+   "name": "Hidden/Universal Render Pipeline/Stop NaN",
+   "guid": "4c22e1c6e39d08e438a9a1027f54114f"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_SubpixelMorphologicalAntialiasing.shader",
+   "name": "Hidden/Universal Render Pipeline/SubpixelMorphologicalAntialiasing",
+   "guid": "86210423686b3b0478ef73f77f354ed5"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_TemporalAA.shader",
+   "name": "Hidden/Universal Render Pipeline/TemporalAA",
+   "guid": "efe7f5093989d474eb046df1dd4aebfa"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_UberPost.shader",
+   "name": "Hidden/Universal Render Pipeline/UberPost",
+   "guid": "ba55d78a081c34747ad1feb85eaca920"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_XR_XRMirrorView.shader",
+   "name": "Hidden/Universal Render Pipeline/XR/XRMirrorView",
+   "guid": "f6479cbd90bd7c446a11f31bb1ea267f"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal Render Pipeline_XR_XROcclusionMesh.shader",
+   "name": "Hidden/Universal Render Pipeline/XR/XROcclusionMesh",
+   "guid": "17bf43120b97c2e4fb21bf6a3e1abc2e"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal_BlitHDROverlay.shader",
+   "name": "Hidden/Universal/BlitHDROverlay",
+   "guid": "bb36762be23f1c540ae72d4116feeb06"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal_CoreBlit.shader",
+   "name": "Hidden/Universal/CoreBlit",
+   "guid": "a7f77d479bff77043986531279e9b931"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal_CoreBlitColorAndDepth.shader",
+   "name": "Hidden/Universal/CoreBlitColorAndDepth",
+   "guid": "b9514ab9bd56952499c96143c58358ae"
+  },
+  {
+   "file": "Assets/Shader/Hidden_Universal_HDRDebugView.shader",
+   "name": "Hidden/Universal/HDRDebugView",
+   "guid": "f44e4945db5fe674caee71df5bc4cfa0"
+  },
+  {
+   "file": "Assets/Shader/ProBuilder_Standard Vertex Color.shader",
+   "name": "ProBuilder/Standard Vertex Color",
+   "guid": "c278b145b80656346a394658810788cb"
+  },
+  {
+   "file": "Assets/Shader/ProBuilder_UnlitVertexColor.shader",
+   "name": "ProBuilder/UnlitVertexColor",
+   "guid": "b948156c8cdbd634695f9732e912e178"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Distance Field (Surface).shader",
+   "name": "TextMeshPro/Distance Field (Surface)",
+   "guid": "68023b085ae28844894bf724565b95d1"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Distance Field.shader",
+   "name": "TextMeshPro/Distance Field",
+   "guid": "b9cf04ee2718e9348bfe3564fb8f6f84"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Mobile_Distance Field (Surface).shader",
+   "name": "TextMeshPro/Mobile/Distance Field (Surface)",
+   "guid": "6cf6fce6d338c9a46b80caffca02daee"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Mobile_Distance Field - Masking.shader",
+   "name": "TextMeshPro/Mobile/Distance Field - Masking",
+   "guid": "a10522cf1df33b843846fd27aff1dab0"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Mobile_Distance Field Overlay.shader",
+   "name": "TextMeshPro/Mobile/Distance Field Overlay",
+   "guid": "79723cb84f3b9eb4c8de61bf1492f59e"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Mobile_Distance Field.shader",
+   "name": "TextMeshPro/Mobile/Distance Field",
+   "guid": "0d3ef1296b79d13438db2dad88888df7"
+  },
+  {
+   "file": "Assets/Shader/TextMeshPro_Sprite.shader",
+   "name": "TextMeshPro/Sprite",
+   "guid": "43450447ff48b8f4a93b83eab27ca049"
+  },
+  {
+   "file": "Assets/Shader/Universal Render Pipeline_Lit.shader",
+   "name": "Universal Render Pipeline/Lit",
+   "guid": "b02c8572452c274469797d0a16b09ad0"
+  },
+  {
+   "file": "Assets/Shader/Universal Render Pipeline_Particles_Unlit.shader",
+   "name": "Universal Render Pipeline/Particles/Unlit",
+   "guid": "f77b9628b82a58244bf97882be3f6e39"
+  },
+  {
+   "file": "Assets/Shader/Universal Render Pipeline_Simple Lit.shader",
+   "name": "Universal Render Pipeline/Simple Lit",
+   "guid": "4ca1097b919ec014b8f84ab193e9397b"
+  },
+  {
+   "file": "Assets/Shader/Universal Render Pipeline_Unlit.shader",
+   "name": "Universal Render Pipeline/Unlit",
+   "guid": "194a2b1beaa2e3d4e89b2d4086bcdbd4"
+  }
+ ],
+ "mono_assets": [
+  {
+   "file": "Assets/MonoBehaviour/2.asset",
+   "name": 2,
+   "script": "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset"
+  },
+  {
+   "file": "Assets/MonoBehaviour/2_Renderer.asset",
+   "name": "2_Renderer",
+   "script": "UnityEngine.Rendering.Universal.UniversalRendererData"
+  },
+  {
+   "file": "Assets/MonoBehaviour/ColorAdjustments.asset",
+   "name": "ColorAdjustments",
+   "script": "UnityEngine.Rendering.Universal.ColorAdjustments"
+  },
+  {
+   "file": "Assets/MonoBehaviour/Global Volume Profile 1.asset",
+   "name": "Global Volume Profile 1",
+   "script": "UnityEngine.Rendering.VolumeProfile"
+  },
+  {
+   "file": "Assets/MonoBehaviour/LiftGammaGain.asset",
+   "name": "LiftGammaGain",
+   "script": "UnityEngine.Rendering.Universal.LiftGammaGain"
+  },
+  {
+   "file": "Assets/MonoBehaviour/PostProcessData.asset",
+   "name": "PostProcessData",
+   "script": "UnityEngine.Rendering.Universal.PostProcessData"
+  },
+  {
+   "file": "Assets/MonoBehaviour/Sig_LoadMainMenul.asset",
+   "name": "Sig_LoadMainMenul",
+   "script": "UnityEngine.Timeline.SignalAsset"
+  },
+  {
+   "file": "Assets/MonoBehaviour/Signal Emitter.asset",
+   "name": "Signal Emitter",
+   "script": "UnityEngine.Timeline.SignalEmitter"
+  },
+  {
+   "file": "Assets/MonoBehaviour/SplitToning.asset",
+   "name": "SplitToning",
+   "script": "UnityEngine.Rendering.Universal.SplitToning"
+  },
+  {
+   "file": "Assets/MonoBehaviour/UniversalRenderPipelineGlobalSettings.asset",
+   "name": "UniversalRenderPipelineGlobalSettings",
+   "script": "UnityEngine.Rendering.Universal.UniversalRenderPipelineGlobalSettings"
+  },
+  {
+   "file": "Assets/MonoBehaviour/Vignette.asset",
+   "name": "Vignette",
+   "script": "UnityEngine.Rendering.Universal.Vignette"
+  },
+  {
+   "file": "Assets/MonoBehaviour/XRSystemData.asset",
+   "name": "XRSystemData",
+   "script": "UnityEngine.Rendering.Universal.XRSystemData"
+  },
+  {
+   "file": "Assets/Resources/TMP Settings.asset",
+   "name": "TMP Settings",
+   "script": "TMPro.TMP_Settings"
+  },
+  {
+   "file": "Assets/Resources/color gradient presets/Blue to Purple - Vertical.asset",
+   "name": "Blue to Purple - Vertical",
+   "script": "TMPro.TMP_ColorGradient"
+  },
+  {
+   "file": "Assets/Resources/color gradient presets/Dark to Light Green - Vertical.asset",
+   "name": "Dark to Light Green - Vertical",
+   "script": "TMPro.TMP_ColorGradient"
+  },
+  {
+   "file": "Assets/Resources/color gradient presets/Light to Dark Green - Vertical.asset",
+   "name": "Light to Dark Green - Vertical",
+   "script": "TMPro.TMP_ColorGradient"
+  },
+  {
+   "file": "Assets/Resources/color gradient presets/Yellow to Orange - Vertical.asset",
+   "name": "Yellow to Orange - Vertical",
+   "script": "TMPro.TMP_ColorGradient"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/Anton SDF.asset",
+   "name": "Anton SDF",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/Bangers SDF.asset",
+   "name": "Bangers SDF",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/Electronic Highway Sign SDF.asset",
+   "name": "Electronic Highway Sign SDF",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/LiberationSans SDF - Fallback.asset",
+   "name": "LiberationSans SDF - Fallback",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/LiberationSans SDF.asset",
+   "name": "LiberationSans SDF",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/Oswald Bold SDF.asset",
+   "name": "Oswald Bold SDF",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/fonts & materials/Roboto-Bold SDF.asset",
+   "name": "Roboto-Bold SDF",
+   "script": "TMPro.TMP_FontAsset"
+  },
+  {
+   "file": "Assets/Resources/sprite assets/Default Sprite Asset.asset",
+   "name": "Default Sprite Asset",
+   "script": "TMPro.TMP_SpriteAsset"
+  },
+  {
+   "file": "Assets/Resources/sprite assets/DropCap Numbers.asset",
+   "name": "DropCap Numbers",
+   "script": "TMPro.TMP_SpriteAsset"
+  },
+  {
+   "file": "Assets/Resources/sprite assets/EmojiOne.asset",
+   "name": "EmojiOne",
+   "script": "TMPro.TMP_SpriteAsset"
+  },
+  {
+   "file": "Assets/Resources/style sheets/Default Style Sheet.asset",
+   "name": "Default Style Sheet",
+   "script": "TMPro.TMP_StyleSheet"
+  }
+ ],
+ "prefabs": [
+  {
+   "file": "Assets/GameObject/DebugUIBitField.prefab",
+   "objects": 166,
+   "root": "DebugUIBitField",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerBitField",
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerIndirectToggle",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.Toggle",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIButton.prefab",
+   "objects": 2,
+   "root": "DebugUIButton",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerButton",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIColor.prefab",
+   "objects": 19,
+   "root": "DebugUIColor",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerColor",
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIEnumField.prefab",
+   "objects": 6,
+   "root": "DebugUIEnumField",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerEnumField",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIEnumHistory.prefab",
+   "objects": 3,
+   "root": "DebugUIEnumHistory",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerEnumHistory",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIFloatField.prefab",
+   "objects": 8,
+   "root": "DebugUIFloatField",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerFloatField",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIFoldout.prefab",
+   "objects": 6,
+   "root": "DebugUIFoldout",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerFoldout",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIGroup.prefab",
+   "objects": 4,
+   "root": "DebugUIGroup",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerGroup",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIHBox.prefab",
+   "objects": 1,
+   "root": "DebugUIHBox",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerHBox",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.HorizontalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIIntField.prefab",
+   "objects": 8,
+   "root": "DebugUIIntField",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerIntField",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIMessageBox.prefab",
+   "objects": 2,
+   "root": "DebugUIMessageBox",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerMessageBox",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIObject.prefab",
+   "objects": 3,
+   "root": "DebugUIObject",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerObject",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIObjectList.prefab",
+   "objects": 6,
+   "root": "DebugUIObjectList",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerObjectList",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIObjectPopupField.prefab",
+   "objects": 6,
+   "root": "DebugUIObjectPopupField",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerObjectPopupField",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIPanel.prefab",
+   "objects": 21,
+   "root": "DebugUIPanel",
+   "scripts": [
+    "UnityEngine.EventSystems.EventTrigger",
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerPanel",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.LayoutElement",
+    "UnityEngine.UI.Mask",
+    "UnityEngine.UI.ScrollRect",
+    "UnityEngine.UI.Scrollbar",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIProgressBar.prefab",
+   "objects": 5,
+   "root": "DebugUIProgressBar",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerProgressBar",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIRow.prefab",
+   "objects": 6,
+   "root": "DebugUIRow",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerRow",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIToggle.prefab",
+   "objects": 5,
+   "root": "DebugUIToggle",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerToggle",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.Toggle"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIToggleHistory.prefab",
+   "objects": 5,
+   "root": "DebugUIToggleHistory",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerToggleHistory",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.Toggle"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIUIntField.prefab",
+   "objects": 8,
+   "root": "DebugUIUIntField",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerUIntField",
+    "UnityEngine.UI.Button",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIVBox.prefab",
+   "objects": 1,
+   "root": "DebugUIVBox",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerVBox",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIValue.prefab",
+   "objects": 3,
+   "root": "DebugUIValue",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerValue",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIValuePersistent.prefab",
+   "objects": 3,
+   "root": "DebugUIValuePersistent",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerValue",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIValueTuple.prefab",
+   "objects": 3,
+   "root": "DebugUIValueTuple",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerValueTuple",
+    "UnityEngine.UI.Text"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIVector2.prefab",
+   "objects": 12,
+   "root": "DebugUIVector2",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField",
+    "UnityEngine.Rendering.UI.DebugUIHandlerVector2",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIVector3.prefab",
+   "objects": 15,
+   "root": "DebugUIVector3",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField",
+    "UnityEngine.Rendering.UI.DebugUIHandlerVector3",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/GameObject/DebugUIVector4.prefab",
+   "objects": 18,
+   "root": "DebugUIVector4",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerContainer",
+    "UnityEngine.Rendering.UI.DebugUIHandlerIndirectFloatField",
+    "UnityEngine.Rendering.UI.DebugUIHandlerVector4",
+    "UnityEngine.Rendering.UI.UIFoldout",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.Text",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  },
+  {
+   "file": "Assets/Resources/DebugUICanvas.prefab",
+   "objects": 1,
+   "root": "DebugUICanvas",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerCanvas",
+    "UnityEngine.UI.CanvasScaler",
+    "UnityEngine.UI.GraphicRaycaster"
+   ]
+  },
+  {
+   "file": "Assets/Resources/DebugUIPersistentCanvas.prefab",
+   "objects": 2,
+   "root": "DebugUIPersistentCanvas",
+   "scripts": [
+    "UnityEngine.Rendering.UI.DebugUIHandlerPersistentCanvas",
+    "UnityEngine.UI.CanvasScaler",
+    "UnityEngine.UI.ContentSizeFitter",
+    "UnityEngine.UI.GraphicRaycaster",
+    "UnityEngine.UI.Image",
+    "UnityEngine.UI.VerticalLayoutGroup"
+   ]
+  }
+ ],
+ "controllers": [
+  "Assets/AnimatorController/BallonEscapeGranny.controller",
+  "Assets/AnimatorController/FadeController.controller",
+  "Assets/AnimatorController/Granny.controller",
+  "Assets/AnimatorController/NosFeratu.controller",
+  "Assets/AnimatorController/balloon.controller"
+ ],
+ "animations": [
+  "Assets/AnimationClip/Balloon_Deflated.anim",
+  "Assets/AnimationClip/Balloon_Idle_Ready.anim",
+  "Assets/AnimationClip/Balloon_Inflating.anim",
+  "Assets/AnimationClip/FadeToBlack.anim",
+  "Assets/AnimationClip/FadeToClear.anim",
+  "Assets/AnimationClip/Hit.anim",
+  "Assets/AnimationClip/Look.anim",
+  "Assets/AnimationClip/Recorded (1).anim",
+  "Assets/AnimationClip/Recorded (1)_0.anim",
+  "Assets/AnimationClip/Recorded (2).anim",
+  "Assets/AnimationClip/Recorded (2)_0.anim",
+  "Assets/AnimationClip/Recorded (3).anim",
+  "Assets/AnimationClip/Recorded (3)_0.anim",
+  "Assets/AnimationClip/Recorded.anim",
+  "Assets/AnimationClip/Recorded_0.anim",
+  "Assets/AnimationClip/Walk.anim",
+  "Assets/AnimationClip/idle.anim",
+  "Assets/AnimationClip/idle_0.anim",
+  "Assets/AnimationClip/idle_1.anim",
+  "Assets/AnimationClip/idle_1_0.anim",
+  "Assets/AnimationClip/idle_2.anim",
+  "Assets/AnimationClip/lookBed.anim"
+ ],
+ "timelines": [
+  "Assets/MonoBehaviour/Escape_Balloon.playable",
+  "Assets/MonoBehaviour/GameOverManagerTimeline.playable",
+  "Assets/MonoBehaviour/HotAirBalloon_ParentTimeline.playable"
+ ],
+ "tags_layers": {
+  "tags": [
+   "Floor",
+   "Granny"
+  ],
+  "layers": [
+   [
+    0,
+    "Default"
+   ],
+   [
+    1,
+    "TransparentFX"
+   ],
+   [
+    2,
+    "Ignore Raycast"
+   ],
+   [
+    4,
+    "Water"
+   ],
+   [
+    5,
+    "UI"
+   ],
+   [
+    6,
+    "Interactable"
+   ],
+   [
+    7,
+    "GrannyAI"
+   ],
+   [
+    8,
+    "Weapon"
+   ],
+   [
+    9,
+    "InteractableItem"
+   ],
+   [
+    10,
+    "Enemy"
+   ],
+   [
+    11,
+    "Floor"
+   ],
+   [
+    12,
+    "Car"
+   ],
+   [
+    13,
+    "Stairs"
+   ],
+   [
+    14,
+    "HeldItem"
+   ]
+  ]
+ },
+ "sprites": 52,
+ "texture2d_raw": []
+}
