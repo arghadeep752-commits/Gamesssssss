@@ -1,5 +1,6 @@
-# Granny Dimnight: keeps a private copy of the original APK (a draft release, visible only to the repository owner) so
-# the model-building tools can study the house geometry. Runs when tools/fetch/request.txt changes.
+# Granny Dimnight: keeps a private copy of the original APK and of its 3D export (scene .glb files) in a draft release,
+# visible only to the repository owner, so the model-building tools can study the house geometry while making new
+# models. Runs when tools/fetch/request.txt changes.
 
 name: Granny Dimnight - private copy of the original APK
 
@@ -17,7 +18,7 @@ jobs:
   fetch:
     name: Download and keep privately
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
 
@@ -38,3 +39,19 @@ jobs:
           fi
           gh release upload granny-dimnight-input work/input/*.apk --clobber
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.tag_name=="granny-dimnight-input") | .draft, ([.assets[] | .name + " " + (.size|tostring)] | join(", "))'
+
+      - name: Export the scenes with AssetRipper
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash tools/extract/assetripper_export.sh work/input/game.apk work/export
+          cd work/export/primary && zip -qr ../../granny4-primary.zip . && cd -
+          (cd work/export/unity && zip -qr ../../granny4-unity-meshes.zip $(find . -path '*/Assets/Mesh' -o -path '*/Assets/Scenes' -o -path '*/Assets/PrefabInstance' -o -path '*/Assets/GameObject' | head -n 8)) || true
+          ls -la work/*.zip
+
+      - name: Keep the export privately too
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload granny-dimnight-input work/granny4-primary.zip --clobber
+          [ -f work/granny4-unity-meshes.zip ] && gh release upload granny-dimnight-input work/granny4-unity-meshes.zip --clobber || true
