@@ -107,13 +107,1465 @@
    "unity_app_guid"
   ]
  },
- "unity_version": "2022.3.62f3",
- "player_settings": {},
- "packages": [],
- "scenes": [],
- "main_scene": null,
- "audio": [],
- "fonts": [],
- "game_scripts": [],
+ "unity_version": "m_EditorVersion: 2022.3.62f3",
+ "player_settings": {
+  "productName": "Granny 4 EndGame",
+  "companyName": "AES Studio",
+  "bundleVersion": 1,
+  "defaultScreenOrientation": 4,
+  "m_ActiveColorSpace": 1,
+  "AndroidMinSdkVersion": 0,
+  "AndroidTargetSdkVersion": 0,
+  "applicationIdentifier": {},
+  "scriptingBackend": {},
+  "m_StereoRenderingPath": 0,
+  "defaultScreenWidth": 1920,
+  "defaultScreenHeight": 1080,
+  "m_RenderingPath": 0,
+  "m_MobileRenderingPath": 0,
+  "AndroidTargetArchitectures": 0
+ },
+ "packages": [
+  "com.unity.modules.ai",
+  "com.unity.modules.androidjni",
+  "com.unity.modules.animation",
+  "com.unity.modules.assetbundle",
+  "com.unity.modules.audio",
+  "com.unity.modules.cloth",
+  "com.unity.modules.director",
+  "com.unity.modules.imageconversion",
+  "com.unity.modules.imgui",
+  "com.unity.modules.jsonserialize",
+  "com.unity.modules.particlesystem",
+  "com.unity.modules.physics",
+  "com.unity.modules.physics2d",
+  "com.unity.modules.screencapture",
+  "com.unity.modules.terrain",
+  "com.unity.modules.terrainphysics",
+  "com.unity.modules.tilemap",
+  "com.unity.modules.ui",
+  "com.unity.modules.uielements",
+  "com.unity.modules.umbra",
+  "com.unity.modules.unityanalytics",
+  "com.unity.modules.unitywebrequest",
+  "com.unity.modules.unitywebrequestassetbundle",
+  "com.unity.modules.unitywebrequestaudio",
+  "com.unity.modules.unitywebrequesttexture",
+  "com.unity.modules.unitywebrequestwww",
+  "com.unity.modules.vehicles",
+  "com.unity.modules.video",
+  "com.unity.modules.vr",
+  "com.unity.modules.wind",
+  "com.unity.modules.xr"
+ ],
+ "scenes": [
+  {
+   "name": "EscapeCutScene",
+   "file": "Assets/Scenes/EscapeCutScene.unity",
+   "safe": "EscapeCutScene",
+   "build_index": 2,
+   "objects": 341,
+   "meshes": 96,
+   "lights": [
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.5,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -3.0,
+      4.96,
+      -53.66
+     ],
+     "object": "Directional Light (3)"
+    },
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 2,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -5.995,
+      5.151,
+      -53.686
+     ],
+     "object": "Directional LightGRANNY"
+    },
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 50,
+     "range": 20,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -32.82,
+      10.66,
+      -54.9
+     ],
+     "object": "Directional Light (1)"
+    },
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 50,
+     "range": 20,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -19.34,
+      10.44,
+      -53.66
+     ],
+     "object": "Directional Light (2)"
+    },
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.5,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -8.743,
+      4.776,
+      -53.66
+     ],
+     "object": "Directional Light"
+    },
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 80,
+     "range": 8.052368,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -48.01,
+      33.56,
+      -53.66
+     ],
+     "object": "Directional Light MOON"
+    }
+   ],
+   "render": {
+    "fog": true,
+    "fog_color": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "fog_mode": 2,
+    "fog_density": 0.17,
+    "fog_start": 0,
+    "fog_end": 300,
+    "ambient_mode": 0,
+    "ambient_sky": [
+     0.212,
+     0.227,
+     0.259,
+     1.0
+    ],
+    "ambient_equator": [
+     0.114,
+     0.125,
+     0.133,
+     1.0
+    ],
+    "ambient_ground": [
+     0.047,
+     0.043,
+     0.035,
+     1.0
+    ],
+    "ambient_intensity": 0.2,
+    "skybox": "Night"
+   }
+  },
+  {
+   "name": "GameOverScene",
+   "file": "Assets/Scenes/GameOverScene.unity",
+   "safe": "GameOverScene",
+   "build_index": 4,
+   "objects": 196,
+   "meshes": 31,
+   "lights": [
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 3.7,
+     "range": 0.89,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      29.159,
+      -0.382,
+      -71.554
+     ],
+     "object": "Point Light"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      0.957,
+      0.839,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      0.0,
+      3.0,
+      0.0
+     ],
+     "object": "Directional Light"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -20.667,
+      3.96,
+      -70.22
+     ],
+     "object": "Area Light Death"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 0.63,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -13.382,
+      0.188,
+      -58.801
+     ],
+     "object": "Area Light"
+    }
+   ],
+   "render": {
+    "fog": true,
+    "fog_color": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "fog_mode": 3,
+    "fog_density": 0.1,
+    "fog_start": 0,
+    "fog_end": 300,
+    "ambient_mode": 3,
+    "ambient_sky": [
+     0.176,
+     0.176,
+     0.196,
+     1.0
+    ],
+    "ambient_equator": [
+     0.481,
+     0.481,
+     0.481,
+     1.0
+    ],
+    "ambient_ground": [
+     0.594,
+     0.594,
+     0.594,
+     1.0
+    ],
+    "ambient_intensity": 1,
+    "skybox": "Klockdel_38_baseColor"
+   }
+  },
+  {
+   "name": "Main",
+   "file": "Assets/Scenes/Main.unity",
+   "safe": "Main",
+   "build_index": 1,
+   "objects": 1276,
+   "meshes": 685,
+   "lights": [
+    {
+     "type": "point",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 3.7,
+     "range": 0.89,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      29.159,
+      -0.382,
+      -71.554
+     ],
+     "object": "Point Light"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -14.041,
+      -1.13,
+      -68.158
+     ],
+     "object": "Area Light (22)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      17.46,
+      1.23,
+      -64.76
+     ],
+     "object": "Area Light (19)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      0.9,
+      0.9,
+      0.9,
+      1.0
+     ],
+     "intensity": 0.1,
+     "range": 5,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      -9.075,
+      0.136,
+      -67.83
+     ],
+     "object": "Spot Light upper ground"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -7.49,
+      1.36,
+      -55.5
+     ],
+     "object": "Area Light (16)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -13.92,
+      3.92,
+      -43.529
+     ],
+     "object": "Area Light (20)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 2,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      27.31,
+      0.169,
+      -72.79
+     ],
+     "object": "Area Light (24)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -17.324,
+      1.36,
+      -63.35
+     ],
+     "object": "Area Light (18)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -14.32,
+      -1.13,
+      -73.99
+     ],
+     "object": "Area Light (21)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      2.04,
+      1.36,
+      -63.46
+     ],
+     "object": "Area Light (17)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 0.2,
+     "range": 5,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      -18.073,
+      0.512,
+      -67.5
+     ],
+     "object": "Spot Light (3)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 4,
+     "pos": [
+      0.0,
+      3.0,
+      0.0
+     ],
+     "object": "Directional Light"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -19.749,
+      3.959,
+      -50.45
+     ],
+     "object": "Area Light (4)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -7.49,
+      1.36,
+      -74.75
+     ],
+     "object": "Area Light (15)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -20.667,
+      3.959,
+      -62.259
+     ],
+     "object": "Area Light (5)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -13.52,
+      3.96,
+      -59.9
+     ],
+     "object": "Area Light (3)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -25.348,
+      3.071,
+      -56.328
+     ],
+     "object": "Area Light (10)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      0.9,
+      0.9,
+      0.9,
+      1.0
+     ],
+     "intensity": 0.2,
+     "range": 5,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      -9.075,
+      0.136,
+      -67.83
+     ],
+     "object": "Spot Light lower ground"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -7.49,
+      1.36,
+      -67.48
+     ],
+     "object": "Area Light (13)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -7.695,
+      3.959,
+      -56.33
+     ],
+     "object": "Area Light (1)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 0.2,
+     "range": 5,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      -6.964,
+      0.136,
+      -56.83
+     ],
+     "object": "Spot Light (1)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -26.612,
+      3.07,
+      -50.53
+     ],
+     "object": "Area Light (11)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -21.847,
+      3.07,
+      -45.443
+     ],
+     "object": "Area Light (12)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -14.32,
+      1.317,
+      -78.59
+     ],
+     "object": "Area Light (23)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -7.7,
+      3.959,
+      -50.45
+     ],
+     "object": "Area Light"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 0.1,
+     "range": 5,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      8.065,
+      0.512,
+      -63.69
+     ],
+     "object": "Spot Light (4)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -20.667,
+      3.96,
+      -70.22
+     ],
+     "object": "Area Light (9)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -13.361,
+      3.96,
+      -50.556
+     ],
+     "object": "Area Light (7)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -5.286,
+      3.959,
+      -62.259
+     ],
+     "object": "Area Light (2)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -5.15,
+      1.36,
+      -60.978
+     ],
+     "object": "Area Light (14)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -1.085,
+      3.922,
+      -55.37
+     ],
+     "object": "Area Light (8)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 0.2,
+     "range": 5,
+     "spot": 30,
+     "shadows": 0,
+     "mode": 2,
+     "pos": [
+      -3.746,
+      0.512,
+      -74.46
+     ],
+     "object": "Spot Light (2)"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 0.63,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -13.382,
+      0.188,
+      -58.801
+     ],
+     "object": "Area Light"
+    },
+    {
+     "type": "directional",
+     "color": [
+      0.519,
+      0.519,
+      0.519,
+      1.0
+     ],
+     "intensity": 2,
+     "range": 20,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 1,
+     "pos": [
+      -6.545,
+      0.552,
+      -67.53
+     ],
+     "object": "whole light"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1.33,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      -20.4,
+      3.96,
+      -56.382
+     ],
+     "object": "Area Light (6)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 5.13,
+     "range": 10,
+     "spot": 45,
+     "shadows": 1,
+     "mode": 4,
+     "pos": [
+      6.87,
+      -0.56,
+      -63.621
+     ],
+     "object": "Sun"
+    }
+   ],
+   "render": {
+    "fog": true,
+    "fog_color": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "fog_mode": 3,
+    "fog_density": 0.2,
+    "fog_start": 0,
+    "fog_end": 300,
+    "ambient_mode": 3,
+    "ambient_sky": [
+     0.176,
+     0.176,
+     0.196,
+     1.0
+    ],
+    "ambient_equator": [
+     0.481,
+     0.481,
+     0.481,
+     1.0
+    ],
+    "ambient_ground": [
+     0.594,
+     0.594,
+     0.594,
+     1.0
+    ],
+    "ambient_intensity": 1,
+    "skybox": "bed_c_D2 1"
+   }
+  },
+  {
+   "name": "MainMenu",
+   "file": "Assets/Scenes/MainMenu.unity",
+   "safe": "MainMenu",
+   "build_index": 0,
+   "objects": 62,
+   "meshes": 0,
+   "lights": [
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      0.957,
+      0.839,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 4,
+     "pos": [
+      0.0,
+      3.0,
+      0.0
+     ],
+     "object": "Directional Light"
+    }
+   ],
+   "render": {
+    "fog": false,
+    "fog_color": [
+     0.5,
+     0.5,
+     0.5,
+     1.0
+    ],
+    "fog_mode": 3,
+    "fog_density": 0.01,
+    "fog_start": 0,
+    "fog_end": 300,
+    "ambient_mode": 0,
+    "ambient_sky": [
+     0.212,
+     0.227,
+     0.259,
+     1.0
+    ],
+    "ambient_equator": [
+     0.114,
+     0.125,
+     0.133,
+     1.0
+    ],
+    "ambient_ground": [
+     0.047,
+     0.043,
+     0.035,
+     1.0
+    ],
+    "ambient_intensity": 1,
+    "skybox": "builtin:0"
+   }
+  },
+  {
+   "name": "Scene_BalloonEscape",
+   "file": "Assets/Scenes/Scene_BalloonEscape.unity",
+   "safe": "Scene_BalloonEscape",
+   "build_index": 3,
+   "objects": 231,
+   "meshes": 71,
+   "lights": [
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      17.46,
+      1.23,
+      -64.76
+     ],
+     "object": "Point Light"
+    },
+    {
+     "type": "area",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 1,
+     "range": 10,
+     "spot": 30,
+     "shadows": 2,
+     "mode": 2,
+     "pos": [
+      2.04,
+      1.36,
+      -63.46
+     ],
+     "object": "Point Light (1)"
+    },
+    {
+     "type": "directional",
+     "color": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "intensity": 5.13,
+     "range": 10,
+     "spot": 45,
+     "shadows": 1,
+     "mode": 4,
+     "pos": [
+      6.87,
+      -0.56,
+      -63.621
+     ],
+     "object": "Sun"
+    }
+   ],
+   "render": {
+    "fog": true,
+    "fog_color": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "fog_mode": 3,
+    "fog_density": 0.15,
+    "fog_start": 0,
+    "fog_end": 300,
+    "ambient_mode": 3,
+    "ambient_sky": [
+     0.462,
+     0.462,
+     0.462,
+     1.0
+    ],
+    "ambient_equator": [
+     0.114,
+     0.125,
+     0.133,
+     1.0
+    ],
+    "ambient_ground": [
+     0.047,
+     0.043,
+     0.035,
+     1.0
+    ],
+    "ambient_intensity": 1,
+    "skybox": "bed_c_D2 1"
+   }
+  }
+ ],
+ "main_scene": "Main",
+ "audio": [
+  "Bats2.ogg",
+  "BirdSeedRamlar.ogg",
+  "BodyFallsGrus.ogg",
+  "BordRamlar.ogg",
+  "BurdoorOpen.ogg",
+  "CabinetDoorOpen.ogg",
+  "CarTrunkClose.ogg",
+  "CarTrunkOpen.ogg",
+  "CodeplattaOnFloor.ogg",
+  "CuttingPlierFloor.ogg",
+  "DoorClock2.ogg",
+  "DoorLocked.ogg",
+  "DropHandwheel.ogg",
+  "DropToplock.ogg",
+  "DucttapeFloor.ogg",
+  "EndSceneSoundOutside (online-video-cutter.com) (1).ogg",
+  "FlyHelicopterMusic.ogg",
+  "Galge2.ogg",
+  "GameOverScene4Music_2.ogg",
+  "Granny2_InGameMusic1.ogg",
+  "GrannyJumpscare.ogg",
+  "GrannyJumpscare3.ogg",
+  "Granny_Menu.ogg",
+  "HammareRamlar.ogg",
+  "HelicopterFire.ogg",
+  "HuntingMusic5.ogg",
+  "InnerdoorClose2.ogg",
+  "InnerdoorOpen2.ogg",
+  "KartongFloor.ogg",
+  "KeyPickUp.ogg",
+  "KliverUrBed3.ogg",
+  "Knarrljud.ogg",
+  "MetalDoorClose.ogg",
+  "MetalDoorOpen.ogg",
+  "MoveBokhylla.ogg",
+  "NosBreath_1.ogg",
+  "NosHit_1.ogg",
+  "NosLaugh 1.ogg",
+  "NosLaugh.ogg",
+  "NyckelRamlar.ogg",
+  "OutsideBGsound.ogg",
+  "PadlockRamlar2.ogg",
+  "PickUpDunk.ogg",
+  "PickUpObject1.ogg",
+  "PlankaHoleRamlar.ogg",
+  "PlayerRunAway2.ogg",
+  "RemoteOnFloor.ogg",
+  "StolRamlar2.ogg",
+  "TavlaRamlar 1.ogg",
+  "TejpaRotor.ogg",
+  "TextNoice2.ogg",
+  "VasOnFloor.ogg",
+  "W1_3.ogg",
+  "cutChain.ogg",
+  "fence open.ogg",
+  "giggle laugh.ogg",
+  "hide & seek.ogg",
+  "i see you.ogg",
+  "laugh 1.ogg",
+  "laugh 2.ogg",
+  "lever pull.ogg",
+  "weird laugh 3.ogg",
+  "where are you.ogg"
+ ],
+ "fonts": [
+  "Anton.ttf",
+  "Bangers.ttf",
+  "Electronic Highway Sign.ttf",
+  "LiberationSans.ttf",
+  "Oswald-Bold.ttf",
+  "PerfectDOSVGA437.ttf",
+  "Roboto-Bold.ttf"
+ ],
+ "game_scripts": [
+  "Assembly-CSharp/EnvMapAnimator.cs",
+  "Assembly-CSharp/DistractionObject.cs",
+  "Assembly-CSharp/GrannyDrawer.cs",
+  "Assembly-CSharp/MainDoorEscape.cs",
+  "Assembly-CSharp/MobileJoystick.cs",
+  "Assembly-CSharp/HidingTriggerZone.cs",
+  "Assembly-CSharp/DoorLockComponent.cs",
+  "Assembly-CSharp/HidingSpotDistanceTracker.cs",
+  "Assembly-CSharp/GameBackgroundOST.cs",
+  "Assembly-CSharp/CoffinDoorInteractable.cs",
+  "Assembly-CSharp/EscapeItemController.cs",
+  "Assembly-CSharp/ItemRespawnZone.cs",
+  "Assembly-CSharp/SmoothRope.cs",
+  "Assembly-CSharp/RopeAnchorInteraction.cs",
+  "Assembly-CSharp/JumpscareFadeOverlay.cs",
+  "Assembly-CSharp/ItemBedDropHelper.cs",
+  "Assembly-CSharp/InteractableItem.cs",
+  "Assembly-CSharp/GrannyDifficultySettings.cs",
+  "Assembly-CSharp/AdsManager.cs",
+  "Assembly-CSharp/EscapeSceneController.cs",
+  "Assembly-CSharp/BalloonBurnerZone.cs",
+  "Assembly-CSharp/ItemSpawnPoint.cs",
+  "Assembly-CSharp/CabinetInteractable.cs",
+  "Assembly-CSharp/GrannyStyleEnding.cs",
+  "Assembly-CSharp/EscapeLockElement.cs",
+  "Assembly-CSharp/PlayerWakeUp.cs",
+  "Assembly-CSharp/HidingSpot.cs",
+  "Assembly-CSharp/GameQualityApplier.cs",
+  "Assembly-CSharp/ChatController.cs",
+  "Assembly-CSharp/MobilePickUpScript.cs",
+  "Assembly-CSharp/PhysicsPropHolder.cs",
+  "Assembly-CSharp/LeverInteractable.cs",
+  "Assembly-CSharp/GrannyPatrolWaypoint.cs",
+  "Assembly-CSharp/PlankLockedDoorInteractable.cs",
+  "Assembly-CSharp/DrawerInteractable.cs",
+  "Assembly-CSharp/FallingLockSound.cs",
+  "Assembly-CSharp/UltimateEscapeEngine.cs",
+  "Assembly-CSharp/MusicSettings.cs",
+  "Assembly-CSharp/GameSettingsManager.cs",
+  "Assembly-CSharp/DayManager.cs",
+  "Assembly-CSharp/PlayerHidingController.cs",
+  "Assembly-CSharp/GameplayManager.cs",
+  "Assembly-CSharp/ObjectPresetManager.cs",
+  "Assembly-CSharp/PlayerPushPhysics.cs",
+  "Assembly-CSharp/DrawerPivotAnimation.cs",
+  "Assembly-CSharp/FallingPainting.cs",
+  "Assembly-CSharp/HotAirBalloonEscape.cs",
+  "Assembly-CSharp/SecretBookshelfDoor.cs",
+  "Assembly-CSharp/FPSController.cs",
+  "Assembly-CSharp/DropdownSample.cs",
+  "Assembly-CSharp/BalloonHoleZone.cs",
+  "Assembly-CSharp/MobileCrouchController.cs",
+  "Assembly-CSharp/BalloonCylinderSlot.cs",
+  "Assembly-CSharp/EscapeLockType.cs",
+  "Assembly-CSharp/AntiClippingItem.cs",
+  "Assembly-CSharp/EscapeSequenceManager.cs",
+  "Assembly-CSharp/GameManager.cs",
+  "Assembly-CSharp/HidingCameraLook.cs",
+  "Assembly-CSharp/ExtremeFenceLock.cs",
+  "Assembly-CSharp/MainMenuManager.cs",
+  "Assembly-CSharp/ItemPresetManager.cs",
+  "Assembly-CSharp/ItemSway.cs",
+  "Assembly-CSharp/SilentGroundZone.cs",
+  "Assembly-CSharp/CutObjectPhysics.cs",
+  "Assembly-CSharp/VideoGameOverController.cs",
+  "Assembly-CSharp/GrannyAI.cs",
+  "Assembly-CSharp/SafeArea.cs",
+  "Assembly-CSharp/IInteractable.cs",
+  "Assembly-CSharp/PlayerInteractionEngine.cs",
+  "Assembly-CSharp/JumpscareCoordinator.cs",
+  "Assembly-CSharp/DoorInteractable.cs",
+  "Assembly-CSharp/CreakingFloor.cs",
+  "Assembly-CSharp/LockType.cs",
+  "Assembly-CSharp/TimelineGameOverController.cs",
+  "Assembly-CSharp/TripwireTrap.cs",
+  "Assembly-CSharp/OutdoorAmbientZone.cs",
+  "Assembly-CSharp/PlankLockedDoor.cs",
+  "Assembly-CSharp/DoorPlankComponent.cs",
+  "Assembly-CSharp/TMPro/TMP_PhoneNumberValidator.cs",
+  "Assembly-CSharp/TMPro/TMP_TextEventHandler.cs",
+  "Assembly-CSharp/TMPro/TMP_DigitValidator.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_TextSelector_B.cs",
+  "Assembly-CSharp/TMPro/Examples/ObjectSpin.cs",
+  "Assembly-CSharp/TMPro/Examples/TextMeshSpawner.cs",
+  "Assembly-CSharp/TMPro/Examples/WarpTextExample.cs",
+  "Assembly-CSharp/TMPro/Examples/Benchmark02.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_FrameRateCounter.cs",
+  "Assembly-CSharp/TMPro/Examples/Benchmark04.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_TextInfoDebugTool.cs",
+  "Assembly-CSharp/TMPro/Examples/SkewTextExample.cs",
+  "Assembly-CSharp/TMPro/Examples/SimpleScript.cs",
+  "Assembly-CSharp/TMPro/Examples/VertexShakeB.cs",
+  "Assembly-CSharp/TMPro/Examples/ShaderPropAnimator.cs",
+  "Assembly-CSharp/TMPro/Examples/CameraController.cs",
+  "Assembly-CSharp/TMPro/Examples/TextConsoleSimulator.cs",
+  "Assembly-CSharp/TMPro/Examples/TeleType.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_UiFrameRateCounter.cs",
+  "Assembly-CSharp/TMPro/Examples/TMPro_InstructionOverlay.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_TextEventCheck.cs",
+  "Assembly-CSharp/TMPro/Examples/Benchmark03.cs",
+  "Assembly-CSharp/TMPro/Examples/VertexZoom.cs",
+  "Assembly-CSharp/TMPro/Examples/TextMeshProFloatingText.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_TextSelector_A.cs",
+  "Assembly-CSharp/TMPro/Examples/TMP_ExampleScript_01.cs",
+  "Assembly-CSharp/TMPro/Examples/VertexJitter.cs",
+  "Assembly-CSharp/TMPro/Examples/Benchmark01.cs",
+  "Assembly-CSharp/TMPro/Examples/VertexShakeA.cs",
+  "Assembly-CSharp/TMPro/Examples/VertexColorCycler.cs",
+  "Assembly-CSharp/TMPro/Examples/Benchmark01_UGUI.cs",
+  "Assembly-CSharp/Properties/AssemblyInfo.cs"
+ ],
  "other_assemblies": []
 }
