@@ -20,6 +20,7 @@ on:
       - Unity/**
       - tools/unity/**
       - tools/common/**
+      - tools/models/**
       - ci/**
       - original/dll_classes.json
 
@@ -85,6 +86,27 @@ jobs:
 
       - name: Real photo textures on the walls and floors
         run: python3 tools/unity/real_textures.py Unity ~/.cache/dimnight-textures work/CREDITS_TEXTURES.md
+
+      - name: New models for every object in the house (same places, same sizes, made from scratch)
+        run: |
+          python3 -m pip install --quiet --break-system-packages numpy pyyaml pillow
+          proj="$(dirname "$(find work/export/unity -maxdepth 3 -type d -name Assets | head -n 1)")"
+          echo "exported project: $proj"
+          for s in Main EscapeCutScene Scene_BalloonEscape GameOverScene; do
+            python3 tools/models/catalog.py "$proj" "$s" "work/catalog/$s.json" "original/scenes/$s.json"
+          done
+          python3 tools/models/build.py work/catalog Unity/Assets/Dimnight/Models
+          grep -h -E "^(UNMAPPED|FAILED|EMPTY)" Unity/Assets/Dimnight/Models/*_report.txt | head -n 40 || true
+
+      - name: Restore the downloaded textures of the new models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/dimnight-model-textures
+          key: dimnight-model-textures-v1-${{ hashFiles('tools/models/model_textures.py') }}
+          restore-keys: dimnight-model-textures-v1-
+
+      - name: Real photo textures for the new models
+        run: python3 tools/models/model_textures.py Unity Unity/Assets/Dimnight/Models ~/.cache/dimnight-model-textures work/CREDITS_MODELS.md
 
       - name: The Granny Dimnight name on the menu picture and the app icon
         run: python3 tools/unity/branding.py Unity ~/.cache/dimnight-fonts
@@ -193,6 +215,8 @@ jobs:
             Logs/
             work/packages.log
             work/CREDITS_TEXTURES.md
+            work/CREDITS_MODELS.md
+            Unity/Assets/Dimnight/Models/*_report.txt
           if-no-files-found: ignore
           retention-days: 7
 
@@ -226,8 +250,12 @@ jobs:
             echo "The Granny series is by DVloper."
             echo
             cat work/CREDITS_TEXTURES.md 2>/dev/null || true
+            echo
+            echo "The furniture, house parts, items, car, coffin and balloon are new models made for Granny Dimnight (tools/models)."
+            echo
+            cat work/CREDITS_MODELS.md 2>/dev/null || true
           } > CREDITS.md
-          printf 'GRANNY DIMNIGHT - Unity 6 build %s (Unity %s, commit %s).\n\nGranny 4 EndGame'"'"'s house, models, menus and sounds in Unity 6, with real photo textures (CC0, Poly Haven / ambientCG) on the walls and floors and the new name. The game scripts are being rewritten; see the branch README for what already works.\n\nOpen this page on your Android phone, download **%s** and tap it to install (Android 6 or newer, 64-bit).\n\nThe screenshots below come from an automatic camera walk on an Android emulator (software graphics, so they look rougher than on a phone).\n' \
+          printf 'GRANNY DIMNIGHT - Unity 6 build %s (Unity %s, commit %s).\n\nGranny 4 EndGame'"'"'s house layout and gameplay in Unity 6 with new models made for Granny Dimnight (furniture, house parts, items) and real photo textures (CC0, Poly Haven / ambientCG). Granny keeps her original model; sounds and buttons are next.\n\nOpen this page on your Android phone, download **%s** and tap it to install (Android 6 or newer, 64-bit).\n\nThe screenshots below come from an automatic camera walk on an Android emulator (software graphics, so they look rougher than on a phone).\n' \
             "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" "$APK" > notes.md
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$TAG" "$APK" CREDITS.md --target "$GITHUB_SHA" --latest=false \

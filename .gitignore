@@ -27,3 +27,5 @@ Unity/Assets/*
 !Unity/Assets/Dimnight/
 Unity/Assets/Dimnight/Branding/
 Unity/**/*.meta
+Unity/Assets/Dimnight/Models/
+Unity/Assets/Dimnight/Textures/

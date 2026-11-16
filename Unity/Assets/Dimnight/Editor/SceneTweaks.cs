@@ -23,6 +23,7 @@ namespace Dimnight.EditorTools
         {
             Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
             GameObject[] roots = scene.GetRootGameObjects();
+            int swapped = ModelSwap.Apply(scene);
             int renamed = RenameTexts(roots);
             int blood = HideBlood(roots);
             int navmeshes = BakeNavMeshes(scene, roots);
@@ -30,7 +31,7 @@ namespace Dimnight.EditorTools
             Report(scene.name, roots);
             ReportCamerasAndVolumes(scene.name, roots);
             ReportNavMeshReach(scene.name, roots);
-            if (renamed + blood + navmeshes + occlusion > 0)
+            if (swapped + renamed + blood + navmeshes + occlusion > 0)
             {
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene);
