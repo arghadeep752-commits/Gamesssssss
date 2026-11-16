@@ -1,0 +1,131 @@
+# Granny Dimnight, step 1: look inside the original game.
+#
+# Downloads Granny 4 End Game's Android build from Game Jolt, reads the names in its code with rea
+# (github.com/morluto/rea), exports it with AssetRipper (scenes, models, materials, textures, sounds, scripts) and
+# renders the house in Blender. Only the findings are saved on this branch, in original/ (report.md, the layout of
+# every scene as JSON, texture sheets, renders, the game's scripts). The game files themselves are not re-uploaded.
+
+name: Granny Dimnight - look inside the original
+
+on:
+  push:
+    branches: [granny-dimnight]
+    paths:
+      - .github/workflows/granny-dimnight-extract.yml
+      - tools/extract/**
+      - tools/install_blender.sh
+
+permissions:
+  contents: write
+
+concurrency:
+  group: granny-dimnight-extract
+  cancel-in-progress: true
+
+env:
+  GAMEJOLT_GAME_ID: "1117042"
+  BLENDER_VERSION: 4.2.3
+
+jobs:
+  extract:
+    name: Download, export, report, render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/powershell /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download Granny 4 End Game from Game Jolt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! python3 tools/extract/gamejolt_fetch.py "$GAMEJOLT_GAME_ID" work; then
+            echo "Game Jolt download failed; trying an APK uploaded to the release granny-dimnight-input"
+            mkdir -p work/input
+            gh release download granny-dimnight-input --pattern '*.apk' --dir work/input
+            f="$(ls -S work/input/*.apk | head -n 1)"; [ "$f" = work/input/game.apk ] || mv "$f" work/input/game.apk
+            echo '{"source": "release granny-dimnight-input"}' > work/gamejolt.json
+          fi
+          ls -la work/input
+
+      - name: Look inside the APK
+        run: bash tools/extract/inspect_apk.sh work
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Read the code names with rea
+        continue-on-error: true
+        run: bash tools/extract/rea_scan.sh work original/code
+
+      - name: Export with AssetRipper
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          in=work/input/game.apk
+          [ "$(ls work/input | wc -l)" -gt 1 ] && in=work/input
+          bash tools/extract/assetripper_export.sh "$in" work/export
+
+      - name: Write the report
+        run: |
+          python3 -m pip install --quiet --break-system-packages pyyaml pillow
+          python3 tools/extract/report.py work/export/unity work original
+          cp work/apk_info.json work/gamejolt.json original/ 2>/dev/null || true
+          head -n 120 original/report.md
+
+      - name: Restore Blender
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+
+      - name: Install Blender
+        run: bash tools/install_blender.sh
+
+      - name: Render the house
+        continue-on-error: true
+        run: |
+          main="$(cat original/main_scene.txt 2>/dev/null || true)"
+          glb=""
+          if [ -n "$main" ]; then glb="$(find work/export/primary -type f -iname "${main}.glb" | head -n 1)"; fi
+          if [ -z "$glb" ]; then glb="$(find work/export/primary -type f -iname '*.glb' -printf '%s %p\n' | sort -rn | head -n 1 | cut -d' ' -f2-)"; fi
+          echo "scene glb: $glb ($(du -h "$glb" | cut -f1))"
+          find work/export/primary -type f -iname '*.glb' -printf '%s %p\n' | sort -rn | head -n 15
+          ~/blender/blender -b -noaudio -P tools/extract/render_house.py -- "$glb" original/renders 2>&1 \
+            | tee work/render_log.txt | grep -E "^\[render\]|Error|Traceback" | tail -n 80
+
+      - name: Save the findings on this branch
+        run: |
+          du -sh original; find original -type f | wc -l
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A original
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -q -m "Granny 4 End Game: what is inside (report, layout, textures, renders) [skip ci]"
+          for i in 1 2 3; do
+            git push origin HEAD:granny-dimnight && exit 0
+            git pull --rebase -q origin granny-dimnight
+          done
+          exit 1
+
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extract-logs
+          path: |
+            work/*.json
+            work/*.txt
+            work/*.log
+            work/*.err
+            work/export/*.log
+          if-no-files-found: ignore
+          retention-days: 7

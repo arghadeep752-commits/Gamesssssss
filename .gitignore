@@ -1,0 +1,16 @@
+work/
+Library/
+Temp/
+Obj/
+Logs/
+Build/
+Builds/
+UserSettings/
+MemoryCaptures/
+*.csproj
+*.sln
+*.apk
+*.aab
+*.keystore
+.DS_Store
+__pycache__/
