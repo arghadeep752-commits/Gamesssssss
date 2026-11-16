@@ -1,0 +1,284 @@
+# Granny Dimnight: builds the Unity 6 APK in the cloud, no PC needed.
+#
+# The game is Granny 4 EndGame (Game Jolt, by AES_Studio, shared with the creator's agreement) brought into Unity 6:
+# its own scenes, house, models, menus, sounds and animations (exported by AssetRipper on every build, never stored
+# here), pointed at the real Unity 6 packages, with real photo textures on the walls and floors, a clean house, the
+# game scripts rewritten in Unity/Overrides, and the name Granny Dimnight.
+#
+# Needs the repository secrets UNITY_EMAIL and UNITY_PASSWORD (Unity account, two-step verification off).
+# Every push to granny-dimnight that changes the Unity project or its tools: export, prepare, install Unity 6 with
+# Android, build the APK, publish it as the release granny-dimnight-v<n>, then play an emulator build of it and
+# attach the screenshots to the release.
+
+name: Granny Dimnight - Unity 6 APK
+
+on:
+  push:
+    branches: [granny-dimnight]
+    paths:
+      - .github/workflows/granny-dimnight.yml
+      - Unity/**
+      - tools/unity/**
+      - tools/common/**
+      - ci/**
+      - original/dll_classes.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: granny-dimnight-build
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: 6000.0.85f1
+  APK_NAME: GrannyDimnight
+  GAMEJOLT_GAME_ID: "1117042"
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 200
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+
+      - uses: actions/checkout@v5
+
+      - name: Download Granny 4 EndGame from Game Jolt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! python3 tools/extract/gamejolt_fetch.py "$GAMEJOLT_GAME_ID" work; then
+            mkdir -p work/input
+            gh release download granny-dimnight-input --pattern '*.apk' --dir work/input
+            f="$(ls -S work/input/*.apk | head -n 1)"; [ "$f" = work/input/game.apk ] || mv "$f" work/input/game.apk
+          fi
+          ls -la work/input
+
+      - name: Export the game with AssetRipper
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/extract/assetripper_export.sh work/input/game.apk work/export
+
+      - name: Put the house, models and menus in the Unity project
+        run: |
+          python3 -m pip install --quiet --break-system-packages pillow pyyaml
+          python3 tools/unity/prepare_project.py work/export/unity Unity
+          du -sh Unity/Assets
+
+      - name: Restore the downloaded photo textures and fonts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/dimnight-textures
+            ~/.cache/dimnight-fonts
+          key: dimnight-real-textures-v1-${{ hashFiles('tools/unity/real_textures.py') }}
+          restore-keys: dimnight-real-textures-v1-
+
+      - name: Real photo textures on the walls and floors
+        run: python3 tools/unity/real_textures.py Unity ~/.cache/dimnight-textures work/CREDITS_TEXTURES.md
+
+      - name: The Granny Dimnight name on the menu picture and the app icon
+        run: python3 tools/unity/branding.py Unity ~/.cache/dimnight-fonts
+
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+
+      - name: Package versions for this editor
+        run: |
+          python3 ci/latest_packages.py Unity/Packages/manifest.json "$UNITY_VERSION"
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Unity/Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > Unity/ProjectSettings/ProjectVersion.txt
+          cat Unity/Packages/manifest.json
+
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Download the Unity packages (empty project)
+        run: |
+          mkdir -p work/pkgproj/Packages work/pkgproj/ProjectSettings work/pkgproj/Assets
+          cp Unity/Packages/manifest.json work/pkgproj/Packages/
+          cp Unity/ProjectSettings/ProjectVersion.txt work/pkgproj/ProjectSettings/
+          env -u UNITY_THISISABUILDMACHINE timeout 30m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE/work/pkgproj" -logFile "$GITHUB_WORKSPACE/work/packages.log" || true
+          ls work/pkgproj/Library/PackageCache || true
+          grep -E "error|Error" work/packages.log | head -n 20 || true
+
+      - name: Point the game at the real packages
+        run: |
+          editor_dir="$(dirname "$(readlink -f "$UNITY_EDITOR_PATH")")"
+          python3 tools/unity/remap_packages.py Unity original/dll_classes.json \
+            work/pkgproj/Library/PackageCache "$editor_dir/Data/Resources/PackageManager/BuiltInPackages"
+
+      - name: Restore the signing key (keeps updates installable over older builds)
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: granny-dimnight-keystore-v1
+
+      - name: Create the signing key (first build only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/dimnight.keystore -alias dimnight \
+            -keyalg RSA -keysize 2048 -validity 10000 -storepass dimnightgame -keypass dimnightgame \
+            -dname "CN=MXYAN GAMES, O=MXYAN GAMES"
+
+      - name: Build the APK with Unity 6
+        env:
+          DIMNIGHT_KEYSTORE: ${{ github.workspace }}/ci-keystore/dimnight.keystore
+          DIMNIGHT_KEYSTORE_PASS: dimnightgame
+          DIMNIGHT_KEY_ALIAS: dimnight
+        run: |
+          mkdir -p Logs Unity/Build
+          set +e
+          env -u UNITY_THISISABUILDMACHINE timeout 150m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE/Unity" -buildTarget Android \
+            -executeMethod Dimnight.EditorTools.DimnightBuild.BuildAndroid \
+            -buildNumber ${{ github.run_number }} \
+            -outputApk "Build/${APK_NAME}.apk" \
+            -testApk "Build/${APK_NAME}-emulator.apk" \
+            -logFile "$GITHUB_WORKSPACE/Logs/build.log"
+          status=$?
+          echo "Unity exited with code $status"
+          grep -E "\[DIMNIGHT" Logs/build.log | tail -n 120 || true
+          echo "---------------- compile errors ----------------"
+          grep -E "error CS[0-9]+" Logs/build.log | sort | uniq -c | sort -rn | head -n 60 || true
+          if [ $status -ne 0 ]; then
+            echo "---------------- errors ----------------"
+            grep -nE "Shader error|BuildFailedException|CommandInvokationFailure|FAILURE:|What went wrong|Exception:|executeMethod" Logs/build.log | head -n 60 || true
+            echo "---------------- end of log ----------------"
+            tail -n 80 Logs/build.log || true
+          fi
+          exit $status
+
+      - name: Upload the Unity logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-logs
+          path: |
+            Logs/
+            work/packages.log
+            work/CREDITS_TEXTURES.md
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Check the APK
+        run: |
+          ls -la Unity/Build
+          test -f "Unity/Build/${APK_NAME}.apk"
+          unzip -l "Unity/Build/${APK_NAME}.apk" | grep -E "lib/arm64|libil2cpp|data.unity3d" | head -n 10 || true
+
+      - name: Keep the emulator APK for the test job
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: Unity/Build/${{ env.APK_NAME }}-emulator.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
+
+      - name: Publish the APK as a GitHub release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="granny-dimnight-v${{ github.run_number }}"
+          APK="Granny-Dimnight-${{ github.run_number }}.apk"
+          cp "Unity/Build/${APK_NAME}.apk" "$APK"
+          {
+            echo "# Credits"
+            echo
+            echo "Original game: Granny 4 EndGame by AES_Studio (https://gamejolt.com/games/granny4endgame/1117042), used with the creator's agreement."
+            echo "The Granny series is by DVloper."
+            echo
+            cat work/CREDITS_TEXTURES.md 2>/dev/null || true
+          } > CREDITS.md
+          printf 'GRANNY DIMNIGHT - Unity 6 build %s (Unity %s, commit %s).\n\nGranny 4 EndGame'"'"'s house, models, menus and sounds in Unity 6, with real photo textures (CC0, Poly Haven / ambientCG) on the walls and floors and the new name. The game scripts are being rewritten; see the branch README for what already works.\n\nOpen this page on your Android phone, download **%s** and tap it to install (Android 6 or newer, 64-bit).\n\nThe screenshots below come from an automatic camera walk on an Android emulator (software graphics, so they look rougher than on a phone).\n' \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" "$APK" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" CREDITS.md --target "$GITHUB_SHA" --latest=false \
+            --title "GRANNY DIMNIGHT (Unity 6) build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+  emulator-test:
+    name: Walk through it in an Android emulator
+    needs: build
+    if: always() && needs.build.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TAG: ${{ needs.build.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: ci
+
+      - name: Download the emulator APK
+        uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: smoke
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the game in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+
+      - name: Attach screenshots and the log to the release
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          ls -la smoke/out 2>/dev/null || true
+          if [ ${#files[@]} -gt 0 ] && [ -n "$TAG" ]; then
+            gh release upload "$TAG" "${files[@]}" --clobber -R "$GITHUB_REPOSITORY"
+          fi

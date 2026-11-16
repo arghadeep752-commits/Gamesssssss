@@ -14,3 +14,16 @@ MemoryCaptures/
 *.keystore
 .DS_Store
 __pycache__/
+
+# Unity project: only our own parts are committed; the game's assets come from the export on every build
+Unity/Library/
+Unity/Temp/
+Unity/Logs/
+Unity/UserSettings/
+Unity/Build/
+Unity/ProjectSettings/
+Unity/Packages/packages-lock.json
+Unity/Assets/*
+!Unity/Assets/Dimnight/
+Unity/Assets/Dimnight/Branding/
+Unity/**/*.meta

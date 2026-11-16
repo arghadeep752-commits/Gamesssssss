@@ -42,6 +42,10 @@ COMPONENT_NAMES = {
     1183024399: "LookAtConstraint", 331: "SpriteMask", 1660057539: "SortingGroup", 210: "SortingGroup",
 }
 MAX_FIELD_ITEMS = 12
+# Unity UI fields worth keeping: texts, images, button/toggle/slider events (the game methods they call)
+UI_FIELDS = {"m_text", "m_Text", "m_OnClick", "m_OnValueChanged", "m_Sprite", "m_Color", "m_fontSize", "m_FontData",
+             "m_Value", "m_MinValue", "m_MaxValue", "m_IsOn", "m_Interactable", "m_fontAsset", "m_Options",
+             "m_PersistentCalls", "m_Calls"}
 
 
 def log(*a):
@@ -142,7 +146,7 @@ def r3(v):
 
 def simple(v, depth=0):
     """Keeps a script field readable: numbers, strings, bools, vectors, short lists, object references."""
-    if depth > 3:
+    if depth > 6:
         return "..."
     if isinstance(v, (int, float, bool)) or v is None:
         return v
@@ -345,7 +349,7 @@ def parse_scene(proj, path):
             elif cid == 114:
                 sname = script_name(proj, body)
                 fields = {k: simple(v) for k, v in body.items()
-                          if not k.startswith("m_") and k not in ("serializedVersion",)}
+                          if (not k.startswith("m_") or k in UI_FIELDS) and k not in ("serializedVersion",)}
                 scripts.append({"script": sname, "enabled": bool(body.get("m_Enabled", 1)),
                                 "fields": resolve(fields)})
                 kind = sname

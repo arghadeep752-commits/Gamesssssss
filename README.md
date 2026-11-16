@@ -21,10 +21,24 @@ Every push that changes `tools/extract/` runs:
 
 Only these findings are committed (in `original/`); the game's files are not re-uploaded anywhere.
 
-## Next steps
+## Step 2: the Unity 6 APK (`.github/workflows/granny-dimnight.yml`)
 
-Unity 6 project from the exported house and models, real photo textures (Poly Haven / ambientCG, CC0) on the walls,
-floors and furniture, cleaned-up rooms and brighter lighting, the gameplay rebuilt, and the APK on the Releases page.
+Every push that changes `Unity/`, `tools/unity/` or `ci/` runs:
+
+1. the Game Jolt download and AssetRipper export again (the game's files are never stored in this repository);
+2. `tools/unity/prepare_project.py`: the exported scenes, models, materials, menus, sounds and animations go into the
+   Unity project in `Unity/`; the rewritten game scripts in `Unity/Overrides/Assembly-CSharp/` replace AssetRipper's
+   empty stubs (same class names, same settings, same `.meta`, so the scenes stay connected);
+3. `tools/unity/real_textures.py`: walls, floors, stairs, tiles, wood panels, stone and grass become photo-scanned
+   CC0 textures (Poly Haven, ambientCG), tinted to each room's original colour; furniture and props keep theirs;
+4. `tools/unity/branding.py`: the GRANNY DIMNIGHT menu picture (replacing DVloper's artwork) and the app icon;
+5. Unity 6000.0 downloads the packages, then `tools/unity/remap_packages.py` points every reference to AssetRipper's
+   stand-in DLLs and dummy shaders at the real UGUI / TextMeshPro / URP / AI Navigation / Timeline files
+   (class ids from `original/dll_classes.json`, computed with `tools/common/unity_ids.py`);
+6. `Dimnight.EditorTools.DimnightBuild.BuildAndroid` (`Unity/Assets/Dimnight/Editor/`): Granny Dimnight name and
+   package `com.anomynousdevs.grannydimnight`, URP materials, renamed texts, no blood, IL2CPP ARM64 APK;
+7. the APK is published as the release `granny-dimnight-v<n>`; an emulator build walks a camera through every room
+   and its screenshots are attached to the same release.
 
 ## Credits
 
