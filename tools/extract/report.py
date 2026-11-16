@@ -23,6 +23,9 @@ import sys
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "common"))
+from unity_ids import dll_classes_from_rea  # noqa: E402
+
 Loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 HDR = re.compile(r"^--- !u!(\d+) &(-?\d+)( stripped)?[^\n]*$", re.M)
 GUID = re.compile(r"guid: ([0-9a-fA-F]{32})")   # quoted before parsing: YAML would read some guids as numbers
@@ -158,10 +161,11 @@ def simple(v, depth=0):
 
 
 class Project:
-    def __init__(self, root):
+    def __init__(self, root, dll_classes=None):
         self.root = root
         self.guids = guid_map(root)
         self.mat_cache = {}
+        self.dll_classes = dll_classes or {}
 
     def path_of(self, guid):
         return self.guids.get(guid or "")
@@ -191,39 +195,38 @@ class Project:
                 info["shader"] = self.name_of(sguid, sid) or ("builtin:%s" % sid)
                 info["keywords"] = body.get("m_ShaderKeywords") or body.get("m_ValidKeywords")
                 props = body.get("m_SavedProperties") or {}
+
+                def pairs(v):
+                    """m_TexEnvs / m_Floats / m_Colors come as a list of one-key maps, a list of first/second pairs
+                    or a plain mapping, depending on the Unity version and the exporter."""
+                    if isinstance(v, dict):
+                        return list(v.items())
+                    out = []
+                    for item in v or []:
+                        if not isinstance(item, dict):
+                            continue
+                        if "first" in item:
+                            f = item.get("first")
+                            out.append((f.get("name") if isinstance(f, dict) else f, item.get("second")))
+                        elif len(item) == 1:
+                            out.append(next(iter(item.items())))
+                    return out
+
                 tex = {}
-                for item in props.get("m_TexEnvs") or []:
-                    if not isinstance(item, dict):
-                        continue
-                    if "first" in item:   # old format: {first: {name: _MainTex}, second: {...}}
-                        name = (item.get("first") or {}).get("name")
-                        val = item.get("second") or {}
-                    else:
-                        name, val = next(iter(item.items()))
-                    tid, tguid = ref_of((val or {}).get("m_Texture"))
+                for name, val in pairs(props.get("m_TexEnvs")):
+                    tid, tguid = ref_of((val or {}).get("m_Texture") if isinstance(val, dict) else None)
                     if tguid:
                         tex[name] = {"texture": self.path_of(tguid) or tguid,
                                      "scale": vec((val or {}).get("m_Scale"), "xy", 1.0),
                                      "offset": vec((val or {}).get("m_Offset"), "xy", 0.0)}
                 info["textures"] = tex
-                cols = {}
-                for item in props.get("m_Colors") or []:
-                    if isinstance(item, dict):
-                        if "first" in item:
-                            cols[(item.get("first") or {}).get("name")] = vec(item.get("second"), "rgba", 1.0)
-                        else:
-                            k, v = next(iter(item.items()))
-                            cols[k] = vec(v, "rgba", 1.0)
-                info["colors"] = {k: r3(v) for k, v in cols.items() if k in ("_Color", "_BaseColor", "_EmissionColor", "_TintColor")}
-                floats = {}
-                for item in props.get("m_Floats") or []:
-                    if isinstance(item, dict):
-                        if "first" in item:
-                            floats[(item.get("first") or {}).get("name")] = item.get("second")
-                        else:
-                            k, v = next(iter(item.items()))
-                            floats[k] = v
-                info["floats"] = {k: v for k, v in floats.items() if k in ("_Glossiness", "_Smoothness", "_Metallic", "_Mode", "_Cutoff", "_Surface", "_BumpScale")}
+                cols = {k: vec(v, "rgba", 1.0) for k, v in pairs(props.get("m_Colors"))}
+                info["colors"] = {k: r3(v) for k, v in cols.items()
+                                  if k in ("_Color", "_BaseColor", "_EmissionColor", "_TintColor", "_SpecColor")}
+                floats = dict(pairs(props.get("m_Floats")))
+                info["floats"] = {k: v for k, v in floats.items()
+                                  if k in ("_Glossiness", "_Smoothness", "_Metallic", "_Mode", "_Cutoff", "_Surface",
+                                           "_BumpScale", "_AlphaClip", "_Blend", "_Cull")}
         self.mat_cache[guid] = info
         return info
 
@@ -234,7 +237,8 @@ def script_name(proj, mono):
     if p and p.endswith(".cs"):
         return os.path.splitext(os.path.basename(p))[0]
     if p:
-        return "%s#%s" % (os.path.basename(p), sid)
+        cls = proj.dll_classes.get(os.path.basename(p), {}).get(sid)
+        return cls or "%s#%s" % (os.path.basename(p), sid)
     return "script:%s" % (sguid or sid)
 
 
@@ -442,7 +446,19 @@ def main():
     log("project:", root)
     os.makedirs(os.path.join(outd, "scenes"), exist_ok=True)
     os.makedirs(os.path.join(outd, "textures"), exist_ok=True)
-    proj = Project(root)
+    dll_classes = {}
+    rea_path = os.path.join(work, "rea_il2cpp.json")
+    if os.path.exists(rea_path):
+        try:
+            with open(rea_path, encoding="utf-8") as f:
+                dll_classes = dll_classes_from_rea(json.load(f))
+            with open(os.path.join(outd, "dll_classes.json"), "w", encoding="utf-8") as f:
+                json.dump({k: {str(i): c for i, c in v.items()} for k, v in dll_classes.items()
+                           if not k.startswith(("mscorlib", "System", "Mono."))}, f, indent=0)
+            log("script ids for %d assemblies" % len(dll_classes))
+        except Exception as e:  # noqa: BLE001
+            log("rea answer not usable:", e)
+    proj = Project(root, dll_classes)
     log("assets with guids:", len(proj.guids))
 
     def jload(p):
@@ -510,7 +526,7 @@ def main():
             if isinstance(t.get("texture"), str) and not re.fullmatch(r"[0-9a-f]{32}", t["texture"]):
                 tex_use[t["texture"]] += mat_use.get(m["name"], 0) or 1
     images = [p for p in glob.glob(os.path.join(root, "Assets", "**", "*"), recursive=True)
-              if p.lower().endswith((".png", ".jpg", ".jpeg", ".tga"))]
+              if p.lower().endswith((".png", ".jpg", ".jpeg", ".tga", ".exr"))]
     rel_images = {os.path.relpath(p, root): p for p in images}
     used = [(rel_images[t], os.path.splitext(os.path.basename(t))[0]) for t, _ in tex_use.most_common() if t in rel_images]
     used_set = {p for p, _ in used}
@@ -545,6 +561,70 @@ def main():
                    if p.lower().endswith((".ttf", ".otf", ".fontsettings")))
     manifest = os.path.join(root, "Packages", "manifest.json")
     packages = sorted((jload(manifest).get("dependencies") or {}).keys()) if os.path.exists(manifest) else []
+
+    # ---- inventory: plugin DLLs, shaders, MonoBehaviour assets, prefabs, animation, tags and layers ----
+    def rels(pattern):
+        return sorted(os.path.relpath(p, root) for p in glob.glob(os.path.join(root, pattern), recursive=True))
+
+    plugins = rels("Assets/**/*.dll")
+    shaders = []
+    for rp in rels("Assets/**/*.shader"):
+        m = re.search(r'Shader\s+"([^"]+)"', read_text(os.path.join(root, rp))[:2000])
+        shaders.append({"file": rp, "name": m.group(1) if m else None, "guid": next((g for g, q in proj.guids.items() if q == rp), None)})
+    mono_assets = []
+    for rp in rels("Assets/**/*.asset"):
+        if rp.startswith(("Assets/Mesh/", "Assets/NavMeshData/", "Assets/AnimationClip/")) or os.path.getsize(os.path.join(root, rp)) > 3_000_000:
+            continue
+        d = first_doc(os.path.join(root, rp))
+        if d and d[0] == 114:
+            mono_assets.append({"file": rp, "name": d[4].get("m_Name"), "script": script_name(proj, d[4])})
+    prefabs = []
+    for rp in rels("Assets/**/*.prefab"):
+        try:
+            docs = list(unity_docs(os.path.join(root, rp)))
+        except Exception:  # noqa: BLE001
+            continue
+        names = [b.get("m_Name") for cid, _f, _s, _t, b in docs if cid == 1]
+        scr = sorted({script_name(proj, b) for cid, _f, _s, _t, b in docs if cid == 114})
+        prefabs.append({"file": rp, "objects": len(names), "root": names[0] if names else None, "scripts": scr})
+    tags = {}
+    tm = os.path.join(root, "ProjectSettings", "TagManager.asset")
+    if os.path.exists(tm):
+        d = first_doc(tm)
+        if d:
+            tags = {"tags": d[4].get("tags"), "layers": [(i, l) for i, l in enumerate(d[4].get("layers") or []) if l]}
+    inventory = {"plugins": plugins, "shaders": shaders, "mono_assets": mono_assets, "prefabs": prefabs,
+                 "controllers": rels("Assets/**/*.controller"), "animations": rels("Assets/**/*.anim"),
+                 "timelines": rels("Assets/**/*.playable"), "tags_layers": tags,
+                 "sprites": len(rels("Assets/Sprite/**/*")), "texture2d_raw": rels("Assets/**/*.texture2d")[:200]}
+    with open(os.path.join(outd, "inventory.json"), "w", encoding="utf-8") as f:
+        json.dump(inventory, f, indent=1)
+
+    samples = os.path.join(outd, "samples")
+    os.makedirs(samples, exist_ok=True)
+
+    def sample(rp, limit=400_000):
+        src = os.path.join(root, rp)
+        if os.path.exists(src):
+            dst = os.path.join(samples, rp.replace("/", "__"))
+            with open(src, "rb") as fi, open(dst, "wb") as fo:
+                fo.write(fi.read(limit))
+    for rp in ("ProjectSettings/TagManager.asset", "ProjectSettings/GraphicsSettings.asset",
+               "ProjectSettings/QualitySettings.asset", "ProjectSettings/EditorBuildSettings.asset",
+               "ProjectSettings/InputManager.asset", "ProjectSettings/DynamicsManager.asset", "Packages/manifest.json"):
+        sample(rp)
+    for name, _n in mat_use.most_common(3):
+        m = next((x for x in mats if x["name"] == name), None)
+        if m and m.get("path"):
+            sample(m["path"])
+    if shaders:
+        sample(shaders[0]["file"], 6000)
+    for a in mono_assets:
+        if any(k in str(a["script"]) for k in ("UniversalRenderPipelineAsset", "UniversalRendererData", "VolumeProfile")):
+            sample(a["file"], 120_000)
+    for pf in prefabs:
+        if any(k in " ".join(pf["scripts"]) for k in ("GrannyAI", "Nosferatu")):
+            sample(pf["file"])
 
     # ---- report.md ----
     L = ["# Granny 4 End Game - what is inside", ""]
@@ -618,6 +698,16 @@ def main():
     L += ["", "## Code", "", "Game scripts (%d): %s" % (len(game_scripts), ", ".join(sorted(game_scripts)[:200])), "",
           "Other assemblies: " + ", ".join(other_assemblies[:60]), ""]
     L += ["## Sounds (%d)" % len(audio), "", ", ".join(audio[:300]), "", "## Fonts", "", ", ".join(fonts) or "-", ""]
+    L += ["## Project inventory", "", "**Plugin DLLs:** " + ", ".join(os.path.basename(p) for p in plugins), "",
+          "**Shaders (%d):** " % len(shaders) + ", ".join(str(x["name"]) for x in shaders), "",
+          "**MonoBehaviour assets:**", ""]
+    L += ["- `%s` - %s" % (a["name"], a["script"]) for a in mono_assets[:80]]
+    L += ["", "**Prefabs:**", ""]
+    L += ["- `%s` (%d objects) - %s" % (os.path.basename(p["file"]), p["objects"], ", ".join(p["scripts"])[:400]) for p in prefabs]
+    L += ["", "**Animator controllers:** " + ", ".join(os.path.basename(p) for p in inventory["controllers"]),
+          "", "**Animations:** " + ", ".join(os.path.basename(p) for p in inventory["animations"]),
+          "", "**Timelines:** " + ", ".join(os.path.basename(p) for p in inventory["timelines"]),
+          "", "**Tags:** %s" % (tags.get("tags"),), "", "**Layers:** %s" % (tags.get("layers"),), ""]
     L += ["## Files by type", "", "| type | files | MB |", "|---|---|---|"]
     for ext, n in by_ext.most_common(30):
         L.append("| %s | %d | %.1f |" % (ext, n, size_by_ext[ext] / 1e6))

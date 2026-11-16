@@ -159,13 +159,14 @@ for o in meshes:
 
 def house_region(bxs):
     """The house and its yard: the densest cluster of objects (far-away sets, terrain and sky left out)."""
-    small = [b for b in bxs if (b[2] - b[1]).length < 120]
+    # objects left at the world origin (skinned meshes in bind pose, unplaced parts) are not the house
+    small = [b for b in bxs if (b[2] - b[1]).length < 120 and ((b[1] + b[2]) / 2).length > 1.5]
     pts = [((lo.x + hi.x) / 2, (lo.y + hi.y) / 2) for _o, lo, hi in small]
     if not pts:
         return bxs, None
-    cells = collections.Counter((math.floor(x / 4), math.floor(y / 4)) for x, y in pts)
-    (cx, cy), _n = cells.most_common(1)[0]
-    c = ((cx + 0.5) * 4, (cy + 0.5) * 4)
+    cells = collections.Counter((math.floor(x / 8), math.floor(y / 8)) for x, y in pts)
+    best = max(cells, key=lambda k: sum(cells.get((k[0] + i, k[1] + j), 0) for i in (-1, 0, 1) for j in (-1, 0, 1)))
+    c = ((best[0] + 0.5) * 8, (best[1] + 0.5) * 8)
     for _ in range(8):
         near = [p for p in pts if math.hypot(p[0] - c[0], p[1] - c[1]) < 30]
         if not near:
