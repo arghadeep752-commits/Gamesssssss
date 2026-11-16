@@ -228,10 +228,35 @@ def fit(photo, size):
     return photo.resize((tw, th), Image.LANCZOS)
 
 
-def tint_to(photo, target_mean):
-    """Multiply each channel so the photo's average colour becomes the original texture's average colour."""
-    mean = ImageStat.Stat(photo).mean[:3]
-    gains = [max(0.25, min(3.0, t / max(m, 1.0))) for t, m in zip(target_mean, mean)]
+# how much of the original room colour each kind of surface takes (the rest is the photo's own colour):
+# wood stays mostly natural wood, painted walls and wallpaper keep the room's colour
+TINT_STRENGTH = {
+    "wood_floor": 0.25, "wood_planks": 0.3, "wood_fine": 0.3,
+    "plaster": 0.7, "fabric_wall": 0.6,
+    "tiles_wall": 0.45, "marble_floor": 0.4, "concrete_floor": 0.4, "stone_wall": 0.4,
+    "grass": 0.35, "rock": 0.35,
+}
+# the brightest a surface's average may get (0-255): very light originals clipped the photo's grain to flat white
+MAX_LUMA = {"wood_floor": 150, "wood_planks": 150, "wood_fine": 140, "plaster": 205, "fabric_wall": 170}
+
+
+def luma(rgb):
+    return 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+
+
+def tint_to(photo, target_mean, slot=None):
+    """Give the photo the original room's colour without flattening it: the photo's own light and dark detail is kept
+    (its contrast around its average), the colour moves part of the way to the original's average colour, and very
+    light originals are held back so the grain of wood or plaster still shows."""
+    k = TINT_STRENGTH.get(slot, 0.5)
+    pm = ImageStat.Stat(photo).mean[:3]
+    tl = luma(target_mean)
+    cap = MAX_LUMA.get(slot, 215)
+    if tl > cap:
+        target_mean = [c * cap / tl for c in target_mean]
+    natural_scale = luma(target_mean) / max(1.0, luma(pm))   # the photo's own colour at the original's brightness
+    goal = [k * t + (1 - k) * m * natural_scale for t, m in zip(target_mean, pm)]
+    gains = [max(0.2, min(2.5, g / max(m, 1.0))) for g, m in zip(goal, pm)]
     bands = [b.point(lambda v, g=g: max(0, min(255, int(v * g + 0.5)))) for b, g in zip(photo.split()[:3], gains)]
     return Image.merge("RGB", bands)
 
@@ -275,7 +300,7 @@ def main():
         size, mode = orig.size, orig.mode
         mean = ImageStat.Stat(orig.convert("RGB")).mean[:3]
         photo = fit(Image.open(os.path.join(folder, "diff.jpg")).convert("RGB"), size)
-        photo = tint_to(photo, mean)
+        photo = tint_to(photo, mean, slot)
         if "A" in mode:
             photo = photo.convert("RGBA")
             photo.putalpha(orig.convert("RGBA").split()[3])

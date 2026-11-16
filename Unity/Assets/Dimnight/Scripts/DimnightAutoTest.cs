@@ -188,7 +188,6 @@ public class DimnightAutoTest : MonoBehaviour
         {
             c.allowHDR = false;
             c.allowMSAA = false;
-            SetProp(c.GetComponent("UniversalAdditionalCameraData"), "renderPostProcessing", false);
         }
         yield return Snap("day-1");
         yield return new WaitForSecondsRealtime(4f);
@@ -208,6 +207,22 @@ public class DimnightAutoTest : MonoBehaviour
         Transform player = playerObject.transform;
         FPSController fps = player.GetComponent<FPSController>();
         Say("player at " + player.position + ", controls " + (fps != null && fps.enabled ? "on" : "off"));
+        // the game's colour grading and vignette stay on for the shots, unless the emulator draws them black
+        yield return new WaitForEndOfFrame();
+        Texture2D grab = ScreenCapture.CaptureScreenshotAsTexture();
+        float sum = 0f;
+        int n = 0;
+        for (int y = grab.height / 8; y < grab.height * 7 / 8; y += 16)
+            for (int x = grab.width / 4; x < grab.width * 3 / 4; x += 16) { sum += grab.GetPixel(x, y).grayscale; n++; }
+        Destroy(grab);
+        float avg = n > 0 ? sum / n : 0f;
+        Say("screen brightness with post-processing: " + avg.ToString("0.000"));
+        if (avg < 0.02f)
+        {
+            Say("too dark on the emulator: post-processing off for the shots");
+            foreach (Camera c in FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                SetProp(c.GetComponent("UniversalAdditionalCameraData"), "renderPostProcessing", false);
+        }
         yield return Snap("gameplay-bed");
         yield return Diagnose(player);
 

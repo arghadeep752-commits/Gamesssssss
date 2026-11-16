@@ -260,6 +260,18 @@ namespace Dimnight.EditorTools
             QualitySettings.SetQualityLevel(current, false);
         }
 
+        static bool IsToolCrash(BuildReport report)
+        {
+            foreach (BuildStep step in report.steps)
+                foreach (BuildStepMessage message in step.messages)
+                {
+                    if (message.type != LogType.Error && message.type != LogType.Exception) continue;
+                    string m = message.content ?? "";
+                    if (m.Contains("il2cpp") || m.Contains("Segmentation fault") || m.Contains("core dumped")) return true;
+                }
+            return false;
+        }
+
         static bool BuildApk(string[] scenes, string output, bool autoTest)
         {
             string dir = Path.GetDirectoryName(Path.GetFullPath(output));
@@ -275,6 +287,13 @@ namespace Dimnight.EditorTools
             if (autoTest) options.extraScriptingDefines = new[] { "DIMNIGHT_AUTOTEST" };
             BuildReport report = BuildPipeline.BuildPlayer(options);
             BuildSummary summary = report.summary;
+            if (summary.result != BuildResult.Succeeded && IsToolCrash(report))
+            {
+                // il2cpp now and then dies with a segmentation fault on the cloud machine: one more try, not a full rerun
+                Log(output + ": the il2cpp tool crashed, building once more");
+                report = BuildPipeline.BuildPlayer(options);
+                summary = report.summary;
+            }
             Log(output + ": " + summary.result + ", " + (summary.totalSize / 1048576UL) + " MB, "
                 + summary.totalErrors + " errors, " + summary.totalTime);
             if (summary.result != BuildResult.Succeeded)
