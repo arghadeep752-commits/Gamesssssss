@@ -82,6 +82,11 @@ jobs:
           echo "recorded sounds: $before -> $after"
           (cd assets/downloaded && zip -qr ../../build/sounds_pack.zip sounds)
           if [ "$after" -gt "$before" ]; then gh release upload "$CI_RELEASE" build/sounds_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
+      - name: Reference screenshots of the original game's controls (encrypted, never put in the game)
+        if: hashFiles('ci/ref_pub.pem') != ''
+        run: |
+          python3 ci/ref_screens.py ci/ref_pub.pem build/ref_screens.tar && \
+            gh release upload "$CI_RELEASE" build/ref_screens.tar -R "$GITHUB_REPOSITORY" --clobber || true
       - name: Publish logs
         if: always()
         run: |
@@ -136,6 +141,8 @@ jobs:
           username: ${{ secrets.UNITY_EMAIL }}
           password: ${{ secrets.UNITY_PASSWORD }}
       - name: Compile the scripts
+        env:
+          TM_ACCOUNT: ${{ secrets.UNITY_EMAIL }}
         run: |
           mkdir -p Logs
           set +e
@@ -143,11 +150,21 @@ jobs:
             -projectPath "$GITHUB_WORKSPACE" -buildTarget Android -logFile "$GITHUB_WORKSPACE/Logs/compile.log"
           echo "Unity exited with $?"
           set -e
-          grep -E "error CS[0-9]+|Shader error|warning CS0(162|168|219|414)" Logs/compile.log | sort | uniq > compile_report.txt || true
-          echo "errors: $(grep -c 'error CS' compile_report.txt || true)"
-          cat compile_report.txt | head -n 80
+          {
+            echo "errors: $(grep -c 'error CS' Logs/compile.log || true)   (run ${{ github.run_id }}, commit ${GITHUB_SHA::7})"
+            grep -E "error CS[0-9]+|Shader error|warning CS0(162|168|219|414)" Logs/compile.log | sort | uniq || true
+            echo "---------------- licence / compilation lines ----------------"
+            grep -E "[Ll]icen[cs]e|Compilation|compil|Exiting|batchmode|Refresh|Assembly-CSharp" Logs/compile.log | head -n 60 || true
+            echo "---------------- end of the log ----------------"
+            tail -n 80 Logs/compile.log || true
+          } > compile_report.txt
+          head -n 120 compile_report.txt
           gh release upload "$CI_RELEASE" compile_report.txt -R "$GITHUB_REPOSITORY" --clobber || true
-          ! grep -q "error CS" compile_report.txt
+          if [ -f Logs/compile.log ]; then
+            UNITY_EMAIL="$TM_ACCOUNT" python3 ci/redact_log.py Logs/compile.log unity_compile_log.txt && gzip -9f unity_compile_log.txt && \
+              gh release upload "$CI_RELEASE" unity_compile_log.txt.gz -R "$GITHUB_REPOSITORY" --clobber || true
+          fi
+          ! grep -q "error CS" Logs/compile.log
       - name: Upload the compile log
         if: always()
         uses: actions/upload-artifact@v4
@@ -344,9 +361,15 @@ jobs:
           retention-days: 7
       - name: Publish the Unity log on the CI release
         if: always()
+        env:
+          TM_ACCOUNT: ${{ secrets.UNITY_EMAIL }}
         run: |
           [ -f Logs/build.log ] && (grep -E "\[TM|error CS|Shader error|Exception" Logs/build.log | head -n 400 > unity_build_summary.txt; \
             gh release upload "$CI_RELEASE" unity_build_summary.txt -R "$GITHUB_REPOSITORY" --clobber) || true
+          if [ -f Logs/build.log ]; then
+            UNITY_EMAIL="$TM_ACCOUNT" python3 ci/redact_log.py Logs/build.log unity_build_log.txt && gzip -9f unity_build_log.txt && \
+              gh release upload "$CI_RELEASE" unity_build_log.txt.gz -R "$GITHUB_REPOSITORY" --clobber || true
+          fi
       - name: Check the APK
         run: |
           ls -la Build

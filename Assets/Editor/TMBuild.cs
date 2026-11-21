@@ -66,6 +66,7 @@ namespace TradersMadness.EditorTools
         static bool Build(int buildNumber, string output, string testApk)
         {
             Debug.Log("[TM] Unity " + Application.unityVersion + ", build " + buildNumber);
+            ImportEverything();
             ConfigureProject(buildNumber);
             ConfigureQuality();
             PrepareAssets();
@@ -83,6 +84,42 @@ namespace TradersMadness.EditorTools
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             }
             return ok;
+        }
+
+        /// <summary>
+        /// Makes sure every file in Assets/ is imported before the builders look for them (the converted house, the
+        /// icons, the sounds), and says what the asset database can see.
+        /// </summary>
+        static void ImportEverything()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            string[] probes = { "Assets/Resources/house_meta.json", "Assets/Branding/tm_icon_1024.png", "Assets/Game/House/materials.json",
+                                "Assets/Resources/Sounds/door_open.ogg", "Assets/Resources/Fonts/BebasNeue-Regular.ttf" };
+            int missing = 0;
+            foreach (string p in probes)
+            {
+                bool onDisk = File.Exists(p);
+                bool known = !string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(p, AssetPathToGUIDOptions.OnlyExistingAssets));
+                if (onDisk && !known)
+                {
+                    missing++;
+                    AssetDatabase.ImportAsset(p, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+                    known = !string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(p, AssetPathToGUIDOptions.OnlyExistingAssets));
+                }
+                Debug.Log("[TM] asset " + p + ": on disk " + onDisk + ", imported " + known);
+            }
+            if (missing > 0)
+            {
+                // the first import skipped files: import the folders again, one by one
+                foreach (string dir in new[] { "Assets/Branding", "Assets/Resources", "Assets/Game" })
+                    if (Directory.Exists(dir))
+                        AssetDatabase.ImportAsset(dir, ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            }
+            int n = 0;
+            foreach (string dir in new[] { "Assets/Game", "Assets/Resources", "Assets/Branding" })
+                if (AssetDatabase.IsValidFolder(dir)) n += AssetDatabase.FindAssets("", new[] { dir }).Length;
+            Debug.Log("[TM] asset database: " + n + " assets in Assets/Game, Assets/Resources and Assets/Branding");
         }
 
         static void ConfigureProject(int buildNumber)

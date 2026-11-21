@@ -70,16 +70,18 @@ SLOTS = {
     "plaster":        dict(ids=["painted_plaster_wall", "white_plaster_02", "plaster_grey_04", "beige_wall_001"],
                            must=["plaster", "wall", "paint", "stucco"], prefer=["white", "painted", "smooth", "clean", "interior"],
                            avoid=["brick", "tile", "wood", "metal", "stone", "peel", "damaged", "broken", "dirty", "graffiti"],
-                           acg=["PaintedPlaster", "Plaster"]),
+                           acg=["PaintedPlaster", "Plaster"], look=dict(min_bright=0.5, max_sat=0.15)),
     "plaster_ext":    dict(ids=["white_plaster_rough_01", "rough_plaster", "plastered_wall_04", "beige_wall_002"],
                            must=["plaster", "stucco", "wall", "render"], prefer=["white", "rough", "exterior", "clean"],
-                           avoid=["brick", "tile", "wood", "metal", "broken", "damaged", "peel"], acg=["Plaster", "Facade"]),
+                           avoid=["brick", "tile", "wood", "metal", "broken", "damaged", "peel", "moss", "grass"], acg=["Plaster", "Facade"],
+                           look=dict(min_bright=0.45, max_sat=0.18)),
     "concrete":       dict(ids=["concrete_wall_008", "smooth_concrete", "concrete_wall_004", "concrete_wall_006"],
                            must=["concrete"], prefer=["smooth", "wall", "clean", "grey", "panel"], avoid=["floor", "tile", "brick", "broken", "dirty"],
-                           acg=["Concrete"]),
+                           acg=["Concrete"], look=dict(max_sat=0.2)),
     "concrete_floor": dict(ids=["concrete_floor_02", "polished_concrete_01", "concrete_floor_painted", "concrete_floor_03"],
                            must=["concrete", "floor", "cement"], prefer=["floor", "polished", "smooth", "garage", "grey"],
-                           avoid=["wall", "brick", "tile", "wood", "broken", "cracked"], acg=["Concrete floor", "Concrete"]),
+                           avoid=["wall", "brick", "tile", "wood", "broken", "cracked"], acg=["Concrete floor", "Concrete"],
+                           look=dict(max_sat=0.2)),
     "oak_floor":      dict(ids=["wood_floor", "laminate_floor_02", "oak_floor", "wood_floor_deck"],
                            must=["wood", "floor", "parquet", "laminate", "plank"], prefer=["oak", "floor", "laminate", "parquet", "light", "clean"],
                            avoid=["dirty", "old", "weathered", "painted", "bark", "worn", "rotten", "damaged"], acg=["WoodFloor", "Wood floor"]),
@@ -89,12 +91,13 @@ SLOTS = {
     "stone_tiles":    dict(ids=["large_floor_tiles_02", "stone_tiles_02", "marble_tiles", "floor_tiles_08"],
                            must=["tile", "floor", "stone", "marble"], prefer=["large", "floor", "tile", "grey", "marble", "polished", "porcelain"],
                            avoid=["roof", "terracotta", "wood", "hex", "dirty", "cobble", "broken", "mosaic"], acg=["Tiles", "Marble tiles"]),
-    "bath_tiles":     dict(ids=["floor_tiles_06", "white_tiles", "ceramic_tiles", "tiles_white_01"],
+    "bath_tiles":     dict(ids=["white_tiles", "ceramic_tiles", "tiles_white_01"],
                            must=["tile"], prefer=["white", "ceramic", "bathroom", "square", "clean", "glossy"],
-                           avoid=["roof", "terracotta", "wood", "hex", "dirty", "old", "broken"], acg=["Tiles white", "Tiles"]),
-    "marble":         dict(ids=["marble_01", "white_marble_03", "marble_bust_01", "calacatta_marble"],
-                           must=["marble"], prefer=["white", "polished", "clean", "vein"], avoid=["tile", "dirty", "broken", "bust"],
-                           acg=["Marble"]),
+                           avoid=["roof", "terracotta", "wood", "hex", "dirty", "old", "broken", "checker"], acg=["Tiles white", "Tiles", "Ceramic tiles"],
+                           look=dict(min_bright=0.55, max_sat=0.15, max_contrast=0.13)),
+    "marble":         dict(ids=["white_marble_03", "calacatta_marble"],
+                           must=["marble"], prefer=["white", "polished", "clean", "vein"], avoid=["tile", "tiles", "dirty", "broken", "bust"],
+                           acg=["Marble white", "Marble"], look=dict(min_bright=0.6, max_sat=0.12, max_contrast=0.16)),
     "walnut":         dict(ids=["dark_wood", "wood_table_001", "walnut_veneer", "wooden_table_02"],
                            must=["wood"], prefer=["walnut", "dark", "veneer", "table", "smooth", "furniture"],
                            avoid=["floor", "planks", "bark", "painted", "old", "weathered", "rotten"], acg=["Wood", "Wood dark"]),
@@ -109,32 +112,38 @@ SLOTS = {
                            avoid=["old", "weathered", "painted", "rotten", "broken", "white"], acg=["Wood siding", "Planks"]),
     "fabric":         dict(ids=["fabric_pattern_07", "cotton_fabric", "linen_fabric", "fabric_pattern_05"],
                            must=["fabric", "cloth", "cotton", "linen", "woven"], prefer=["woven", "linen", "cotton", "grey", "plain"],
-                           avoid=["leather", "carpet", "denim", "rug", "pattern_floral"], acg=["Fabric"]),
+                           avoid=["leather", "carpet", "denim", "rug", "pattern_floral"], acg=["Fabric", "Fabric linen"],
+                           look=dict(max_sat=0.22, max_contrast=0.15)),
     "rug":            dict(ids=["carpet_wool", "rug_wool", "fabric_carpet", "carpet_01"],
                            must=["carpet", "rug", "wool", "felt"], prefer=["carpet", "rug", "wool", "grey", "beige"],
-                           avoid=["leather", "dirty"], acg=["Carpet"]),
+                           avoid=["leather", "dirty", "rock", "stone"], acg=["Carpet", "Fabric carpet"],
+                           look=dict(max_sat=0.3, max_contrast=0.18)),
     "leather":        dict(ids=["leather_white", "leather_red_02", "brown_leather", "fabric_leather_01"],
                            must=["leather"], prefer=["leather", "black", "smooth"], avoid=["old", "worn", "cracked"], acg=["Leather"]),
-    "metal_brushed":  dict(ids=["brushed_metal", "metal_plate", "stainless_steel", "metal_plate_02"],
-                           must=["metal", "steel", "aluminium", "aluminum"], prefer=["brushed", "steel", "stainless", "clean"],
-                           avoid=["rust", "painted", "grate", "mesh", "corrugated", "dirty"], acg=["Metal brushed", "Metal"]),
-    "metal_painted":  dict(ids=["painted_metal_02", "metal_plate", "blue_metal_plate", "painted_metal"],
+    "metal_brushed":  dict(ids=["brushed_metal", "stainless_steel"],
+                           must=["brushed", "stainless", "aluminium", "aluminum"], prefer=["brushed", "steel", "stainless", "clean"],
+                           avoid=["rust", "rusty", "painted", "grate", "mesh", "corrugated", "dirty", "diamond", "plate", "floor"],
+                           acg=["Metal brushed", "Brushed metal", "Metal"], look=dict(max_sat=0.1, max_contrast=0.14)),
+    "metal_painted":  dict(ids=["painted_metal_02", "painted_metal"],
                            must=["metal", "steel", "iron"], prefer=["painted", "paint", "grey", "clean", "powder"],
-                           avoid=["floor", "grate", "mesh", "corrugated", "diamond", "rust"], acg=["Painted metal", "Metal painted"]),
+                           avoid=["floor", "grate", "mesh", "corrugated", "diamond", "rust", "rusty", "blue", "green", "red"],
+                           acg=["Painted metal", "Metal painted", "Metal"], look=dict(max_sat=0.18, max_contrast=0.16)),
     "corrugated":     dict(ids=["corrugated_iron", "corrugated_iron_02", "metal_roof", "corrugated_metal"],
                            must=["corrugated", "metal", "iron", "shutter"], prefer=["corrugated", "metal", "grey"], avoid=["rust"],
                            acg=["Corrugated steel", "Metal"]),
-    "grass":          dict(ids=["grass_path_2", "aerial_grass_rock", "forrest_ground_01", "grass_medium_01"],
-                           must=["grass", "lawn", "ground"], prefer=["grass", "lawn", "green", "short"],
-                           avoid=["snow", "dirt", "rock", "forest", "leaves", "mud", "path"], acg=["Grass"]),
+    "grass":          dict(ids=["grass_medium_01", "leafy_grass"],
+                           must=["grass", "lawn"], prefer=["grass", "lawn", "green", "short"],
+                           avoid=["snow", "dirt", "rock", "rocks", "forest", "leaves", "mud", "path", "dry"], acg=["Grass", "Lawn"],
+                           look=dict(green=True)),
     "paving":         dict(ids=["paving_stones_01", "patio_tiles", "square_floor_tiles", "concrete_pavers"],
                            must=["paving", "pavement", "tile", "stone", "paver", "patio"], prefer=["paving", "patio", "grey", "square", "clean"],
                            avoid=["cobble", "brick", "wood", "dirty", "moss"], acg=["Paving stones", "PavingStones"]),
     "cardboard":      dict(ids=["cardboard", "corrugated_cardboard", "kraft_paper", "paper_crumpled"],
                            must=["cardboard", "paper"], prefer=["cardboard", "paper", "brown"], avoid=["wall"], acg=["Cardboard", "Paper"]),
-    "hedge":          dict(ids=["hedge", "leaves_hedge", "ivy_wall", "forest_leaves_02"],
+    "hedge":          dict(ids=["hedge", "leaves_hedge"],
                            must=["hedge", "leaves", "ivy", "foliage", "bush"], prefer=["hedge", "green", "leaves", "bush"],
-                           avoid=["dry", "autumn", "dead", "brown"], acg=["Hedge", "Foliage"]),
+                           avoid=["dry", "autumn", "dead", "brown", "forest", "ground"], acg=["Hedge", "Foliage", "Leaves", "Grass"],
+                           look=dict(green=True)),
 }
 PH = "https://api.polyhaven.com/"
 
@@ -155,20 +164,51 @@ def ph_files_maps(aid):
             "ao": url_of(["AO", "ao"])}
 
 
+def has_word(words, k):
+    """k as a whole word (or its plural; keys of 4+ letters also match longer words: tile -> tiled, paint -> painted)."""
+    return any(w == k or w == k + "s" or w == k + "es" or (len(k) >= 4 and w.startswith(k)) for w in words)
+
+
+def look_ok(path, look):
+    """The photo's colour fits the slot (a white plaster must not be green moss, a lawn must be green, ...)."""
+    if not look:
+        return True, ""
+    from PIL import Image
+    a = np.asarray(Image.open(path).convert("RGB").resize((96, 96)), np.float64) / 255.0
+    mean = a.reshape(-1, 3).mean(0)
+    bright = float(mean.mean())
+    sat = float((mean.max() - mean.min()) / max(mean.max(), 1e-3))
+    lum = a.mean(2)
+    k = 8                                       # contrast of the large-scale pattern (8 x 8 blocks): checkers, planks
+    blocks = lum.reshape(96 // k, k, 96 // k, k).mean((1, 3))
+    contrast = float(blocks.std())
+    why = "bright %.2f sat %.2f contrast %.2f" % (bright, sat, contrast)
+    if bright < look.get("min_bright", 0.0) or bright > look.get("max_bright", 1.0):
+        return False, why
+    if sat > look.get("max_sat", 1.0):
+        return False, why
+    if contrast > look.get("max_contrast", 1.0):
+        return False, why
+    if look.get("green") and not (mean[1] > mean[0] * 1.04 and mean[1] > mean[2] * 1.15 and sat > 0.15):
+        return False, why
+    return True, why
+
+
 def ph_rank(spec, assets, used):
     def score(i):
         a = assets[i]
-        text = " ".join([i, a.get("name", "")] + list(a.get("tags", [])) + list(a.get("categories", []))).lower().replace("_", " ")
-        if not any(k in text for k in spec["must"]):
+        text = " ".join([i, a.get("name", "")] + list(a.get("tags", [])) + list(a.get("categories", []))).lower()
+        words = re.findall(r"[a-z]+", text)
+        if not any(has_word(words, k) for k in spec["must"]):
             return -99
-        s = sum(2 for k in spec["prefer"] if k in text) - sum(5 for k in spec["avoid"] if k in text)
+        s = sum(2 for k in spec["prefer"] if has_word(words, k)) - sum(5 for k in spec["avoid"] if has_word(words, k))
         return s + min(3.0, a.get("download_count", 0) / 40000.0)
     explicit = [i for i in spec["ids"] if i in assets and i not in used]
     ranked = sorted((i for i in assets if i not in explicit and i not in used and score(i) > 0), key=score, reverse=True)
-    return explicit + ranked[:6]
+    return explicit + ranked[:10]
 
 
-def acg_try(queries, dest, used):
+def acg_try(queries, dest, used, look=None):
     for q in queries:
         try:
             data = jget("https://ambientcg.com/api/v2/full_json?type=Material&sort=Popular&limit=15&include=downloadData&q=" + urllib.parse.quote(q))
@@ -203,8 +243,15 @@ def acg_try(queries, dest, used):
                     got["ao"] = n
             if "diff" not in got:
                 continue
+            shutil.rmtree(dest, ignore_errors=True)
             for k, n in got.items():
                 save(os.path.join(dest, k + ".jpg"), z.read(n))
+            ok, why = look_ok(os.path.join(dest, "diff.jpg"), look)
+            if not ok:
+                log("   ambientcg %s does not look right (%s)" % (aid, why))
+                used.add(aid)
+                shutil.rmtree(dest, ignore_errors=True)
+                continue
             return "ambientcg", aid
     return None
 
@@ -228,14 +275,20 @@ def textures():
                 maps = ph_files_maps(aid)
                 if not maps["diff"]:
                     continue
+                save(os.path.join(dest, "diff.jpg"), http(maps["diff"]))
+                ok, why = look_ok(os.path.join(dest, "diff.jpg"), spec.get("look"))
+                if not ok:
+                    log("   polyhaven %s does not look right for %s (%s)" % (aid, slot, why))
+                    shutil.rmtree(dest, ignore_errors=True)
+                    continue
                 for k, u in maps.items():
-                    if u:
+                    if u and k != "diff":
                         save(os.path.join(dest, k + ".jpg"), http(u))
                 used.add(aid)
                 return slot, ("polyhaven", aid)
             except Exception as e:      # noqa: BLE001
                 log("   polyhaven failed", aid, e)
-        r = acg_try(spec["acg"], dest, used)
+        r = acg_try(spec["acg"], dest, used, spec.get("look"))
         if r:
             used.add(r[1])
         return slot, r
@@ -285,8 +338,9 @@ SR = 44100
 # name: queries, title must contain one of `req`, must not contain `ban`, duration range, seconds kept, options
 SOUNDS = {
     "footstep":      dict(q=["footsteps wood floor", "footsteps wooden floor", "footsteps indoor", "walking footsteps"],
-                          req=["footstep", "foot step", "walking", "steps"], ban=["snow", "gravel", "grass", "leaves", "run", "horse", "march", "music", "heels"],
-                          dur=(2, 400), out=0.45, steps=6, ia="footsteps wood floor"),
+                          req=["footstep", "foot step", "walking", "steps"], ban=["snow", "gravel", "grass", "leaves", "run", "horse", "march", "music", "heels",
+                                                                                   "crowd", "voice", "voices", "party", "talk", "people", "office", "rain"],
+                          dur=(2, 400), out=0.45, steps=6, ia="footsteps wood floor", v=2),
     "door_open":     dict(q=["door open", "wooden door open", "door opening", "opening a door"], req=["door"],
                           ban=["music", "song", "slam", "knock", "bell", "creak", "squeak", "car ", "car door", "vehicle", "truck", "van ", "bus ",
                                "train", "fridge", "refrigerator", "elevator", "lift ", "oven", "microwave", "garage", "cabinet", "sliding", "alarm"],
@@ -316,8 +370,10 @@ SOUNDS = {
                           dur=(0.3, 30), out=1.4, ia="drawer open"),
     "safe_open":     dict(q=["safe door open", "metal door open", "vault door"], req=["safe", "vault", "metal door"],
                           ban=["music", "song", "car", "train"], dur=(0.3, 30), out=1.8, ia="metal door open"),
-    "punch":         dict(q=["punch", "body punch", "punch hit"], req=["punch", "hit", "slap", "smack"], ban=["music", "song", "drum", "keyboard"],
-                          dur=(0.1, 20), out=0.7, ia="punch"),
+    "punch":         dict(q=["body punch", "punch hit", "face punch", "punch"], req=["punch", "hit", "slap", "smack"],
+                          ban=["music", "song", "drum", "keyboard", "8 bit", "8bit", "8-bit", "snare", "chiptune", "synth", "retro", "arcade", "game",
+                               "kick", "electronic"],
+                          dur=(0.1, 20), out=0.7, ia="punch", v=2),
     "grunt":         dict(q=["man shouting angry", "angry man shout", "man yelling"], req=["shout", "yell", "angry", "scream", "grunt"],
                           ban=["music", "song", "woman", "female", "child", "baby", "crowd", "girl"], dur=(0.4, 30), out=1.8, gain=1, ia="man shouting"),
     "laugh":         dict(q=["man laughing evil", "evil laugh man", "man laugh"], req=["laugh"],
