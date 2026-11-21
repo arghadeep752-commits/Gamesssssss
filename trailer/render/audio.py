@@ -212,9 +212,9 @@ def build(audio_dir, out_path):
     # M2  Gita dialogue (soft section)
     music.add(seg(vc, 74.0, 98.9, 0.6, 0.5), 50.3, 3.5)
     # M3  Vishwaroop climax (choir)
-    music.add(seg(vc, 155.0, 180.4, 0.02, 0.35), 75.0, 2.0)
+    music.add(seg(vc, 155.0, 180.4, 0.02, 0.35), 75.0, 0.5)
     # M4  Bhishma / wheel (percussive ostinato)
-    music.add(seg(wz, 36.4, 61.45, 0.01, 0.3), 100.4, -2.0)
+    music.add(seg(wz, 36.4, 61.45, 0.01, 0.3), 100.4, 3.5)
     # M5  Arjuna's plea (emotional outro strings)
     music.add(seg(vc, 183.5, 198.6, 0.5, 1.0), 125.6, 3.0)
     # M6  final reveal + title
@@ -253,7 +253,7 @@ def build(audio_dir, out_path):
 
     mix = music.x * 0.9 + sfx.x * 0.8
     # gentle master: soft clip + peak normalise
-    mix = np.tanh(mix * 1.25) / np.tanh(1.25)
+    mix = np.tanh(mix * 1.5) / np.tanh(1.5)
     mix = norm(mix[: int(TOTAL * SR)], db(-1.0))
     mix *= fade(len(mix), 0.0, 3.0)[:, None]
     pcm = (np.clip(mix, -1, 1) * 32767).astype(np.int16)
