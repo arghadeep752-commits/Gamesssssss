@@ -40,21 +40,24 @@ def import_glb(name):
 
 
 def world_bbox(objs):
+    import numpy as np
     dg = bpy.context.evaluated_depsgraph_get()
-    mn = Vector((1e9, 1e9, 1e9)); mx = Vector((-1e9, -1e9, -1e9))
+    mn = np.array([1e9, 1e9, 1e9]); mx = np.array([-1e9, -1e9, -1e9])
     for o in objs:
         if o.type != "MESH":
             continue
         oe = o.evaluated_get(dg)
         me = oe.to_mesh()
-        mw = oe.matrix_world
-        step = max(1, len(me.vertices) // 4000)
-        for v in me.vertices[::step]:
-            w = mw @ v.co
-            mn.x = min(mn.x, w.x); mn.y = min(mn.y, w.y); mn.z = min(mn.z, w.z)
-            mx.x = max(mx.x, w.x); mx.y = max(mx.y, w.y); mx.z = max(mx.z, w.z)
+        n = len(me.vertices)
+        if n:
+            co = np.empty(n * 3, np.float32)
+            me.vertices.foreach_get("co", co)
+            co = co.reshape(-1, 3).astype(np.float64)
+            M = np.array(oe.matrix_world)
+            w = co @ M[:3, :3].T + M[:3, 3]
+            mn = np.minimum(mn, w.min(0)); mx = np.maximum(mx, w.max(0))
         oe.to_mesh_clear()
-    return mn, mx
+    return Vector(mn.tolist()), Vector(mx.tolist())
 
 
 def fit(root, objs, height=None, length=None, axis="z", ground=True):
