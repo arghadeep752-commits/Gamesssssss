@@ -1,0 +1,51 @@
+name: Trailer - Publish release
+
+# Runs when trailer/release/source.json changes on the mahabharata-trailer branch.
+# Downloads the finished trailer video (rendered in the Higgsfield sandbox) and
+# publishes it on the Releases page as "mahabharata-trailer-part1".
+
+on:
+  push:
+    branches: [mahabharata-trailer]
+    paths: ['trailer/release/source.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trailer-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Download and verify the trailer
+        run: |
+          set -e
+          mkdir -p out
+          python3 - <<'PY'
+          import json, urllib.request, os
+          src = json.load(open("trailer/release/source.json"))
+          for f in src["files"]:
+              print("downloading", f["name"], flush=True)
+              urllib.request.urlretrieve(f["url"], os.path.join("out", f["name"]))
+          PY
+          for f in out/*.mp4; do
+            ffprobe -v error -show_entries format=duration:stream=codec_name,width,height -of compact "$f"
+          done
+          ls -la out
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 trailer/tools/ghrel.py upload mahabharata-trailer-part1 out --public \
+            --title "THE EPIC TALES OF MAHABHARATA – PART 1 | Official Concept Trailer" \
+            --notes "$(cat trailer/release/NOTES.md)"

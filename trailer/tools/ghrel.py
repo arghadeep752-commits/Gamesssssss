@@ -154,6 +154,13 @@ def main():
             i = args.index("--notes"); notes = args[i + 1]; del args[i:i + 2]
         args = [a for a in args if a != "--public"]
         rel = ensure(tag, title or tag, notes or "", draft=not public)
+        if title or notes:
+            patch = {}
+            if title:
+                patch["name"] = title
+            if notes:
+                patch["body"] = notes
+            rel = _req("PATCH", f"{API}/repos/{REPO}/releases/{rel['id']}", patch)
         existing = assets(rel)
         files = []
         for p in args:
