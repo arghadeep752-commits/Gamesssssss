@@ -398,26 +398,16 @@ def build_battlefield(sc, sun_elev=3.0, sun_rot=0.0):
             fr = flag_object(cols[(k * 2 + j) % 4])
             fpts = [(random.uniform(-350, 350), random.uniform(y0, y1), 0) for _ in range(110)]
             scatter(all_children(fr), fpts, f"flags{k}{j}", rot_z=0.0, jitter=0.5, scale_j=0.12, seed=10 + k * 2 + j)
-    ch_root, ch_objs = import_glb("chariot")
-    fit(ch_root, ch_objs, length=4.2)
-    hr_root, hr_objs = import_glb("horse")
-    set_action(hr_objs, "leanhooved_000014", 1)
-    fit(hr_root, hr_objs, length=2.5)
-    cpts, hpts = [], []
-    for y, sgn in ((240, 1), (252, 1), (318, -1), (306, -1)):
-        for _ in range(26):
-            x = random.uniform(-330, 330)
-            cpts.append((x, y, 0))
-            for dx in (-0.8, 0.8):
-                hpts.append((x + dx, y + 3.6 * sgn, 0))
-    scatter(all_children(ch_root), cpts, "chariots", rot_z=0.0, jitter=0.25, scale_j=0.05, seed=21)
-    scatter(all_children(hr_root), hpts, "horses", rot_z=0.0, jitter=0.25, scale_j=0.05, seed=22)
+    for k, (y0, y1) in enumerate([(60, 230), (330, 520)]):
+        fr = flag_object((0.8, 0.5, 0.08) if k == 0 else (0.6, 0.06, 0.05), h=9.0, fw=2.4, fh=1.4)
+        fpts = [(random.uniform(-340, 340), random.uniform(y0 + 5, y0 + 40), 0) for _ in range(60)]
+        scatter(all_children(fr), fpts, f"bigflags{k}", rot_z=0.0, jitter=0.4, scale_j=0.1, seed=30 + k)
 
 
 def shot_army_aerial():
     sc = reset()
     build_battlefield(sc, sun_elev=3.0, sun_rot=4.5)
-    camera((-30, -120, 95), (12, 650, 12), lens=30)
+    camera((-30, -120, 95), (12, 560, 0), lens=30)
     render_settings(sc, res=(2880, 1206), samples=40, mist=(80, 1400), fog_color=(0.95, 0.62, 0.38), fog_amount=0.5,
                     glare=0.3, look="AgX - Medium High Contrast", exposure=-0.4)
     do_render(sc, "army_aerial")
@@ -429,6 +419,7 @@ def shot_army_low():
     camera((14, 40, 1.65), (2, 420, 6), lens=105, dof=200, fstop=4.0)
     render_settings(sc, res=(2880, 1206), samples=40, mist=(40, 700), fog_color=(0.98, 0.66, 0.4), fog_amount=0.55,
                     glare=0.4, look="AgX - Medium High Contrast", exposure=-0.7)
+    do_render(sc, "army_low")
 
 
 def shot_army_mid():
@@ -438,7 +429,6 @@ def shot_army_mid():
     render_settings(sc, res=(2880, 1206), samples=40, mist=(40, 600), fog_color=(0.96, 0.64, 0.4), fog_amount=0.5,
                     glare=0.35, look="AgX - Medium High Contrast", exposure=-0.5)
     do_render(sc, "army_mid")
-    do_render(sc, "army_low")
 
 
 def shot_crown():
@@ -523,9 +513,11 @@ def find_arms_up_frame(arm, act_prefix):
 
 def shot_krishna_wheel():
     sc = reset()
-    ground_plane(800, color=(0.34, 0.25, 0.16))
-    sky(sc, 17.5, -5.5, strength=1.0, dust=8.0)
-    sun_light(17.5, -5.5, energy=2.6, color=(1.0, 0.66, 0.4), angle=2.0)
+    ground_plane(800, color=(0.3, 0.22, 0.15))
+    w = sky(sc, 1.5, -5.5, strength=0.42, dust=8.0)
+    for n in w.node_tree.nodes:
+        if n.bl_idname == "ShaderNodeTexSky":
+            n.sun_disc = False
     root, objs = import_glb("krishna")
     arm = set_action(objs, "human_000000", 1)
     f = find_arms_up_frame(arm, "human_000000") if arm else 1
@@ -537,10 +529,23 @@ def shot_krishna_wheel():
     top = (lh + rh) / 2
     wr, wobjs = import_glb("wheel")
     fit(wr, wobjs, height=1.35, ground=False)
-    wr.location = (top.x, top.y, top.z + 0.62)
-    camera((0.6, -6.2, 0.55), (0, 0, 1.75), lens=40, dof=6.2, fstop=4)
-    render_settings(sc, res=(2880, 1206), samples=48, mist=(8, 200), fog_color=(0.98, 0.66, 0.4), fog_amount=0.3,
-                    glare=0.45, exposure=-1.8)
+    hub = Vector((top.x, top.y, top.z + 0.62))
+    wr.location = hub
+    cam_loc = Vector((0.6, -6.2, 0.55))
+    camera(tuple(cam_loc), (0, 0, 1.9), lens=40, dof=6.2, fstop=4)
+    d = (hub - cam_loc).normalized()
+    # sun disc right behind the wheel hub
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=5.5, location=tuple(cam_loc + d * 140), segments=32, ring_count=16)
+    disc = bpy.context.active_object
+    disc.data.materials.append(mat_simple("sundisc", (1, 0.85, 0.6), 1.0, 0.0, (1.0, 0.82, 0.55), 60.0))
+    disc.visible_shadow = False
+    # backlight from the disc direction + faint warm fill from the camera side
+    ld = bpy.data.lights.new("back", "SUN"); ld.energy = 5.0; ld.color = (1.0, 0.7, 0.42); ld.angle = math.radians(3)
+    lo = bpy.data.objects.new("back", ld); sc.collection.objects.link(lo)
+    lo.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+    area("fill", (2, -6, 2), (0, 0, 1.4), 30, 3, (1.0, 0.6, 0.35))
+    render_settings(sc, res=(2880, 1206), samples=48, mist=(8, 200), fog_color=(0.9, 0.55, 0.32), fog_amount=0.25,
+                    glare=0.5, exposure=-0.2)
     print("arms-up frame", f, flush=True)
     do_render(sc, "krishna_wheel")
 
