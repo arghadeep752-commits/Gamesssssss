@@ -690,10 +690,10 @@ class WheelSpin(Shot):
         acc /= 4
         a = acc[..., 3]
         rim = cv2.GaussianBlur(np.clip(a - cv2.erode(a, np.ones((15, 15), np.uint8)), 0, 1), (0, 0), 9)
-        acc[..., :3] = acc[..., :3] * 0.6 + rim[..., None] * GOLD * (1.2 + 1.5 * u)
-        glow = cv2.GaussianBlur(a, (0, 0), 40) * (0.5 + 0.8 * u)
+        acc[..., :3] = acc[..., :3] * 0.85 + rim[..., None] * GOLD * (1.6 + 1.6 * u)
+        glow = cv2.GaussianBlur(a, (0, 0), 40) * (0.3 + 0.5 * u)
         put(img, np.dstack([np.broadcast_to(GOLD * 1.6, glow.shape + (3,)), np.clip(glow, 0, 1)]), 0.5, 0.48, 1.2, 1, add=True)
-        put(img, acc, 0.5, 0.48, 0.95 * (1 + 0.08 * u), 1.0)
+        put(img, acc, 0.5, 0.48, 1.12 * (1 + 0.08 * u), 1.0)
         return fx.flare(img, (0.5, 0.48), 0.4 + 0.6 * u)
 
 
@@ -764,7 +764,7 @@ def build_edl():
                 overlays=[Embers(40, 2, 0.4, "dust")], label="temple"))
     a(StockShot(10.9, 12.7, "s_birds_sunset", 2.6, 1.0, 1.35, 1.42, (0.38, 0.5), (0.36, 0.48), grade="gold",
                 exposure=-0.25, label="birds"))
-    a(StillShot(12.7, 15.6, "army_aerial.png", 1.0, 1.07, (0.5, 0.52), (0.5, 0.5), exposure=-0.45, grade="dusk",
+    a(StillShot(12.7, 15.6, "army_aerial.png", 1.0, 1.07, (0.5, 0.52), (0.5, 0.5), exposure=-0.35, grade="ember",
                 overlays=[Fog(0.18, (1.0, 0.75, 0.5), 3), Embers(70, 4, 0.5, "dust"), Rays((0.53, 0.1), 0.5, 0.66)],
                 label="army aerial"))
     a(Black(15.6, 16.9))
@@ -773,7 +773,7 @@ def build_edl():
     E[-2].texts.append(cap1)
     E[-1].texts.append(cap1)
     # ---------------- SCENE 2 — the battlefield
-    a(StillShot(16.9, 20.4, "army_low.png", 1.03, 1.12, (0.5, 0.5), (0.52, 0.46), exposure=-0.75, grade="dusk",
+    a(StillShot(16.9, 20.4, "army_low.png", 1.03, 1.12, (0.5, 0.5), (0.52, 0.46), exposure=-0.5, grade="ember",
                 flash_in=0.18,
                 overlays=[Fog(0.1, (1.0, 0.72, 0.48), 6), StockScreen("o_dust", 2.0, 0.45), Rays((0.5, 0.36), 0.4, 0.7)],
                 label="army low"))
@@ -781,13 +781,13 @@ def build_edl():
                 overlays=[StockScreen("o_dust", 6.0, 0.4)], label="horses"))
     a(StockShot(22.6, 24.4, "s_hoof", 1.2, 0.8, 1.08, 1.14, (0.5, 0.55), (0.48, 0.55), grade="gold", exposure=-0.2,
                 blend=True, label="hoof"))
-    a(StillShot(24.4, 27.4, "army_mid.png", 1.7, 1.82, (0.72, 0.42), (0.72, 0.4), exposure=-0.7, grade="dusk",
+    a(StillShot(24.4, 27.4, "army_mid.png", 1.7, 1.82, (0.72, 0.42), (0.72, 0.4), exposure=-0.45, grade="ember",
                 overlays=[Fog(0.12, (1.0, 0.72, 0.48), 8), Embers(80, 5, 0.6, "dust"), Rays((0.5, 0.15), 0.35, 0.72)],
                 label="army mid"))
     a(StockShot(27.4, 29.2, "s_storm_field", 0.8, 1.0, 1.06, 1.12, (0.5, 0.45), (0.5, 0.42), grade="storm",
                 exposure=-0.25, label="storm field"))
     a(StockShot(29.2, 31.0, "s_storm_fly", 0.3, 1.0, 1.04, 1.1, grade="storm", exposure=0.1, label="lightning"))
-    a(StillShot(31.0, 34.9, "army_aerial.png", 1.35, 1.55, (0.42, 0.56), (0.58, 0.52), exposure=-0.45, grade="dusk",
+    a(StillShot(31.0, 34.9, "army_aerial.png", 1.35, 1.55, (0.42, 0.56), (0.58, 0.52), exposure=-0.35, grade="ember",
                 overlays=[Fog(0.16, (1.0, 0.75, 0.5), 9), StockScreen("o_embers_rise", 2.0, 0.5), Rays((0.53, 0.06), 0.4, 0.66)],
                 label="army aerial 2"))
     # ---------------- SCENE 3 — Krishna's divine arrival
@@ -844,8 +844,8 @@ def build_edl():
     a(ArtShot(112.4, 113.7, "chariot", 2.0, 2.25, (0.28, 0.4), (0.27, 0.38), 0.05, grade="dusk", exposure=0.05,
               overlays=[Flicker(0.15), StockScreen("o_sparks", 8.0, 0.55)], label="krishna resolve"))
     a(StockShot(113.7, 115.1, "s_hoof", 5.0, 0.8, 1.12, 1.2, grade="gold", exposure=-0.25, blend=True, label="hoof 2"))
-    a(StillShot(115.1, 117.8, "krishna_wheel.png", 1.2, 1.32, (0.5, 0.5), (0.5, 0.46), flash_in=0.15, exposure=-1.1,
-                grade="dusk", bloom=0.12,
+    a(StillShot(115.1, 117.8, "krishna_wheel.png", 1.2, 1.32, (0.5, 0.5), (0.5, 0.46), flash_in=0.15, exposure=-0.7,
+                grade="ember", bloom=0.14,
                 overlays=[Rays((0.5, 0.3), 0.3, 0.78), StockScreen("o_embers_rise", 4.0, 0.5)],
                 label="wheel raised"))
     a(ArtShot(117.8, 119.1, "flute", 1.9, 2.1, (0.28, 0.82), (0.3, 0.8), 0.05, cloth=True, grade="night", exposure=0.05,
@@ -854,8 +854,8 @@ def build_edl():
                                                                           Shake(0.003)], label="wheel spin"))
     a(SeqShot(121.7, 123.1, "arjuna_run", 4, 37, 1.0, 1.06, grade="gold", exposure=-0.1,
               overlays=[StockScreen("o_dust", 11.0, 0.5), Embers(60, 17, 0.5, "dust")], label="arjuna runs"))
-    a(StillShot(123.1, 125.4, "krishna_wheel.png", 1.7, 1.86, (0.5, 0.47), (0.5, 0.44), flash_out=0.3, exposure=-1.1,
-                grade="dusk", bloom=0.12,
+    a(StillShot(123.1, 125.4, "krishna_wheel.png", 1.7, 1.86, (0.5, 0.47), (0.5, 0.44), flash_out=0.3, exposure=-0.75,
+                grade="ember", bloom=0.14,
                 overlays=[Rays((0.5, 0.3), 0.35, 0.78), StockScreen("o_sparks", 15.0, 0.5)], label="wheel close"))
     # ---------------- SCENE 7 — Arjuna tries to stop Krishna
     a(Black(125.4, 125.6))
@@ -867,8 +867,8 @@ def build_edl():
               overlays=[Rays((0.55, 0.16), 0.4, 0.6)],
               texts=[Dialogue(AR, "मैं युद्ध करूँगा...", 131.4, 133.6),
                      Dialogue(AR, "...लेकिन आप अपना शस्त्र मत उठाइए!", 133.8, 135.8)], label="plea 2"))
-    a(StillShot(136.0, 140.6, "krishna_wheel.png", 1.4, 1.5, (0.5, 0.5), (0.5, 0.47), fout=1.0, exposure=-1.3,
-                grade="night", bloom=0.1,
+    a(StillShot(136.0, 140.6, "krishna_wheel.png", 1.4, 1.5, (0.5, 0.5), (0.5, 0.47), fout=1.0, exposure=-0.95,
+                grade="ember", bloom=0.1,
                 overlays=[Rays((0.5, 0.3), 0.25, 0.8), Embers(50, 19, 0.5, "dust")], label="krishna pauses"))
     a(Black(140.6, 141.6))
     # ---------------- SCENE 8 — final reveal
