@@ -98,6 +98,10 @@ def render_stills(outdir, times):
 
 
 def main():
+    import os
+    if os.environ.get("CV_THREADS"):
+        import cv2
+        cv2.setNumThreads(int(os.environ["CV_THREADS"]))
     argv = sys.argv[1:]
     fx.init(args_scale(argv))
     cmd = argv[0]
