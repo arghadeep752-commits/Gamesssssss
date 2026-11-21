@@ -1,0 +1,96 @@
+{
+ "note": "Hyper3D Rodin Gen-2.5 generations for Trader's Madness (text prompts). gen = generation id.",
+ "models": {
+  "trader": {
+   "gen": "463baf59-1e18-42aa-88ce-99682e153e72",
+   "faces": 30000
+  },
+  "sofa": {
+   "gen": "32f90bb4-3d87-471b-b47c-890519aff48d",
+   "faces": 12000
+  },
+  "coffee_table": {
+   "gen": "77080f25-42f6-42df-931b-e8bae401ea6b",
+   "faces": 4000
+  },
+  "tv_unit": {
+   "gen": "9cc56499-19ae-421b-b99c-7d53a7ac7acb",
+   "faces": 8000
+  },
+  "dining_set": {
+   "gen": "11e71e47-abac-4a4c-9c22-06188248896b",
+   "faces": 15000
+  },
+  "fridge": {
+   "gen": "7453f8cc-712b-430a-bdf0-6a1ed5fd6ac2",
+   "faces": 5000
+  },
+  "bed": {
+   "gen": "f869df73-46da-4d11-985c-4571286e690c",
+   "faces": 12000
+  },
+  "wardrobe": {
+   "gen": "2577128a-8163-4922-bc6b-0466f8edb5f0",
+   "faces": 5000
+  },
+  "trading_desk": {
+   "gen": "644f2a5e-b846-43de-84f8-41ebe187f076",
+   "faces": 6000
+  },
+  "gaming_pc": {
+   "gen": "3cf76570-7f58-4fa2-a795-a3e6679c94e8",
+   "faces": 8000
+  },
+  "gaming_chair": {
+   "gen": "a74db92d-6677-4972-9551-4f05de3c31af",
+   "faces": 10000
+  },
+  "plant": {
+   "gen": "025753ec-5157-4b7f-8536-ddeeebef98f6",
+   "faces": 10000
+  },
+  "trophy": {
+   "gen": "79191a60-7414-4a6b-820f-27180b62573b",
+   "faces": 3000
+  },
+  "padlock": {
+   "gen": "f6d01199-2a7c-4ec7-916f-d87429271f10",
+   "faces": 3000
+  },
+  "key": {
+   "gen": "48339b89-e829-4991-993b-4b2ecf5cf684",
+   "faces": 2000
+  },
+  "hammer": {
+   "gen": "88c1c20b-bd89-42d5-a72f-74f69b7ca3ab",
+   "faces": 3000
+  },
+  "fuse": {
+   "gen": "f46ca6ed-7095-4b04-93ff-593d05061d0f",
+   "faces": 2000
+  },
+  "toolbox": {
+   "gen": "d32d7120-900b-4fdb-b088-1bf234e2db4f",
+   "faces": 4000
+  }
+ },
+ "rigged": {
+  "trader_rigged.glb": {
+   "gen": "ef3ddee3-bbf6-4ad4-bb8f-cdfcbc5dc9ea",
+   "from": "trader",
+   "bone_template": "human",
+   "animations": [
+    "human_000093",
+    "human_000089",
+    "human_000067",
+    "human_000049",
+    "human_000004",
+    "human_000064",
+    "human_000063",
+    "human_000041",
+    "human_000091",
+    "human_000029"
+   ]
+  }
+ }
+}

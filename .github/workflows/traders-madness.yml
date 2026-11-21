@@ -1,0 +1,430 @@
+# TRADER'S MADNESS: builds the Android APK in the cloud, no PC needed.
+#
+#   assets  - real photo textures (Poly Haven / ambientCG, CC0), a photographed night sky and recorded sounds
+#   rodin   - the Hyper3D Rodin models (furniture, props, the rigged trader), kept on the traders-ci release
+#   house   - Blender 4.2 builds the two-storey house, places the Hyper3D models and bakes the night lighting
+#   apk     - Unity 6 builds the APK and publishes it as the release traders-madness-v<n>
+#   emulator- an emulator build plays through the game; its screenshots are attached to the release
+#
+# Needs the repository secrets UNITY_EMAIL and UNITY_PASSWORD (Unity account, two-step verification off).
+
+name: Trader's Madness - Unity 6 APK
+
+on:
+  push:
+    branches: [traders-madness]
+    paths-ignore: ["README.md", "handoff/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: traders-madness
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  UNITY_VERSION: 6000.0.85f1
+  BLENDER_VERSION: 4.2.3
+  APK_NAME: TradersMadness
+  CI_RELEASE: traders-ci
+  HANDOFF_BRANCH: traders-handoff
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # --------------------------------------------------------------------------------------- real textures, sky, sounds
+  assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - name: CI release (logs, previews and cached downloads - not the game)
+        run: |
+          gh release view "$CI_RELEASE" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create "$CI_RELEASE" -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Trader's Madness CI - logs and previews (not the game)" --notes "Build logs, preview renders and cached downloads for Trader's Madness." || true
+      - name: Tools
+        run: |
+          sudo apt-get update -qq || true
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          python3 -c "import numpy, PIL" 2>/dev/null || pip install --break-system-packages -q numpy pillow
+      - name: Downloads kept from earlier builds
+        run: |
+          mkdir -p assets/downloaded build
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$CI_RELEASE"
+          if curl -fsSL -o /tmp/ad.zip "$base/assets_downloaded.zip"; then unzip -oq /tmp/ad.zip -d . && echo "textures/sky from the release"; fi
+          if curl -fsSL -o /tmp/sp.zip "$base/sounds_pack.zip"; then unzip -oq /tmp/sp.zip -d assets/downloaded && echo "sounds from the release"; fi
+          ls assets/downloaded || true
+      - name: Real textures and the night sky
+        run: |
+          stamp="$(sha1sum tools/fetch_assets.py | cut -c1-12)"
+          if [ -f assets/downloaded/tex/.stamp ] && [ "$(cat assets/downloaded/tex/.stamp)" = "$stamp" ] && [ -f assets/downloaded/sky/night.hdr ]; then
+            echo "textures unchanged since the last build"
+          else
+            python3 tools/fetch_assets.py textures,sky assets/downloaded 2>&1 | tee build/assets_log.txt | tail -40
+            echo "$stamp" > assets/downloaded/tex/.stamp
+            (zip -qr build/assets_downloaded.zip assets/downloaded/tex assets/downloaded/sky -x "*/nor.jpg" "*/rough.jpg" "*/ao.jpg" && \
+             gh release upload "$CI_RELEASE" build/assets_downloaded.zip -R "$GITHUB_REPOSITORY" --clobber) || true
+          fi
+          ls assets/downloaded/tex | tr '\n' ' '
+      - name: Recorded sounds (only missing ones are searched)
+        run: |
+          count() { python3 -c "import json,os;p='assets/downloaded/sounds/manifest_v2.json';print(len(json.load(open(p))) if os.path.exists(p) else 0)"; }
+          before=$(count)
+          timeout 30m python3 -u tools/fetch_assets.py sounds assets/downloaded > build/sounds_log.txt 2>&1 || true
+          grep -E "^sound |STEP|Traceback" build/sounds_log.txt | head -60 || true
+          cat build/sounds_report.txt 2>/dev/null || true
+          after=$(count)
+          echo "recorded sounds: $before -> $after"
+          (cd assets/downloaded && zip -qr ../../build/sounds_pack.zip sounds)
+          if [ "$after" -gt "$before" ]; then gh release upload "$CI_RELEASE" build/sounds_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
+      - name: Publish logs
+        if: always()
+        run: |
+          for f in build/assets_log.txt build/sounds_log.txt build/sounds_report.txt build/textures_contact.jpg build/CREDITS_AUTO.md; do
+            [ -f "$f" ] && gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assets
+          path: |
+            assets/downloaded
+            build/CREDITS_AUTO.md
+          if-no-files-found: warn
+
+  # --------------------------------------------------------------------------------------- the C# compiles (fast check)
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/powershell /usr/share/swift || true
+      - uses: actions/checkout@v5
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+      - name: Match package versions to the editor
+        run: |
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > ProjectSettings/ProjectVersion.txt
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - name: Compile the scripts
+        run: |
+          mkdir -p Logs
+          set +e
+          env -u UNITY_THISISABUILDMACHINE timeout 40m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android -logFile "$GITHUB_WORKSPACE/Logs/compile.log"
+          echo "Unity exited with $?"
+          set -e
+          grep -E "error CS[0-9]+|Shader error|warning CS0(162|168|219|414)" Logs/compile.log | sort | uniq > compile_report.txt || true
+          echo "errors: $(grep -c 'error CS' compile_report.txt || true)"
+          cat compile_report.txt | head -n 80
+          gh release upload "$CI_RELEASE" compile_report.txt -R "$GITHUB_REPOSITORY" --clobber || true
+          ! grep -q "error CS" compile_report.txt
+      - name: Upload the compile log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-log
+          path: Logs/
+          if-no-files-found: ignore
+          retention-days: 5
+
+  # --------------------------------------------------------------------------------------- the Hyper3D models
+  rodin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - name: CI release
+        run: |
+          gh release view "$CI_RELEASE" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create "$CI_RELEASE" -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Trader's Madness CI - logs and previews (not the game)" --notes "Build logs, preview renders and cached downloads for Trader's Madness." || true
+      - name: Hyper3D models (rodin_raw.zip and trader_rigged.glb on the CI release)
+        run: python3 tools/rodin_fetch.py build/rodin/raw
+      - name: List them
+        run: ls -la build/rodin/raw
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rodin
+          path: build/rodin/raw
+          if-no-files-found: warn
+          compression-level: 0
+
+  # --------------------------------------------------------------------------------------- the house, built in Blender
+  house:
+    needs: rodin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: rodin, path: build/rodin/raw }
+      - name: Model set
+        id: set
+        run: echo "set=$(ls build/rodin/raw | sort | sha1sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - name: Model cache (rebuilt only when the Blender scripts or the Hyper3D models change)
+        id: mcache
+        uses: actions/cache@v4
+        with:
+          path: build/house
+          key: tm-house-v1-${{ steps.set.outputs.set }}-${{ hashFiles('tools/common/**', 'tools/house/**', 'tools/rodin/**') }}
+      - name: Blender cache
+        if: steps.mcache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+      - name: Install Blender
+        if: steps.mcache.outputs.cache-hit != 'true'
+        run: bash tools/install_blender.sh
+      - name: Build the house in Blender (geometry, Hyper3D models, baked night lighting, previews)
+        if: steps.mcache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p build/house
+          set +e
+          ~/blender/blender -b -noaudio -P tools/house/build_house.py -- build/house > build/house_blender.txt 2>&1
+          code=$?
+          set -e
+          grep -E "^\[|Error|Traceback|FAILED|line [0-9]+" build/house_blender.txt | tail -200 || true
+          [ $code -eq 0 ] && [ -f build/house/house.glb ]
+      - name: Publish logs and previews
+        if: always()
+        run: |
+          cd build
+          [ -f house/build_log.txt ] && cp house/build_log.txt house_build_log.txt
+          for f in house_blender.txt house_build_log.txt house/preview_*.png; do
+            [ -f "$f" ] && gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: house
+          path: |
+            build/house/house.glb
+            build/house/house_meta.json
+            build/house/lightmaps
+            build/house/house.blend
+            build/house/preview_*.png
+
+  # --------------------------------------------------------------------------------------- Unity 6: the APK
+  apk:
+    needs: [assets, rodin, house, compile]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: assets, path: . }
+      - uses: actions/download-artifact@v4
+        with: { name: house, path: build/house }
+      - uses: actions/download-artifact@v4
+        with: { name: rodin, path: build/rodin/raw }
+      - name: Convert the house, the trader, the sky and the sounds for Unity
+        run: |
+          python3 -m pip install --quiet --break-system-packages numpy pillow
+          ls build/rodin/raw
+          python3 tools/unity/convert_assets.py --house build/house --trader build/rodin/raw/trader_rigged.glb \
+            --tex assets/downloaded/tex --sounds assets/downloaded/sounds tools/sounds/pack/ui tools/sounds/pack/stand_in \
+            --sky assets/downloaded/sky/night.hdr --out .
+          du -sh Assets/Game Assets/Resources
+
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+      - name: Match package versions to the editor
+        run: |
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > ProjectSettings/ProjectVersion.txt
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - name: Restore the signing key (keeps updates installable over older builds)
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: traders-madness-keystore-v1
+      - name: Create the signing key (first build only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/tm.keystore -alias tradersmadness \
+            -keyalg RSA -keysize 2048 -validity 10000 -storepass tradersmadness -keypass tradersmadness \
+            -dname "CN=MXYAN GAMES, O=MXYAN GAMES"
+      - name: Build the APK with Unity 6
+        env:
+          TM_KEYSTORE: ${{ github.workspace }}/ci-keystore/tm.keystore
+          TM_KEYSTORE_PASS: tradersmadness
+          TM_KEY_ALIAS: tradersmadness
+        run: |
+          mkdir -p Logs Build
+          set +e
+          # UNITY_THISISABUILDMACHINE would point Unity 6's Gradle build at Unity's private Maven mirrors
+          env -u UNITY_THISISABUILDMACHINE timeout 120m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android \
+            -executeMethod TradersMadness.EditorTools.TMBuild.BuildAndroid \
+            -buildNumber ${{ github.run_number }} \
+            -outputApk "Build/${APK_NAME}.apk" \
+            -testApk "Build/${APK_NAME}-emulator.apk" \
+            -logFile "$GITHUB_WORKSPACE/Logs/build.log"
+          status=$?
+          echo "Unity exited with code $status"
+          grep -E "\[TM" Logs/build.log | tail -n 80 || true
+          echo "---------------- compile errors ----------------"
+          grep -E "error CS[0-9]+" Logs/build.log | sort | uniq -c | sort -rn | head -n 60 || true
+          if [ $status -ne 0 ]; then
+            echo "---------------- errors ----------------"
+            grep -nE "Shader error|BuildFailedException|CommandInvokationFailure|FAILURE:|What went wrong|Exception:|executeMethod" Logs/build.log | head -n 80 || true
+            echo "---------------- end of log ----------------"
+            tail -n 60 Logs/build.log || true
+          fi
+          exit $status
+      - name: Upload the Unity log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build-log
+          path: Logs/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Publish the Unity log on the CI release
+        if: always()
+        run: |
+          [ -f Logs/build.log ] && (grep -E "\[TM|error CS|Shader error|Exception" Logs/build.log | head -n 400 > unity_build_summary.txt; \
+            gh release upload "$CI_RELEASE" unity_build_summary.txt -R "$GITHUB_REPOSITORY" --clobber) || true
+      - name: Check the APK
+        run: |
+          ls -la Build
+          test -f "Build/${APK_NAME}.apk"
+          unzip -l "Build/${APK_NAME}.apk" | grep -E "lib/arm64|libil2cpp|data.unity3d" | head -n 10 || true
+      - name: Keep the emulator APK for the test job
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: Build/${{ env.APK_NAME }}-emulator.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
+      - name: Publish the APK as a GitHub release
+        id: publish
+        run: |
+          TAG="traders-madness-v${{ github.run_number }}"
+          APK="Traders-Madness-${{ github.run_number }}.apk"
+          cp "Build/${APK_NAME}.apk" "$APK"
+          {
+            echo "# TRADER'S MADNESS - credits"
+            echo
+            echo "Furniture, props and the trader: Hyper3D Rodin models. The house: built in Blender by tools/house (this repository)."
+            echo
+            cat build/CREDITS_AUTO.md 2>/dev/null || true
+            echo
+            cat Assets/Game/CREDITS_SOUNDS.md 2>/dev/null || true
+            echo
+            echo "Fonts: Bebas Neue, Anton, Rajdhani, Share Tech Mono (SIL Open Font License)."
+          } > CREDITS.md
+          printf "TRADER'S MADNESS - build %s (Unity %s, commit %s).\n\nYou are trapped in a binary trader's two-storey house. Pry off the three planks, open the gold and silver padlocks and crack the door code on his trading PC - in five days.\n\nOpen this page on your Android phone, download **%s** and tap it to install (Android 6 or newer, 64-bit). If Android says the app is already installed, uninstall the older Trader's Madness first.\n\nThe screenshots below come from an automatic play-through on an Android emulator (software graphics, so they look rougher than on a phone).\n" \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" "$APK" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" CREDITS.md --target "$GITHUB_SHA" --latest=false \
+            --title "TRADER'S MADNESS (Unity 6) build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------------------------- play it in an emulator
+  emulator:
+    needs: apk
+    if: always() && needs.apk.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TAG: ${{ needs.apk.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: ci
+      - name: Download the emulator APK
+        uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: smoke
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run the game in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          ram-size: 4096M
+          heap-size: 512M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+      - name: Attach screenshots and the log to the release
+        if: always()
+        run: |
+          shopt -s nullglob
+          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          ls -la smoke/out 2>/dev/null || true
+          if [ ${#files[@]} -gt 0 ] && [ -n "$TAG" ]; then
+            gh release upload "$TAG" "${files[@]}" --clobber -R "$GITHUB_REPOSITORY"
+          fi
