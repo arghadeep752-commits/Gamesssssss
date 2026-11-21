@@ -266,8 +266,9 @@ jobs:
             /usr/share/swift /usr/local/julia* || true
           df -h /
       - uses: actions/checkout@v5
+      # (not into the project root: a lowercase "assets" folder next to "Assets" breaks Unity's import on Linux)
       - uses: actions/download-artifact@v4
-        with: { name: assets, path: . }
+        with: { name: assets, path: ci-assets }
       - uses: actions/download-artifact@v4
         with: { name: house, path: build/house }
       - uses: actions/download-artifact@v4
@@ -277,9 +278,11 @@ jobs:
           python3 -m pip install --quiet --break-system-packages numpy pillow
           ls build/rodin/raw
           python3 tools/unity/convert_assets.py --house build/house --trader build/rodin/raw/trader_rigged.glb \
-            --tex assets/downloaded/tex --sounds assets/downloaded/sounds tools/sounds/pack/ui tools/sounds/pack/stand_in \
-            --sky assets/downloaded/sky/night.hdr --out .
+            --tex ci-assets/assets/downloaded/tex --sounds ci-assets/assets/downloaded/sounds tools/sounds/pack/ui tools/sounds/pack/stand_in \
+            --sky ci-assets/assets/downloaded/sky/night.hdr --out .
           du -sh Assets/Game Assets/Resources
+          ls -d */ | tr '\n' ' '; echo
+          test ! -e assets
 
       - name: Check Unity login secrets
         env:
@@ -394,7 +397,7 @@ jobs:
             echo
             echo "Furniture, props and the trader: Hyper3D Rodin models. The house: built in Blender by tools/house (this repository)."
             echo
-            cat build/CREDITS_AUTO.md 2>/dev/null || true
+            cat ci-assets/build/CREDITS_AUTO.md 2>/dev/null || true
             echo
             cat Assets/Game/CREDITS_SOUNDS.md 2>/dev/null || true
             echo

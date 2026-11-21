@@ -52,7 +52,7 @@ def main():
         return 1
     subprocess.run(["tar", "-cf", os.path.join(tmp, "shots.tar"), "-C", shots, "."], check=True)
     key = os.path.join(tmp, "k.txt")
-    subprocess.run(["openssl", "rand", "-hex", "32", "-out", key], check=True)
+    subprocess.run(["openssl", "rand", "-hex", "-out", key, "32"], check=True)
     subprocess.run(["openssl", "pkeyutl", "-encrypt", "-pubin", "-inkey", pub, "-pkeyopt", "rsa_padding_mode:oaep",
                     "-pkeyopt", "rsa_oaep_md:sha256", "-in", key, "-out", os.path.join(tmp, "k.enc")], check=True)
     subprocess.run(["openssl", "enc", "-aes-256-cbc", "-pbkdf2", "-iter", "100000", "-salt", "-in", os.path.join(tmp, "shots.tar"),
