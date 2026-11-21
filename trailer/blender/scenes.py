@@ -416,19 +416,28 @@ def build_battlefield(sc, sun_elev=3.0, sun_rot=0.0):
 
 def shot_army_aerial():
     sc = reset()
-    build_battlefield(sc, sun_elev=3.5, sun_rot=0.0)
-    camera((-30, -120, 95), (10, 330, 0), lens=30)
-    render_settings(sc, res=(2880, 1206), samples=40, mist=(40, 900), fog_color=(0.95, 0.66, 0.42), fog_amount=0.78,
-                    glare=0.25, look="AgX - Medium High Contrast", exposure=0.3)
+    build_battlefield(sc, sun_elev=3.0, sun_rot=4.5)
+    camera((-30, -120, 95), (12, 650, 12), lens=30)
+    render_settings(sc, res=(2880, 1206), samples=40, mist=(80, 1400), fog_color=(0.95, 0.62, 0.38), fog_amount=0.5,
+                    glare=0.3, look="AgX - Medium High Contrast", exposure=-0.4)
     do_render(sc, "army_aerial")
 
 
 def shot_army_low():
     sc = reset()
-    build_battlefield(sc, sun_elev=2.2, sun_rot=8.0)
+    build_battlefield(sc, sun_elev=1.6, sun_rot=-1.8)
     camera((14, 40, 1.65), (2, 420, 6), lens=105, dof=200, fstop=4.0)
-    render_settings(sc, res=(2880, 1206), samples=40, mist=(30, 600), fog_color=(0.98, 0.7, 0.45), fog_amount=0.8,
-                    glare=0.35, look="AgX - Medium High Contrast", exposure=0.6)
+    render_settings(sc, res=(2880, 1206), samples=40, mist=(40, 700), fog_color=(0.98, 0.66, 0.4), fog_amount=0.55,
+                    glare=0.4, look="AgX - Medium High Contrast", exposure=-0.7)
+
+
+def shot_army_mid():
+    sc = reset()
+    build_battlefield(sc, sun_elev=3.0, sun_rot=-17.0)
+    camera((60, 196, 9), (20, 330, 3), lens=45, dof=95, fstop=5.6)
+    render_settings(sc, res=(2880, 1206), samples=40, mist=(40, 600), fog_color=(0.96, 0.64, 0.4), fog_amount=0.5,
+                    glare=0.35, look="AgX - Medium High Contrast", exposure=-0.5)
+    do_render(sc, "army_mid")
     do_render(sc, "army_low")
 
 
@@ -451,9 +460,9 @@ def shot_crown():
     area("rim", (-0.55, 0.65, 0.55), (0, 0, 0.3), 90, 0.6, (1.0, 0.55, 0.22))
     area("rim2", (0.6, 0.55, 0.35), (0, 0, 0.25), 45, 0.5, (1.0, 0.7, 0.4))
     area("fill", (-0.8, -0.6, 0.2), (0, 0, 0.2), 6, 1.2, (0.55, 0.65, 1.0))
-    c = camera((0.0, -0.78, 0.36), (0, 0, 0.33), lens=90, dof=0.74, fstop=2.2)
+    c = camera((0.0, -3.1, 0.27), (0, 0, 0.22), lens=85, dof=3.0, fstop=4.0)
     c.keyframe_insert("location", frame=1)
-    c.location = (0.0, -0.66, 0.35)
+    c.location = (0.0, -2.75, 0.26)
     c.keyframe_insert("location", frame=60)
     render_settings(sc, res=(1920, 804), samples=56, glare=0.35, look="AgX - Medium High Contrast", exposure=0.4)
     do_render(sc, "crown", frames=(1, 60))
@@ -461,9 +470,9 @@ def shot_crown():
 
 def shot_wheel_dust():
     sc = reset()
-    ground_plane(800, color=(0.36, 0.26, 0.17))
-    sky(sc, 2.5, 0.0, strength=1.0, dust=7.0)
-    sun_light(2.5, 0.0, energy=3.0, color=(1.0, 0.6, 0.34), angle=1.0)
+    ground_plane(800, color=(0.26, 0.19, 0.13))
+    sky(sc, 2.5, 10.0, strength=1.0, dust=7.0)
+    sun_light(2.5, 10.0, energy=3.0, color=(1.0, 0.6, 0.34), angle=1.0)
     root, objs = import_glb("wheel")
     fit(root, objs, height=1.6, ground=True)
     root.rotation_euler = (math.radians(-62), math.radians(8), math.radians(-28))
@@ -477,8 +486,8 @@ def shot_wheel_dust():
                                             rotation=(math.radians(90), 0, random.uniform(0, 3.14)))
         bpy.context.active_object.data.materials.append(mat_simple("deb", (0.16, 0.1, 0.06), 0.8))
     camera((1.2, -3.4, 0.55), (0, 0.3, 0.45), lens=42, dof=3.4, fstop=2.8)
-    render_settings(sc, res=(2880, 1206), samples=48, mist=(4, 120), fog_color=(0.95, 0.62, 0.38), fog_amount=0.7,
-                    glare=0.4, exposure=0.5)
+    render_settings(sc, res=(2880, 1206), samples=48, mist=(6, 160), fog_color=(0.95, 0.6, 0.36), fog_amount=0.5,
+                    glare=0.4, exposure=-0.4)
     do_render(sc, "wheel_dust")
 
 
@@ -515,8 +524,8 @@ def find_arms_up_frame(arm, act_prefix):
 def shot_krishna_wheel():
     sc = reset()
     ground_plane(800, color=(0.34, 0.25, 0.16))
-    sky(sc, 6.0, 0.0, strength=1.0, dust=6.0)
-    sun_light(6.0, 0.0, energy=2.6, color=(1.0, 0.66, 0.4), angle=2.0)
+    sky(sc, 17.5, -5.5, strength=1.0, dust=8.0)
+    sun_light(17.5, -5.5, energy=2.6, color=(1.0, 0.66, 0.4), angle=2.0)
     root, objs = import_glb("krishna")
     arm = set_action(objs, "human_000000", 1)
     f = find_arms_up_frame(arm, "human_000000") if arm else 1
@@ -530,8 +539,8 @@ def shot_krishna_wheel():
     fit(wr, wobjs, height=1.35, ground=False)
     wr.location = (top.x, top.y, top.z + 0.62)
     camera((0.6, -6.2, 0.55), (0, 0, 1.75), lens=40, dof=6.2, fstop=4)
-    render_settings(sc, res=(2880, 1206), samples=48, mist=(6, 160), fog_color=(0.98, 0.68, 0.42), fog_amount=0.55,
-                    glare=0.45, exposure=0.3)
+    render_settings(sc, res=(2880, 1206), samples=48, mist=(8, 200), fog_color=(0.98, 0.66, 0.4), fog_amount=0.3,
+                    glare=0.45, exposure=-1.8)
     print("arms-up frame", f, flush=True)
     do_render(sc, "krishna_wheel")
 
@@ -539,8 +548,8 @@ def shot_krishna_wheel():
 def shot_arjuna_run():
     sc = reset()
     ground_plane(2000, color=(0.33, 0.24, 0.16))
-    sky(sc, 3.0, 90.0, strength=1.0, dust=7.0)
-    sun_light(3.0, 90.0, energy=2.8, color=(1.0, 0.6, 0.36), angle=1.5)
+    sky(sc, 2.0, 0.0, strength=1.0, dust=8.0)
+    sun_light(2.0, 0.0, energy=2.8, color=(1.0, 0.6, 0.36), angle=1.5)
     root, objs = import_glb("arjuna")
     arm = set_action(objs, "human_000067", 1)
     fit(root, objs, height=1.82)
@@ -553,8 +562,8 @@ def shot_arjuna_run():
     con.use_y = False
     con.use_z = False
     con.use_offset = True
-    render_settings(sc, res=(1920, 804), samples=32, mist=(5, 140), fog_color=(0.98, 0.68, 0.42), fog_amount=0.6,
-                    glare=0.35, exposure=0.3)
+    render_settings(sc, res=(1920, 804), samples=32, mist=(8, 180), fog_color=(0.98, 0.66, 0.4), fog_amount=0.4,
+                    glare=0.4, exposure=-1.4)
     do_render(sc, "arjuna_run", frames=(1, 40))
 
 
