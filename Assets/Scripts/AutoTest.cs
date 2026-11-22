@@ -82,7 +82,17 @@ namespace Danga
             yield return Wait(1f);
             g.Cheat("8080");
             yield return Wait(1f);
-            foreach (var v in Vehicle.all) if (v.spec.name == "sports_car" && v.driver == null) { p.EnterVehicle(v); break; }
+            // the car the cheat just put on the street next to us (not some other sports car in town)
+            Vehicle car = null;
+            float cd = 40f * 40f;
+            foreach (var v in Vehicle.all)
+                if (v.spec.name == "sports_car" && v.driver == null && (v.transform.position - p.transform.position).sqrMagnitude < cd)
+                { cd = (v.transform.position - p.transform.position).sqrMagnitude; car = v; }
+            if (car != null)
+            {
+                Log("cheat car at " + car.transform.position + " yaw " + Mathf.RoundToInt(car.transform.eulerAngles.y));
+                p.EnterVehicle(car);
+            }
             Hud.sGas = true;
             yield return Wait(3f);
             Log("car: " + (p.vehicle != null ? p.vehicle.spec.name + " " + Mathf.RoundToInt(p.vehicle.Speed * 3.6f) + " km/h, grounded " + p.vehicle.Grounded : "not in a car"));
