@@ -326,9 +326,28 @@ def main():
     ap.add_argument("--assets", required=True, help="downloaded assets (tex/, leaves/, fonts/)")
     ap.add_argument("--out", required=True, help="Unity project root")
     ap.add_argument("--preview", default="", help="folder for preview pictures")
+    ap.add_argument("--godot", default="", help="write the city for the Godot game into this folder instead")
     a = ap.parse_args()
     t0 = time.time()
     res = generate(a.assets)
+    if a.godot:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "godot"))
+        import city_godot
+        log(city_godot.write_all(res, a.godot, LY, list(GROUPS), make_meta(res)))
+        city = os.path.join(a.godot, "city")
+        os.makedirs(os.path.join(city, "Layers"), exist_ok=True)
+        rep = textures.build_layers(os.path.join(a.assets, "tex"), os.path.join(a.assets, "leaves"), os.path.join(a.assets, "fonts"),
+                                    os.path.join(city, "Layers"))
+        for r in rep:
+            log(r)
+        textures.map_picture(res["roads"], res["grid"], res["buildings"], os.path.join(city, "map.png"))
+        textures.light_map(res["colliders"], res["shade"], os.path.join(city, "lightmap.png"))
+        if a.preview:
+            os.makedirs(a.preview, exist_ok=True)
+            from PIL import Image
+            Image.open(os.path.join(city, "map.png")).resize((1024, 1024)).save(os.path.join(a.preview, "preview_map.png"))
+        log("done in %.1fs" % (time.time() - t0))
+        return
     city = os.path.join(a.out, "Assets", "Game", "City")
     os.makedirs(os.path.join(city, "Layers"), exist_ok=True)
     os.makedirs(os.path.join(a.out, "Assets", "Resources"), exist_ok=True)

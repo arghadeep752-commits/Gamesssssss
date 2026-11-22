@@ -1,0 +1,232 @@
+# DANGA (Godot 4 version): builds the Android APK in the cloud, no PC needed.
+#
+#   apk      - takes the Hyper3D models, photo textures, recorded sounds, music and interface art that the Unity builds
+#              keep on the danga-ci release, builds Agartala and converts everything for Godot (tools/godot), imports the
+#              project and exports the APK with Godot. Release danga-godot-v<n>: the APK, the source code zip and the
+#              complete Godot project zip.
+#   emulator - a test build plays through the game on an Android emulator; its screenshots are attached to the release.
+
+name: DANGA - Godot 4 APK
+
+on:
+  push:
+    branches: [danga-godot]
+    paths-ignore: ["README.md", "godot/README.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: danga-godot
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GODOT_VERSION: 4.6.2
+  CI_RELEASE: danga-ci
+  HANDOFF_BRANCH: danga-handoff
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Tools
+        run: |
+          python3 -m pip install --break-system-packages -q numpy pillow matplotlib scipy
+          sudo apt-get install -y -qq --no-install-recommends librsvg2-bin >/dev/null 2>&1 || true
+      - name: Models, textures, sounds, music and interface art kept on the CI release
+        run: |
+          mkdir -p dl/assets/downloaded dl/credits build
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$CI_RELEASE"
+          for z in assets_downloaded sounds_pack music_pack ui_pack; do
+            curl -fsSL --retry 3 -o /tmp/$z.zip "$base/$z.zip" && unzip -oq /tmp/$z.zip -d dl/assets/downloaded && echo "$z: ok"
+          done
+          curl -fsSL --retry 3 -o dl/credits/CREDITS_TEXTURES.md "$base/CREDITS_AUTO.md" || rm -f dl/credits/CREDITS_TEXTURES.md
+          python3 tools/rodin_fetch.py dl/rodin
+          ls dl/assets/downloaded; echo "hyper3d models: $(ls dl/rodin | wc -l)"
+      - name: Build Agartala and convert the models, skies, sounds and interface art for Godot
+        run: |
+          G=godot/gen
+          mkdir -p $G build/unused
+          python3 tools/city/build.py --assets dl/assets/downloaded --out build/unused --godot $G 2>&1 | tee build/city_log.txt | tail -25
+          python3 tools/godot/convert_models.py --rodin dl/rodin --models tools/rodin/models.json --out $G/models 2>&1 | tee build/models_log.txt | tail -12
+          python3 tools/ui/make_ui.py --ui dl/assets/downloaded/ui --out $G/ui --branding $G/branding --font dl/assets/downloaded/fonts/DisplayFont.ttf | tail -5
+          python3 tools/godot/prepare.py --gen $G --assets dl/assets/downloaded --sounds dl/assets/downloaded/sounds \
+            --music dl/assets/downloaded/music --credits dl/assets/downloaded/ui dl/credits
+          du -sh $G/* | sort -h
+      - name: Godot cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-android-v1
+      - name: Install Godot and the Android export templates
+        run: |
+          V=$GODOT_VERSION
+          mkdir -p ~/godot && cd ~/godot
+          bases="https://github.com/godotengine/godot/releases/download/$V-stable https://github.com/godotengine/godot-builds/releases/download/$V-stable"
+          if [ ! -x godot ]; then
+            for b in $bases; do curl -fsSL --retry 3 -o g.zip "$b/Godot_v$V-stable_linux.x86_64.zip" && break; done
+            unzip -q g.zip && mv Godot_v$V-stable_linux.x86_64 godot && rm g.zip
+          fi
+          if [ ! -f templates/android_release.apk ]; then
+            for b in $bases; do curl -fsSL --retry 3 -o t.tpz "$b/Godot_v$V-stable_export_templates.tpz" && break; done
+            unzip -q t.tpz 'templates/android_*' 'templates/version.txt' && rm t.tpz
+          fi
+          T=~/.local/share/godot/export_templates/$V.stable
+          mkdir -p "$T" && cp templates/* "$T/"
+          ls -la "$T"
+          mkdir -p ~/.config/godot
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' \
+            "$ANDROID_SDK_ROOT" "$JAVA_HOME_17_X64" > ~/.config/godot/editor_settings-4.6.tres
+          ~/godot/godot --version
+      - name: Restore the signing key (keeps updates installable over older builds)
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: danga-godot-keystore-v1
+      - name: Create the signing key (first build only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/dg.keystore -alias danga \
+            -keyalg RSA -keysize 2048 -validity 10000 -storepass dangamxyan -keypass dangamxyan \
+            -dname "CN=MXYAN GAMES, O=MXYAN GAMES"
+      - name: Import the project
+        working-directory: godot
+        run: |
+          set +e
+          timeout 1800 ~/godot/godot --headless --path . --import > ../build/godot_import.txt 2>&1
+          timeout 900 ~/godot/godot --headless --path . --import >> ../build/godot_import.txt 2>&1
+          grep -E "SCRIPT ERROR|ERROR:|Parse Error" ../build/godot_import.txt | sort | uniq -c | sort -rn | head -n 40
+          du -sh .godot
+          exit 0
+      - name: Play-through without graphics (checks scripts and physics)
+        working-directory: godot
+        run: |
+          set +e
+          timeout 420 ~/godot/godot --headless --path . -- --dg-test > ../build/godot_headless_test.txt 2>&1
+          grep -E "DG-TEST" ../build/godot_headless_test.txt
+          echo "---------------- errors ----------------"
+          grep -E "SCRIPT ERROR|ERROR:" ../build/godot_headless_test.txt | grep -v "resources still in use" | sort | uniq -c | sort -rn | head -n 40
+          grep -q "\[DG-TEST\] DONE" ../build/godot_headless_test.txt && echo "play-through: DONE" || echo "play-through did not finish"
+          exit 0
+      - name: Export the APKs
+        working-directory: godot
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/ci-keystore/dg.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: danga
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: dangamxyan
+        run: |
+          N=${{ github.run_number }}
+          sed -i "s/^version\/code=.*/version\/code=$N/; s/^version\/name=.*/version\/name=\"2.0.$N\"/" export_presets.cfg
+          set +e
+          timeout 1500 ~/godot/godot --headless --path . --export-release "Android" ../build/Danga-Godot.apk > ../build/godot_export.txt 2>&1
+          timeout 1500 ~/godot/godot --headless --path . --export-release "Android Test" ../build/Danga-Godot-test.apk >> ../build/godot_export.txt 2>&1
+          set -e
+          grep -vE "^\s*$" ../build/godot_export.txt | tail -n 60
+          ls -la ../build/*.apk
+          unzip -l ../build/Danga-Godot.apk | grep -E "libgodot|\.pck|assets/" | head -n 8 || true
+          test -f ../build/Danga-Godot.apk
+      - name: Publish the logs on the CI release
+        if: always()
+        run: |
+          for f in build/godot_import.txt build/godot_headless_test.txt build/godot_export.txt build/city_log.txt build/models_log.txt; do
+            [ -f "$f" ] && cp "$f" "build/godot_ci_$(basename "$f")" && gh release upload "$CI_RELEASE" "build/godot_ci_$(basename "$f")" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+      - name: Keep the emulator APK for the test job
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-emulator-apk
+          path: build/Danga-Godot-test.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
+      - name: Source code zip and complete Godot project zip
+        run: |
+          git archive --format=zip --prefix=Danga-Godot-source/ -o build/Danga-Godot-source-code.zip HEAD \
+            godot tools ci .github/workflows/danga-godot.yml
+          ln -s "$GITHUB_WORKSPACE/godot" /tmp/Danga-Godot
+          (cd /tmp && zip -qr "$GITHUB_WORKSPACE/build/Danga-Godot-full-project.zip" Danga-Godot \
+            -x "Danga-Godot/.godot/*" "Danga-Godot/gen/city/Layers/*" "*.apk")
+          ls -la build/*.zip
+      - name: Publish the APK as a GitHub release
+        id: publish
+        run: |
+          N=${{ github.run_number }}
+          TAG="danga-godot-v$N"
+          APK="Danga-Godot-$N.apk"
+          cp build/Danga-Godot.apk "$APK"
+          cp godot/gen/CREDITS.txt CREDITS.txt 2>/dev/null || echo "DANGA - MXYAN GAMES" > CREDITS.txt
+          cat > notes.md << EOT
+          DANGA - Godot 4 version, build $N (Godot $GODOT_VERSION, commit ${GITHUB_SHA::7}). MXYAN GAMES OFFICIAL.
+
+          **Game install karne ke liye:** is page ko apne Android phone par kholo, neeche **$APK** par tap karke download karo, phir file kholke install karo (Android 7 ya naya, 64-bit). Ye "Danga Godot" naam se alag app install hoga, Unity wala Danga bhi rahega.
+
+          **Source code:**
+          - **Danga-Godot-source-code.zip** - saare scripts, shaders, Python tools aur build workflow (chhota zip).
+          - **Danga-Godot-full-project.zip** - poora Godot 4.6 project, models, city, sounds, music sab ke saath. Godot 4.6 editor me (PC ya Android) "Import" karke seedha khul jaata hai.
+
+          Graphics settings me LOW / MEDIUM / HIGH hai. Phone garam ho ya game ruk-ruk ke chale to LOW kar do.
+
+          Neeche ke screenshots Android emulator par automatic play-through ke hain (software graphics, isliye phone se kharab dikhte hain).
+          EOT
+          gh release delete "$TAG" --yes --cleanup-tag -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh release create "$TAG" "$APK" build/Danga-Godot-source-code.zip build/Danga-Godot-full-project.zip CREDITS.txt \
+            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+            --title "DANGA (Godot 4) build $N" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------------------------- play it in an emulator
+  emulator:
+    needs: apk
+    if: always() && needs.apk.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      TAG: ${{ needs.apk.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: ci
+      - name: Download the emulator APK
+        uses: actions/download-artifact@v4
+        with:
+          name: godot-emulator-apk
+          path: smoke
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run the game in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          ram-size: 4096M
+          heap-size: 1024M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test_godot.sh smoke
+      - name: Attach screenshots and the log to the release
+        if: always()
+        run: |
+          shopt -s nullglob
+          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result.txt smoke/out/logcat-godot.txt)
+          ls -la smoke/out 2>/dev/null || true
+          if [ ${#files[@]} -gt 0 ] && [ -n "$TAG" ]; then
+            gh release upload "$TAG" "${files[@]}" --clobber -R "$GITHUB_REPOSITORY"
+          fi

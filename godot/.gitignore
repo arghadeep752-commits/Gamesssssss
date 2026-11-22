@@ -1,0 +1,5 @@
+/gen
+/.godot/
+*.apk
+*.tmp
+export_credentials.cfg
