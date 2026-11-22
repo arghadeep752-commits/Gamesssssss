@@ -21,6 +21,9 @@ namespace Danga
         [StructLayout(LayoutKind.Sequential)]
         struct Vtx { public float px, py, pz; public uint n, c; public float u, v; public uint x; }
 
+        [StructLayout(LayoutKind.Sequential)]
+        struct VtxF { public float px, py, pz, nx, ny, nz; public uint c; public float u, v; public uint x; }
+
         struct Group { public int id, off; }
 
         class Chunk
@@ -55,6 +58,14 @@ namespace Danga
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
             new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4),
         };
+        static readonly VertexAttributeDescriptor[] LayoutF =
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
+            new VertexAttributeDescriptor(VertexAttribute.Normal, VertexAttributeFormat.Float32, 3),
+            new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
+            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
+            new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4),
+        };
         bool packedOk = true;
         int cursor;
         public int loadedChunks;
@@ -72,7 +83,7 @@ namespace Danga
             Half = Json.F(meta, "half", 1100f);
             chunkSize = Json.F(meta, "chunk", 128f);
             ReadMeta();
-            packedOk = SystemInfo.SupportsVertexAttributeFormat(VertexAttributeFormat.SNorm8, 4) && SystemInfo.SupportsVertexAttributeFormat(VertexAttributeFormat.UNorm8, 4);
+            packedOk = SystemInfo.SupportsVertexAttributeFormat(VertexAttributeFormat.UNorm8, 4);
             MakeMaterials();
             chunksAsset = Resources.Load<TextAsset>("Gen/City/chunks");
             if (chunksAsset != null)
@@ -211,8 +222,23 @@ namespace Danga
             const MeshUpdateFlags fl = MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers;
             if (packedOk)
             {
-                m.SetVertexBufferParams(nv, Layout);
-                m.SetVertexBufferData(data.GetSubArray(vo, nv * 32).Reinterpret<Vtx>(1), 0, 0, nv, 0, fl);
+                // normals are stored as 4 signed bytes; they go to the GPU as floats (some GPUs read byte normals as zero)
+                var src = data.GetSubArray(vo, nv * 32).Reinterpret<Vtx>(1);
+                var dst = new NativeArray<VtxF>(nv, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                for (int i = 0; i < nv; i++)
+                {
+                    Vtx a = src[i];
+                    VtxF b;
+                    b.px = a.px; b.py = a.py; b.pz = a.pz;
+                    b.nx = (sbyte)(a.n & 255) / 127f;
+                    b.ny = (sbyte)((a.n >> 8) & 255) / 127f;
+                    b.nz = (sbyte)((a.n >> 16) & 255) / 127f;
+                    b.c = a.c; b.u = a.u; b.v = a.v; b.x = a.x;
+                    dst[i] = b;
+                }
+                m.SetVertexBufferParams(nv, LayoutF);
+                m.SetVertexBufferData(dst, 0, 0, nv, 0, fl);
+                dst.Dispose();
             }
             else
             {

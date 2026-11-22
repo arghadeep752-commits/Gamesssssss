@@ -29,7 +29,7 @@ Shader "Danga/World"
                 o.wpos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.pos = UnityWorldToClipPos(o.wpos);
                 o.uv = float3(v.uv, floor(v.x.x * 255.0 + 0.5));
-                o.n = normalize(UnityObjectToWorldNormal(v.normal));
+                o.n = mul((float3x3)unity_ObjectToWorld, v.normal);
                 o.col = v.color;
                 o.ao = v.x.y;
                 return o;
@@ -37,7 +37,7 @@ Shader "Danga/World"
             half4 frag (v2f i) : SV_Target
             {
                 half4 t = UNITY_SAMPLE_TEX2DARRAY(_Tex, i.uv);
-                half3 n = normalize(i.n);
+                half3 n = i.n * rsqrt(max(dot(i.n, i.n), 1e-6));
 #ifdef DG_NORMALMAP
                 half3 tn = UNITY_SAMPLE_TEX2DARRAY(_Nrm, i.uv).xyz * 2.0h - 1.0h;
                 // cheap tangent frame from the normal (good enough for walls and floors)
@@ -45,7 +45,7 @@ Shader "Danga/World"
                 half3 ty = cross(n, tx);
                 n = normalize(tx * tn.x * 0.7h + ty * tn.y * 0.7h + n * tn.z);
 #endif
-                half ao = i.ao;
+                half ao = max(i.ao, 0.25h);
                 if (_Ground > 0.5) ao *= DG_GroundShadow(i.wpos);
                 half3 c = t.rgb * i.col.rgb * DG_Light(n, ao);
                 // windows, sign boards and lamps light up at night

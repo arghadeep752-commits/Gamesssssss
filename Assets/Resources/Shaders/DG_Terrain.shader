@@ -24,7 +24,7 @@ Shader "Danga/Terrain"
                 o.wpos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.pos = UnityWorldToClipPos(o.wpos);
                 o.uv = v.uv;
-                o.n = normalize(UnityObjectToWorldNormal(v.normal));
+                o.n = mul((float3x3)unity_ObjectToWorld, v.normal);
                 o.col = v.color.rgb;
                 o.lay = half3(floor(v.x.x * 255.0 + 0.5), floor(v.x.z * 255.0 + 0.5), v.x.w);
                 return o;
@@ -37,7 +37,7 @@ Shader "Danga/Terrain"
                 half t = saturate((i.lay.z - 0.5h) * 1.6h + 0.5h + (dot(b, half3(0.3h, 0.3h, 0.3h)) - 0.2h) * 0.4h);
                 half3 alb = lerp(a, b, t) * i.col;
                 half sh = DG_GroundShadow(i.wpos);
-                half3 c = alb * DG_Light(normalize(i.n), sh);
+                half3 c = alb * DG_Light(i.n * rsqrt(max(dot(i.n, i.n), 1e-6)), sh);
                 c = DG_Fog(c, i.wpos);
                 return half4(c, 1);
             }

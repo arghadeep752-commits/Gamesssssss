@@ -198,6 +198,8 @@ jobs:
       - name: Assemble the map in Blender (city.blend and aerial renders)
         timeout-minutes: 30
         run: |
+          sudo apt-get update -qq || true
+          sudo apt-get install -y -qq --no-install-recommends libegl1 libgl1 libgl1-mesa-dri libglx-mesa0 libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 >/dev/null
           bash tools/install_blender.sh
           ~/blender/blender -b --factory-startup -P tools/city/blender_build.py -- work/Assets/Game/City build/blender 2>&1 | tail -20
           ls -la build/blender

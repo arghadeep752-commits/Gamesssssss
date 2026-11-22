@@ -28,8 +28,8 @@ namespace Danga.EditorTools
             string f = System.IO.Path.GetFileNameWithoutExtension(path);
             if (path.StartsWith("Assets/Resources/Gen/City/"))
             {
-                if (f == "layers") { r.flipbook = 6; r.max = 8192; r.alpha = true; r.android = TextureImporterFormat.ASTC_6x6; return true; }
-                if (f == "layers_n") { r.flipbook = 6; r.max = 4096; r.srgb = false; r.android = TextureImporterFormat.ASTC_6x6; return true; }
+                if (f == "layers") { r.flipbook = 6; r.max = 8192; r.alpha = true; r.android = TextureImporterFormat.ETC2_RGBA8; return true; }
+                if (f == "layers_n") { r.flipbook = 6; r.max = 4096; r.srgb = false; r.android = TextureImporterFormat.ETC2_RGB4; return true; }
                 r.wrap = TextureWrapMode.Clamp;
                 r.max = 2048;
                 if (f == "lightmap") { r.srgb = false; r.android = TextureImporterFormat.ASTC_4x4; }

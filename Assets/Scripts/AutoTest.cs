@@ -22,7 +22,7 @@ namespace Danga
             yield return null;
             Log("SNAP " + name + " fps=" + Mathf.RoundToInt(1f / Mathf.Max(1e-3f, Time.smoothDeltaTime)) + " chunks=" + City.I.loadedChunks +
                 " cars=" + Traffic.I.cars.Count + " peds=" + Traffic.I.peds.Count);
-            yield return new WaitForSecondsRealtime(3.5f);
+            yield return new WaitForSecondsRealtime(5f);
         }
 
         IEnumerator Wait(float t) { yield return new WaitForSecondsRealtime(t); }
@@ -44,6 +44,7 @@ namespace Danga
             yield return Wait(4f);
             Player p = Player.I;
             Hud.scripted = true;
+            Wanted.never = true;          // the check shoots in the street; the police part sets the stars itself
             yield return Snap("03-home");
             Hud.sMove = new Vector2(0f, 1f);
             yield return Wait(2.5f);

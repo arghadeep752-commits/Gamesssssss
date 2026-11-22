@@ -30,7 +30,7 @@ Shader "Danga/Foliage"
                 o.wpos = w;
                 o.pos = UnityWorldToClipPos(w);
                 o.uv = float3(v.uv, floor(v.x.x * 255.0 + 0.5));
-                o.n = normalize(UnityObjectToWorldNormal(v.normal));
+                o.n = mul((float3x3)unity_ObjectToWorld, v.normal);
                 o.col = v.color.rgb;
                 return o;
             }
@@ -38,7 +38,7 @@ Shader "Danga/Foliage"
             {
                 half4 t = UNITY_SAMPLE_TEX2DARRAY(_Tex, i.uv);
                 clip(t.a - _Cutoff);
-                half3 n = normalize(i.n) * (facing > 0 ? 1.0h : -1.0h);
+                half3 n = i.n * rsqrt(max(dot(i.n, i.n), 1e-6)) * (facing > 0 ? 1.0h : -1.0h);
                 half ndl = saturate(dot(n, _DG_SunDir.xyz)) * 0.7h + 0.3h * saturate(-dot(n, _DG_SunDir.xyz));   // light through the leaves
                 half3 c = t.rgb * i.col * (DG_Ambient(half3(0, 1, 0)) * 0.85h + _DG_SunCol.rgb * ndl * _DG_SunDir.w);
                 c = DG_Fog(c, i.wpos);

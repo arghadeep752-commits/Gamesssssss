@@ -23,18 +23,14 @@ adb shell screenrecord --time-limit 25 --size 1110x540 --bit-rate 4000000 /sdcar
 rec=$!
 sleep 1
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
-for t in 3 6 9 12; do
-  sleep 3
-  adb exec-out screencap -p > "$OUT/00-start-${t}s.png" 2>/dev/null || true
-done
-wait $rec 2>/dev/null || true
-sleep 2
-adb pull /sdcard/start.mp4 "$OUT/00-start.mp4" >/dev/null 2>&1 && ls -la "$OUT/00-start.mp4" || echo "no start recording"
+# start pictures in the background, so the check below watches the game from the first second
+( for t in 3 6 9 12; do sleep 3; adb exec-out screencap -p > "$OUT/00-start-${t}s.png" 2>/dev/null || true; done ) &
+starts=$!
 
 result="TIMEOUT"
 captured=" "
 for _ in $(seq 1 900); do
-  sleep 1
+  sleep 0.5
   ulog="$(adb logcat -d -s Unity 2>/dev/null)"
   # the game holds the picture for 3 s after each "SNAP <name>" line: take the screenshot now
   for name in $(echo "$ulog" | grep -o "\[DG-TEST\] SNAP [A-Za-z0-9_-]*" | awk '{print $3}'); do
@@ -47,6 +43,9 @@ for _ in $(seq 1 900); do
   if adb logcat -d 2>/dev/null | grep -qE "Fatal signal|Process $PKG .*has died|ANR in $PKG"; then result="CRASH"; break; fi
 done
 sleep 2
+wait $starts 2>/dev/null || true
+wait $rec 2>/dev/null || true
+adb pull /sdcard/start.mp4 "$OUT/00-start.mp4" >/dev/null 2>&1 && ls -la "$OUT/00-start.mp4" || echo "no start recording"
 
 # the game saves its own exact screenshots (shot_<name>.png): they replace the screen grabs, which can lag behind
 mkdir -p "$OUT/game"
