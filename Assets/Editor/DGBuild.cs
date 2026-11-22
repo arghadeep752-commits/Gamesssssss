@@ -309,7 +309,7 @@ namespace Danga.EditorTools
 
         static bool BuildApk(string scene, string output, bool autoTest)
         {
-            string dir = Path.GetDirectoryName(Path.GetFullPath(output));
+            string dir = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(output));
             if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
             var options = new BuildPlayerOptions
             {

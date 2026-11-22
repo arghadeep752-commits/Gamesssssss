@@ -25,7 +25,12 @@ import urllib.request
 import zipfile
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-KENNEY = ["onscreen-controls", "ui-pack", "game-icons", "mobile-controls"]
+KENNEY = ["mobile-controls", "onscreen-controls", "ui-pack", "game-icons"]
+# the same Kenney packs on OpenGameArt (uploaded by Kenney), used when kenney.nl does not give a download link
+OGA = {"onscreen-controls": "onscreen-controls-8-styles", "ui-pack": "ui-pack", "game-icons": "game-icons", "mobile-controls": None}
+# icons to show by name on the candidates sheet
+CHECK = ["plain-arrow", "round-star", "flat-star", "star-formation", "speedometer", "city-car", "race-car", "sedan", "car-door", "speed-boat",
+         "upgrade", "health-normal", "reticule", "bowie-knife", "mp5", "sawed-off-shotgun", "t-shirt", "kevlar-vest", "rotary-phone", "boombox"]
 
 # for the candidates sheet: words to look for in icon names, per button
 SLOTS = {
@@ -98,39 +103,54 @@ def game_icons(out):
     return data
 
 
+def zip_links(html, base):
+    links = re.findall(r'(https?://[^\s"\'<>]+?\.zip|/(?:media/pages|sites/default/files)/[^\s"\'<>]+?\.zip)', html)
+    return [base + l if l.startswith("/") else l for l in links]
+
+
 def kenney(out, slug):
     dest = os.path.join(out, "kenney", slug)
     if os.path.isdir(dest) and any(f.endswith(".png") for _, _, fs in os.walk(dest) for f in fs):
         print("kenney %s: kept from an earlier build" % slug)
         return True
+    links = []
     try:
         html = get("https://kenney.nl/assets/" + slug).decode("utf-8", "replace")
+        links = zip_links(html, "https://kenney.nl")
+        if not links:
+            for m in list(re.finditer(r"(?i)download", html))[:3]:
+                print("  kenney.nl %s page near 'download': %r" % (slug, html[max(0, m.start() - 160): m.start() + 200]))
     except Exception as e:  # noqa: BLE001
         print("kenney %s page: %s" % (slug, e))
-        return False
-    links = re.findall(r'href=["\']([^"\']+?\.zip)["\']', html)
+    if not links and OGA.get(slug):
+        try:
+            html = get("https://opengameart.org/content/" + OGA[slug]).decode("utf-8", "replace")
+            links = zip_links(html, "https://opengameart.org")
+            print("kenney %s: OpenGameArt links %s" % (slug, links[:4]))
+        except Exception as e:  # noqa: BLE001
+            print("kenney %s OpenGameArt: %s" % (slug, e))
     if not links:
-        print("kenney %s: no zip link on the page" % slug)
+        print("kenney %s: no zip link found" % slug)
         return False
-    url = links[0]
-    if url.startswith("/"):
-        url = "https://kenney.nl" + url
-    try:
-        z = zipfile.ZipFile(io.BytesIO(get(url, timeout=300)))
-    except Exception as e:  # noqa: BLE001
-        print("kenney %s zip: %s" % (slug, e))
-        return False
-    os.makedirs(dest, exist_ok=True)
     n = 0
-    for name in z.namelist():
-        low = name.lower()
-        if low.endswith((".png", ".txt")) and "/vector" not in low and not os.path.basename(name).startswith("."):
-            target = os.path.join(dest, name)
-            os.makedirs(os.path.dirname(target), exist_ok=True)
-            with open(target, "wb") as f:
-                f.write(z.read(name))
-            n += 1
-    print("kenney %s: %s -> %d files" % (slug, url, n))
+    for url in links[:3]:
+        try:
+            z = zipfile.ZipFile(io.BytesIO(get(url, timeout=300)))
+        except Exception as e:  # noqa: BLE001
+            print("kenney %s zip %s: %s" % (slug, url, e))
+            continue
+        os.makedirs(dest, exist_ok=True)
+        for name in z.namelist():
+            low = name.lower()
+            if low.endswith((".png", ".txt")) and "/vector" not in low and not os.path.basename(name).startswith("."):
+                target = os.path.join(dest, os.path.basename(url)[:-4], name)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                with open(target, "wb") as f:
+                    f.write(z.read(name))
+                n += 1
+        print("kenney %s: %s -> %d files" % (slug, url, n))
+        if n:
+            break
     return n > 0
 
 
@@ -147,7 +167,7 @@ def candidates_sheet(icons, out):
     W = icons.get("width", 512)
     H = icons.get("height", 512)
     names = sorted(icons["icons"])
-    rows = []
+    rows = [("check", [n for n in CHECK if n in icons["icons"]][:12]), ("check2", [n for n in CHECK if n in icons["icons"]][12:24])]
     for slot, words in SLOTS.items():
         found = [n for n in names if any(w in n for w in words)]
         found.sort(key=lambda n: (min([n.find(w) if w in n else 99 for w in words]), len(n)))

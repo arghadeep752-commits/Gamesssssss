@@ -367,21 +367,21 @@ ICONS = ["fist", "bat", "knife", "revolver", "pistol", "smg", "shotgun", "jump",
 
 # game-icons.net names for each button, best first (checked against ui_candidates.jpg from the CI release)
 ICON_NAMES = {
-    "fist": ["fist", "punch", "high-punch"], "bat": ["baseball-bat", "spiked-bat"], "knife": ["switchblade", "bowie-knife", "butterfly-knife", "knife-thrust"],
-    "revolver": ["revolver"], "pistol": ["pistol-gun", "colt-m1911", "luger", "glock"], "smg": ["uzi", "mp5", "thompson-m1928", "machine-gun"],
-    "shotgun": ["sawed-off-shotgun", "shotgun"], "jump": ["jump-across", "upgrade"], "sprint": ["sprint", "run"],
-    "car": ["city-car", "race-car", "sedan"], "exit": ["exit-door", "entry-door"], "phone": ["smartphone"], "map": ["treasure-map", "position-marker"],
+    "fist": ["fist", "punch"], "bat": ["baseball-bat", "spiked-bat"], "knife": ["bowie-knife", "switchblade", "knife-thrust"],
+    "revolver": ["revolver"], "pistol": ["pistol-gun", "glock", "colt-m1911"], "smg": ["mp5", "uzi", "thompson-m1928"],
+    "shotgun": ["sawed-off-shotgun"], "jump": ["jump-across", "upgrade"], "sprint": ["run", "sprint"],
+    "car": ["car-door", "city-car", "race-car"], "exit": ["exit-door", "entry-door"], "phone": ["smartphone"], "map": ["treasure-map", "position-marker"],
     "horn": ["megaphone", "bugle-call"], "camera": ["photo-camera"], "pause": ["pause-button"], "gas": ["speedometer", "gas-pump"],
-    "brake": ["stop-sign", "brake"], "star": ["round-star", "flat-star", "star-formation"], "house": ["house", "family-house"],
-    "shirt": ["shirt", "t-shirt"], "cross": ["hospital-cross", "health-normal", "first-aid-kit"], "badge": ["police-badge", "sheriff"],
-    "heart": ["hearts", "heart-plus"], "shield": ["kevlar-vest", "bulletproof-vest", "shield"], "boat": ["speedboat", "speedboat-propeller"],
-    "heli": ["helicopter"], "settings": ["cog", "gears"], "radio": ["boombox", "radio-tower", "radar-sweep"], "wallet": ["wallet", "cash", "money-stack"],
-    "notes": ["notebook", "scroll-unfurled"], "dial": ["rotary-phone", "phone"], "save": ["save", "floppy-disk"], "sleep": ["night-sleep", "sleepy", "moon"],
-    "target": ["crosshair", "targeting", "reticule"], "reload": ["anticlockwise-rotation", "cycle", "clockwise-rotation"],
-    "up": ["plain-arrow"], "down": ["plain-arrow"], "left": ["plain-arrow"], "right": ["plain-arrow"],
+    "brake": ["stop-sign"], "star": ["round-star", "flat-star", "star-formation"], "house": ["house", "family-house"],
+    "shirt": ["t-shirt", "shirt"], "cross": ["health-normal", "hospital-cross", "first-aid-kit"], "badge": ["police-badge"],
+    "heart": ["hearts", "heart-plus"], "shield": ["kevlar-vest", "kevlar", "shield"], "boat": ["speed-boat", "boat-propeller"],
+    "heli": ["helicopter"], "settings": ["cog", "gears"], "radio": ["boombox", "pocket-radio"], "wallet": ["wallet", "cash", "money-stack"],
+    "notes": ["notebook", "scroll-quill"], "dial": ["rotary-phone", "phone"], "save": ["save"], "sleep": ["bed", "sleepy", "moon"],
+    "target": ["reticule", "crosshair", "targeting"], "reload": ["clockwise-rotation", "cycle"],
+    "up": ["upgrade"], "down": ["upgrade"], "left": ["upgrade"], "right": ["upgrade"],
 }
-# 'plain-arrow' points up and to the right; turn it so each arrow points its way
-ARROW_TURN = {"up": 45, "right": -45, "down": -135, "left": 135}
+# 'upgrade' is a double chevron pointing up; turn it so each arrow points its way
+ARROW_TURN = {"up": 0, "right": -90, "down": 180, "left": 90}
 KEYWORDS = {"fist": ["fist", "punch"], "bat": ["baseball"], "knife": ["knife", "dagger"], "pistol": ["pistol"], "smg": ["uzi", "submachine", "machine-gun"],
             "shotgun": ["shotgun"], "car": ["car"], "heli": ["helicopter"], "boat": ["boat"], "house": ["house"], "star": ["star"]}
 report = []
@@ -406,7 +406,7 @@ def svg_icon(icons, slot, n=128):
         report.append("%s: rsvg failed (%s)" % (slot, e))
         return None, None
     im = Image.open(__import__("io").BytesIO(png)).convert("RGBA")
-    if slot in ARROW_TURN and pick == "plain-arrow":
+    if slot in ARROW_TURN and pick == "upgrade":
         im = im.rotate(ARROW_TURN[slot], resample=Image.BICUBIC)
     return im, pick
 

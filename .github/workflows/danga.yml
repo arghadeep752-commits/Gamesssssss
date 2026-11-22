@@ -113,7 +113,7 @@ jobs:
           else
             echo "interface art unchanged since the last build"
           fi
-          ls assets/downloaded/ui assets/downloaded/ui/kenney 2>/dev/null | head -30
+          ls assets/downloaded/ui assets/downloaded/ui/kenney 2>/dev/null | head -30 || true
       - name: Publish logs
         if: always()
         run: |
@@ -166,32 +166,43 @@ jobs:
           mkdir -p work build/city_preview
           python3 tools/city/build.py --assets ci-assets/assets/downloaded --out work --preview build/city_preview 2>&1 | tee build/city_log.txt | tail -40
           ls -la work/Assets/Game/City
-      - name: Blender cache
-        uses: actions/cache@v4
-        with:
-          path: ~/blender
-          key: blender-${{ env.BLENDER_VERSION }}
-      - name: Assemble the map in Blender (city.blend and aerial renders)
-        continue-on-error: true
-        timeout-minutes: 25
-        run: |
-          bash tools/install_blender.sh
-          ~/blender/blender -b --factory-startup -P tools/city/blender_build.py -- work/Assets/Game/City build/blender 2>&1 | tail -20
-          ls -la build/blender
       - name: Publish previews
         if: always()
         run: |
           shopt -s nullglob
-          for f in build/city_log.txt build/city_preview/*.png build/city_preview/*.jpg build/blender/*.png; do
+          for f in build/city_log.txt build/city_preview/*.png build/city_preview/*.jpg; do
             gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true
           done
-          if [ -f build/blender/city.blend ]; then gh release upload "$CI_RELEASE" build/blender/city.blend -R "$GITHUB_REPOSITORY" --clobber || true; fi
       - uses: actions/upload-artifact@v4
         with:
           name: city
           path: work/Assets
           if-no-files-found: error
           retention-days: 3
+
+  # --------------------------------------------------------------------------------------- the map in Blender (not needed by the APK)
+  blender:
+    needs: city
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: city, path: work/Assets }
+      - name: Blender cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}
+      - name: Assemble the map in Blender (city.blend and aerial renders)
+        timeout-minutes: 30
+        run: |
+          bash tools/install_blender.sh
+          ~/blender/blender -b --factory-startup -P tools/city/blender_build.py -- work/Assets/Game/City build/blender 2>&1 | tail -20
+          ls -la build/blender
+          shopt -s nullglob
+          for f in build/blender/*.png build/blender/city.blend; do gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
 
   # --------------------------------------------------------------------------------------- C# compile check
   compile:
@@ -256,7 +267,7 @@ jobs:
 
   # --------------------------------------------------------------------------------------- the APK
   apk:
-    needs: [assets, rodin, city, compile]
+    needs: [assets, rodin, city]
     runs-on: ubuntu-24.04
     timeout-minutes: 170
     outputs:
