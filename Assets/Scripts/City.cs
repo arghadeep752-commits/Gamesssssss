@@ -36,6 +36,8 @@ namespace Danga
             public List<Mesh> meshes = new List<Mesh>();
             public Mesh collMesh;
             public List<GameObject> boxes = new List<GameObject>();
+            public List<object> objects = new List<object>();
+            public List<GameObject> objectGos = new List<GameObject>();
         }
 
         TextAsset chunksAsset;
@@ -92,6 +94,7 @@ namespace Danga
                 ReadDirectory();
             }
             else Debug.LogWarning("[DG] city chunks missing");
+            BucketObjects();
             LoadExtras();
             LoadColliders();
             LoadWater();
@@ -298,6 +301,66 @@ namespace Danga
             return m;
         }
 
+        /// <summary>The Hyper3D shop-houses and street props go with the chunk they stand in.</summary>
+        void BucketObjects()
+        {
+            var objs = Json.A(meta, "objects");
+            if (objs == null) return;
+            int n = 0;
+            foreach (object o in objs)
+            {
+                Vector3 p = Json.V3(o, "p");
+                Chunk c;
+                if (byKey.TryGetValue(Key(Mathf.FloorToInt((p.x + Half) / chunkSize), Mathf.FloorToInt((p.z + Half) / chunkSize)), out c)) { c.objects.Add(o); n++; }
+            }
+            Debug.Log("[DG] city objects: " + n);
+        }
+
+        void LoadObjects(Chunk c)
+        {
+            foreach (object o in c.objects)
+            {
+                Vector3 p = Json.V3(o, "p");
+                float yaw = Json.F(o, "yaw");
+                string model = Json.S(o, "m");
+                float scale = 1f;
+                PSpec spec;
+                if (Json.Has(o, "slot"))
+                {
+                    // pick one of the shop-houses that fits the lot (the same one every time for this spot)
+                    if (Models.buildings.Count == 0) continue;
+                    float w = Json.F(o, "w", 8f), d = Json.F(o, "d", 10f);
+                    int h = Mathf.Abs((int)(p.x * 73.1f + p.z * 19.7f));
+                    model = null;
+                    for (int k = 0; k < Models.buildings.Count && model == null; k++)
+                    {
+                        string cand = Models.buildings[(h + k) % Models.buildings.Count];
+                        PSpec ps = Models.props[cand];
+                        float s = Mathf.Min(w / Mathf.Max(0.5f, ps.size.x), d / Mathf.Max(0.5f, ps.size.z));
+                        if (s > 0.7f) { model = cand; scale = Mathf.Min(1.25f, s); }
+                    }
+                    if (model == null) continue;
+                }
+                if (string.IsNullOrEmpty(model) || !Models.props.TryGetValue(model, out spec)) continue;
+                var go = Models.Spawn("Props", model, transform, Color.white);
+                go.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, yaw, 0f));
+                go.transform.localScale = Vector3.one * scale;
+                if (model != "water_tank")
+                {
+                    var bc = go.AddComponent<BoxCollider>();
+                    bc.center = new Vector3(0f, spec.size.y * 0.5f, 0f);
+                    bc.size = new Vector3(spec.size.x * 0.92f, spec.size.y, spec.size.z * 0.92f);
+                }
+                c.objectGos.Add(go);
+            }
+        }
+
+        void UnloadObjects(Chunk c)
+        {
+            foreach (var g in c.objectGos) if (g != null) Destroy(g);
+            c.objectGos.Clear();
+        }
+
         void LoadChunk(Chunk c)
         {
             c.go = new GameObject("chunk_" + c.ix + "_" + c.iz);
@@ -318,10 +381,12 @@ namespace Danga
                 mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
             }
             loadedChunks++;
+            LoadObjects(c);
         }
 
         void UnloadChunk(Chunk c)
         {
+            UnloadObjects(c);
             if (c.go != null) Destroy(c.go);
             foreach (var m in c.meshes) Destroy(m);
             c.meshes.Clear();

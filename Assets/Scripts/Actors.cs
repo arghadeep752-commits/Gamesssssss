@@ -27,11 +27,14 @@ namespace Danga
         public Vector3 Muzzle => muzzle != null ? muzzle.position : transform.position + Vector3.up * 1.35f + transform.forward * 0.45f;
         public WpnDef Def => Combat.Def(weapon);
 
+        GameObject blob;
+
         public void SetModel(string m)
         {
             model = m;
             if (rig != null) Destroy(rig.gameObject);
             rig = Rig.Create(m, transform, tint);
+            if (blob == null) blob = Models.Blob(transform, 1.1f, 1.1f, 0.6f);
             weaponGo = null;
             Equip(weapon, true);
         }
@@ -78,6 +81,7 @@ namespace Danga
         public void ShowBody(bool on)
         {
             if (rig != null && rig.smr != null) rig.smr.enabled = on;
+            if (blob != null) blob.SetActive(on && vehicle == null);
             if (weaponGo != null) weaponGo.SetActive(on);
         }
 
@@ -137,7 +141,7 @@ namespace Danga
         float vy, nextShot, nextStep, aimUntil, reloadUntil, lastGround;
         public int money = 25000;
         public readonly HashSet<Wpn> owned = new HashSet<Wpn>();
-        public readonly int[] ammo = new int[7], clip = new int[7];
+        public readonly int[] ammo = new int[Combat.Defs.Length], clip = new int[Combat.Defs.Length];
         public bool swimming;
         public Human aimTarget;
         public Vehicle nearVehicle;

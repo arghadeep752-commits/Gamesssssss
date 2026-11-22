@@ -44,7 +44,7 @@ namespace Danga
         public string outfit = "player_casual";
         public Color tint = Color.white;
         public List<string> outfits = new List<string> { "player_casual" };
-        public int[] ammo = new int[7], clip = new int[7];
+        public int[] ammo = new int[Combat.Defs.Length], clip = new int[Combat.Defs.Length];
         public List<int> owned = new List<int> { 0, 1, 2, 3 };
         public float hour = 9.5f, armor;
         const string Key = "danga_save_v1";
@@ -87,9 +87,9 @@ namespace Danga
                 var ow = Json.A(o, "owned");
                 if (ow != null) { s.owned.Clear(); foreach (object x in ow) s.owned.Add((int)Json.F(x)); }
                 var am = Json.A(o, "ammo");
-                if (am != null) for (int i = 0; i < Mathf.Min(7, am.Count); i++) s.ammo[i] = (int)Json.F(am[i]);
+                if (am != null) for (int i = 0; i < Mathf.Min(s.ammo.Length, am.Count); i++) s.ammo[i] = (int)Json.F(am[i]);
                 var cl = Json.A(o, "clip");
-                if (cl != null) for (int i = 0; i < Mathf.Min(7, cl.Count); i++) s.clip[i] = (int)Json.F(cl[i]);
+                if (cl != null) for (int i = 0; i < Mathf.Min(s.clip.Length, cl.Count); i++) s.clip[i] = (int)Json.F(cl[i]);
             }
             catch (System.Exception e) { Debug.LogWarning("[DG] save unreadable: " + e.Message); }
             return s;
@@ -192,8 +192,7 @@ namespace Danga
             r.SetAsLastSibling();
             var bg = r.gameObject.AddComponent<Image>();
             bg.color = new Color(0.04f, 0.03f, 0.03f, 1f);
-            var t = Ui.Img(r, "title", Color.white, Ui.C, new Vector2(0, 120), new Vector2(900, 300));
-            t.preserveAspect = true;
+            Ui.Txt(r, "DANGA", 200, Color.white, TextAnchor.MiddleCenter, Ui.C, new Vector2(0, 120), new Vector2(1200, 260), Ui.title);
             loadText = Ui.Txt(r, "", 44, Color.white, TextAnchor.MiddleCenter, Ui.C, new Vector2(0, -120), new Vector2(1400, 60));
             Ui.Txt(r, "MXYAN GAMES OFFICIAL", 34, new Color(1, 1, 1, 0.7f), TextAnchor.MiddleCenter, Ui.B, new Vector2(0, 40), new Vector2(1000, 50));
         }
@@ -232,7 +231,7 @@ namespace Danga
             p.owned.Clear();
             foreach (int w in save.owned) p.owned.Add((Wpn)w);
             if (!cont) { p.clip[(int)Wpn.Revolver] = 6; p.ammo[(int)Wpn.Revolver] = 36; }
-            else { System.Array.Copy(save.ammo, p.ammo, 7); System.Array.Copy(save.clip, p.clip, 7); }
+            else { System.Array.Copy(save.ammo, p.ammo, p.ammo.Length); System.Array.Copy(save.clip, p.clip, p.clip.Length); }
             p.armor = save.armor;
             p.tint = save.tint;
             p.SetOutfit(save.outfit, save.tint);
@@ -281,8 +280,8 @@ namespace Danga
             save.money = p.money;
             save.owned.Clear();
             foreach (var w in p.owned) save.owned.Add((int)w);
-            System.Array.Copy(p.ammo, save.ammo, 7);
-            System.Array.Copy(p.clip, save.clip, 7);
+            System.Array.Copy(p.ammo, save.ammo, save.ammo.Length);
+            System.Array.Copy(p.clip, save.clip, save.clip.Length);
             save.outfit = p.Outfit;
             save.tint = p.tint;
             save.hour = Env.hour;

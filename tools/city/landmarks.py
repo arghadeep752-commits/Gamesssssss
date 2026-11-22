@@ -521,6 +521,8 @@ def railway_station(M, grid, col, meta):
 
 def railway(M, grid, col, meta):
     """The track east-west south of the station (with a parked passenger train)."""
+    if not LY.RAIL_X:
+        return
     z = LY.RAIL_Z
     x0, x1 = LY.RAIL_X
     x = x0
@@ -637,7 +639,7 @@ def checkpost(M, grid, col, meta):
     # barrier arm
     s.box(-2.5, 1.0, 10, 9, 0.18, 0.18, L["markings"], col=(1.0, 0.2, 0.2), collide=False)
     # the border fence along the west edge
-    x_f = -1078.0
+    x_f = -LY.HALF + 22.0
     z = -LY.HALF + 250
     while z < LY.HALF:
         m = M.get(x_f, z + 10, "world")
@@ -646,7 +648,7 @@ def checkpost(M, grid, col, meta):
         if not (20 < z + 10 < 60):
             col.append([x_f, -1.0, z + 10, 0.6, 6.0, 20.0, 0.0])
         z += 20.0
-    col.append([-1090.0, -1.0, 40.0, 4.0, 8.0, 40.0, 0.0])     # the road beyond the gate is closed
+    col.append([-LY.HALF + 10.0, -1.0, 40.0, 4.0, 8.0, 40.0, 0.0])     # the road beyond the gate is closed
     s.place("landmark", 0, 10, label="Akhaura Check Post (Bangladesh border)", radius=50)
     return s
 
@@ -777,14 +779,21 @@ def player_house(M, grid, col, meta):
 
 
 def lake_jetty(M, grid, col, meta):
-    x0, z0 = -338.0, -640.0
-    m = M.get(x0 - 12, z0, "world")
-    m.box(x0 - 14, LY.LAKE_LEVEL - 2.0, z0, 30, 2.5, 4, L["concrete"], col=(0.7, 0.68, 0.65))
-    m.polygon([(x0 - 29, z0 - 2), (x0 + 1, z0 - 2), (x0 + 1, z0 + 2), (x0 - 29, z0 + 2)], LY.LAKE_LEVEL + 0.52, L["wood"], tile=(1, 3),
-              col=(0.75, 0.62, 0.5))
-    M.get(x0 - 12, z0, "coll").polygon([(x0 - 29, z0 - 2), (x0 + 1, z0 - 2), (x0 + 1, z0 + 2), (x0 - 29, z0 + 2)], LY.LAKE_LEVEL + 0.52, 0)
-    meta.setdefault("points", []).append(dict(kind="boat", name="Rudrasagar Jetty", p=[x0 - 26, LY.LAKE_LEVEL + 0.4, z0 + 5], yaw=270.0))
-    meta["points"].append(dict(kind="landmark", name="Rudrasagar Jetty", p=[x0 - 10, 0.0, z0], yaw=0.0, label="Rudrasagar Lake", radius=200))
+    """A wooden jetty from the beach into the sea, where the speedboats to Neermahal wait."""
+    x0 = -232.0
+    z0 = LY.coast_z(x0) + 8.0
+    ln = 36.0
+    lv = LY.SEA_LEVEL
+    m = M.get(x0, z0 - ln / 2, "world")
+    pier = [(x0 - 2, z0 - ln), (x0 + 2, z0 - ln), (x0 + 2, z0), (x0 - 2, z0)]
+    m.polygon(pier, lv + 0.6, L["wood"], tile=(1, 3), col=(0.75, 0.62, 0.5))
+    for k in range(0, int(ln) + 1, 6):
+        for sx in (-1.8, 1.8):
+            m.box(x0 + sx, lv - 2.5, z0 - k, 0.25, 3.1, 0.25, L["wood"], col=(0.5, 0.42, 0.34))
+    M.get(x0, z0 - ln / 2, "coll").polygon(pier, lv + 0.6, 0)
+    meta.setdefault("points", []).append(dict(kind="boat", name="Neermahal Jetty", p=[x0 + 5, lv + 0.4, z0 - ln + 6], yaw=180.0))
+    meta["points"].append(dict(kind="boat", name="Neermahal Jetty 2", p=[x0 - 5, lv + 0.4, z0 - ln + 12], yaw=180.0))
+    meta["points"].append(dict(kind="landmark", name="Neermahal Jetty", p=[x0, 0.0, z0 - 10], yaw=180.0, label="Boats to Neermahal", radius=120))
 
 
 BUILDERS = [lake_jetty, ujjayanta_palace, mughal_garden, palace_compound, jagannath_temple,
@@ -797,4 +806,7 @@ BUILDERS = [lake_jetty, ujjayanta_palace, mughal_garden, palace_compound, jagann
 
 def build_all(M, grid, colliders, meta):
     for fn in BUILDERS:
-        fn(M, grid, colliders, meta)
+        try:
+            fn(M, grid, colliders, meta)
+        except KeyError as e:          # the place is not part of the (smaller) town
+            print("[city] skipped %s (%s)" % (getattr(fn, "__name__", "landmark"), e))

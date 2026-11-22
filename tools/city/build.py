@@ -262,7 +262,9 @@ def generate(assets):
                                                                            len(roads.bridges), time.time() - t0))
     landmarks.build_all(M, grid, colliders, meta)
     log("landmarks done (%.1fs)" % (time.time() - t0))
-    blds = buildings.place_lots(roads, grid, M, colliders)
+    objects = meta.setdefault("objects", [])
+    blds = buildings.place_lots(roads, grid, M, colliders, objects=objects)
+    log("hyper3d spots: %d shop-house slots, %d props" % (sum(1 for o in objects if o.get("slot")), sum(1 for o in objects if not o.get("slot"))))
     log("buildings: %d (%.1fs)" % (len(blds), time.time() - t0))
     lamps = nature.street_lamps(M, roads, colliders, meta)
     nature.electric_poles(M, roads, colliders)
@@ -285,6 +287,7 @@ def make_meta(res):
         "lake_level": LY.LAKE_LEVEL, "sun": {"azimuth": 150.0, "elevation": 52.0}, "layers": LAYERS,
         "lanes": roads.lanes, "walks": roads.walks, "walk_links": roads.walk_links, "junctions": getattr(roads, "junctions", []),
         "bridges": roads.bridges, "points": pts, "landmarks": lms, "zones": zones, "lamps": meta.get("lamps", []),
+        "objects": meta.get("objects", []),
         "ponds": [{"name": n, "c": list(c), "size": list(s), "r": r, "level": lv} for n, c, s, r, lv in LY.PONDS],
         "lake": {"c": list(LY.LAKE[1]), "r": list(LY.LAKE[2]), "level": LY.LAKE_LEVEL},
         "river": {"pts": [list(p) for p in LY.RIVER], "w": LY.RIVER_W, "level": LY.RIVER_LEVEL},

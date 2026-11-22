@@ -488,10 +488,16 @@ SOUNDS = {
 # 2021 (track ids under 1700000), ccMixter, Wikimedia Commons; never anything mentioning AI generators.
 AI_RE = r"\b(ai|a\.i\.|ai[- ]generated|generated|suno|udio|neural|aiva|mubert|soundraw|boomy)\b"
 MUSIC = {
-    "music_menu":   dict(q=["indian drums dhol", "bollywood instrumental", "dhol beat", "indian epic percussion", "bhangra beat"],
-                         req=["dhol", "bollywood", "indian", "bhangra", "india", "tabla", "drum"],
-                         ban=["vocal", "voice", "speech", "8bit", "8-bit", "chiptune", "dubstep", "meditation", "sleep"],
-                         dur=(20, 900), out=120, loop=True, gain=-2, ia="indian dhol"),
+    # the menu: calm, quiet piano by Kevin MacLeod (incompetech.com, CC BY 4.0) - played softly under the title screen
+    "music_menu":   dict(v=2, q=["calm piano", "peaceful piano", "ambient piano"], req=["piano", "calm", "peaceful", "ambient"],
+                         ban=["vocal", "voice", "speech", "8bit", "chiptune", "dubstep", "horror"], dur=(40, 900), out=180, loop=True, gain=-6,
+                         ia="calm piano",
+                         direct=[("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2002.mp3",
+                                  '"Meditation Impromptu 02" - Kevin MacLeod (incompetech.com), CC BY 4.0 http://creativecommons.org/licenses/by/4.0/'),
+                                 ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Gymnopedie%20No%201.mp3",
+                                  '"Gymnopedie No 1" - Kevin MacLeod (incompetech.com), CC BY 4.0 http://creativecommons.org/licenses/by/4.0/'),
+                                 ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Healing.mp3",
+                                  '"Healing" - Kevin MacLeod (incompetech.com), CC BY 4.0 http://creativecommons.org/licenses/by/4.0/')]),
     "radio_desi":   dict(q=["bollywood", "indian groove", "tabla groove", "indian dance beat", "bhangra"],
                          req=["bollywood", "india", "indian", "tabla", "bhangra", "desi", "punjabi", "dhol"],
                          ban=["8bit", "8-bit", "chiptune", "meditation", "sleep", "drone only"], dur=(30, 900), out=240, loop=True, gain=-3,
@@ -875,11 +881,27 @@ def commons_fetch(name, spec, tmp, outdir):
     return None
 
 
+def direct_fetch(name, spec, tmp, outdir):
+    """Tracks chosen by hand (known artist and licence), tried before any search."""
+    for url, credit in spec.get("direct", []):
+        try:
+            srcp = os.path.join(tmp, re.sub(r"\W", "_", name) + "_direct" + os.path.splitext(url.split("?")[0])[1])
+            save(srcp, http(url, timeout=120, ua=BROWSER_UA))
+            ok, dur = process(name, spec, outdir, srcp)
+        except Exception as e:      # noqa: BLE001
+            log("  direct %s: %s" % (url, e))
+            continue
+        if ok:
+            REPORT.append("%-13s <- %s" % (name, credit))
+            return "- `%s`: %s" % (name, credit)
+    return None
+
+
 def fetch_one(name, spec, tmp, outdir):
     if time.time() > SOUND_DEADLINE[0]:
         REPORT.append("%-13s <- skipped (time budget)" % name)
         return None
-    for fn in (openverse_fetch, commons_fetch, archive_fetch):
+    for fn in (direct_fetch, openverse_fetch, commons_fetch, archive_fetch):
         try:
             c = fn(name, spec, tmp, outdir)
         except Exception as e:      # noqa: BLE001
@@ -942,7 +964,9 @@ def music():
 
 # ============================================================================================ fonts
 FONTS = [("the_bold_font", "The Bold Font", "Sven Pels", "100% Free", "https://www.dafont.com/the-bold-font.font", "DisplayFont"),
-         ("bebas_neue", "Bebas Neue", "Dharma Type", "SIL Open Font License", "https://www.dafont.com/bebas-neue.font", "UIFont")]
+         ("bebas_neue", "Bebas Neue", "Dharma Type", "SIL Open Font License", "https://www.dafont.com/bebas-neue.font", "UIFont"),
+         ("pricedown", "Pricedown", "Typodermic Fonts", "Typodermic desktop licence (free, commercial use allowed)", "https://www.dafont.com/pricedown.font",
+          "TitleFont")]
 
 
 def fonts():

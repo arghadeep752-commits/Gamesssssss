@@ -51,6 +51,7 @@ def radial(n, inner, outer, power=1.6, color=(255, 255, 255)):
 
 
 def icon(name, n=128):
+    name = {"ak47": "smg", "sniper": "shotgun"}.get(name, name)
     im, d = canvas(n)
     W = (255, 255, 255, 255)
     L = n * S
@@ -362,7 +363,7 @@ def app_icons(font_path, out_dir):
 
 ICONS = ["fist", "bat", "knife", "revolver", "pistol", "smg", "shotgun", "jump", "sprint", "car", "exit", "phone", "map", "horn",
          "camera", "pause", "up", "down", "left", "right", "gas", "brake", "star", "house", "shirt", "cross", "badge", "heart",
-         "shield", "boat", "heli", "settings", "radio", "wallet", "notes", "dial", "save", "sleep", "target", "reload"]
+         "shield", "boat", "heli", "settings", "radio", "wallet", "notes", "dial", "save", "sleep", "target", "reload", "ak47", "sniper"]
 
 
 # game-icons.net names for each button, best first (checked against ui_candidates.jpg from the CI release)
@@ -379,11 +380,12 @@ ICON_NAMES = {
     "notes": ["notebook", "scroll-quill"], "dial": ["rotary-phone", "phone"], "save": ["save"], "sleep": ["bed", "sleepy", "moon"],
     "target": ["reticule", "crosshair", "targeting"], "reload": ["clockwise-rotation", "cycle"],
     "up": ["upgrade"], "down": ["upgrade"], "left": ["upgrade"], "right": ["upgrade"],
+    "ak47": ["ak47", "ak47u", "machine-gun"], "sniper": ["barrett", "winchester-rifle", "rifle", "musket"],
 }
 # 'upgrade' is a double chevron pointing up; turn it so each arrow points its way
 ARROW_TURN = {"up": 0, "right": -90, "down": 180, "left": 90}
 KEYWORDS = {"fist": ["fist", "punch"], "bat": ["baseball"], "knife": ["knife", "dagger"], "pistol": ["pistol"], "smg": ["uzi", "submachine", "machine-gun"],
-            "shotgun": ["shotgun"], "car": ["car"], "heli": ["helicopter"], "boat": ["boat"], "house": ["house"], "star": ["star"]}
+            "shotgun": ["shotgun"], "car": ["car"], "ak47": ["ak47", "machine-gun"], "sniper": ["rifle", "barrett"], "heli": ["helicopter"], "boat": ["boat"], "house": ["house"], "star": ["star"]}
 report = []
 
 # Kenney picks (checked on the CI release previews): Mobile Controls 1.0 and UI Pack, both CC0
@@ -535,10 +537,24 @@ def main():
     btn = kpath(a.ui, *UP, "Grey", "Double", "button_round_depth_gradient.png") if a.ui else None
     btn = btn or best(files, ["button"], ("circle", "round"), ("dark", "pressed", "outline", "line", "transparent", "_a.", "_b.", "_x.", "_y."), light, True)
     if btn:
-        whiten(Image.open(btn).convert("RGBA").resize((256, 256), Image.LANCZOS)).save(os.path.join(a.out, "btn_round.png"))
-        used["btn_round"] = os.path.relpath(btn, a.ui)
+        whiten(Image.open(btn).convert("RGBA").resize((256, 256), Image.LANCZOS)).save(os.path.join(a.out, "btn_light.png"))
+        used["btn_light"] = os.path.relpath(btn, a.ui)
     else:
-        round_button().save(os.path.join(a.out, "btn_round.png"))
+        round_button().save(os.path.join(a.out, "btn_light.png"))
+        report.append("btn_light: FALLBACK drawing")
+    # GTA-style buttons: Kenney's dark glass circle (Mobile Controls, style E)
+    glass = kpath(a.ui, *MC, "Style E", "Large*", "button_circle.png") if a.ui else None
+    if glass:
+        Image.open(glass).convert("RGBA").resize((256, 256), Image.LANCZOS).save(os.path.join(a.out, "btn_round.png"))
+        used["btn_round"] = os.path.relpath(glass, a.ui)
+    else:
+        im = round_button()
+        px = im.load()
+        for y in range(im.size[1]):
+            for x in range(im.size[0]):
+                r, g, b, al = px[x, y]
+                px[x, y] = (40, 40, 44, int(al * 0.85))
+        im.save(os.path.join(a.out, "btn_round.png"))
         report.append("btn_round: FALLBACK drawing")
     pan = (kpath(a.ui, *UP, "Grey", "Double", "button_rectangle_flat.png") if a.ui else None) or best(files, ["panel"], (), ("dark", "transparent", "inset", "border"), light)
     if pan:

@@ -236,7 +236,8 @@ namespace Danga
 
         void Update()
         {
-            radio.volume = music * 0.55f;
+            bool menuTrack = radio.clip != null && radio.clip.name == "music_menu";
+            radio.volume = music * (menuTrack ? 0.28f : 0.55f);
             if (Time.unscaledTime < nextAmb) { Fade(); return; }
             nextAmb = Time.unscaledTime + 1f;
             string want = "amb_city";

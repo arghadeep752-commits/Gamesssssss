@@ -26,8 +26,8 @@ import autorig  # noqa: E402
 WHEEL_R = {"car_hatch": 0.30, "car_sedan": 0.31, "car_suv": 0.38, "auto_rickshaw": 0.22, "e_rickshaw": 0.25, "bus": 0.50, "truck": 0.50,
            "police_jeep": 0.37, "sports_car": 0.33, "motorbike": 0.33, "scooter": 0.24, "van": 0.29}
 TYRE_W = {"bike": 0.11, "trike": 0.13, "car": 0.21}
-GRIP = {"revolver": 0.22, "pistol": 0.25, "smg": 0.40, "shotgun": 0.27, "bat": 0.07, "knife": 0.14}
-TEX_MAX = {"character": 1024, "vehicle": 1024, "weapon": 512, "wheel": 512}
+GRIP = {"revolver": 0.22, "pistol": 0.25, "smg": 0.40, "shotgun": 0.27, "bat": 0.07, "knife": 0.14, "ak47": 0.36, "sniper": 0.34}
+TEX_MAX = {"character": 1024, "vehicle": 1024, "weapon": 512, "wheel": 512, "prop": 512, "building": 1024}
 
 
 def load(path):
@@ -219,6 +219,23 @@ def weapon(name, spec, P, N, UV, I):
     return P, N, {"name": name, "length": L, "muzzle": [round(v, 4) for v in (muzzle - grip)], "height": round(float(ymax - ymin), 3)}
 
 
+# ------------------------------------------------------------------------------------------------- props and buildings
+def prop(name, spec, P, N):
+    """Street props and Indian shop-house buildings: real size, standing on y = 0, centred, front towards +Z."""
+    kind, val = spec.get("size", ["height", 2.0])
+    ext = P.max(0) - P.min(0)
+    if kind == "height":
+        s = val / max(1e-6, ext[1])
+    else:
+        s = val / max(1e-6, max(ext[0], ext[2]))
+    P = P * s
+    P[:, 1] -= P[:, 1].min()
+    P[:, 0] -= (P[:, 0].max() + P[:, 0].min()) / 2
+    P[:, 2] -= (P[:, 2].max() + P[:, 2].min()) / 2
+    size = P.max(0) - P.min(0)
+    return P, N, {"name": name, "kind": spec["kind"], "size": [round(float(v), 3) for v in size]}
+
+
 # ------------------------------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser()
@@ -230,8 +247,8 @@ def main():
     a = ap.parse_args()
     man = json.load(open(a.models))["models"]
     files = {f.split("__")[0]: os.path.join(a.rodin, f) for f in os.listdir(a.rodin) if f.endswith(".glb") and "__" in f}
-    out_meta = {"characters": {}, "vehicles": {}, "weapons": {}, "wheel": None}
-    dirs = {k: os.path.join(a.out, "Assets", "Resources", "Gen", k) for k in ("Chars", "Vehicles", "Weapons")}
+    out_meta = {"characters": {}, "vehicles": {}, "weapons": {}, "props": {}, "wheel": None}
+    dirs = {k: os.path.join(a.out, "Assets", "Resources", "Gen", k) for k in ("Chars", "Vehicles", "Weapons", "Props")}
     for d in dirs.values():
         os.makedirs(d, exist_ok=True)
     os.makedirs(os.path.join(a.out, "Assets", "Resources"), exist_ok=True)
@@ -270,6 +287,12 @@ def main():
                     info["textures"] = save_tex(tex, dirs["Vehicles"], "wheel", kind)
                     out_meta["wheel"] = info
                     print("wheel     width ratio %.3f" % info["width"])
+                elif kind in ("prop", "building"):
+                    P, N, info = prop(name, spec, P, N)
+                    write_mesh(os.path.join(dirs["Props"], name + ".bytes"), P, N, UV, I)
+                    info["textures"] = save_tex(tex, dirs["Props"], name, kind)
+                    out_meta["props"][name] = info
+                    print("%-9s %-14s %.1f x %.1f x %.1f m, %d triangles" % (kind, name, info["size"][0], info["size"][1], info["size"][2], I.size // 3))
                 elif kind == "weapon":
                     P, N, info = weapon(name, spec, P, N, UV, I)
                     write_mesh(os.path.join(dirs["Weapons"], name + ".bytes"), P, N, UV, I)

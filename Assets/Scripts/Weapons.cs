@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace Danga
 {
-    public enum Wpn { Fist, Bat, Knife, Revolver, Pistol, Smg, Shotgun }
+    public enum Wpn { Fist, Bat, Knife, Revolver, Pistol, Smg, Shotgun, Ak47, Sniper }
 
     public class WpnDef
     {
@@ -27,6 +27,8 @@ namespace Danga
             new WpnDef { id = Wpn.Pistol, name = "Pistol", model = "pistol", icon = "pistol", sound = "shot_pistol", damage = 30, range = 60, rate = 3.5f, spread = 2f, mag = 15, price = 15000, ammoPrice = 450, ammoPack = 30 },
             new WpnDef { id = Wpn.Smg, name = "Carbine", model = "smg", icon = "smg", sound = "shot_smg", rifle = true, damage = 22, range = 75, rate = 10f, spread = 3.2f, mag = 30, price = 45000, ammoPrice = 900, ammoPack = 90 },
             new WpnDef { id = Wpn.Shotgun, name = "Shotgun", model = "shotgun", icon = "shotgun", sound = "shot_shotgun", rifle = true, damage = 15, range = 32, rate = 1.1f, spread = 6.5f, pellets = 8, mag = 6, price = 60000, ammoPrice = 700, ammoPack = 18 },
+            new WpnDef { id = Wpn.Ak47, name = "AK-47", model = "ak47", icon = "ak47", sound = "shot_smg", rifle = true, damage = 32, range = 90, rate = 8f, spread = 2.4f, mag = 30, price = 85000, ammoPrice = 1200, ammoPack = 90 },
+            new WpnDef { id = Wpn.Sniper, name = "Sniper Rifle", model = "sniper", icon = "sniper", sound = "shot_revolver", rifle = true, damage = 120, range = 160, rate = 0.8f, spread = 0.3f, mag = 5, price = 120000, ammoPrice = 1500, ammoPack = 15 },
         };
 
         public static WpnDef Def(Wpn w) { return Defs[(int)w]; }

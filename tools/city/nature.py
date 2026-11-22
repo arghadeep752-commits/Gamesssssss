@@ -169,7 +169,7 @@ def water(M):
     P, I, C, UV = [], [], [], []
     cols = len(xs)
     for k, x in enumerate(xs):
-        zc = LY.coast_z(max(-1150, min(1150, x))) + 25.0 if abs(x) <= 1150 else -820.0
+        zc = LY.coast_z(x) + 25.0
         P.append((x, LY.SEA_LEVEL, zc))
         C.append((0.0, 0.0, 0.0))
     for zz in zs_out:

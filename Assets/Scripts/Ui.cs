@@ -9,7 +9,7 @@ namespace Danga
     /// <summary>Builds the interface in code (uGUI): boxes, pictures, text, buttons.</summary>
     public static class Ui
     {
-        public static Font font, display, body;
+        public static Font font, display, body, title;
         public static Canvas canvas;
         public static RectTransform root;
         static readonly Dictionary<string, Sprite> sprites = new Dictionary<string, Sprite>();
@@ -25,6 +25,8 @@ namespace Danga
             body = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (font == null) font = body;
             if (display == null) display = font;
+            title = Resources.Load<Font>("Fonts/TitleFont");
+            if (title == null) title = display;
             var go = new GameObject("UI");
             canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -118,7 +120,9 @@ namespace Danga
         /// <summary>A round, domed button (tinted) with a white icon and an optional label under it.</summary>
         public static HoldBtn Round(Transform parent, string icon, string label, Color c, Vector2 anchor, Vector2 pos, float size, Action click = null)
         {
-            var im = Img(parent, "btn_round", c, anchor, pos, new Vector2(size, size));
+            // white means the GTA-style dark glass circle; any other colour tints the light button
+            bool glass = c.r > 0.9f && c.g > 0.9f && c.b > 0.9f;
+            var im = Img(parent, glass ? "btn_round" : "btn_light", c, anchor, pos, new Vector2(size, size));
             im.raycastTarget = true;
             im.name = "btn_" + (icon ?? label);
             var hb = im.gameObject.AddComponent<HoldBtn>();
@@ -142,7 +146,7 @@ namespace Danga
         /// <summary>A wide rounded button with text (menus, shops).</summary>
         public static HoldBtn Wide(Transform parent, string label, Color c, Vector2 anchor, Vector2 pos, Vector2 size, Action click, int fontSize = 0)
         {
-            var im = Img(parent, "pill", c, anchor, pos, size);
+            var im = Img(parent, null, c, anchor, pos, size);
             im.raycastTarget = true;
             im.name = "btn_" + label;
             var hb = im.gameObject.AddComponent<HoldBtn>();

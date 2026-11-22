@@ -197,10 +197,16 @@ def build_one(M, b, colliders, rnd):
     colliders.append([b.cx, y0 - 0.5, b.cz, b.w, b.height + 0.5, b.d, yaw])
 
 
-def place_lots(roads, grid, M, colliders, seed=7):
-    """Line every road with buildings, as tightly as the place calls for."""
+def roof_y(b):
+    return b.y + 0.25 + sum(fh(i, b.style) for i in range(b.floors))
+
+
+def place_lots(roads, grid, M, colliders, seed=7, objects=None):
+    """Line every road with buildings, as tightly as the place calls for. 'objects' collects the spots for the
+    Hyper3D shop-houses and street props (placed by the game)."""
     rnd = random.Random(seed)
     out = []
+    objects = objects if objects is not None else []
     for c in roads.chains:
         if not c.get("trimmed") or c.get("surface") is None:
             continue
@@ -246,6 +252,10 @@ def place_lots(roads, grid, M, colliders, seed=7):
                     lw, gap, setback, depth = rnd.uniform(6.5, 10.0), rnd.uniform(5.0, 14.0), rnd.uniform(3.0, 7.0), rnd.uniform(7, 11)
                     floors = 1 if rnd.random() < 0.7 else 2
                     style = "tin" if floors == 1 else "house"
+                cart = kind == "core" and style == "shop" and cls != "A" and rnd.random() < 0.10
+                stop = kind == "core" and cls == "A" and rnd.random() < 0.04
+                if cart or stop:
+                    setback = 2.6
                 front_off = w / 2 + ww + setback
                 # the lot: front edge centred lw/2 ahead
                 fc = p + dvec * (lw / 2) + left * side * front_off
@@ -264,9 +274,64 @@ def place_lots(roads, grid, M, colliders, seed=7):
                 face = -left * side
                 yaw = math.degrees(math.atan2(face[0], face[1])) + 180.0      # local -z is the front
                 base = grid.ground(ctr[0], ctr[1], lw, depth, dvec)
+                front_yaw = math.degrees(math.atan2(face[0], face[1]))          # +z towards the road (the Hyper3D models)
+                if cart or stop:
+                    sp = fc - left * side * 1.3
+                    objects.append({"m": "bus_stop" if stop else rnd.choice(["chai_stall", "food_cart", "fruit_cart", "chai_stall"]),
+                                    "p": [round(float(sp[0]), 2), round(float(base), 2), round(float(sp[1]), 2)], "yaw": round(front_yaw, 1)})
+                if kind == "core" and cls in ("A", "B") and style == "shop" and lw >= 7.5 and rnd.random() < 0.22:
+                    # a spot for one of the Hyper3D Indian shop-houses (the game fills it)
+                    objects.append({"slot": 1, "p": [round(float(ctr[0]), 2), round(float(base), 2), round(float(ctr[1]), 2)],
+                                    "yaw": round(front_yaw, 1), "w": round(lw, 2), "d": round(depth, 2), "floors": floors})
+                    grid.mark_rect(ctr[0], ctr[1], lw + 0.6, depth + 0.6, dvec, "building")
+                    i += int(math.ceil(lw + gap))
+                    continue
                 bobj = Building(float(ctr[0]), float(ctr[1]), lw, depth, yaw, floors, style, rnd.random(), base)
                 build_one(M, bobj, colliders, rnd)
                 grid.mark_rect(ctr[0], ctr[1], lw + 0.6, depth + 0.6, dvec, "building")
                 out.append(bobj)
+                roof_tank(objects, bobj, rnd)
                 i += int(math.ceil(lw + gap))
+    out += fill_blocks(grid, M, colliders, rnd, objects)
+    return out
+
+
+def roof_tank(objects, b, rnd):
+    """The black water tank on Indian roofs."""
+    if b.style in ("tin", "modern") or rnd.random() > 0.16:
+        return
+    lx, lz = rnd.uniform(-b.w / 2 + 1.2, b.w / 2 - 1.2), rnd.uniform(-b.d / 2 + 1.2, b.d / 2 - 1.2)
+    c, s = math.cos(math.radians(b.yaw)), math.sin(math.radians(b.yaw))
+    objects.append({"m": "water_tank", "p": [round(b.cx + lx * c + lz * s, 2), round(roof_y(b) + 0.02, 2), round(b.cz - lx * s + lz * c, 2)],
+                    "yaw": round(rnd.uniform(0, 360), 1)})
+
+
+def fill_blocks(grid, M, colliders, rnd, objects):
+    """Houses in the middle of the blocks too, like the crowded lanes of an Indian town (a few gaps stay open)."""
+    out = []
+    H = LY.HALF - 45
+    step = 11.0
+    z = -H
+    while z < H:
+        x = -H
+        while x < H:
+            px, pz = x + rnd.uniform(-2, 2), z + rnd.uniform(-2, 2)
+            kind = LY.district(px, pz)
+            if kind in ("core", "town") and rnd.random() < (0.55 if kind == "core" else 0.35):
+                lw, dd = rnd.uniform(7.5, 10.5), rnd.uniform(7.5, 10.5)
+                yaw = rnd.choice([0.0, 90.0, 180.0, 270.0])
+                dvec = np.array([math.cos(math.radians(yaw)), -math.sin(math.radians(yaw))])
+                if grid.rect_free(px, pz, lw + 1.4, dd + 1.4, dvec):
+                    floors = rnd.choice([2, 2, 3, 3, 4]) if kind == "core" else rnd.choice([1, 2, 2, 3])
+                    style = rnd.choice(["house", "house", "brick", "house", "tin" if kind == "town" else "house"])
+                    if style == "tin":
+                        floors = 1
+                    base = grid.ground(px, pz, lw, dd, dvec)
+                    b = Building(float(px), float(pz), lw, dd, yaw, floors, style, rnd.random(), base)
+                    build_one(M, b, colliders, rnd)
+                    grid.mark_rect(px, pz, lw + 0.6, dd + 0.6, dvec, "building")
+                    out.append(b)
+                    roof_tank(objects, b, rnd)
+            x += step
+        z += step
     return out

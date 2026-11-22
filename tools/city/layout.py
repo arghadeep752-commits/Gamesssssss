@@ -10,7 +10,7 @@ import math
 
 import numpy as np
 
-HALF = 1100.0                      # the world is 2200 m x 2200 m
+HALF = 650.0                       # the world is 1300 m x 1300 m: a dense town, the beach and the sea in the south
 SEA_LEVEL = -1.0
 RIVER_LEVEL = -2.6
 POND_LEVEL = -0.8
@@ -19,7 +19,7 @@ LAKE_LEVEL = -1.0
 
 def coast_z(x):
     """Where the sea meets the beach."""
-    return -845.0 + 18.0 * math.sin(x / 170.0) + 9.0 * math.sin(x / 61.0 + 1.3)
+    return -545.0 + 10.0 * math.sin(x / 150.0) + 5.0 * math.sin(x / 53.0 + 1.3)
 
 
 # ----------------------------------------------------------------------------------------------------- junctions
@@ -30,7 +30,7 @@ N = {
     "Kunjaban": (0, 520), "Airport Gate": (0, 760), "Battala": (-340, -330), "Motor Stand": (60, -290),
     "Lake Chowmuhani": (330, -330), "Banamalipur": (560, 70), "Badharghat": (90, -560), "College Tilla": (650, 420),
     "Old Agartala": (930, 230), "Jogendranagar": (520, -560), "Khayerpur": (760, 160), "Abhoynagar": (420, 140),
-    "Dhaleswar": (480, -150), "Indranagar": (-150, 640),
+    "Dhaleswar": (480, -150), "Indranagar": (-150, 600),
 }
 
 
@@ -40,42 +40,35 @@ def P(name):
 
 # ----------------------------------------------------------------------------------------------------- roads
 # class: A = 4 lanes (two each way), B = 2 lanes with parking, C = narrow lane
-ROAD_W = {"A": 14.0, "B": 9.5, "C": 6.5}
-WALK_W = {"A": 3.0, "B": 2.5, "C": 1.4}
+ROAD_W = {"A": 11.0, "B": 7.5, "C": 5.0}       # narrow Indian streets
+WALK_W = {"A": 2.2, "B": 1.6, "C": 1.0}
 LANES = {"A": 2, "B": 1, "C": 1}
 
 ROADS = [
     # the roads around the palace compound
-    ("Palace Road South", "A", [(-478, -150), P("Orient Chowmuhani"), P("Post Office Chowmuhani"), P("Melarmath"), P("Durga Chowmuhani"), P("Dhaleswar"), (700, -150)]),
+    ("Palace Road South", "A", [(-478, -150), P("Orient Chowmuhani"), P("Post Office Chowmuhani"), P("Melarmath"), P("Durga Chowmuhani"), P("Dhaleswar"), (632, -150)]),
     ("Palace Road West", "B", [P("Orient Chowmuhani"), (-260, 40), (-260, 210)]),
     ("Palace Road East", "B", [P("Durga Chowmuhani"), P("Paradise Chowmuhani"), (260, 210)]),
     ("Palace Road North", "B", [(-260, 210), (0, 210), (260, 210)]),
     # arterials
-    ("Akhaura Road", "A", [(-1100, 40), (-820, 42), P("Ramnagar"), (-260, 40)]),
-    ("HGB Road", "A", [(0, 210), (0, 330), (0, 430), P("Kunjaban"), (0, 640), P("Airport Gate"), (0, 795)]),
-    ("Assam-Agartala Road", "A", [P("Paradise Chowmuhani"), P("Abhoynagar"), P("Banamalipur"), P("Khayerpur"), P("Old Agartala"), (1100, 250)]),
-    ("Station Road", "A", [P("Post Office Chowmuhani"), P("Motor Stand"), (75, -420), (85, -480), P("Badharghat"), (110, -640), (140, -720), (190, -790)]),
-    ("Coastal Road", "B", [(-1000, -775), (-600, -782), (-200, -785), (190, -790), (600, -790), (1000, -785)]),
+    ("Akhaura Road", "A", [(-632, 40), P("Ramnagar"), (-260, 40)]),
+    ("HGB Road", "A", [(0, 210), (0, 330), (0, 430), P("Kunjaban"), (0, 600)]),
+    ("Assam-Agartala Road", "A", [P("Paradise Chowmuhani"), P("Abhoynagar"), P("Banamalipur"), (632, 66)]),
+    ("Station Road", "A", [P("Post Office Chowmuhani"), P("Motor Stand"), (75, -420), (85, -480), (90, -505)]),
+    ("Coastal Road", "B", [(-632, -500), (-340, -505), (90, -505), (525, -505), (632, -500)]),
     # second rank
-    ("VIP Road", "B", [(0, 430), (330, 430), P("College Tilla"), (900, 560), (1080, 640)]),
+    ("VIP Road", "B", [(0, 430), (330, 430), (632, 420)]),
     ("Kaman Road", "B", [(260, 210), P("Kaman Chowmuhani"), (330, 430)]),
-    ("Radhanagar Road", "B", [(-260, 210), P("Shibnagar"), (-470, 320), P("Radhanagar"), (-800, 560), (-950, 760)]),
-    ("Battala Road", "B", [P("Orient Chowmuhani"), (-300, -240), P("Battala"), (-340, -420), (-340, -480), (-330, -560)]),
+    ("Radhanagar Road", "B", [(-260, 210), P("Shibnagar"), (-470, 320), P("Radhanagar"), (-632, 430)]),
+    ("Battala Road", "B", [P("Orient Chowmuhani"), (-300, -240), P("Battala"), (-340, -420), (-340, -505)]),
     ("Kunjaban Road", "B", [P("Kunjaban"), (-300, 520), P("Radhanagar")]),
-    ("Dhaleswar Road", "B", [P("Dhaleswar"), (500, -330), (520, -420), (525, -470), P("Jogendranagar")]),
+    ("Dhaleswar Road", "B", [P("Dhaleswar"), (500, -330), (520, -420), (525, -505)]),
     ("Lake Road", "B", [P("Durga Chowmuhani"), (300, -240), P("Lake Chowmuhani"), (500, -330)]),
-    ("Badharghat Road", "B", [(-330, -560), P("Badharghat"), (300, -560), P("Jogendranagar"), (760, -515), (920, -480), (1080, -440)]),
-    ("Sundari Road", "C", [(830, -500), (830, -548)]),
-    ("College Gate Lane", "C", [P("College Tilla"), (642, 488)]),
-    ("Rudrasagar Road", "B", [(-330, -560), (-345, -600), (-330, -640)]),
-    ("Airport Road", "B", [(-560, 760), P("Airport Gate"), (560, 760)]),
     ("Indranagar Road", "B", [(-260, 430), (-150, 430), (0, 430)]),
     ("Hospital Road", "C", [(-260, 430), (-260, 520)]),
-    ("Old Agartala Lane", "C", [(985, 236), (1000, 120), (980, 30)]),
     ("Abhoynagar Road", "B", [P("Abhoynagar"), (420, -40), (480, -150)]),
-    ("Harbor Lane", "C", [(190, -790), (250, -818)]),
-    ("Lighthouse Lane", "C", [(600, -790), (690, -820)]),
-    ("College Lane", "C", [P("College Tilla"), (650, 300), P("Khayerpur")]),
+    ("Harbor Lane", "C", [(250, -505), (282, -525)]),
+    ("Lighthouse Lane", "C", [(470, -505), (505, -530)]),
     ("Ramnagar Road", "B", [P("Ramnagar"), (-480, -100), (-470, -330), (-560, -400)]),
     ("Ramnagar North", "C", [P("Ramnagar"), (-470, 180), (-470, 320)]),
     ("Joynagar Lane", "C", [(-370, 330), (-260, 330), P("Joynagar"), (0, 330), (150, 330), (330, 330)]),
@@ -84,40 +77,36 @@ ROADS = [
     ("Krishnanagar Lane", "C", [(150, -220), (300, -220)]),
     ("Riverside Lane", "C", [(-470, -330), (-340, -330)]),
     ("Banamalipur Lane", "C", [P("Banamalipur"), (560, -60), (480, -150)]),
-    ("Kunjaban Lane", "C", [(0, 640), (200, 640), (330, 560), (330, 430)]),
+    ("Kunjaban Lane", "C", [(0, 600), (200, 600), (330, 560), (330, 430)]),
+    ("Helipad Lane", "C", [(330, 500), (410, 520)]),
     ("Shibnagar Lane", "C", [P("Shibnagar"), (-370, 430), (-260, 430)]),
-    ("Akhaura Lane", "C", [(-820, 42), (-820, 220), (-700, 330), P("Radhanagar")]),
-    ("Akhaura South", "C", [(-820, 42), (-820, -150), (-720, -330)]),
-    ("Border Lane", "C", [(-650, 42), (-650, -150), (-480, -100)]),
-    ("Station East", "C", [(300, -560), (300, -700), (190, -790)]),
-    ("Beach Lane", "C", [(-200, -785), (-260, -700), (-330, -560)]),
-    ("Indranagar Lane", "C", [(-150, 430), P("Indranagar"), (0, 640)]),
+    ("Border Lane", "C", [(-610, 40), (-610, -150), (-480, -100)]),
+    ("Indranagar Lane", "C", [(-150, 430), P("Indranagar"), (0, 600)]),
     ("Abhoynagar North", "C", [P("Abhoynagar"), (500, 330), (330, 330)]),
-    ("Ramnagar Lane", "C", [(-650, 42), (-650, 200), (-470, 180)]),
+    ("Ramnagar Lane", "C", [(-610, 40), (-610, 200), (-470, 180)]),
+    ("Beach Lane West", "C", [(-560, -400), (-540, -505)]),
+    ("Sea Front", "C", [(-200, -440), (-200, -505)]),
 ]
 
 # ----------------------------------------------------------------------------------------------------- water
 RIVER = [(1150, -340), (900, -330), (700, -310), (520, -360), (330, -395), (150, -420), (0, -440), (-200, -440),
          (-340, -450), (-520, -430), (-700, -395), (-900, -372), (-1150, -355)]
 RIVER_W = 46.0
-RAIL_Z = -662.0                    # the railway runs east-west south of the station
-RAIL_X = (-260.0, 1100.0)
+RAIL_Z = -662.0                    # (no railway in the smaller town)
+RAIL_X = None
 PONDS = [   # name, centre, size (x, z), corner radius, water level
     ("Palace Pond West", (-115, -35), (110, 78), 14, POND_LEVEL),
     ("Palace Pond East", (115, -35), (110, 78), 14, POND_LEVEL),
-    ("Kalyan Sagar", (965, -600), (120, 70), 10, POND_LEVEL),
-    ("Chaturdash Dighi", (930, 115), (70, 40), 8, POND_LEVEL),
     ("Lake Chowmuhani Dighi", (400, -255), (70, 46), 8, POND_LEVEL),
     ("Ramnagar Dighi", (-560, 170), (64, 44), 8, POND_LEVEL),
     ("Heritage Park Lake", (-300, 600), (70, 40), 10, POND_LEVEL),
     ("Rabindra Kanan Pond", (200, 520), (44, 30), 8, POND_LEVEL),
 ]
-LAKE = ("Rudrasagar Lake", (-600, -640), (250, 140), LAKE_LEVEL)       # ellipse: centre, radii
+LAKE = ("Rudrasagar Lake", (-5000, -5000), (1, 1), LAKE_LEVEL)       # (the water palace stands in the sea now)
 
 # ----------------------------------------------------------------------------------------------------- hills
-HILLS = [   # centre, radius, height
-    ((830, -585), 75, 9.0), ((640, 525), 85, 8.0), ((70, 600), 70, 5.0), ((1020, 620), 260, 26.0), ((1060, -60), 210, 18.0),
-    ((-980, 920), 260, 22.0), ((920, -700), 200, 14.0), ((-900, -620), 150, 10.0), ((420, 980), 240, 16.0),
+HILLS = [   # centre, radius, height (low hills around the town for the skyline)
+    ((640, 660), 200, 22.0), ((-660, 650), 200, 18.0), ((690, 120), 120, 10.0), ((-700, -250), 120, 9.0),
 ]
 
 # ----------------------------------------------------------------------------------------------------- places
@@ -129,23 +118,17 @@ SITES = {
     "Lakshmi Narayan Temple": ((195, 130), 270, (46, 46)),
     "Ummaneshwar Temple": ((-200, -90), 90, (30, 30)),
     "Gedu Mia Mosque": ((-380, 330), 90, (90, 80)),
-    "Kunjaban Palace": ((90, 600), 180, (90, 60)),
-    "Heritage Park": ((-300, 590), 180, (200, 120)),
+    "Kunjaban Palace": ((90, 560), 180, (90, 60)),
+    "Heritage Park": ((-300, 590), 180, (200, 100)),
     "Rabindra Kanan": ((200, 525), 180, (150, 100)),
-    "Malancha Niwas": ((240, 685), 180, (36, 26)),
     "AGMC Hospital": ((-330, 460), 90, (100, 50)),
     "West Agartala Police Station": ((-110, -195), 0, (46, 30)),
     "City Centre": ((360, 5), 0, (80, 56)),
-    "MBB College": ((640, 525), 180, (90, 60)),
-    "Chaturdash Devta Temple": ((930, 190), 180, (50, 46)),
-    "Tripura Sundari Temple": ((830, -585), 0, (60, 60)),
-    "Agartala Railway Station": ((205, -615), 0, (150, 44)),
-    "Neermahal": ((-600, -640), 90, (130, 70)),
-    "MBB Airport": ((0, 830), 180, (160, 60)),
-    "Helipad": ((200, 830), 0, (40, 40)),
-    "Akhaura Check Post": ((-1035, 40), 90, (60, 80)),
-    "Harbour": ((280, -860), 180, (160, 60)),
-    "Lighthouse": ((720, -850), 0, (30, 30)),
+    "Neermahal": ((-330, -600), 90, (130, 70)),
+    "Helipad": ((440, 540), 0, (40, 40)),
+    "Akhaura Check Post": ((-600, 40), 90, (60, 80)),
+    "Harbour": ((280, coast_z(280) - 15), 180, (160, 60)),
+    "Lighthouse": ((520, coast_z(520) - 6), 0, (30, 30)),
     "Battala Bazaar": ((-260, -300), 0, (60, 40)),
     "Motor Stand": ((-40, -335), 0, (70, 40)),
     "Danga Arms": ((-560, 18), 0, (26, 18)),            # gun shop on Akhaura Road
@@ -159,13 +142,12 @@ SITES = {
 ZONES = [
     ("Palace Compound", (0, 30), 230), ("Post Office Chowmuhani", (0, -170), 70), ("Battala", (-340, -320), 130),
     ("Melarmath", (150, -200), 90), ("Krishnanagar", (230, -250), 110), ("Durga Chowmuhani", (300, -120), 80),
-    ("Ramnagar", (-520, 60), 200), ("Akhaura", (-950, 40), 180), ("Shibnagar", (-380, 300), 120),
-    ("Radhanagar", (-620, 420), 160), ("Joynagar", (-130, 340), 120), ("Kunjaban", (40, 560), 170),
-    ("Indranagar", (-180, 650), 150), ("MBB Airport", (0, 870), 260), ("Kaman Chowmuhani", (330, 280), 110),
-    ("Abhoynagar", (430, 120), 130), ("Banamalipur", (560, 20), 130), ("College Tilla", (650, 440), 160),
-    ("Old Agartala", (920, 200), 180), ("Dhaleswar", (480, -180), 110), ("Jogendranagar", (530, -540), 160),
-    ("Badharghat", (120, -600), 180), ("Rudrasagar", (-600, -640), 260), ("Udaipur Hills", (850, -580), 170),
-    ("Agartala Beach", (0, -830), 900), ("Haora River", (0, -440), 60),
+    ("Ramnagar", (-520, 60), 160), ("Akhaura Check Post", (-600, 40), 60), ("Shibnagar", (-380, 300), 120),
+    ("Radhanagar", (-580, 420), 120), ("Joynagar", (-130, 340), 120), ("Kunjaban", (40, 540), 150),
+    ("Indranagar", (-180, 600), 110), ("Kaman Chowmuhani", (330, 280), 110), ("Helipad", (440, 540), 60),
+    ("Abhoynagar", (430, 120), 130), ("Banamalipur", (560, 20), 110), ("Dhaleswar", (480, -180), 110),
+    ("Lake Chowmuhani", (400, -280), 90), ("Agartala Beach", (0, -600), 420), ("Neermahal", (-330, -600), 110),
+    ("Harbour", (280, -560), 90), ("Haora River", (0, -440), 60),
 ]
 
 
@@ -359,15 +341,12 @@ def zone_of(x, z):
 
 def district(x, z):
     """Kind of town at a point: core (shops, 2-5 floors), town (houses 1-3 floors), outskirts (tin roofs), none."""
-    if abs(x) > HALF - 60 or z > HALF - 60:
+    if abs(x) > HALF - 40 or z > HALF - 40:
         return "none"
     if z < coast_z(x) + 70:
         return "beach"
-    dc = math.hypot(x / 1.15, (z + 100) / 1.0)
-    if dc < 470:
+    # a small, crowded Indian town: shops and flats almost everywhere, houses towards the edges
+    dc = math.hypot(x / 1.1, (z + 60) / 1.0)
+    if dc < 520:
         return "core"
-    if -380 < z < 720 and abs(x) < 820:
-        return "town"
-    if -760 < z < -460 and -260 < x < 640:
-        return "town"
-    return "outskirts"
+    return "town"

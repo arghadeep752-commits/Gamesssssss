@@ -427,8 +427,9 @@ def map_picture(roads, grid, buildings, path, size=2048):
     # runway
     a, b = P(-700, 1013), P(700, 967)
     d.rectangle([a[0], a[1], b[0], b[1]], fill=(110, 110, 112, 255))
-    x0, z0 = LY.RAIL_X[0], LY.RAIL_Z
-    d.line([P(x0, z0), P(LY.RAIL_X[1], z0)], fill=(120, 100, 90, 255), width=4)
+    if LY.RAIL_X:
+        x0, z0 = LY.RAIL_X[0], LY.RAIL_Z
+        d.line([P(x0, z0), P(LY.RAIL_X[1], z0)], fill=(120, 100, 90, 255), width=4)
     im.convert("RGB").save(path)
 
 

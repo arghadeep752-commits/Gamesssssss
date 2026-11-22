@@ -234,6 +234,88 @@
    "gen": "4b23cc13-172f-452e-9648-4e3c1c7f7007",
    "kind": "weapon",
    "length": 1.05
+  },
+  "ak47": {
+   "gen": "827fe610-b508-4e61-b740-05b9b7f75fc3",
+   "kind": "weapon",
+   "length": 0.88
+  },
+  "sniper": {
+   "gen": "84e63498-abfb-4f5f-8831-d6f37dd52e58",
+   "kind": "weapon",
+   "length": 1.15
+  },
+  "chai_stall": {
+   "gen": "6beb9b58-7ade-4c70-a18f-204aa4b41178",
+   "kind": "prop",
+   "size": [
+    "length",
+    2.6
+   ]
+  },
+  "food_cart": {
+   "gen": "0a55baec-8ea8-4735-964f-2ba4d8450af1",
+   "kind": "prop",
+   "size": [
+    "length",
+    2.1
+   ]
+  },
+  "fruit_cart": {
+   "gen": "7fbeb8f2-c57b-4b69-ac2f-7619af7e59f0",
+   "kind": "prop",
+   "size": [
+    "length",
+    1.9
+   ]
+  },
+  "bus_stop": {
+   "gen": "457bf701-8456-4f14-86b1-754f53595b85",
+   "kind": "prop",
+   "size": [
+    "length",
+    4.2
+   ]
+  },
+  "water_tank": {
+   "gen": "4382d6c0-fa75-458f-96a5-2d900ba3bb79",
+   "kind": "prop",
+   "size": [
+    "height",
+    1.25
+   ]
+  },
+  "bld_shop3": {
+   "gen": "dbf02cd2-91dd-42d7-9c74-b058dce46fe7",
+   "kind": "building",
+   "size": [
+    "height",
+    10.5
+   ]
+  },
+  "bld_corner": {
+   "gen": "72d60c6b-bed3-4ee3-9946-f835194f6d98",
+   "kind": "building",
+   "size": [
+    "height",
+    7.6
+   ]
+  },
+  "bld_apart4": {
+   "gen": "e383d0f6-1d8b-4023-96a3-49d246eb8559",
+   "kind": "building",
+   "size": [
+    "height",
+    13.5
+   ]
+  },
+  "bld_house": {
+   "gen": "f000de3b-8857-4bed-b634-b005d37e34eb",
+   "kind": "building",
+   "size": [
+    "height",
+    4.4
+   ]
   }
  },
  "rigged": {}

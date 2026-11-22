@@ -38,16 +38,27 @@ namespace Danga
             currentName = name;
             var bg = Ui.Fill(layer, name);
             var bim = bg.gameObject.AddComponent<Image>();
-            bim.color = dim ? new Color(0, 0, 0, 0.55f) : new Color(0, 0, 0, 0f);
+            bim.color = dim ? new Color(0, 0, 0, 0.6f) : new Color(0, 0, 0, 0f);
             current = bg.gameObject;
-            var panel = Ui.Panel(bg, new Color(0.1f, 0.1f, 0.13f, 0.96f), Ui.C, Vector2.zero, size);
+            var panel = Ui.Img(bg, null, new Color(0.03f, 0.03f, 0.04f, 0.9f), Ui.C, Vector2.zero, size);
+            panel.raycastTarget = true;
             if (title != null)
             {
-                var band = Ui.Img(panel.transform, "pill", Ui.Saffron, Ui.T, new Vector2(0, 34), new Vector2(Mathf.Min(size.x - 80, 760), 96));
-                Ui.Txt(band.transform, title, 64, Color.white, TextAnchor.MiddleCenter, Ui.C, new Vector2(0, 2), new Vector2(740, 96), Ui.display);
+                var band = Ui.Img(panel.transform, null, new Color(0f, 0f, 0f, 0.95f), Ui.T, Vector2.zero, new Vector2(size.x, 100));
+                Ui.Txt(band.transform, title, 70, Color.white, TextAnchor.MiddleLeft, Ui.L, new Vector2(40, 0), new Vector2(size.x - 200, 100), Ui.title);
             }
-            if (close) Ui.Round(panel.transform, "exit", null, Ui.Red, Ui.TR, new Vector2(40, 40), 100, Close);
+            if (close) Ui.Round(panel.transform, "exit", null, Color.white, Ui.TR, new Vector2(-14, -10), 80, Close);
             return panel.rectTransform;
+        }
+
+        /// <summary>A GTA-style menu line: white text on dark glass, lights up white while pressed.</summary>
+        static HoldBtn Item(Transform parent, string label, Vector2 anchor, Vector2 pos, Vector2 size, Action click, int fontSize = 46)
+        {
+            var hb = Ui.Wide(parent, label, new Color(0f, 0f, 0f, 0.45f), anchor, pos, size, click, fontSize);
+            hb.label.alignment = TextAnchor.MiddleLeft;
+            hb.label.rectTransform.sizeDelta = new Vector2(size.x - 60, size.y);
+            hb.label.font = Ui.font;
+            return hb;
         }
 
         static RectTransform Scroll(Transform parent, Vector2 pos, Vector2 size)
@@ -87,23 +98,28 @@ namespace Danga
             current = bg.gameObject;
             currentName = "main";
             var im = bg.gameObject.AddComponent<Image>();
-            im.color = new Color(0, 0, 0, 0.25f);
-            var title = Ui.Img(bg, "title", Color.white, Ui.T, new Vector2(0, -60), new Vector2(980, 330));
-            title.preserveAspect = true;
-            Ui.Txt(bg, "AGARTALA  •  TRIPURA", 46, new Color(1f, 0.9f, 0.7f), TextAnchor.MiddleCenter, Ui.T, new Vector2(0, -390), new Vector2(1200, 60));
+            im.color = new Color(0, 0, 0, 0.12f);
+            // dark band on the left, like the GTA pause menu
+            var side = Ui.Img(bg, null, new Color(0f, 0f, 0f, 0.55f), Ui.L, Vector2.zero, new Vector2(720, 0));
+            side.rectTransform.anchorMin = new Vector2(0f, 0f);
+            side.rectTransform.anchorMax = new Vector2(0f, 1f);
+            side.rectTransform.pivot = new Vector2(0f, 0.5f);
+            side.rectTransform.sizeDelta = new Vector2(720, 0);
+            Ui.Txt(bg, "DANGA", 200, Color.white, TextAnchor.MiddleLeft, Ui.TL, new Vector2(70, -30), new Vector2(900, 240), Ui.title);
+            Ui.Txt(bg, "AGARTALA • TRIPURA", 40, new Color(1f, 1f, 1f, 0.8f), TextAnchor.MiddleLeft, Ui.TL, new Vector2(84, -262), new Vector2(800, 50));
             bool hasSave = Save.Exists;
-            float y = -40;
+            float y = -360;
             if (hasSave)
             {
-                Ui.Wide(bg, "CONTINUE", Ui.Green, Ui.C, new Vector2(0, y), new Vector2(560, 110), () => Game.I.Play(true));
-                y -= 130;
-                Ui.Wide(bg, "NEW GAME", Ui.Saffron, Ui.C, new Vector2(0, y), new Vector2(560, 100), () => Game.I.Play(false), 50);
+                Item(bg, "CONTINUE", Ui.TL, new Vector2(70, y), new Vector2(560, 84), () => Game.I.Play(true));
+                y -= 100;
             }
-            else Ui.Wide(bg, "PLAY", Ui.Green, Ui.C, new Vector2(0, y), new Vector2(560, 120), () => Game.I.Play(false), 70);
-            y -= 120;
-            Ui.Wide(bg, "SETTINGS", new Color(0.3f, 0.3f, 0.36f), Ui.C, new Vector2(-150, y - 10), new Vector2(280, 90), () => Settings(MainMenu), 42);
-            Ui.Wide(bg, "CREDITS", new Color(0.3f, 0.3f, 0.36f), Ui.C, new Vector2(150, y - 10), new Vector2(280, 90), Credits, 42);
-            Ui.Txt(bg, "MXYAN GAMES OFFICIAL", 40, Color.white, TextAnchor.MiddleCenter, Ui.B, new Vector2(0, 40), new Vector2(1000, 60));
+            Item(bg, hasSave ? "NEW GAME" : "PLAY", Ui.TL, new Vector2(70, y), new Vector2(560, 84), () => Game.I.Play(false));
+            y -= 100;
+            Item(bg, "SETTINGS", Ui.TL, new Vector2(70, y), new Vector2(560, 84), () => Settings(MainMenu));
+            y -= 100;
+            Item(bg, "CREDITS", Ui.TL, new Vector2(70, y), new Vector2(560, 84), Credits);
+            Ui.Txt(bg, "MXYAN GAMES OFFICIAL", 34, new Color(1, 1, 1, 0.85f), TextAnchor.MiddleLeft, Ui.BL, new Vector2(80, 40), new Vector2(700, 50));
             Ui.Txt(bg, "v1." + Game.Build, 26, new Color(1, 1, 1, 0.6f), TextAnchor.MiddleRight, Ui.BR, new Vector2(-30, 30), new Vector2(300, 40));
         }
 
@@ -128,17 +144,17 @@ namespace Danga
         {
             if (Game.I.state != Game.S.Play && Game.I.state != Game.S.Paused) return;
             Game.I.PauseGame();
-            var w = Window("pause", "PAUSED", new Vector2(760, 800));
+            var w = Window("pause", "PAUSED", new Vector2(760, 820));
             float y = -150;
-            Ui.Wide(w, "RESUME", Ui.Green, Ui.T, new Vector2(0, y), new Vector2(520, 110), Close);
-            y -= 140;
-            Ui.Wide(w, "MAP", Ui.Blue, Ui.T, new Vector2(0, y), new Vector2(520, 100), BigMap);
-            y -= 130;
-            Ui.Wide(w, "SETTINGS", new Color(0.35f, 0.35f, 0.42f), Ui.T, new Vector2(0, y), new Vector2(520, 100), () => Settings(Pause));
-            y -= 130;
-            Ui.Wide(w, "CREDITS", new Color(0.35f, 0.35f, 0.42f), Ui.T, new Vector2(0, y), new Vector2(520, 100), Credits);
-            y -= 130;
-            Ui.Wide(w, "MAIN MENU", Ui.Red, Ui.T, new Vector2(0, y), new Vector2(520, 100), () => { Close(); Game.I.ToMenu(); });
+            Item(w, "RESUME", Ui.T, new Vector2(0, y), new Vector2(600, 96), Close, 52);
+            y -= 116;
+            Item(w, "MAP", Ui.T, new Vector2(0, y), new Vector2(600, 96), BigMap, 52);
+            y -= 116;
+            Item(w, "SETTINGS", Ui.T, new Vector2(0, y), new Vector2(600, 96), () => Settings(Pause), 52);
+            y -= 116;
+            Item(w, "CREDITS", Ui.T, new Vector2(0, y), new Vector2(600, 96), Credits, 52);
+            y -= 116;
+            Item(w, "QUIT TO MAIN MENU", Ui.T, new Vector2(0, y), new Vector2(600, 96), () => { Close(); Game.I.ToMenu(); }, 52);
         }
 
         public void Settings(Action back)

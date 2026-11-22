@@ -119,6 +119,8 @@ namespace Danga
 
     public class WSpec { public string name; public float length; public Vector3 muzzle; }
 
+    public class PSpec { public string name, kind; public Vector3 size; }
+
     /// <summary>Loads the converted Hyper3D Rodin models (meshes, textures, rigs) and keeps one copy of each.</summary>
     public static class Models
     {
@@ -127,6 +129,8 @@ namespace Danga
         static readonly Dictionary<string, CharData> chars = new Dictionary<string, CharData>();
         public static readonly Dictionary<string, VSpec> vehicles = new Dictionary<string, VSpec>();
         public static readonly Dictionary<string, WSpec> weapons = new Dictionary<string, WSpec>();
+        public static readonly Dictionary<string, PSpec> props = new Dictionary<string, PSpec>();
+        public static readonly List<string> buildings = new List<string>();
         public static readonly List<string> charNames = new List<string>();
         static Shader model;
         static bool ready;
@@ -170,9 +174,17 @@ namespace Danga
             if (ws != null)
                 foreach (var kv in ws)
                     weapons[kv.Key] = new WSpec { name = kv.Key, length = Json.F(kv.Value, "length", 0.3f), muzzle = Json.V3(kv.Value, "muzzle") };
+            var ps = Json.O(o, "props");
+            if (ps != null)
+                foreach (var kv in ps)
+                {
+                    var spec = new PSpec { name = kv.Key, kind = Json.S(kv.Value, "kind", "prop"), size = Json.V3(kv.Value, "size") };
+                    props[kv.Key] = spec;
+                    if (spec.kind == "building") buildings.Add(kv.Key);
+                }
             var cs = Json.O(o, "characters");
             if (cs != null) foreach (var kv in cs) charNames.Add(kv.Key);
-            Debug.Log("[DG] models: " + vehicles.Count + " vehicles, " + weapons.Count + " weapons, " + charNames.Count + " characters");
+            Debug.Log("[DG] models: " + vehicles.Count + " vehicles, " + weapons.Count + " weapons, " + charNames.Count + " characters, " + props.Count + " props");
         }
 
         /// <summary>A 'DGMS' mesh: positions, normals, uv, triangles.</summary>
@@ -240,6 +252,37 @@ namespace Danga
             chars[name] = c;
             if (c == null) Debug.LogWarning("[DG] character missing: " + name);
             return c;
+        }
+
+        static Mesh blobMesh;
+        static Material blobMat;
+
+        /// <summary>The soft dark patch under people and vehicles that sits them on the ground.</summary>
+        public static GameObject Blob(Transform parent, float width, float length, float strength = 0.55f)
+        {
+            if (blobMesh == null)
+            {
+                blobMesh = new Mesh { name = "blob" };
+                blobMesh.vertices = new[] { new Vector3(-0.5f, 0, -0.5f), new Vector3(0.5f, 0, -0.5f), new Vector3(0.5f, 0, 0.5f), new Vector3(-0.5f, 0, 0.5f) };
+                blobMesh.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1) };
+                blobMesh.triangles = new[] { 0, 2, 1, 0, 3, 2 };
+                blobMesh.RecalculateBounds();
+                Shader sh = Shader.Find("Danga/Blob");
+                blobMat = new Material(sh != null ? sh : Shader.Find("Sprites/Default"));
+                var t = Resources.Load<Texture2D>("UI/blob");
+                if (t != null) blobMat.SetTexture("_MainTex", t);
+                blobMat.SetFloat("_Strength", strength);
+            }
+            var go = new GameObject("shadow");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            go.transform.localScale = new Vector3(width, 1f, length);
+            go.AddComponent<MeshFilter>().sharedMesh = blobMesh;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = blobMat;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return go;
         }
 
         /// <summary>Puts a static model (vehicle body, weapon) on a new child object.</summary>

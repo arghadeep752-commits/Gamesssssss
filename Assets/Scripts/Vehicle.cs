@@ -68,13 +68,16 @@ namespace Danga
             v.rb = go.AddComponent<Rigidbody>();
             v.rb.mass = s.mass;
             v.rb.linearDamping = 0.03f;
-            v.rb.angularDamping = s.IsHeli ? 2.5f : 0.6f;
+            v.rb.angularDamping = s.IsHeli ? 2.5f : 1.5f;
             v.rb.interpolation = RigidbodyInterpolation.Interpolate;
             v.rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-            v.rb.centerOfMass = new Vector3(0f, s.IsBike ? 0.42f : s.IsHeli ? H * 0.35f : s.IsBoat ? H * 0.15f : H * 0.28f, 0f);
+            v.rb.centerOfMass = new Vector3(0f, s.IsBike ? 0.35f : s.IsHeli ? H * 0.35f : s.IsBoat ? H * 0.15f : H * 0.2f, 0f);
+            v.rb.maxAngularVelocity = 4f;
             v.rb.isKinematic = trafficMode;
             v.lastX = new float[Mathf.Max(1, s.wheels.Count)];
             if (!trafficMode) { v.brake = 1f; v.handbrake = true; v.parked = true; }
+            if (!s.IsHeli && !s.IsBoat) Models.Blob(go.transform, W * 1.15f, L * 1.08f, 0.7f);
+            else if (s.IsHeli) Models.Blob(go.transform, W * 0.6f, L * 0.8f, 0.6f);
             if (s.IsHeli && s.rotorR > 0f) v.MakeRotor();
             v.MakeLights();
             return v;
@@ -163,77 +166,78 @@ namespace Danga
             }
         }
 
+        /// <summary>
+        /// Arcade driving: spring suspension on ray-cast wheels for the bumps, but speed, steering and grip are set
+        /// directly, and the body is kept upright on the ground (bikes lean into turns), so nothing flips or spins out.
+        /// </summary>
         void Wheels(float dt)
         {
             int n = spec.wheels.Count;
             if (n == 0) return;
             Vector3 up = transform.up;
-            const float travel = 0.26f;
+            const float travel = 0.24f;
             float share = spec.mass / n;
-            float k = share * 9.81f / (travel * 0.45f);
-            float c = 2f * Mathf.Sqrt(k * share) * 0.5f;
-            float fwd = Vector3.Dot(rb.linearVelocity, transform.forward);
-            float top = spec.top / 3.6f;
-            float steerAng = steer * Mathf.Lerp(34f, 7f, Mathf.Clamp01(Mathf.Abs(fwd) / (top * 0.6f)));
-            int nDrive = 0;
-            foreach (var w in spec.wheels) if (w.drive) nDrive++;
-            nDrive = Mathf.Max(1, nDrive);
-            float acc = Accel() * (1f - Mathf.Clamp01(fwd / top) * Mathf.Clamp01(fwd / top));
-            float driveF = 0f, brakeF = brake;
-            if (throttle > 0.01f) driveF = throttle * acc * spec.mass / nDrive;
-            else if (throttle < -0.01f)
-            {
-                if (fwd > 1f) brakeF = Mathf.Max(brakeF, -throttle);
-                else if (fwd > -7f) driveF = throttle * acc * 0.6f * spec.mass / nDrive;
-            }
+            float k = share * 9.81f / (travel * 0.5f);
+            float c = 2f * Mathf.Sqrt(k * share) * 0.7f;
             int grounded = 0;
-            Vector3 com = rb.worldCenterOfMass;
+            Vector3 nrm = Vector3.zero;
             for (int i = 0; i < n; i++)
             {
                 WheelSpec w = spec.wheels[i];
                 float len = travel + w.r;
-                Vector3 origin = transform.TransformPoint(new Vector3(w.pos.x, w.r + travel * 0.55f, w.pos.z));
+                Vector3 origin = transform.TransformPoint(new Vector3(w.pos.x, w.r + travel * 0.5f, w.pos.z));
                 RaycastHit hit;
                 if (!Physics.Raycast(origin, -up, out hit, len, WorldMask, QueryTriggerInteraction.Ignore)) { lastX[i] = 0f; continue; }
                 grounded++;
+                nrm += hit.normal;
                 float x = len - hit.distance;
-                float fs = Mathf.Max(0f, k * x + c * (x - lastX[i]) / dt);
+                float fs = Mathf.Clamp(k * x + c * (x - lastX[i]) / dt, 0f, share * 9.81f * 4f);
                 lastX[i] = x;
-                Vector3 dirF = w.steer ? Quaternion.AngleAxis(steerAng, up) * transform.forward : transform.forward;
-                dirF = Vector3.ProjectOnPlane(dirF, hit.normal).normalized;
-                Vector3 dirR = Vector3.Cross(hit.normal, dirF);
-                Vector3 vp = rb.GetPointVelocity(hit.point);
-                float vLong = Vector3.Dot(vp, dirF), vLat = Vector3.Dot(vp, dirR);
-                float grip = handbrake && !w.steer ? 0.32f : 1f;
-                float maxF = fs * 1.3f * grip + 200f;
-                float fLat = Mathf.Clamp(-vLat * share / dt * 0.55f * grip, -maxF, maxF);
-                float fLong = w.drive ? driveF : 0f;
-                float bf = (brakeF * 9f + (handbrake && !w.steer ? 6f : 0f) + 0.25f) * share;
-                fLong += Mathf.Clamp(-vLong * share / dt, -bf, bf);
-                fLong = Mathf.Clamp(fLong, -maxF * 1.2f, maxF * 1.2f);
-                Vector3 at = hit.point + up * Vector3.Dot(com - hit.point, up) * 0.75f;
-                rb.AddForceAtPosition(hit.normal * fs, hit.point);
-                rb.AddForceAtPosition(dirR * fLat + dirF * fLong, at);
+                rb.AddForceAtPosition(up * fs, origin);
             }
             Grounded = grounded > 0;
-            // keep bikes and autos upright (bikes lean into turns), stop cars rolling over too easily
-            bool bike = spec.IsBike, trike = spec.cls == "trike";
-            float lean = bike ? -steer * Mathf.Clamp01(fwd / 10f) * 26f : 0f;
-            Vector3 targetUp = Quaternion.AngleAxis(lean, transform.forward) * Vector3.up;
-            Vector3 axis = Vector3.Cross(up, targetUp);
-            float stiff = bike ? 70f : trike ? 22f : 9f, damp = bike ? 9f : 4f;
-            float roll = Vector3.Dot(rb.angularVelocity, transform.forward);
-            rb.AddTorque(transform.forward * (Vector3.Dot(axis, transform.forward) * stiff - roll * damp), ForceMode.Acceleration);
-            if (!Grounded)
+            Vector3 v = rb.linearVelocity;
+            float top = spec.top / 3.6f;
+            bool bike = spec.IsBike;
+            if (grounded * 2 >= n)
             {
-                Vector3 pitchAxis = transform.right;
-                float pr = Vector3.Dot(rb.angularVelocity, pitchAxis);
-                rb.AddTorque(pitchAxis * (Vector3.Dot(axis, pitchAxis) * 6f - pr * 1.5f), ForceMode.Acceleration);
+                nrm.Normalize();
+                Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, nrm).normalized;
+                Vector3 right = Vector3.Cross(nrm, fwd);
+                float vf = Vector3.Dot(v, fwd), vr = Vector3.Dot(v, right);
+                // engine and brakes
+                float acc = 0f;
+                if (throttle > 0.01f) acc = throttle * Accel() * Mathf.Clamp01(1.15f - Mathf.Max(0f, vf) / top);
+                else if (throttle < -0.01f) acc = vf > 1f ? -10f * -throttle : (vf > -top * 0.25f ? throttle * Accel() * 0.6f : 0f);
+                if (brake > 0.01f) acc = -Mathf.Sign(vf) * Mathf.Min(Mathf.Abs(vf) / dt, 11f * brake);
+                if (Mathf.Abs(throttle) < 0.01f && brake < 0.01f) acc = -Mathf.Sign(vf) * Mathf.Min(Mathf.Abs(vf) / dt, 1.4f);   // rolling to a stop
+                rb.AddForce(fwd * acc, ForceMode.Acceleration);
+                // tyre grip: remove most of the sideways slide (less with the handbrake: drifting)
+                float grip = handbrake ? 2.2f : (bike ? 14f : 9f);
+                rb.AddForce(-right * vr * Mathf.Min(grip, 1f / dt), ForceMode.Acceleration);
+                // steering sets the turn rate, it does not depend on tyre forces
+                float speedF = Mathf.Clamp01(Mathf.Abs(vf) / 3f);
+                float turn = steer * Mathf.Lerp(bike ? 2.3f : 1.9f, bike ? 0.9f : 0.75f, Mathf.Clamp01(Mathf.Abs(vf) / top)) * speedF * Mathf.Sign(vf == 0f ? 1f : vf);
+                if (handbrake) turn *= 1.35f;
+                // keep the body on the ground's slope; bikes lean into the turn
+                float lean = bike ? -steer * Mathf.Clamp01(Mathf.Abs(vf) / 10f) * 24f : 0f;
+                Vector3 wantUp = Quaternion.AngleAxis(lean, fwd) * nrm;
+                Quaternion fix = Quaternion.FromToRotation(up, wantUp);
+                rb.MoveRotation(Quaternion.Slerp(Quaternion.identity, fix, Mathf.Clamp01(dt * 8f)) * rb.rotation);
+                rb.angularVelocity = nrm * Mathf.Lerp(Vector3.Dot(rb.angularVelocity, nrm), turn, Mathf.Clamp01(dt * 10f));
+                // a little downforce keeps fast cars glued to the road
+                rb.AddForce(-nrm * Mathf.Abs(vf) * 0.15f, ForceMode.Acceleration);
             }
-            if (Grounded) rb.AddForce(-up * fwd * fwd * 0.6f * spec.mass / 1000f, ForceMode.Force);
+            else
+            {
+                // in the air: level out slowly, no steering
+                Vector3 axis = Vector3.Cross(up, Vector3.up);
+                rb.AddTorque(axis * 4f - rb.angularVelocity * 1.2f, ForceMode.Acceleration);
+            }
+            if (rb.linearVelocity.magnitude > top * 1.15f) rb.linearVelocity = rb.linearVelocity.normalized * top * 1.15f;
             // upside down and stopped: put it back on its wheels
             if (Vector3.Dot(up, Vector3.up) < 0.35f && rb.linearVelocity.magnitude < 2f) flipTimer += dt; else flipTimer = 0f;
-            if (flipTimer > 2.5f && !wrecked)
+            if (flipTimer > 1.5f && !wrecked)
             {
                 flipTimer = 0f;
                 rb.MovePosition(transform.position + Vector3.up * 1.2f);
@@ -318,7 +322,7 @@ namespace Danga
                 if (driver != null && driver.isPlayer) Cam.Shake(Mathf.Clamp01(rv / 25f));
             }
             Damage((rv - 5f) * (spec.IsBike ? 6f : 12f), null);
-            if (spec.IsBike && rv > 14f && driver != null && driver.isPlayer)
+            if (spec.IsBike && rv > 18f && driver != null && driver.isPlayer)
             {
                 // thrown off the bike
                 var p = (Player)driver;
