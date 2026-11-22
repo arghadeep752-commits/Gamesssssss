@@ -1,0 +1,125 @@
+# DANGA: builds the Android APK in the cloud, no PC needed.
+#
+#   assets  - real photo textures (Poly Haven / ambientCG, CC0), photographed skies, recorded sounds, human-made music,
+#             dafont fonts
+#   rodin   - the Hyper3D Rodin models (characters, vehicles, weapons), kept on the danga-ci release
+#
+# Needs the repository secrets UNITY_EMAIL and UNITY_PASSWORD (Unity account, two-step verification off).
+
+name: DANGA - Unity 6 APK
+
+on:
+  push:
+    branches: [danga]
+    paths-ignore: ["README.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: danga
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  CI_RELEASE: danga-ci
+  HANDOFF_BRANCH: danga-handoff
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # --------------------------------------------------------------------------------------- real textures, skies, sounds, music, fonts
+  assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - name: CI release (logs, previews and cached downloads - not the game)
+        run: |
+          gh release view "$CI_RELEASE" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create "$CI_RELEASE" -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "DANGA CI - logs and previews (not the game)" --notes "Build logs, preview renders and cached downloads for DANGA." || true
+      - name: Tools
+        run: |
+          sudo apt-get update -qq || true
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          python3 -c "import numpy, PIL" 2>/dev/null || pip install --break-system-packages -q numpy pillow
+      - name: Downloads kept from earlier builds
+        run: |
+          mkdir -p assets/downloaded build
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$CI_RELEASE"
+          for z in assets_downloaded sounds_pack music_pack; do
+            if curl -fsSL -o /tmp/$z.zip "$base/$z.zip"; then unzip -oq /tmp/$z.zip -d assets/downloaded && echo "$z from the release"; fi
+          done
+          ls assets/downloaded || true
+      - name: Real textures, skies, leaves and fonts
+        run: |
+          stamp="$(cat tools/fetch_assets.py | grep -v '^#' | sha1sum | cut -c1-12)"
+          if [ -f assets/downloaded/tex/.stamp ] && [ "$(cat assets/downloaded/tex/.stamp)" = "$stamp" ] && [ -f assets/downloaded/sky/day.hdr ]; then
+            echo "textures unchanged since the last build"
+          else
+            python3 tools/fetch_assets.py textures,sky,leaves,fonts assets/downloaded 2>&1 | tee build/assets_log.txt | tail -80
+            echo "$stamp" > assets/downloaded/tex/.stamp
+            (cd assets/downloaded && zip -qr ../../build/assets_downloaded.zip tex sky leaves fonts) && \
+              gh release upload "$CI_RELEASE" build/assets_downloaded.zip -R "$GITHUB_REPOSITORY" --clobber || true
+          fi
+          ls assets/downloaded/tex | tr '\n' ' '; echo; ls assets/downloaded/fonts assets/downloaded/leaves assets/downloaded/sky || true
+      - name: Recorded sounds (only missing ones are searched)
+        run: |
+          count() { python3 -c "import json,os;p='assets/downloaded/$1/manifest_v1.json';print(len(json.load(open(p))) if os.path.exists(p) else 0)"; }
+          before=$(count sounds)
+          timeout 40m python3 -u tools/fetch_assets.py sounds assets/downloaded > build/sounds_log.txt 2>&1 || true
+          grep -E "ok$|MISSING|STEP|Traceback" build/sounds_log.txt | head -80 || true
+          after=$(count sounds)
+          echo "recorded sounds: $before -> $after"
+          (cd assets/downloaded && zip -qr ../../build/sounds_pack.zip sounds)
+          if [ "$after" -gt "$before" ]; then gh release upload "$CI_RELEASE" build/sounds_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
+      - name: Music made by people (only missing tracks are searched)
+        run: |
+          count() { python3 -c "import json,os;p='assets/downloaded/$1/manifest_v1.json';print(len(json.load(open(p))) if os.path.exists(p) else 0)"; }
+          before=$(count music)
+          timeout 30m python3 -u tools/fetch_assets.py music assets/downloaded > build/music_log.txt 2>&1 || true
+          grep -E "ok$|MISSING|STEP|Traceback" build/music_log.txt | head -40 || true
+          after=$(count music)
+          echo "music: $before -> $after"
+          (cd assets/downloaded && zip -qr ../../build/music_pack.zip music)
+          if [ "$after" -gt "$before" ]; then gh release upload "$CI_RELEASE" build/music_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
+          cat build/sounds_report.txt 2>/dev/null || true
+      - name: Publish logs
+        if: always()
+        run: |
+          for f in build/assets_log.txt build/sounds_log.txt build/music_log.txt build/sounds_report.txt build/textures_contact.jpg build/CREDITS_AUTO.md; do
+            [ -f "$f" ] && gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assets
+          path: |
+            assets/downloaded
+            build/CREDITS_AUTO.md
+          if-no-files-found: warn
+
+  # --------------------------------------------------------------------------------------- the Hyper3D models
+  rodin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - name: CI release
+        run: |
+          gh release view "$CI_RELEASE" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+          gh release create "$CI_RELEASE" -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "DANGA CI - logs and previews (not the game)" --notes "Build logs, preview renders and cached downloads for DANGA." || true
+      - name: Hyper3D models (rodin_raw.zip on the CI release)
+        run: python3 tools/rodin_fetch.py build/rodin/raw
+      - name: List them
+        run: ls -la build/rodin/raw
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rodin
+          path: build/rodin/raw
+          if-no-files-found: warn
+          compression-level: 0

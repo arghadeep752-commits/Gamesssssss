@@ -1,0 +1,224 @@
+{
+ "note": "Hyper3D Rodin Gen-2.5 generations for DANGA (text prompts). gen = generation id. The characters are rigged and animated by tools/rig (Blender/numpy), not by Rodin.",
+ "file": "base_basic_pbr.glb",
+ "models": {
+  "player_casual": {
+   "gen": "13224e73-72fc-4634-984d-d3a4bdeb0349",
+   "kind": "character",
+   "role": "player",
+   "outfit": "Casual",
+   "height": 1.74,
+   "sex": "m"
+  },
+  "player_kurta": {
+   "gen": "7a40f2a4-7ebd-4db6-b2d3-fd0055dcb6d1",
+   "kind": "character",
+   "role": "player",
+   "outfit": "Kurta",
+   "height": 1.74,
+   "sex": "m"
+  },
+  "player_jacket": {
+   "gen": "cfac5fac-2abf-43bd-b231-4fbdc14562fd",
+   "kind": "character",
+   "role": "player",
+   "outfit": "Jacket",
+   "height": 1.74,
+   "sex": "m"
+  },
+  "npc_man": {
+   "gen": "6fe17ac6-62f6-4404-bba1-50d147f649fb",
+   "kind": "character",
+   "role": "civilian",
+   "height": 1.7,
+   "sex": "m"
+  },
+  "npc_oldman": {
+   "gen": "feb8f04d-66ae-48fa-b33f-b643775b83ca",
+   "kind": "character",
+   "role": "civilian",
+   "height": 1.64,
+   "sex": "m"
+  },
+  "npc_saree": {
+   "gen": "92f7b588-3516-4a37-8c84-77c770972dfd",
+   "kind": "character",
+   "role": "civilian",
+   "height": 1.58,
+   "sex": "f",
+   "skirt": true
+  },
+  "npc_tripuri": {
+   "gen": "19639a60-06be-4bc0-a2b5-4d7cd44d3957",
+   "kind": "character",
+   "role": "civilian",
+   "height": 1.57,
+   "sex": "f",
+   "skirt": true
+  },
+  "npc_student": {
+   "gen": "58d7ce52-4e4e-441c-8541-aabe64db1f5b",
+   "kind": "character",
+   "role": "civilian",
+   "height": 1.71,
+   "sex": "m"
+  },
+  "police": {
+   "gen": "b54652ba-ceca-4926-8601-c12bb7c78787",
+   "kind": "character",
+   "role": "police",
+   "height": 1.76,
+   "sex": "m"
+  },
+  "wheel": {
+   "gen": "eebdde57-2be1-44f1-b034-d7eaacdcbdb1",
+   "kind": "wheel",
+   "diameter": 0.62
+  },
+  "car_hatch": {
+   "gen": "7c08653b-ebc5-43e7-b15f-499d817afb43",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 3.85,
+   "mass": 950,
+   "top": 150,
+   "seats": "front"
+  },
+  "car_sedan": {
+   "gen": "31648d1d-ae89-4c09-88e7-e16e82bedf96",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 4.45,
+   "mass": 1150,
+   "top": 170
+  },
+  "car_suv": {
+   "gen": "86efc9f9-e455-48c0-8f6e-7bc679ee1289",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 4.5,
+   "mass": 1800,
+   "top": 160
+  },
+  "auto_rickshaw": {
+   "gen": "f0563b76-61fb-454d-972d-78d0f7eae6fc",
+   "kind": "vehicle",
+   "cls": "trike",
+   "length": 2.65,
+   "mass": 380,
+   "top": 65
+  },
+  "e_rickshaw": {
+   "gen": "7a3faee3-f4a1-4f7a-bb34-52c540c3aa79",
+   "kind": "vehicle",
+   "cls": "trike",
+   "length": 2.75,
+   "mass": 400,
+   "top": 35
+  },
+  "bus": {
+   "gen": "9c1e0860-d46c-4e7c-a00c-89d4994e16a3",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 11.0,
+   "mass": 9000,
+   "top": 95
+  },
+  "truck": {
+   "gen": "27445391-0ae2-4de9-b2ac-132b30a1ce3f",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 7.4,
+   "mass": 7500,
+   "top": 90
+  },
+  "police_jeep": {
+   "gen": "de974a5c-ae30-4fcd-83ba-3a359ab5badd",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 4.4,
+   "mass": 1700,
+   "top": 160,
+   "police": true
+  },
+  "sports_car": {
+   "gen": "91e14b15-e34c-461e-ae06-6684e648ea82",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 4.5,
+   "mass": 1350,
+   "top": 290
+  },
+  "motorbike": {
+   "gen": "91b3b759-cf12-4b73-8723-8a35ac414243",
+   "kind": "vehicle",
+   "cls": "bike",
+   "length": 2.15,
+   "mass": 190,
+   "top": 130
+  },
+  "scooter": {
+   "gen": "75189697-2a57-4553-bad2-1ba8d0b5f308",
+   "kind": "vehicle",
+   "cls": "bike",
+   "length": 1.83,
+   "mass": 110,
+   "top": 85
+  },
+  "van": {
+   "gen": "bd0dfd55-3020-47e7-aa8c-89c11728e41c",
+   "kind": "vehicle",
+   "cls": "car",
+   "length": 3.7,
+   "mass": 900,
+   "top": 120
+  },
+  "helicopter": {
+   "gen": "cfe86051-56cb-4409-a3df-8d174b05bce9",
+   "kind": "vehicle",
+   "cls": "heli",
+   "length": 10.5,
+   "mass": 1400,
+   "top": 220
+  },
+  "speedboat": {
+   "gen": "afdffb0e-1e82-4628-ab22-12848bcd6936",
+   "kind": "vehicle",
+   "cls": "boat",
+   "length": 5.6,
+   "mass": 900,
+   "top": 90
+  },
+  "bat": {
+   "gen": "fd940b24-0b0c-4f10-bc10-8336cf9708e4",
+   "kind": "weapon",
+   "length": 0.86
+  },
+  "knife": {
+   "gen": "6d3395cd-8bf0-47aa-93c7-3e86c41b2b36",
+   "kind": "weapon",
+   "length": 0.3
+  },
+  "revolver": {
+   "gen": "076b5fca-8730-4683-9a06-45dec46219d2",
+   "kind": "weapon",
+   "length": 0.27
+  },
+  "pistol": {
+   "gen": "ecd31af4-a71d-470e-b5c6-fed62845c1ee",
+   "kind": "weapon",
+   "length": 0.2
+  },
+  "smg": {
+   "gen": "3aea52fb-3b8a-48a3-9edd-0555bf7704f2",
+   "kind": "weapon",
+   "length": 0.52
+  },
+  "shotgun": {
+   "gen": "4b23cc13-172f-452e-9648-4e3c1c7f7007",
+   "kind": "weapon",
+   "length": 1.05
+  }
+ },
+ "rigged": {}
+}

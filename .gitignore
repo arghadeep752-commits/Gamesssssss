@@ -1,0 +1,25 @@
+# Unity
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+*.csproj
+*.sln
+*.meta
+# made by the build from downloads / Blender (never committed)
+/Assets/Game/
+/Assets/Generated/
+/Assets/Scenes/
+/Assets/Resources/Sounds/
+/Assets/Resources/Music/
+/Assets/Resources/Fonts/
+/Assets/Resources/Gen/
+/assets/downloaded/
+/build/
+/ci-keystore/
+/ci-assets/
+__pycache__/
