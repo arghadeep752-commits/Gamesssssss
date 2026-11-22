@@ -20,6 +20,8 @@ namespace Danga.EditorTools
             public TextureImporterFormat android;
         }
 
+        public static bool emulator;
+
         public static bool For(string path, out Rule r)
         {
             r = new Rule { type = TextureImporterType.Default, srgb = true, mips = true, wrap = TextureWrapMode.Repeat, comp = TextureImporterCompression.Compressed,
@@ -28,8 +30,8 @@ namespace Danga.EditorTools
             string f = System.IO.Path.GetFileNameWithoutExtension(path);
             if (path.StartsWith("Assets/Resources/Gen/City/"))
             {
-                if (f == "layers") { r.flipbook = 6; r.max = 8192; r.alpha = true; r.android = TextureImporterFormat.ETC2_RGBA8; return true; }
-                if (f == "layers_n") { r.flipbook = 6; r.max = 4096; r.srgb = false; r.android = TextureImporterFormat.ETC2_RGB4; return true; }
+                if (f == "layers") { r.flipbook = 6; r.max = 8192; r.alpha = true; r.android = emulator ? TextureImporterFormat.RGBA32 : TextureImporterFormat.ETC2_RGBA8; return true; }
+                if (f == "layers_n") { r.flipbook = 6; r.max = 4096; r.srgb = false; r.android = emulator ? TextureImporterFormat.RGBA32 : TextureImporterFormat.ETC2_RGB4; return true; }
                 r.wrap = TextureWrapMode.Clamp;
                 r.max = 2048;
                 if (f == "lightmap") { r.srgb = false; r.android = TextureImporterFormat.ASTC_4x4; }
@@ -129,14 +131,13 @@ namespace Danga.EditorTools
         /// </summary>
         public static void EmulatorTextures()
         {
+            emulator = true;
             foreach (string path in new[] { "Assets/Resources/Gen/City/layers.png", "Assets/Resources/Gen/City/layers_n.png" })
             {
                 var imp = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (imp == null) continue;
-                var ps = imp.GetPlatformTextureSettings("Android");
-                ps.overridden = true;
-                ps.format = TextureImporterFormat.RGBA32;
-                imp.SetPlatformTextureSettings(ps);
+                Rule r;
+                if (imp == null || !For(path, out r)) continue;
+                Apply(imp, r);
                 imp.SaveAndReimport();
             }
             var arr = AssetDatabase.LoadAssetAtPath<Texture2DArray>("Assets/Resources/Gen/City/layers.png");
