@@ -386,6 +386,36 @@ KEYWORDS = {"fist": ["fist", "punch"], "bat": ["baseball"], "knife": ["knife", "
             "shotgun": ["shotgun"], "car": ["car"], "heli": ["helicopter"], "boat": ["boat"], "house": ["house"], "star": ["star"]}
 report = []
 
+# Kenney picks (checked on the CI release previews): Mobile Controls 1.0 and UI Pack, both CC0
+MC = ("onscreen-controls", "*", "Sprites")
+UP = ("ui-pack", "*", "PNG")
+KICONS = {"gas": ("icon_pedal.png", 0), "brake": ("icon_pedal_brake.png", 0), "jump": ("icon_jump.png", 0), "pause": ("icon_pause.png", 0),
+          "star": ("icon_star.png", 0), "target": ("icon_crosshair.png", 0), "settings": ("icon_cog.png", 0), "save": ("icon_save.png", 0),
+          "reload": ("icon_arrow_rotate.png", 0), "shield": ("icon_shield.png", 0),
+          "right": ("icon_arrow.png", 0), "up": ("icon_arrow.png", 90), "left": ("icon_arrow.png", 180), "down": ("icon_arrow.png", -90)}
+
+
+def kpath(ui, *parts):
+    import glob
+    found = sorted(glob.glob(os.path.join(ui, "kenney", *parts)))
+    return found[0] if found else None
+
+
+def kicon(ui, slot, n=128):
+    if slot not in KICONS or not ui:
+        return None, None
+    name, turn = KICONS[slot]
+    p = kpath(ui, *MC, "Icons", "Large*", name) or kpath(ui, *MC, "Icons", "Default", name)
+    if not p:
+        return None, None
+    im = Image.open(p).convert("RGBA")
+    im.thumbnail((n, n), Image.LANCZOS)
+    out = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    out.alpha_composite(im, ((n - im.size[0]) // 2, (n - im.size[1]) // 2))
+    if turn:
+        out = out.rotate(turn, resample=Image.BICUBIC)
+    return out, os.path.relpath(p, ui)
+
 
 def svg_icon(icons, slot, n=128):
     names = icons.get("icons", {})
@@ -490,7 +520,9 @@ def main():
         icons = json.load(open(jp))
     used = {}
     for name in ICONS:
-        im, pick = svg_icon(icons, name) if icons else (None, None)
+        im, pick = kicon(a.ui, name)
+        if im is None:
+            im, pick = svg_icon(icons, name) if icons else (None, None)
         if im is None:
             im = icon(name)
             report.append("%s: FALLBACK drawing (no game-icons match)" % name)
@@ -500,29 +532,32 @@ def main():
     rupee().save(os.path.join(a.out, "i_rupee.png"))
     files = kenney_files(a.ui) if a.ui else []
     light = ("light", "white", "grey", "gray")
-    btn = best(files, ["button"], ("circle", "round"), ("dark", "pressed", "outline", "line", "transparent", "_a.", "_b.", "_x.", "_y."), light, True)
+    btn = kpath(a.ui, *UP, "Grey", "Double", "button_round_depth_gradient.png") if a.ui else None
+    btn = btn or best(files, ["button"], ("circle", "round"), ("dark", "pressed", "outline", "line", "transparent", "_a.", "_b.", "_x.", "_y."), light, True)
     if btn:
         whiten(Image.open(btn).convert("RGBA").resize((256, 256), Image.LANCZOS)).save(os.path.join(a.out, "btn_round.png"))
         used["btn_round"] = os.path.relpath(btn, a.ui)
     else:
         round_button().save(os.path.join(a.out, "btn_round.png"))
         report.append("btn_round: FALLBACK drawing")
-    pan = best(files, ["panel"], (), ("dark", "transparent", "inset", "border"), light)
+    pan = (kpath(a.ui, *UP, "Grey", "Double", "button_rectangle_flat.png") if a.ui else None) or best(files, ["panel"], (), ("dark", "transparent", "inset", "border"), light)
     if pan:
         whiten(nine_square(pan)).save(os.path.join(a.out, "panel.png"))
         used["panel"] = os.path.relpath(pan, a.ui)
     else:
         panel().save(os.path.join(a.out, "panel.png"))
         report.append("panel: FALLBACK drawing")
-    pil = best(files, ["button"], ("rectangle", "long", "rect"), ("dark", "pressed", "transparent", "outline"), light)
+    pil = (kpath(a.ui, *UP, "Grey", "Double", "button_rectangle_depth_gradient.png") if a.ui else None) or best(files, ["button"], ("rectangle", "long", "rect"), ("dark", "pressed", "transparent", "outline"), light)
     if pil:
         whiten(nine_square(pil)).save(os.path.join(a.out, "pill.png"))
         used["pill"] = os.path.relpath(pil, a.ui)
     else:
         panel(128, 0.5, 0.06).save(os.path.join(a.out, "pill.png"))
         report.append("pill: FALLBACK drawing")
-    pad = best(files, ["joystick"], (), ("dark", "nub", "knob", "button"), light + ("pad", "base", "circle"), True)
-    nub = best(files, [], ("nub", "knob", "thumb", "stick_button"), ("dark",), light, True)
+    pad = (kpath(a.ui, *MC, "Style C", "Large*", "joystick_circle_pad_a.png") if a.ui else None) or best(files, ["joystick"], (), ("dark", "nub", "knob", "button"), light + ("pad", "base", "circle"), True)
+    nub = (kpath(a.ui, *MC, "Style B", "Large*", "joystick_circle_nub_b.png") if a.ui else None) or best(files, [], ("nub", "knob", "thumb", "stick_button"), ("dark",), light, True)
+    frame = kpath(a.ui, *MC, "Style C", "Large*", "button_circle.png") if a.ui else None
+    mark = kpath(a.ui, *UP, "Grey", "Double", "arrow_basic_n.png") if a.ui else None
     if pad:
         Image.open(pad).convert("RGBA").resize((256, 256), Image.LANCZOS).save(os.path.join(a.out, "ring.png"))
         used["ring"] = os.path.relpath(pad, a.ui)
@@ -535,14 +570,28 @@ def main():
     else:
         solid_circle().save(os.path.join(a.out, "circle.png"))
         report.append("circle: FALLBACK drawing")
+    if frame:
+        Image.open(frame).convert("RGBA").resize((256, 256), Image.LANCZOS).save(os.path.join(a.out, "minimap_ring.png"))
+        used["minimap_ring"] = os.path.relpath(frame, a.ui)
+    if mark:
+        im = Image.open(mark).convert("RGBA")
+        im.thumbnail((128, 128), Image.LANCZOS)
+        out = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+        out.alpha_composite(im, ((128 - im.size[0]) // 2, (128 - im.size[1]) // 2))
+        whiten(out).save(os.path.join(a.out, "arrow.png"))
+        used["arrow"] = os.path.relpath(mark, a.ui)
     os.makedirs("build", exist_ok=True)
     json.dump({"used": used, "report": report}, open(os.path.join("build", "ui_used.json"), "w"), indent=1)
     print("ui art used:", json.dumps(used, indent=1))
     for r in report:
         print("ui:", r)
-    ring(256, 0.05, True).save(os.path.join(a.out, "minimap_ring.png"))
+    if not frame:
+        ring(256, 0.05, True).save(os.path.join(a.out, "minimap_ring.png"))
+        report.append("minimap_ring: FALLBACK drawing")
     solid_circle().save(os.path.join(a.out, "mask_circle.png"))
-    arrow().save(os.path.join(a.out, "arrow.png"))
+    if not mark:
+        arrow().save(os.path.join(a.out, "arrow.png"))
+        report.append("arrow: FALLBACK drawing")
     radial(128, 1.0, 0.0, 2.2).save(os.path.join(a.out, "glow.png"))
     radial(128, 1.0, 0.0, 0.9, (0, 0, 0)).save(os.path.join(a.out, "blob.png"))
     title(a.font, "DANGA", os.path.join(a.out, "title.png"))

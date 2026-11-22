@@ -48,10 +48,10 @@ namespace Danga
             var sz = Ui.Box(rt, "stickzone", Ui.BL, Vector2.zero, new Vector2(760, 640));
             var szi = sz.gameObject.AddComponent<Image>();
             szi.color = new Color(0, 0, 0, 0);
-            var baseIm = Ui.Img(sz, "ring", new Color(1, 1, 1, 0.55f), Ui.BL, new Vector2(170, 150), new Vector2(260, 260));
+            var baseIm = Ui.Img(sz, "ring", new Color(1, 1, 1, 0.85f), Ui.BL, new Vector2(170, 150), new Vector2(260, 260));
             baseIm.rectTransform.pivot = Ui.C;
             baseIm.rectTransform.anchoredPosition = new Vector2(300, 280);
-            var knob = Ui.Img(baseIm.transform, "circle", new Color(1, 1, 1, 0.8f), Ui.C, Vector2.zero, new Vector2(120, 120));
+            var knob = Ui.Img(baseIm.transform, "circle", new Color(1, 1, 1, 0.95f), Ui.C, Vector2.zero, new Vector2(120, 120));
             stick = sz.gameObject.AddComponent<Stick>();
             stick.Setup(baseIm.rectTransform, knob.rectTransform);
 
