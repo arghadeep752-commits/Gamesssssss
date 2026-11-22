@@ -209,6 +209,8 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # swangle (ANGLE on SwiftShader): the older GLES translator allows only 261 fragment uniform vectors, too few
+      # for Godot's shaders (the screen stays white); phones and ANGLE allow far more
       - name: Run the game in the emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -219,7 +221,7 @@ jobs:
           ram-size: 4096M
           heap-size: 1024M
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swangle_indirect -noaudio -no-boot-anim -camera-back none
           script: bash ci/smoke_test_godot.sh smoke
       - name: Attach screenshots and the log to the release
         if: always()
