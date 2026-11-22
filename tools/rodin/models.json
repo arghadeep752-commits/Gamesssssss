@@ -98,7 +98,11 @@
    "cls": "car",
    "length": 4.5,
    "mass": 1800,
-   "top": 160
+   "top": 160,
+   "fit": [
+    "height",
+    2.0
+   ]
   },
   "auto_rickshaw": {
    "gen": "f0563b76-61fb-454d-972d-78d0f7eae6fc",
@@ -122,7 +126,11 @@
    "cls": "car",
    "length": 11.0,
    "mass": 9000,
-   "top": 95
+   "top": 95,
+   "fit": [
+    "width",
+    2.55
+   ]
   },
   "truck": {
    "gen": "27445391-0ae2-4de9-b2ac-132b30a1ce3f",
@@ -130,7 +138,11 @@
    "cls": "car",
    "length": 7.4,
    "mass": 7500,
-   "top": 90
+   "top": 90,
+   "fit": [
+    "width",
+    2.45
+   ]
   },
   "police_jeep": {
    "gen": "de974a5c-ae30-4fcd-83ba-3a359ab5badd",
@@ -139,7 +151,11 @@
    "length": 4.4,
    "mass": 1700,
    "top": 160,
-   "police": true
+   "police": true,
+   "fit": [
+    "height",
+    1.95
+   ]
   },
   "sports_car": {
    "gen": "91e14b15-e34c-461e-ae06-6684e648ea82",

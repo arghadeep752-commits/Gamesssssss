@@ -3,6 +3,10 @@
 #   assets  - real photo textures (Poly Haven / ambientCG, CC0), photographed skies, recorded sounds, human-made music,
 #             dafont fonts
 #   rodin   - the Hyper3D Rodin models (characters, vehicles, weapons), kept on the danga-ci release
+#   city    - tools/city builds Agartala (roads, buildings, landmarks, water, trees) and Blender assembles it into city.blend
+#   compile - quick check that the C# scripts and shaders compile
+#   apk     - rigs the characters, converts everything for Unity, Unity 6 builds the APK (release danga-v<n>)
+#   emulator- an emulator build plays through the game; its screenshots are attached to the release
 #
 # Needs the repository secrets UNITY_EMAIL and UNITY_PASSWORD (Unity account, two-step verification off).
 
@@ -23,6 +27,9 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ github.token }}
+  UNITY_VERSION: 6000.0.85f1
+  BLENDER_VERSION: 4.2.3
+  APK_NAME: Danga
   CI_RELEASE: danga-ci
   HANDOFF_BRANCH: danga-handoff
 
@@ -88,6 +95,25 @@ jobs:
           (cd assets/downloaded && zip -qr ../../build/music_pack.zip music)
           if [ "$after" -gt "$before" ]; then gh release upload "$CI_RELEASE" build/music_pack.zip -R "$GITHUB_REPOSITORY" --clobber; fi
           cat build/sounds_report.txt 2>/dev/null || true
+      - name: Interface art made by people (game-icons.net, Kenney)
+        run: |
+          sudo apt-get install -y -qq --no-install-recommends librsvg2-bin >/dev/null 2>&1 || true
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$CI_RELEASE"
+          stamp="$(sha1sum tools/ui/fetch_ui.py | cut -c1-12)"
+          if curl -fsSL -o /tmp/ui_pack.zip "$base/ui_pack.zip"; then unzip -oq /tmp/ui_pack.zip -d assets/downloaded; fi
+          if [ "$(cat assets/downloaded/ui/.stamp 2>/dev/null)" != "$stamp" ]; then
+            python3 -u tools/ui/fetch_ui.py assets/downloaded/ui 2>&1 | tee build/ui_log.txt | tail -30
+            echo "$stamp" > assets/downloaded/ui/.stamp
+            (cd assets/downloaded && zip -qr ../../build/ui_pack.zip ui -x 'ui/*.jpg') && \
+              gh release upload "$CI_RELEASE" build/ui_pack.zip -R "$GITHUB_REPOSITORY" --clobber || true
+            shopt -s nullglob
+            for f in assets/downloaded/ui/*.jpg assets/downloaded/ui/ui_listing.txt assets/downloaded/ui/ui_candidates.txt build/ui_log.txt; do
+              gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+            done
+          else
+            echo "interface art unchanged since the last build"
+          fi
+          ls assets/downloaded/ui assets/downloaded/ui/kenney 2>/dev/null | head -30
       - name: Publish logs
         if: always()
         run: |
@@ -123,3 +149,294 @@ jobs:
           path: build/rodin/raw
           if-no-files-found: warn
           compression-level: 0
+
+  # --------------------------------------------------------------------------------------- Agartala
+  city:
+    needs: assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: { name: assets, path: ci-assets }
+      - name: Tools
+        run: python3 -c "import numpy, PIL" 2>/dev/null || pip install --break-system-packages -q numpy pillow
+      - name: Build the city (roads, lanes, buildings, landmarks, water, terrain, trees, map, light map)
+        run: |
+          mkdir -p work build/city_preview
+          python3 tools/city/build.py --assets ci-assets/assets/downloaded --out work --preview build/city_preview 2>&1 | tee build/city_log.txt | tail -40
+          ls -la work/Assets/Game/City
+      - name: Blender cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}
+      - name: Assemble the map in Blender (city.blend and aerial renders)
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          bash tools/install_blender.sh
+          ~/blender/blender -b --factory-startup -P tools/city/blender_build.py -- work/Assets/Game/City build/blender 2>&1 | tail -20
+          ls -la build/blender
+      - name: Publish previews
+        if: always()
+        run: |
+          shopt -s nullglob
+          for f in build/city_log.txt build/city_preview/*.png build/city_preview/*.jpg build/blender/*.png; do
+            gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true
+          done
+          if [ -f build/blender/city.blend ]; then gh release upload "$CI_RELEASE" build/blender/city.blend -R "$GITHUB_REPOSITORY" --clobber || true; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: city
+          path: work/Assets
+          if-no-files-found: error
+          retention-days: 3
+
+  # --------------------------------------------------------------------------------------- C# compile check
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/powershell /usr/share/swift || true
+      - uses: actions/checkout@v5
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+      - name: Match package versions to the editor
+        run: |
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > ProjectSettings/ProjectVersion.txt
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - name: Compile the scripts
+        env:
+          DG_ACCOUNT: ${{ secrets.UNITY_EMAIL }}
+        run: |
+          mkdir -p Logs
+          set +e
+          env -u UNITY_THISISABUILDMACHINE timeout 40m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android -logFile "$GITHUB_WORKSPACE/Logs/compile.log"
+          echo "Unity exited with $?"
+          set -e
+          {
+            echo "errors: $(grep -c 'error CS' Logs/compile.log || true)   (run ${{ github.run_id }}, commit ${GITHUB_SHA::7})"
+            grep -E "error CS[0-9]+|Shader error|warning CS0(162|168|219|414)" Logs/compile.log | sort | uniq || true
+            echo "---------------- licence / compilation lines ----------------"
+            grep -E "[Ll]icen[cs]e|Compilation|compil|Exiting|batchmode|Assembly-CSharp" Logs/compile.log | head -n 60 || true
+            echo "---------------- end of the log ----------------"
+            tail -n 80 Logs/compile.log || true
+          } > compile_report.txt
+          head -n 120 compile_report.txt
+          gh release upload "$CI_RELEASE" compile_report.txt -R "$GITHUB_REPOSITORY" --clobber || true
+          ! grep -q "error CS" Logs/compile.log
+
+  # --------------------------------------------------------------------------------------- the APK
+  apk:
+    needs: [assets, rodin, city, compile]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 170
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/share/swift /usr/local/julia* || true
+          df -h /
+      - uses: actions/checkout@v5
+      # (not into the project root: a lowercase "assets" folder next to "Assets" breaks Unity's import on Linux)
+      - uses: actions/download-artifact@v4
+        with: { name: assets, path: ci-assets }
+      - uses: actions/download-artifact@v4
+        with: { name: rodin, path: build/rodin/raw }
+      - uses: actions/download-artifact@v4
+        with: { name: city, path: Assets }
+      - name: Rig the characters, convert the models, the city, the skies and the sounds for Unity
+        run: |
+          python3 -m pip install --quiet --break-system-packages numpy pillow
+          mkdir -p build/models_preview
+          python3 tools/unity/convert_models.py --rodin build/rodin/raw --models tools/rodin/models.json --out . --preview build/models_preview 2>&1 | tee build/models_log.txt
+          python3 tools/unity/prepare.py --project . --assets ci-assets/assets/downloaded --credits ci-assets/build/CREDITS_AUTO.md
+          sudo apt-get install -y -qq --no-install-recommends librsvg2-bin >/dev/null 2>&1 || true
+          python3 tools/ui/make_ui.py --ui ci-assets/assets/downloaded/ui --out Assets/Resources/UI --branding Assets/Branding --font ci-assets/assets/downloaded/fonts/DisplayFont.ttf
+          gh release upload "$CI_RELEASE" build/ui_used.json -R "$GITHUB_REPOSITORY" --clobber || true
+          du -sh Assets/Resources/* | sort -h | tail -20
+          ls -d */ | tr '\n' ' '; echo
+          test ! -e assets
+          for f in build/models_log.txt build/models_preview/*.png; do gh release upload "$CI_RELEASE" "$f" -R "$GITHUB_REPOSITORY" --clobber || true; done
+      - name: Check Unity login secrets
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error title=Unity login needed::Add repository secrets UNITY_EMAIL and UNITY_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+      - name: Install Unity Hub
+        run: bash ci/install_unityhub.sh
+      - name: Install Unity ${{ env.UNITY_VERSION }} with Android support
+        uses: RageAgainstThePixel/unity-setup@v2
+        with:
+          unity-version: ${{ env.UNITY_VERSION }}
+          version-file: None
+          build-targets: Android
+          auto-update-hub: false
+          cache-installation: true
+      - name: Match package versions to the editor
+        run: |
+          python3 ci/match_packages.py "$UNITY_EDITOR_PATH" Packages/manifest.json
+          printf 'm_EditorVersion: %s\n' "$UNITY_VERSION" > ProjectSettings/ProjectVersion.txt
+      - name: Activate Unity Personal license
+        uses: RageAgainstThePixel/activate-unity-license@v2
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_EMAIL }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - name: Restore the signing key (keeps updates installable over older builds)
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: ci-keystore
+          key: danga-keystore-v1
+      - name: Create the signing key (first build only)
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ci-keystore
+          keytool -genkeypair -noprompt -keystore ci-keystore/dg.keystore -alias danga \
+            -keyalg RSA -keysize 2048 -validity 10000 -storepass dangamxyan -keypass dangamxyan \
+            -dname "CN=MXYAN GAMES, O=MXYAN GAMES"
+      - name: Build the APK with Unity 6
+        env:
+          DG_KEYSTORE: ${{ github.workspace }}/ci-keystore/dg.keystore
+          DG_KEYSTORE_PASS: dangamxyan
+          DG_KEY_ALIAS: danga
+        run: |
+          mkdir -p Logs Build
+          set +e
+          env -u UNITY_THISISABUILDMACHINE timeout 140m "$UNITY_EDITOR_PATH" -quit -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" -buildTarget Android \
+            -executeMethod Danga.EditorTools.DGBuild.BuildAndroid \
+            -buildNumber ${{ github.run_number }} \
+            -outputApk "Build/${APK_NAME}.apk" \
+            -testApk "Build/${APK_NAME}-emulator.apk" \
+            -logFile "$GITHUB_WORKSPACE/Logs/build.log"
+          status=$?
+          echo "Unity exited with code $status"
+          grep -E "\[DG" Logs/build.log | tail -n 80 || true
+          echo "---------------- compile errors ----------------"
+          grep -E "error CS[0-9]+" Logs/build.log | sort | uniq -c | sort -rn | head -n 60 || true
+          if [ $status -ne 0 ]; then
+            echo "---------------- errors ----------------"
+            grep -nE "Shader error|BuildFailedException|CommandInvokationFailure|FAILURE:|What went wrong|Exception:|executeMethod" Logs/build.log | head -n 80 || true
+            echo "---------------- end of log ----------------"
+            tail -n 60 Logs/build.log || true
+          fi
+          exit $status
+      - name: Publish the Unity log on the CI release
+        if: always()
+        env:
+          DG_ACCOUNT: ${{ secrets.UNITY_EMAIL }}
+        run: |
+          [ -f Logs/build.log ] && (grep -E "\[DG|error CS|Shader error|Exception|WARNING|Error" Logs/build.log | head -n 600 > unity_build_summary.txt; \
+            gh release upload "$CI_RELEASE" unity_build_summary.txt -R "$GITHUB_REPOSITORY" --clobber) || true
+          if [ -f Logs/build.log ]; then
+            UNITY_EMAIL="$DG_ACCOUNT" python3 ci/redact_log.py Logs/build.log unity_build_log.txt && gzip -9f unity_build_log.txt && \
+              gh release upload "$CI_RELEASE" unity_build_log.txt.gz -R "$GITHUB_REPOSITORY" --clobber || true
+          fi
+      - name: Check the APK
+        run: |
+          ls -la Build
+          test -f "Build/${APK_NAME}.apk"
+          unzip -l "Build/${APK_NAME}.apk" | grep -E "lib/arm64|libil2cpp|data.unity3d" | head -n 10 || true
+      - name: Keep the emulator APK for the test job
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: Build/${{ env.APK_NAME }}-emulator.apk
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 0
+      - name: Publish the APK as a GitHub release
+        id: publish
+        run: |
+          TAG="danga-v${{ github.run_number }}"
+          APK="Danga-${{ github.run_number }}.apk"
+          cp "Build/${APK_NAME}.apk" "$APK"
+          cp Assets/Resources/credits.txt CREDITS.txt 2>/dev/null || echo "DANGA - MXYAN GAMES" > CREDITS.txt
+          printf "DANGA - build %s (Unity %s, commit %s). MXYAN GAMES OFFICIAL.\n\nOpen world Agartala, Tripura: drive cars, bikes, autos, buses, the helicopter and the speedboat, steal any vehicle, buy guns at Danga Arms, change clothes at Fashion Point, save at your house, and dial cheat codes on your phone.\n\nIs page ko apne Android phone par kholo, **%s** download karo aur tap karke install karo (Android 7 ya naya, 64-bit). Agar Android bole ki app pehle se installed hai, to purana Danga uninstall karo.\n\nThe screenshots below come from an automatic play-through on an Android emulator (software graphics, so they look rougher than on a phone).\n" \
+            "${{ github.run_number }}" "$UNITY_VERSION" "${GITHUB_SHA::7}" "$APK" > notes.md
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$APK" CREDITS.txt --target "$GITHUB_SHA" --latest=false \
+            --title "DANGA (Unity 6) build ${{ github.run_number }}" --notes-file notes.md
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "### APK: https://github.com/${{ github.repository }}/releases/download/$TAG/$APK" >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------------------------- play it in an emulator
+  emulator:
+    needs: apk
+    if: always() && needs.apk.outputs.tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      TAG: ${{ needs.apk.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: ci
+      - name: Download the emulator APK
+        uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: smoke
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run the game in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          ram-size: 4096M
+          heap-size: 1024M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash ci/smoke_test.sh smoke
+      - name: Attach screenshots and the log to the release
+        if: always()
+        run: |
+          shopt -s nullglob
+          files=(smoke/out/*.png smoke/out/*.mp4 smoke/out/test-result.txt smoke/out/logcat-unity.txt)
+          ls -la smoke/out 2>/dev/null || true
+          if [ ${#files[@]} -gt 0 ] && [ -n "$TAG" ]; then
+            gh release upload "$TAG" "${files[@]}" --clobber -R "$GITHUB_REPOSITORY"
+          fi

@@ -23,3 +23,8 @@
 /ci-keystore/
 /ci-assets/
 __pycache__/
+/Assets/Resources/UI/
+/Assets/Branding/
+/Assets/Resources/*.json
+/Assets/Resources/credits.txt
+/work/
