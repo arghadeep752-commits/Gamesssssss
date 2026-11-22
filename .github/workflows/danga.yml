@@ -160,7 +160,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: assets, path: ci-assets }
       - name: Tools
-        run: python3 -c "import numpy, PIL" 2>/dev/null || pip install --break-system-packages -q numpy pillow
+        run: python3 -m pip install --break-system-packages -q numpy pillow matplotlib scipy
       - name: Build the city (roads, lanes, buildings, landmarks, water, terrain, trees, map, light map)
         run: |
           mkdir -p work build/city_preview
@@ -289,7 +289,7 @@ jobs:
         with: { name: city, path: Assets }
       - name: Rig the characters, convert the models, the city, the skies and the sounds for Unity
         run: |
-          python3 -m pip install --quiet --break-system-packages numpy pillow
+          python3 -m pip install --quiet --break-system-packages numpy pillow matplotlib scipy
           mkdir -p build/models_preview
           python3 tools/unity/convert_models.py --rodin build/rodin/raw --models tools/rodin/models.json --out . --preview build/models_preview 2>&1 | tee build/models_log.txt
           python3 tools/unity/prepare.py --project . --assets ci-assets/assets/downloaded --credits ci-assets/build/CREDITS_AUTO.md
