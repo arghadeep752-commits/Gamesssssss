@@ -91,7 +91,8 @@ namespace Danga
             weaponB = Ui.Round(rt, null, null, new Color(0, 0, 0, 0.01f), Ui.TR, new Vector2(-24, -14), 120, () => { if (Player.I != null) Player.I.NextWeapon(1); });
             wpnIcon = Ui.Img(weaponB.transform, "i_fist", Color.white, Ui.C, new Vector2(0, 6), new Vector2(92, 92));
             ammo = Ui.Txt(rt, "", 34, Color.white, TextAnchor.MiddleRight, Ui.TR, new Vector2(-150, -50), new Vector2(240, 40));
-            money = Ui.Txt(rt, "₹0", 64, new Color(0.45f, 0.78f, 0.38f), TextAnchor.MiddleRight, Ui.TR, new Vector2(-26, -132), new Vector2(560, 74), Ui.title);
+            money = Ui.Txt(rt, "0", 64, new Color(0.45f, 0.78f, 0.38f), TextAnchor.MiddleRight, Ui.TR, new Vector2(-26, -132), new Vector2(560, 74), Ui.title);
+            rupee = Ui.Img(rt, "i_rupee", new Color(0.45f, 0.78f, 0.38f), Ui.TR, new Vector2(-300, -140), new Vector2(46, 46));
             for (int i = 0; i < 5; i++)
                 starImgs.Add(Ui.Img(rt, "i_star", new Color(1, 1, 1, 0.22f), Ui.TR, new Vector2(-28 - (4 - i) * 50, -206), new Vector2(44, 44)));
             clock = Ui.Txt(rt, "", 28, new Color(1, 1, 1, 0.85f), TextAnchor.MiddleRight, Ui.TR, new Vector2(-28, -252), new Vector2(200, 34));
@@ -274,7 +275,8 @@ namespace Danga
             if (wpnIcon.sprite != Ui.S("i_" + def.icon)) wpnIcon.sprite = Ui.S("i_" + def.icon);
             ammo.text = def.melee ? "" : p.clip[(int)def.id] + "  " + p.ammo[(int)def.id];
             fire.icon.sprite = Ui.S(def.melee ? "i_" + def.icon : "i_target");
-            money.text = "₹" + Rupees(p.money);
+            money.text = Rupees(p.money);
+            rupee.rectTransform.anchoredPosition = new Vector2(-26f - money.preferredWidth - 52f, -146f);
             healthBar.rectTransform.sizeDelta = new Vector2((MapW * 0.6f - 4f) * Mathf.Clamp01(p.health / p.maxHealth), 8f);
             healthBar.color = p.health < 30f ? new Color(0.8f, 0.2f, 0.15f) : new Color(0.34f, 0.69f, 0.31f);
             armorBar.rectTransform.sizeDelta = new Vector2((MapW * 0.4f - 4f) * Mathf.Clamp01(p.armor / 100f), 8f);
