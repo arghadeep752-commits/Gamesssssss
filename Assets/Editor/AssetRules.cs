@@ -123,6 +123,26 @@ namespace Danga.EditorTools
             imp.SaveAndReimport();
         }
 
+        /// <summary>
+        /// The emulator's graphics cannot read compressed texture arrays (they come out black), so its test build gets
+        /// the city's surface layers uncompressed. The phone APK keeps the compressed ones.
+        /// </summary>
+        public static void EmulatorTextures()
+        {
+            foreach (string path in new[] { "Assets/Resources/Gen/City/layers.png", "Assets/Resources/Gen/City/layers_n.png" })
+            {
+                var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (imp == null) continue;
+                var ps = imp.GetPlatformTextureSettings("Android");
+                ps.overridden = true;
+                ps.format = TextureImporterFormat.RGBA32;
+                imp.SetPlatformTextureSettings(ps);
+                imp.SaveAndReimport();
+            }
+            var arr = AssetDatabase.LoadAssetAtPath<Texture2DArray>("Assets/Resources/Gen/City/layers.png");
+            Debug.Log("[DG] emulator city texture array: " + (arr != null ? arr.format.ToString() : "MISSING"));
+        }
+
         public static bool LongSound(string path)
         {
             string n = System.IO.Path.GetFileNameWithoutExtension(path);

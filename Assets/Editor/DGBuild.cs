@@ -75,10 +75,17 @@ namespace Danga.EditorTools
             AssetDatabase.SaveAssets();
 
             bool ok = BuildApk(scene, output, false);
+            if (!ok)
+            {
+                // Gradle sometimes cannot reach Maven for a moment: one more try before giving up
+                Debug.Log("[DG] the build failed; trying once more");
+                ok = BuildApk(scene, output, false);
+            }
             if (ok && !string.IsNullOrEmpty(testApk))
             {
                 // extra x86_64 APK with the build check compiled in, only for the emulator (never published)
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.X86_64;
+                AssetRules.EmulatorTextures();
                 bool testOk = BuildApk(scene, testApk, true);
                 if (!testOk) Debug.LogWarning("[DG] emulator test APK failed to build (the phone APK is fine)");
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
