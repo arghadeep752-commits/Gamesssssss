@@ -318,7 +318,7 @@ namespace Danga
                 if (driver != null && driver.isPlayer) Cam.Shake(Mathf.Clamp01(rv / 25f));
             }
             Damage((rv - 5f) * (spec.IsBike ? 6f : 12f), null);
-            if (spec.IsBike && rv > 10f && driver != null && driver.isPlayer)
+            if (spec.IsBike && rv > 14f && driver != null && driver.isPlayer)
             {
                 // thrown off the bike
                 var p = (Player)driver;

@@ -66,12 +66,14 @@ namespace Danga
             // the motorbike outside the house
             Vehicle bike = null;
             foreach (var v in Vehicle.all) if (v.owned) bike = v;
+            Log("house bike: " + (bike != null ? bike.spec.name + " at " + bike.transform.position : "none"));
             if (bike != null)
             {
                 p.EnterVehicle(bike);
                 yield return Wait(1f);
                 Hud.sGas = true;
-                yield return Wait(3f);
+                yield return Wait(1.6f);
+                Log("bike speed " + Mathf.RoundToInt(bike.Speed * 3.6f) + " km/h, riding " + (p.vehicle == bike));
                 yield return Snap("07-bike");
                 Hud.sGas = false;
                 yield return Wait(1.5f);
@@ -82,7 +84,8 @@ namespace Danga
             yield return Wait(1f);
             foreach (var v in Vehicle.all) if (v.spec.name == "sports_car" && v.driver == null) { p.EnterVehicle(v); break; }
             Hud.sGas = true;
-            yield return Wait(4f);
+            yield return Wait(3f);
+            Log("car: " + (p.vehicle != null ? p.vehicle.spec.name + " " + Mathf.RoundToInt(p.vehicle.Speed * 3.6f) + " km/h, grounded " + p.vehicle.Grounded : "not in a car"));
             yield return Snap("08-car");
             Hud.sGas = false;
             yield return Wait(1f);

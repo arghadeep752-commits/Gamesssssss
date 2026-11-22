@@ -390,6 +390,7 @@ namespace Danga
                 if (d is Ped) ((Ped)d).Flee(transform.position, 12f);
                 if (v.spec.police || (Wanted.CopsNear(transform.position, 40f))) Wanted.Crime(1.2f, transform.position);
             }
+            Debug.Log("[DG] enter " + v.spec.name);
             vehicle = v;
             v.TakeDriver(this);
             cc.enabled = false;
@@ -414,6 +415,7 @@ namespace Danga
         {
             if (vehicle == null) return;
             Vehicle v = vehicle;
+            Debug.Log("[DG] exit " + v.spec.name + (instant ? " (thrown or teleported)" : ""));
             Vector3 exit = v.transform.TransformPoint(v.spec.exit);
             if (!instant)
             {

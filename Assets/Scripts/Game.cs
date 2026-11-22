@@ -388,7 +388,7 @@ namespace Danga
 
         void MakeMarkers()
         {
-            var mat = new Material(Shader.Find("Sprites/Default"));
+            Shader ms = Shader.Find("Danga/Marker");
             foreach (var p in City.I.points)
             {
                 Color c;
@@ -406,8 +406,8 @@ namespace Danga
                 go.transform.position = p.p + Vector3.up * 0.75f;
                 go.transform.localScale = new Vector3(2.2f, 0.75f, 2.2f);
                 var r = go.GetComponent<MeshRenderer>();
-                r.sharedMaterial = mat;
-                r.material.color = c;
+                r.sharedMaterial = new Material(ms);
+                r.sharedMaterial.SetColor("_Color", new Color(c.r, c.g, c.b, 0.8f));
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 markers.Add(go);
             }
@@ -523,11 +523,19 @@ namespace Danga
             Player p = Player.I;
             Vector3 at = p.transform.position + p.transform.forward * (model == "bus" ? 9f : model == "helicopter" ? 12f : 5f);
             if (p.vehicle != null) at = p.vehicle.transform.position + p.vehicle.transform.right * 6f;
-            at.y = City.I.Ground(at, p.transform.position.y) + 0.4f;
+            at.y = GroundNear(at, p.transform.position.y) + 0.4f;
             var v = Vehicle.Spawn(model, at, p.transform.eulerAngles.y + 90f, false, Color.white);
             if (v == null) return null;
             v.parked = false;
             return model.Replace('_', ' ').ToUpper() + " READY";
+        }
+
+        /// <summary>The ground just under a point near the player's height (not the roof of a house above it).</summary>
+        static float GroundNear(Vector3 at, float fromY)
+        {
+            RaycastHit h;
+            if (Physics.Raycast(new Vector3(at.x, fromY + 2.5f, at.z), Vector3.down, out h, 12f, 1 << City.LayerWorld, QueryTriggerInteraction.Ignore)) return h.point.y;
+            return fromY;
         }
 
         string SpawnBoat()
