@@ -32,10 +32,21 @@ half DG_GroundShadow(float3 wpos)
     return lerp(1.0h, s, saturate(_DG_SunDir.w * 1.2h));
 }
 
+// A light film-style grade in every world shader (no extra post-processing pass on the phone):
+// a bit more colour, a gentle S-curve in gamma space, slightly warm.
+half3 DG_Grade(half3 c)
+{
+    half l = dot(c, half3(0.2126h, 0.7152h, 0.0722h));
+    c = max(lerp(l.xxx, c, 1.12h), 0.0h);
+    half3 g = sqrt(saturate(c));
+    g = lerp(g, g * g * (3.0h - 2.0h * g), 0.25h);
+    return g * g * half3(1.02h, 1.0h, 0.97h);
+}
+
 half3 DG_Fog(half3 col, float3 wpos)
 {
     float d = distance(wpos, _WorldSpaceCameraPos.xyz);
     half f = saturate((d - _DG_Fog.x) * _DG_Fog.y) * _DG_Fog.z;
-    return lerp(col, _DG_FogCol.rgb, f);
+    return DG_Grade(lerp(col, _DG_FogCol.rgb, f));
 }
 #endif

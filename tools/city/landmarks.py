@@ -118,7 +118,14 @@ class Site:
         for k in range(n):
             self.box(x, y0, z + step_d * (n - 1 - k) + step_d / 2, w, step_h * (k + 1), step_d, slc, col=col, tile=(1.0, 1.0), collide=False)
 
+    def keep_clear(self, x, z0, z1, w):
+        """No town buildings on this strip in front of the site (local coords), so its door opens onto the street."""
+        if self.grid is not None and hasattr(self.grid, "reserve_poly"):
+            self.grid.reserve_poly([self.W(x - w / 2, z0), self.W(x + w / 2, z0), self.W(x + w / 2, z1), self.W(x - w / 2, z1)])
+
     def place(self, kind, x, z, **kw):
+        if kind in ("house", "gunshop", "clothes", "hospital", "police"):
+            self.keep_clear(x, z - 1.0, z + 14.0, 10.0)        # the walk from the street to the door
         p = self.W(x, z)
         self.meta.setdefault("points", []).append(dict(kind=kind, name=self.name, p=[round(p[0], 2), round(self.y + kw.pop("y", 0.0), 2), round(p[1], 2)],
                                                         yaw=round(self.yaw + kw.pop("yaw", 0.0), 1), **kw))
@@ -131,6 +138,8 @@ def ujjayanta_palace(M, grid, col, meta):
     W = 120.0                          # half-length of the front
     # plinth / terrace
     s.ground([(-W - 8, -20), (W + 8, -20), (W + 8, 18), (-W - 8, 18)], L["marble"], col=(1, 1, 1), lift=0.04)
+    s.ground([(-7, 18), (7, 18), (7, 62), (-7, 62)], L["marble"], col=(1, 1, 1), lift=0.04, tile=(2, 2))   # walk to the garden
+    s.keep_clear(0, 18, 64, 80)                       # open lawn in front of the palace
     s.box(0, 0, -3, 2 * W + 6, 1.2, 26, L["marble"], col=(0.95, 0.93, 0.88), tile=(2.0, 1.2))
     base = 1.2
     # main two-storey block behind the verandas (local +z = forward, towards the garden)
@@ -764,16 +773,17 @@ def player_house(M, grid, col, meta):
             s.panel(x - 0.8, x + 0.8, y, y + 1.4, 2.53, L["window"], uvs=[(0.25, 0), (0.5, 0), (0.5, 1), (0.25, 1)], emis=0.5)
     s.panel(-0.8, 0.8, 0.0, 2.4, 2.53, L["wood"], col=(0.55, 0.3, 0.18))
     s.cyl(3, 6.95, -6, 0.65, 1.25, L["metal"], col=(0.08, 0.08, 0.09), seg=10)
-    # compound wall with a gate on the lane (front = north)
-    for x0, x1 in ((-12, -3), (3, 12)):
+    # compound wall with a wide open gate on the lane (front = north), so the bike and a car get out easily
+    for x0, x1 in ((-12, -4.5), (4.5, 12)):
         s.box((x0 + x1) / 2, 0, 12.7, x1 - x0, 1.6, 0.25, L["plaster"], col=(0.95, 0.6, 0.3))
+    for gx in (-4.75, 4.75):
+        s.box(gx, 0, 12.7, 0.6, 2.1, 0.6, L["plaster"], col=(1.0, 0.93, 0.78))     # gate pillars
     for side in (-1, 1):
         s.box(side * 12, 0, 0, 0.25, 1.6, 25.5, L["plaster"], col=(0.95, 0.6, 0.3))
     s.box(0, 0, -12.7, 24, 1.6, 0.25, L["plaster"], col=(0.95, 0.6, 0.3))
-    s.box(0, 1.0, 12.7, 6, 0.06, 0.06, L["metal"], col=(0.2, 0.2, 0.2), collide=False)
     s.place("house", 0, 4.5, label="Your House")
-    s.place("vehicle", 6.5, 8, model="motorbike", yaw=180, parked=True, owned=True)
-    s.place("spawn", 0, 9, yaw=0)
+    s.place("vehicle", 2.4, 7.5, model="motorbike", yaw=0, parked=True, owned=True)     # facing the gate
+    s.place("spawn", -2.2, 8.0, yaw=0)
     s.place("landmark", 0, 6, label="Your House", radius=12, icon="house")
     return s
 

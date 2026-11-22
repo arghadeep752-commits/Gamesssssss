@@ -35,8 +35,9 @@ def terrain(M, grid):
     S2 = np.full(X.shape, L["ground"], float)
     B = np.clip(0.5 + 0.9 * noise2(X, Z, 1.0), 0, 1) ** 1.5 * 0.85
     kind = np.vectorize(LY.district)(X, Z)
-    # towns are dustier
+    # towns are dustier, the palace lawns greener
     B = np.where(kind == "core", np.clip(B + 0.15, 0, 1), B)
+    B = np.where(kind == "park", B * 0.3, B)
     B = np.where(has, 1.0, B)
     # beach
     cz = np.vectorize(LY.coast_z)(X)
@@ -102,19 +103,19 @@ def terrain(M, grid):
     return X, Z, Y
 
 
-def distant_hills(M):
-    """A ring of low hills beyond the edge of the map, so the world does not end in a void (north and east), flat
-    Bangladesh plains to the west, the open sea to the south."""
-    m = M.extra("distant")
+HILL_RINGS = [1500.0, 2300.0, 3200.0]
+HILL_SEG = 72
+
+
+def _hill_heights():
+    """Heights of the distant hill rings: [ring][segment] (the same numbers every build)."""
     rnd = random.Random(3)
-    rings = [1500.0, 2300.0, 3200.0]
-    seg = 72
-    P, UV, I, C = [], [], [], []
-    for r_i, r in enumerate(rings):
-        for k in range(seg + 1):
-            a = 2 * math.pi * k / seg
+    out = []
+    for r_i, r in enumerate(HILL_RINGS):
+        row = []
+        for k in range(HILL_SEG + 1):
+            a = 2 * math.pi * k / HILL_SEG
             x, z = r * math.cos(a), r * math.sin(a)
-            h = 0.0
             if z > -700:                                   # hills north, east and west
                 h = 40 + 80 * max(0.0, math.sin(a * 3.0 + 1.0)) + 50 * max(0.0, math.cos(a * 5.0)) + rnd.uniform(0, 30)
                 if x < -900:
@@ -122,7 +123,91 @@ def distant_hills(M):
                 h *= (0.6 + 0.3 * r_i)
             else:
                 h = -12.0                                  # under the sea
-            P.append((x, h if r_i > 0 else min(h, 25.0), z))
+            row.append(h if r_i > 0 else min(h, 25.0))
+        row[-1] = row[0]
+        out.append(row)
+    return out
+
+
+def countryside_skirt(M):
+    """Paddy fields, river banks and the beach going on past the edge of the map up to the distant hills, so the town
+    never ends at a cliff into nothing (seen from the helicopter, the boat or a roof). Drawn like the terrain."""
+    m = M.extra("skirt", terrain=True)
+    H = LY.HALF
+    seg = 240
+    fr = np.array([0.0, 0.004, 0.012, 0.03, 0.06, 0.1, 0.15, 0.22, 0.3, 0.4, 0.52, 0.65, 0.8, 1.0])
+    A = np.linspace(0.0, 2 * math.pi, seg + 1)
+    ca, sa = np.cos(A), np.sin(A)
+    r_in = (H - 3.0) / np.maximum(np.abs(ca), np.abs(sa))        # starts just inside the square edge of the map
+    R = r_in[None, :] + (HILL_RINGS[0] - r_in[None, :]) * fr[:, None]
+    X, Z = R * ca[None, :], R * sa[None, :]
+    Y = LY.height(X, Z)
+    ring0 = np.array(_hill_heights()[0])
+    hr = np.interp(A, np.linspace(0.0, 2 * math.pi, HILL_SEG + 1), ring0)
+    t = LY.smooth(1050.0, HILL_RINGS[0], R)
+    Y = Y * (1 - t) + hr[None, :] * t
+    Y[0] -= 0.1                                                    # tucked under the edge of the terrain
+    # texture layers like the terrain: fields, dust, beach, muddy banks
+    cz = np.vectorize(LY.coast_z)(X)
+    beach = Z < cz + 60
+    S1 = np.full(X.shape, L["grass"], float)
+    S2 = np.full(X.shape, L["ground"], float)
+    B = np.clip(0.5 + 0.9 * noise2(X, Z, 1.0), 0, 1) ** 1.5 * 0.6
+    paddy = ~beach & (Y > -0.2) & (R > r_in[None, :] + 25.0) & (noise2(X * 0.6, Z * 0.6, 7.0) > -0.2)
+    S1 = np.where(paddy, L["paddy"], S1)
+    S2 = np.where(paddy, L["grass"], S2)
+    B = np.where(paddy, 0.0, B)
+    S1 = np.where(beach, L["sand"], S1)
+    S2 = np.where(beach, L["ground"], S2)
+    B = np.where(beach, np.clip((Z - (cz + 30)) / 30.0, 0, 1) * 0.7, B)
+    bank = (Y < -0.25) & ~beach
+    S1 = np.where(bank, L["ground"], S1)
+    S2 = np.where(bank, L["rock"], S2)
+    B = np.where(bank, np.clip(-Y / 3.0, 0, 1), B)
+    tint = (0.92 + 0.08 * noise2(X * 1.7, Z * 1.7, 3.0)) * (1.0 - 0.18 * t)
+    col = np.stack([tint * 0.98, tint, tint * 0.96], -1).reshape(-1, 3)
+    P = np.stack([X, Y, Z], -1).reshape(-1, 3)
+    UV = np.stack([X / 5.0, Z / 5.0], -1).reshape(-1, 2)
+    cols = seg + 1
+    I = []
+    for r in range(len(fr) - 1):
+        for k in range(seg):
+            a = r * cols + k
+            b, d = a + 1, a + cols
+            I += [a, d, d + 1, a, d + 1, b]
+    m.add(P, [(0, 1, 0)], UV, S1.reshape(-1), 1.0, col, 0.0, I, S2=S2.reshape(-1), B=B.reshape(-1))
+    _fix_up(m)
+    _smooth_normals(m)
+
+
+def _smooth_normals(m):
+    """Vertex normals from the triangles (the skirt is one smooth sheet)."""
+    a = m.arrays()
+    if a is None or "N" not in a:
+        return
+    P, I = a["P"], a["I"].reshape(-1, 3)
+    fn = np.cross(P[I[:, 1]] - P[I[:, 0]], P[I[:, 2]] - P[I[:, 0]])
+    N = np.zeros_like(P)
+    for j in range(3):
+        np.add.at(N, I[:, j], fn)
+    N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-9
+    N[N[:, 1] < 0] *= -1
+    m.N = [N]
+
+
+def distant_hills(M):
+    """A ring of low hills beyond the edge of the map, so the world does not end in a void (north and east), flat
+    Bangladesh plains to the west, the open sea to the south."""
+    m = M.extra("distant")
+    rings = HILL_RINGS
+    seg = HILL_SEG
+    heights = _hill_heights()
+    P, UV, I, C = [], [], [], []
+    for r_i, r in enumerate(rings):
+        for k in range(seg + 1):
+            a = 2 * math.pi * k / seg
+            x, z = r * math.cos(a), r * math.sin(a)
+            P.append((x, heights[r_i][k], z))
             UV.append((k / 4.0, r_i))
             C.append((0.55 + 0.1 * r_i, 0.6 + 0.08 * r_i, 0.55 + 0.12 * r_i))
     cols = seg + 1
@@ -355,7 +440,7 @@ def plant_trees(M, grid, colliders, seed=11):
             x = gx + rnd.uniform(-3.5, 3.5)
             z = gz + rnd.uniform(-3.5, 3.5)
             kind = LY.district(x, z)
-            dens = {"core": 0.04, "town": 0.12, "outskirts": 0.22, "beach": 0.10, "none": 0.2}[kind]
+            dens = {"core": 0.04, "town": 0.12, "outskirts": 0.22, "beach": 0.10, "park": 0.07, "none": 0.2}[kind]
             if rnd.random() > dens:
                 continue
             if not grid.free_point(x, z, 2.5):
@@ -393,7 +478,41 @@ def plant_trees(M, grid, colliders, seed=11):
             shade.append((x, z, r, 0.45))
         if rnd.random() < 0.35:
             bush(M, x + rnd.uniform(-3, 3), y, z + rnd.uniform(-3, 3), rnd)
+    edge_trees(M, rnd)
     return trees, shade
+
+
+def edge_trees(M, rnd):
+    """Groves just past the edge of the map (scenery only, no collision): the town fades into Tripura's
+    village greenery instead of ending at an empty field."""
+    H = LY.HALF
+    step = 15.0
+    n = 0
+    for gx in np.arange(-H - 240, H + 240, step):
+        for gz in np.arange(-H - 240, H + 240, step):
+            x = float(gx + rnd.uniform(-5, 5))
+            z = float(gz + rnd.uniform(-5, 5))
+            out = max(abs(x), abs(z)) - H           # metres past the edge
+            if out < 6 or out > 240:
+                continue
+            if z < LY.coast_z(x) + 45:               # beach and sea
+                continue
+            if rnd.random() > 0.42 - out * 0.0012:
+                continue
+            y = float(LY.height(np.array([x]), np.array([z]))[0])
+            if y < -0.2:                             # river banks
+                continue
+            r = rnd.random()
+            if r < 0.3:
+                palm(M, x, y, z, rnd, "coconut")
+            elif r < 0.42:
+                palm(M, x, y, z, rnd, "areca")
+            elif r < 0.55:
+                bamboo(M, x, y, z, rnd)
+            else:
+                broadleaf(M, x, y, z, rnd, rnd.random() < 0.3)
+            n += 1
+    print("[city] edge groves: %d trees" % n)
 
 
 # ================================================================================================= street furniture

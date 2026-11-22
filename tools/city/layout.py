@@ -133,7 +133,7 @@ SITES = {
     "Motor Stand": ((-40, -335), 0, (70, 40)),
     "Danga Arms": ((-560, 18), 0, (26, 18)),            # gun shop on Akhaura Road
     "Fashion Point": ((30, 360), 270, (22, 18)),          # clothes shop on HGB Road
-    "Player House": ((225, -248), 0, (24, 26)),           # your house in Krishnanagar
+    "Player House": ((225, -238.5), 0, (24, 26)),         # your house in Krishnanagar, gate right on the lane
     "Ghat": ((-260, -405), 180, (30, 20)),                # river steps at Battala
     "Swami Vivekananda Maidan": ((-150, 470), 0, (120, 66)),
 }
@@ -340,11 +340,13 @@ def zone_of(x, z):
 
 
 def district(x, z):
-    """Kind of town at a point: core (shops, 2-5 floors), town (houses 1-3 floors), outskirts (tin roofs), none."""
+    """Kind of town at a point: core (shops, 2-5 floors), town (houses 1-3 floors), park (palace grounds), beach, none."""
     if abs(x) > HALF - 40 or z > HALF - 40:
         return "none"
     if z < coast_z(x) + 70:
         return "beach"
+    if abs(x) < 249 and -139 < z < 199:
+        return "park"                  # the palace grounds: lawns, ponds, temples and trees, no houses
     # a small, crowded Indian town: shops and flats almost everywhere, houses towards the edges
     dc = math.hypot(x / 1.1, (z + 60) / 1.0)
     if dc < 520:

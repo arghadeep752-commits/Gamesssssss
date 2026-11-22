@@ -412,6 +412,8 @@ namespace Danga
             }
         }
 
+        float edgeToast;
+
         void Update()
         {
             if (state == S.Loading) return;
@@ -426,6 +428,11 @@ namespace Danga
             if (state != S.Play) { if (hud != null) hud.SetContext(null, null); return; }
             Wanted.Tick();
             Player p = Player.I;
+            if (p.KeepInside(City.Half - 14f) && Time.time > edgeToast)
+            {
+                edgeToast = Time.time + 4f;
+                Hud.Toast("END OF THE MAP", Ui.Yellow, 2f);
+            }
             // shops, house and hospital
             string label = null;
             System.Action act = null;
@@ -522,11 +529,52 @@ namespace Danga
             Player p = Player.I;
             Vector3 at = p.transform.position + p.transform.forward * (model == "bus" ? 9f : model == "helicopter" ? 12f : 5f);
             if (p.vehicle != null) at = p.vehicle.transform.position + p.vehicle.transform.right * 6f;
-            at.y = GroundNear(at, p.transform.position.y) + 0.4f;
-            var v = Vehicle.Spawn(model, at, p.transform.eulerAngles.y + 90f, false, Color.white);
+            float yaw = p.transform.eulerAngles.y + 90f;
+            Vector3 road;
+            float roadYaw;
+            if (model != "helicopter" && p.vehicle == null && NearestRoad(p.transform.position, 45f, out road, out roadYaw))
+            {
+                at = road;          // on the street next to you, pointing along it (not inside a yard or on a roof)
+                yaw = roadYaw;
+            }
+            at.y = GroundNear(at, Mathf.Max(at.y, p.transform.position.y)) + 0.4f;
+            var v = Vehicle.Spawn(model, at, yaw, false, Color.white);
             if (v == null) return null;
             v.parked = false;
             return model.Replace('_', ' ').ToUpper() + " READY";
+        }
+
+        /// <summary>The closest point of a traffic lane (not inside a junction) within reach, and the lane's heading there.</summary>
+        static bool NearestRoad(Vector3 from, float reach, out Vector3 at, out float yaw)
+        {
+            at = from;
+            yaw = 0f;
+            if (Traffic.I == null) return false;
+            float best = reach;
+            Path bestL = null;
+            float bestS = 0f;
+            foreach (var L in Traffic.I.lanes)
+            {
+                if (L.junction || L.len < 12f) continue;
+                float dist;
+                float s = L.Nearest(from, out dist);
+                if (dist < best) { best = dist; bestL = L; bestS = s; }
+            }
+            if (bestL == null) return false;
+            bestS = Mathf.Clamp(bestS, 4f, bestL.len - 4f);
+            Vector3 dir;
+            at = bestL.At(bestS, out dir);
+            // move on along the lane if a car is standing right there
+            for (int k = 0; k < 6; k++)
+            {
+                bool busy = false;
+                foreach (var v in Vehicle.all) if (v != null && (v.transform.position - at).sqrMagnitude < 5f * 5f) { busy = true; break; }
+                if (!busy) break;
+                bestS = Mathf.Min(bestL.len - 2f, bestS + 6f);
+                at = bestL.At(bestS, out dir);
+            }
+            yaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            return true;
         }
 
         /// <summary>The ground just under a point near the player's height (not the roof of a house above it).</summary>

@@ -477,7 +477,7 @@ namespace Danga
                 go.transform.SetParent(transform, false);
                 go.AddComponent<MeshFilter>().sharedMesh = m;
                 var mr = go.AddComponent<MeshRenderer>();
-                mr.sharedMaterial = name == "sea" ? seaMat : mats[0];
+                mr.sharedMaterial = name == "sea" ? seaMat : name == "skirt" ? mats[3] : mats[0];
                 mr.shadowCastingMode = ShadowCastingMode.Off;
                 mr.receiveShadows = false;
             }

@@ -230,14 +230,14 @@ def place_lots(roads, grid, M, colliders, seed=7, objects=None):
                 dvec /= dl
                 left = np.array([-dvec[1], dvec[0]])
                 kind = LY.district(p[0], p[1])
-                if kind in ("none", "beach"):
+                if kind in ("none", "beach", "park"):
                     i += 8
                     continue
                 if kind == "core":
                     lw, gap, setback, depth = rnd.uniform(6.0, 11.0), rnd.choice([0.0, 0.0, 0.3, 1.0]), 0.4, rnd.uniform(10, 16)
                     floors = rnd.choice([2, 3, 3, 4, 4, 5]) if cls == "A" else rnd.choice([1, 2, 2, 3, 3, 4])
                     style = "shop" if cls in ("A", "B") or rnd.random() < 0.4 else "house"
-                    if rnd.random() < 0.08:
+                    if cls == "A" and rnd.random() < 0.07:
                         style, floors, lw = "modern", rnd.choice([4, 5, 6]), rnd.uniform(14, 20)
                 elif kind == "town":
                     lw, gap, setback, depth = rnd.uniform(7.0, 12.0), rnd.uniform(1.5, 5.0), rnd.uniform(1.5, 4.0), rnd.uniform(9, 14)

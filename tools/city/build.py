@@ -116,6 +116,17 @@ class Grid:
     def mark_rect(self, cx, cz, w, d, dvec, kind):
         self.mark_poly(self._rect_poly(cx, cz, w, d, dvec), kind)
 
+    def reserve_poly(self, poly):
+        """Keep the free cells of an area free of town buildings (the way from a gate to the road); roads stay roads."""
+        xs = [p[0] for p in poly]
+        zs = [p[1] for p in poly]
+        i0, i1, j0, j1 = self._bbox(xs, zs, self.cell)
+        if i1 <= i0 or j1 <= j0:
+            return
+        m = self._poly_mask(poly, i0, i1, j0, j1)
+        sub = self.occ[j0:j1, i0:i1]
+        sub[m & (sub == 0)] = KIND["site"]
+
     def rect_free(self, cx, cz, w, d, dvec):
         if abs(cx) > LY.HALF - 30 or abs(cz) > LY.HALF - 30:
             return False
@@ -172,9 +183,9 @@ class Chunks:
             self.m[k] = Mesh(terrain=(group == "terrain"))
         return self.m[k]
 
-    def extra(self, name):
+    def extra(self, name, terrain=False):
         if name not in self.extras:
-            self.extras[name] = Mesh()
+            self.extras[name] = Mesh(terrain=terrain)
         return self.extras[name]
 
 
@@ -273,6 +284,7 @@ def generate(assets):
     nature.terrain(M, grid)
     nature.water(M)
     nature.distant_hills(M)
+    nature.countryside_skirt(M)
     log("terrain and water (%.1fs)" % (time.time() - t0))
     return dict(M=M, grid=grid, roads=roads, meta=meta, colliders=colliders, buildings=blds, trees=trees, shade=shade)
 

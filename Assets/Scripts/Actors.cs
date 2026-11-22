@@ -181,6 +181,33 @@ namespace Danga
             if (vehicle != null) { ShowBody(vehicle.spec.open); SitAnim(); }
         }
 
+        /// <summary>The land past the edge of the map is only scenery: keep the player (and the vehicle) inside.</summary>
+        public bool KeepInside(float lim)
+        {
+            Transform t = vehicle != null ? vehicle.transform : transform;
+            Vector3 pos = t.position;
+            if (Mathf.Abs(pos.x) <= lim && Mathf.Abs(pos.z) <= lim) return false;
+            Vector3 c = new Vector3(Mathf.Clamp(pos.x, -lim, lim), pos.y, Mathf.Clamp(pos.z, -lim, lim));
+            Vector3 o = pos - c;
+            o.y = 0f;
+            o.Normalize();
+            if (vehicle != null && vehicle.rb != null && !vehicle.rb.isKinematic)
+            {
+                var rb = vehicle.rb;
+                rb.position = new Vector3(c.x, rb.position.y, c.z);
+                Vector3 v = rb.linearVelocity;
+                float ov = Vector3.Dot(v, o);
+                if (ov > 0f) rb.linearVelocity = v - o * ov * 1.5f;
+            }
+            else if (vehicle == null)
+            {
+                cc.enabled = false;
+                transform.position = c;
+                cc.enabled = true;
+            }
+            return true;
+        }
+
         public void Teleport(Vector3 p, float yaw)
         {
             if (vehicle != null) ExitVehicle(true);

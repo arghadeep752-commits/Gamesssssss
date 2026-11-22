@@ -205,7 +205,8 @@ namespace Danga
             if (old != null) Destroy(old.gameObject);
             var cash = w.Find("cash");
             if (cash != null) Destroy(cash.gameObject);
-            var ct = Ui.Txt(w, "₹ " + Hud.Rupees(p.money), 50, new Color(0.6f, 1f, 0.55f), TextAnchor.MiddleLeft, Ui.TL, new Vector2(50, -40), new Vector2(500, 70), Ui.body);
+            // money sits in the title band, right side (left of the close button), like the HUD
+            var ct = Ui.Txt(w, "₹ " + Hud.Rupees(p.money), 56, new Color(0.45f, 0.78f, 0.38f), TextAnchor.MiddleRight, Ui.TR, new Vector2(-120, 0), new Vector2(600, 100), Ui.body);
             ct.name = "cash";
             var list = Scroll(w, new Vector2(0, -120), new Vector2(1400, 760));
             foreach (var d in Combat.Defs)
@@ -457,6 +458,8 @@ namespace Danga
             var ri = m.gameObject.AddComponent<RawImage>();
             ri.texture = tex;
             float H = City.Half, k = 1000f / (2f * H);
+            var used = new List<Rect>();          // icons first, then the names wherever they fit without overlapping
+            var names = new List<City.MapPoint>();
             foreach (var p in City.I.points)
             {
                 string icon = null;
@@ -476,9 +479,26 @@ namespace Danga
                 {
                     var bg = Ui.Img(m, "mask_circle", new Color(0, 0, 0, 0.8f), Ui.C, pos, new Vector2(44, 44));
                     Ui.Img(bg.transform, "i_" + icon, c, Ui.C, Vector2.zero, new Vector2(30, 30));
+                    used.Add(new Rect(pos.x - 22f, pos.y - 22f, 44f, 44f));
                 }
-                else if (p.kind == "landmark")
-                    Ui.Txt(m, p.label, 20, Color.white, TextAnchor.MiddleCenter, Ui.C, pos, new Vector2(260, 30), Ui.body, true);
+                else if (p.kind == "landmark" && !string.IsNullOrEmpty(p.label)) names.Add(p);
+            }
+            Vector2[] tries = { Vector2.zero, new Vector2(0, 26), new Vector2(0, -26), new Vector2(0, 50), new Vector2(0, -50) };
+            foreach (var p in names)
+            {
+                string label = p.label.Split('(')[0].Trim();
+                float tw = label.Length * 10.5f + 12f;
+                Vector2 basePos = new Vector2((p.p.x + H) * k - 500f, (p.p.z + H) * k - 500f);
+                foreach (var off in tries)
+                {
+                    Vector2 q = basePos + off;
+                    q.x = Mathf.Clamp(q.x, -500f + tw * 0.5f, 500f - tw * 0.5f);
+                    var r = new Rect(q.x - tw * 0.5f, q.y - 13f, tw, 26f);
+                    if (q.y < -486f || q.y > 486f || used.Exists(o => o.Overlaps(r))) continue;
+                    used.Add(r);
+                    Ui.Txt(m, label, 20, Color.white, TextAnchor.MiddleCenter, Ui.C, q, new Vector2(tw + 20f, 30), Ui.body, true);
+                    break;
+                }
             }
             Player pl = Player.I;
             Vector3 pp = pl.vehicle != null ? pl.vehicle.transform.position : pl.transform.position;

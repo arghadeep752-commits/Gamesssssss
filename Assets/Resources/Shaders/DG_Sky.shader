@@ -35,7 +35,7 @@ Shader "Danga/Sky"
                 c += _DG_SunCol.rgb * (pow(s, 900.0h) * 6.0h + pow(s, 12.0h) * 0.18h) * _DG_SunDir.w;
                 // haze towards the horizon so the fog meets the sky
                 c = lerp(c, _DG_FogCol.rgb, saturate(1.0h - abs(d.y) * 7.0h) * 0.75h);
-                return half4(c, 1);
+                return half4(DG_Grade(c), 1);
             }
             ENDCG
         }
