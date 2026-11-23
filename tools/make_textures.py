@@ -50,8 +50,17 @@ def save_gray(a, name):
     Image.fromarray((np.clip(a, 0, 1) * 255).round().astype(np.uint8), "L").save(os.path.join(OUT, name))
 
 
-def build(name, src_img, size, wrap, normal_strength, rough_fn, height_blur=1.0, brighten=1.0):
+def green_shift(img, degrees):
+    """Turn the lime (yellow-green) wallpaper into a true green: rotate the hue, keep the pattern."""
+    hsv = np.asarray(img.convert("HSV")).astype(np.int32)
+    hsv[..., 0] = (hsv[..., 0] + round(degrees * 255 / 360)) % 256
+    return Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB")
+
+
+def build(name, src_img, size, wrap, normal_strength, rough_fn, height_blur=1.0, brighten=1.0, hue_shift=0):
     img = src_img.convert("RGB").resize(size, Image.LANCZOS)
+    if hue_shift:
+        img = green_shift(img, hue_shift)
     if brighten != 1.0:
         # the door photo is under-exposed (white paint shows as grey); lift it a little
         img = Image.fromarray(np.clip(np.asarray(img).astype(np.float64) * brighten, 0, 255).astype(np.uint8))
@@ -94,7 +103,7 @@ def main():
                            os.path.join(SRC, "floor.jpg"), tile, "619", "401"])
     build("floor", Image.open(tile), (1024, 664), True, 6.0, floor_rough)
     os.remove(tile)
-    build("wall", Image.open(os.path.join(SRC, "wall.jpg")), (1024, 1152), True, 2.5, wall_rough)
+    build("wall", Image.open(os.path.join(SRC, "wall.jpg")), (1024, 1152), True, 2.5, wall_rough, hue_shift=45)
     build("door", Image.open(os.path.join(SRC, "door.jpg")), (512, 1372), False, 5.0, door_rough, 1.4, brighten=1.18)
 
 
