@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b45tprdh8nvgk"
-path="res://.godot/imported/scene.gltf-96b2da916d183a8c3dbf7741bf908a80.scn"
+uid="uid://n2pk58kx3tas"
+path="res://.godot/imported/chest.gltf-437285ec06c83e81157c5d2ebcb553c8.scn"
 
 [deps]
 
-source_file="res://assets/models/dresser/scene.gltf"
-dest_files=["res://.godot/imported/scene.gltf-96b2da916d183a8c3dbf7741bf908a80.scn"]
+source_file="res://assets/models/chest/chest.gltf"
+dest_files=["res://.godot/imported/chest.gltf-437285ec06c83e81157c5d2ebcb553c8.scn"]
 
 [params]
 

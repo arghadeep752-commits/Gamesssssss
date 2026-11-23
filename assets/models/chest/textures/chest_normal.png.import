@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://clvk2ns3uqoe8"
-path.s3tc="res://.godot/imported/lambert1_normal.png-28fd1ec85420f0aa2b9a0237e5277375.s3tc.ctex"
-path.etc2="res://.godot/imported/lambert1_normal.png-28fd1ec85420f0aa2b9a0237e5277375.etc2.ctex"
+uid="uid://bjd2r1wu0x8ae"
+path.s3tc="res://.godot/imported/chest_normal.png-f88db782b004a0f747b0909dbf013221.s3tc.ctex"
+path.etc2="res://.godot/imported/chest_normal.png-f88db782b004a0f747b0909dbf013221.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/models/old_couch/textures/lambert1_normal.png"
-dest_files=["res://.godot/imported/lambert1_normal.png-28fd1ec85420f0aa2b9a0237e5277375.s3tc.ctex", "res://.godot/imported/lambert1_normal.png-28fd1ec85420f0aa2b9a0237e5277375.etc2.ctex"]
+source_file="res://assets/models/chest/textures/chest_normal.png"
+dest_files=["res://.godot/imported/chest_normal.png-f88db782b004a0f747b0909dbf013221.s3tc.ctex", "res://.godot/imported/chest_normal.png-f88db782b004a0f747b0909dbf013221.etc2.ctex"]
 
 [params]
 

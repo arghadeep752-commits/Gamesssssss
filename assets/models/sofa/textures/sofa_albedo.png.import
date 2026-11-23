@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bw0tnukfy4ygt"
-path.s3tc="res://.godot/imported/m_Drawer_baseColor.png-429a393bfa64fcd08e73ca23f5ed0975.s3tc.ctex"
-path.etc2="res://.godot/imported/m_Drawer_baseColor.png-429a393bfa64fcd08e73ca23f5ed0975.etc2.ctex"
+uid="uid://cyondexv3xc5w"
+path.s3tc="res://.godot/imported/sofa_albedo.png-74dcd8cfe353eebdd0d49cd92e4edd28.s3tc.ctex"
+path.etc2="res://.godot/imported/sofa_albedo.png-74dcd8cfe353eebdd0d49cd92e4edd28.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/models/dresser/textures/m_Drawer_baseColor.png"
-dest_files=["res://.godot/imported/m_Drawer_baseColor.png-429a393bfa64fcd08e73ca23f5ed0975.s3tc.ctex", "res://.godot/imported/m_Drawer_baseColor.png-429a393bfa64fcd08e73ca23f5ed0975.etc2.ctex"]
+source_file="res://assets/models/sofa/textures/sofa_albedo.png"
+dest_files=["res://.godot/imported/sofa_albedo.png-74dcd8cfe353eebdd0d49cd92e4edd28.s3tc.ctex", "res://.godot/imported/sofa_albedo.png-74dcd8cfe353eebdd0d49cd92e4edd28.etc2.ctex"]
 
 [params]
 

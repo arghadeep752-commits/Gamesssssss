@@ -16,7 +16,8 @@ On a computer: WASD or arrows, drag the mouse to look, E to use.
 - `main.tscn` - the room, lights and environment
 - `scenes/player.tscn`, `scenes/door.tscn`, `scenes/hud.tscn` - player, door, on-screen controls
 - `scripts/` - the GDScript code (`dresser.gd` / `drawer.gd` make the drawers open)
-- `assets/models/` - the Sketchfab sofa and chest of drawers
+- `assets/models/` - the sofa and chest of drawers, made in Blender for this game
+  (`tools/blender/make_furniture.py`, run by the "make furniture in Blender" workflow)
 - `assets/` - textures, materials, font, sounds, UI images
 - `tools/` - scripts that made the textures, UI images and room reflection (not part of the game)
 

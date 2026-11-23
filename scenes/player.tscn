@@ -11,23 +11,23 @@ resource_local_to_scene = true
 radius = 0.3
 height = 1.8
 
-[node name="Player" type="CharacterBody3D" unique_id=2144367270]
+[node name="Player" type="CharacterBody3D" unique_id=1015637864]
 script = ExtResource("1_qlg0r")
 footstep_sounds = Array[AudioStream]([ExtResource("2_tuyoq"), ExtResource("3_fjrip"), ExtResource("4_smehm"), ExtResource("5_ur7pv")])
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2110851274]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1063216965]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_y4r1p")
 
-[node name="Head" type="Node3D" parent="." unique_id=233727863]
+[node name="Head" type="Node3D" parent="." unique_id=520957899]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 
-[node name="Camera3D" type="Camera3D" parent="Head" unique_id=499082999]
+[node name="Camera3D" type="Camera3D" parent="Head" unique_id=1289154878]
 current = true
 fov = 70.0
 
-[node name="InteractRay" type="RayCast3D" parent="Head/Camera3D" unique_id=1897971973]
+[node name="InteractRay" type="RayCast3D" parent="Head/Camera3D" unique_id=542270739]
 target_position = Vector3(0, 0, -2)
 
-[node name="Footsteps" type="AudioStreamPlayer" parent="." unique_id=804630131]
+[node name="Footsteps" type="AudioStreamPlayer" parent="." unique_id=449787703]
 volume_db = -6.0

@@ -7,10 +7,10 @@
 [ext_resource type="Texture2D" path="res://assets/ui/interact.png" id="5_mphia"]
 [ext_resource type="Script" path="res://scripts/pointer.gd" id="6_0m4u7"]
 
-[node name="HUD" type="CanvasLayer" unique_id=1727648484]
+[node name="HUD" type="CanvasLayer" unique_id=1981949352]
 script = ExtResource("1_047uy")
 
-[node name="Root" type="Control" parent="." unique_id=1756892734]
+[node name="Root" type="Control" parent="." unique_id=2000626486]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,7 +18,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 theme = ExtResource("2_5pdws")
 
-[node name="Joystick" type="TextureRect" parent="Root" unique_id=2085458882]
+[node name="Joystick" type="TextureRect" parent="Root" unique_id=629233849]
 unique_name_in_owner = true
 layout_mode = 0
 anchor_top = 1.0
@@ -32,7 +32,7 @@ texture = ExtResource("3_hd3ao")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Knob" type="TextureRect" parent="Root/Joystick" unique_id=1183841043]
+[node name="Knob" type="TextureRect" parent="Root/Joystick" unique_id=2003543589]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 52.0
@@ -44,7 +44,7 @@ texture = ExtResource("4_0i1j5")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="UseButton" type="TextureRect" parent="Root" unique_id=1376900643]
+[node name="UseButton" type="TextureRect" parent="Root" unique_id=297056804]
 unique_name_in_owner = true
 layout_mode = 0
 anchor_left = 1.0
@@ -58,7 +58,7 @@ texture = ExtResource("5_mphia")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Pointer" type="Control" parent="Root" unique_id=284206532]
+[node name="Pointer" type="Control" parent="Root" unique_id=713310826]
 anchors_preset = 0
 anchor_left = 0.5
 anchor_top = 0.5
@@ -71,7 +71,7 @@ offset_bottom = 20.0
 mouse_filter = 2
 script = ExtResource("6_0m4u7")
 
-[node name="ObjectName" type="Label" parent="Root" unique_id=511869979]
+[node name="ObjectName" type="Label" parent="Root" unique_id=1361835538]
 unique_name_in_owner = true
 layout_mode = 0
 anchor_left = 0.5
@@ -90,7 +90,7 @@ text = "DOOR"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Message" type="Label" parent="Root" unique_id=1279636641]
+[node name="Message" type="Label" parent="Root" unique_id=67315133]
 unique_name_in_owner = true
 layout_mode = 0
 anchor_right = 1.0
@@ -103,7 +103,7 @@ theme_override_constants/shadow_offset_y = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Fade" type="ColorRect" parent="Root" unique_id=801643882]
+[node name="Fade" type="ColorRect" parent="Root" unique_id=211906689]
 unique_name_in_owner = true
 layout_mode = 0
 anchor_right = 1.0

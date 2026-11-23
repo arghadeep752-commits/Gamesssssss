@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bvhc5ojvpwmgl"
-path.s3tc="res://.godot/imported/m_DresserBase_baseColor.png-77dcfa6430a826eb9e2ba8222a86aeec.s3tc.ctex"
-path.etc2="res://.godot/imported/m_DresserBase_baseColor.png-77dcfa6430a826eb9e2ba8222a86aeec.etc2.ctex"
+uid="uid://c2e5hcqf8dp16"
+path.s3tc="res://.godot/imported/chest_orm.png-7df2e51df51111ad18c9e25cd79f183b.s3tc.ctex"
+path.etc2="res://.godot/imported/chest_orm.png-7df2e51df51111ad18c9e25cd79f183b.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/models/dresser/textures/m_DresserBase_baseColor.png"
-dest_files=["res://.godot/imported/m_DresserBase_baseColor.png-77dcfa6430a826eb9e2ba8222a86aeec.s3tc.ctex", "res://.godot/imported/m_DresserBase_baseColor.png-77dcfa6430a826eb9e2ba8222a86aeec.etc2.ctex"]
+source_file="res://assets/models/chest/textures/chest_orm.png"
+dest_files=["res://.godot/imported/chest_orm.png-7df2e51df51111ad18c9e25cd79f183b.s3tc.ctex", "res://.godot/imported/chest_orm.png-7df2e51df51111ad18c9e25cd79f183b.etc2.ctex"]
 
 [params]
 

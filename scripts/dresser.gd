@@ -1,5 +1,6 @@
 extends Node3D
-## Chest of drawers ($Model, a Sketchfab model). Every drawer slides open with USE and shut again.
+## Chest of drawers ($Model, made in Blender by tools/blender/make_furniture.py).
+## Every drawer slides open with USE and shut again.
 
 const DrawerScript := preload("res://scripts/drawer.gd")
 const SolidProp := preload("res://scripts/solid_prop.gd")
@@ -27,14 +28,14 @@ func _ready() -> void:
 	# the front is where the handles stick out
 	var front := Vector3.ZERO
 	for drawer in drawers:
-		var handle := SolidProp.mesh_box(self, drawer, "Handle")
-		var body := SolidProp.mesh_box(self, drawer, "_m_Drawer")
+		var handle := SolidProp.mesh_box(self, drawer, "Knob")
+		var body := SolidProp.mesh_box(self, drawer, "Box")
 		front += handle.get_center() - body.get_center()
 	front.y = 0.0
 	front = Vector3(signf(front.x), 0, 0) if absf(front.x) > absf(front.z) else Vector3(0, 0, signf(front.z))
 
 	# the dresser body (without the drawers)
-	var frame := SolidProp.mesh_box(self, model, "DresserFrame")
+	var frame := SolidProp.mesh_box(self, model, "Frame")
 	if front.x > 0.5:
 		frame.size.x -= FRONT_RECESS
 	elif front.x < -0.5:
