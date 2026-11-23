@@ -1,0 +1,51 @@
+name: Soul Eater Test - make furniture in Blender
+
+# Runs tools/blender/make_furniture.py in Blender (no window) and uploads the models,
+# textures and preview renders. Only runs when the Blender script changes.
+on:
+  push:
+    branches: [locked-room]
+    paths:
+      - 'tools/blender/**'
+      - '.github/workflows/locked-room-blender.yml'
+  workflow_dispatch:
+
+env:
+  BLENDER_SERIES: '4.2'
+
+jobs:
+  furniture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Blender cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_SERIES }}-lts-linux-x64
+
+      - name: Install Blender ${{ env.BLENDER_SERIES }} LTS
+        run: |
+          S=$BLENDER_SERIES
+          mkdir -p ~/blender && cd ~/blender
+          if [ ! -x app/blender ]; then
+            F=$(curl -fsSL "https://download.blender.org/release/Blender$S/" | grep -o "blender-$S\.[0-9]*-linux-x64\.tar\.xz" | sort -uV | tail -1)
+            [ -n "$F" ] || F="blender-$S.0-linux-x64.tar.xz"
+            echo "Downloading $F"
+            curl -fsSL --retry 3 -o b.tar.xz "https://download.blender.org/release/Blender$S/$F"
+            tar xf b.tar.xz && rm b.tar.xz && mv blender-$S.*-linux-x64 app
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libx11-6 libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 libice6 libgl1 libegl1 > /dev/null
+          ~/blender/app/blender --version
+
+      - name: Model, bake and export the furniture
+        run: ~/blender/app/blender -b --python-exit-code 1 -P tools/blender/make_furniture.py -- out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: furniture
+          path: out
+          retention-days: 14
