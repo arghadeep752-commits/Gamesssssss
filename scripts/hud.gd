@@ -8,7 +8,8 @@ extends CanvasLayer
 
 const BUTTON_MARGIN := 18.0      # the USE button is a bit easier to hit than it looks
 const JOYSTICK_GRAB := 1.4       # a touch this far from the joystick (in radii) still grabs it
-const JOYSTICK_TRAVEL := 0.42    # how far the knob can move, as a part of the ring's radius
+const JOYSTICK_TRAVEL := 1.2     # how far the knob can move (in ring radii) - it can slide out of the ring
+const FULL_SPEED_AT := 0.6       # full walking speed once the knob is this far out (in ring radii)
 const DEAD_ZONE := 0.12
 
 var player: Node                 # set by main.gd
@@ -95,7 +96,7 @@ func _move_knob(pos: Vector2) -> void:
 	var travel := _joystick_radius() * JOYSTICK_TRAVEL
 	var offset := (pos - _joystick_center()).limit_length(travel)
 	knob.position = (joystick.size - knob.size) * 0.5 + offset
-	var amount := offset / travel
+	var amount := (offset / (_joystick_radius() * FULL_SPEED_AT)).limit_length(1.0)
 	player.move_input = amount if amount.length() > DEAD_ZONE else Vector2.ZERO
 
 

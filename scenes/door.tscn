@@ -37,39 +37,39 @@ material = ExtResource("8_ykb3b")
 radius = 0.03
 height = 0.06
 
-[node name="Door" type="StaticBody3D" unique_id=2114576130]
+[node name="Door" type="StaticBody3D" unique_id=1053808577]
 script = ExtResource("1_ju5n0")
 rattle_sounds = Array[AudioStream]([ExtResource("2_kgbum"), ExtResource("3_pg2b6"), ExtResource("4_ey00f"), ExtResource("5_4ayau")])
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1672865040]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=118703356]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.065, 0)
 shape = SubResource("BoxShape3D_ali40")
 
-[node name="Panel" type="Node3D" parent="." unique_id=963173360]
+[node name="Panel" type="Node3D" parent="." unique_id=987888505]
 
-[node name="Slab" type="MeshInstance3D" parent="Panel" unique_id=1094826647]
+[node name="Slab" type="MeshInstance3D" parent="Panel" unique_id=656009495]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.065, 0)
 mesh = SubResource("BoxMesh_dmmdo")
 
-[node name="Face" type="MeshInstance3D" parent="Panel" unique_id=1146791428]
+[node name="Face" type="MeshInstance3D" parent="Panel" unique_id=413465180]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.065, 0.0202)
 mesh = SubResource("QuadMesh_8m42n")
 
-[node name="Knob" type="Node3D" parent="Panel" unique_id=1613698012]
+[node name="Knob" type="Node3D" parent="Panel" unique_id=441208691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32864, 0.92508, 0.02)
 
-[node name="Rose" type="MeshInstance3D" parent="Panel/Knob" unique_id=430779238]
+[node name="Rose" type="MeshInstance3D" parent="Panel/Knob" unique_id=1357947111]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.004)
 mesh = SubResource("CylinderMesh_8x4x6")
 
-[node name="Neck" type="MeshInstance3D" parent="Panel/Knob" unique_id=1395450461]
+[node name="Neck" type="MeshInstance3D" parent="Panel/Knob" unique_id=952186424]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.028)
 mesh = SubResource("CylinderMesh_v3jke")
 
-[node name="Ball" type="MeshInstance3D" parent="Panel/Knob" unique_id=761375598]
+[node name="Ball" type="MeshInstance3D" parent="Panel/Knob" unique_id=1187710731]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.8, 0, 0, 0.062)
 mesh = SubResource("SphereMesh_bkhgf")
 
-[node name="RattleSound" type="AudioStreamPlayer3D" parent="." unique_id=2141504641]
+[node name="RattleSound" type="AudioStreamPlayer3D" parent="." unique_id=138219025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32864, 0.92508, 0.02)
 unit_size = 4.0

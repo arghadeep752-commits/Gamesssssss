@@ -1,7 +1,7 @@
 """Makes the HUD images in assets/ui from the developer's own pictures (tools/ui_src/developer):
   interact.png       - the hand + USE button
   joystick_knob.png  - the joystick knob
-  joystick_base.png  - a plain grey, see-through circle behind the knob
+  joystick_base.png  - a plain dark grey / black ring behind the knob
 Run:  python3 tools/make_ui.py
 """
 import os
@@ -28,11 +28,11 @@ def main():
     knob = trimmed(os.path.join(SRC, "joystick_knob.png"), pad=4)
     knob.resize((256, 256), Image.LANCZOS).save(os.path.join(OUT, "joystick_knob.png"))
 
-    # grey see-through circle, drawn 4x bigger and scaled down for smooth edges
+    # simple dark grey / black ring, drawn 4x bigger and scaled down for smooth edges
     big = 2048
     base = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(base)
-    d.ellipse([16, 16, big - 16, big - 16], fill=(120, 120, 120, 105), outline=(90, 90, 90, 150), width=28)
+    d.ellipse([24, 24, big - 24, big - 24], fill=(0, 0, 0, 45), outline=(38, 38, 38, 235), width=56)
     base.resize((512, 512), Image.LANCZOS).save(os.path.join(OUT, "joystick_base.png"))
     print("ui images written to", os.path.normpath(OUT))
 

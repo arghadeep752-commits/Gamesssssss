@@ -156,163 +156,163 @@ material = ExtResource("9_82xsv")
 radius = 0.045
 height = 0.09
 
-[node name="Main" type="Node3D" unique_id=1783104020]
+[node name="Main" type="Node3D" unique_id=2081257001]
 script = ExtResource("1_dg77c")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1548222746]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1274478575]
 environment = SubResource("Environment_lswn8")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1050189163]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1774761162]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.75, -0.43301, 0, 0, 0)
 shadow_enabled = true
 directional_shadow_mode = 0
 directional_shadow_max_distance = 20.0
 
-[node name="Room" type="Node3D" parent="." unique_id=27402003]
+[node name="Room" type="Node3D" parent="." unique_id=286602828]
 
-[node name="Floor" type="StaticBody3D" parent="Room" unique_id=446025078]
+[node name="Floor" type="StaticBody3D" parent="Room" unique_id=902245747]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/Floor" unique_id=1023034428]
+[node name="Mesh" type="MeshInstance3D" parent="Room/Floor" unique_id=442156608]
 mesh = SubResource("BoxMesh_a6jrf")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/Floor" unique_id=998783648]
+[node name="Collision" type="CollisionShape3D" parent="Room/Floor" unique_id=1140105992]
 shape = SubResource("BoxShape3D_xuqvo")
 
-[node name="Ceiling" type="StaticBody3D" parent="Room" unique_id=374754119]
+[node name="Ceiling" type="StaticBody3D" parent="Room" unique_id=2092536853]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9, 0)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/Ceiling" unique_id=620594709]
+[node name="Mesh" type="MeshInstance3D" parent="Room/Ceiling" unique_id=538604086]
 mesh = SubResource("BoxMesh_qsp4k")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/Ceiling" unique_id=27754227]
+[node name="Collision" type="CollisionShape3D" parent="Room/Ceiling" unique_id=1631409717]
 shape = SubResource("BoxShape3D_kq58d")
 
-[node name="WallWest" type="StaticBody3D" parent="Room" unique_id=1398112863]
+[node name="WallWest" type="StaticBody3D" parent="Room" unique_id=35492836]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 1.4, 0)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/WallWest" unique_id=1635629483]
+[node name="Mesh" type="MeshInstance3D" parent="Room/WallWest" unique_id=1901203473]
 mesh = SubResource("BoxMesh_seu75")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/WallWest" unique_id=1660213350]
+[node name="Collision" type="CollisionShape3D" parent="Room/WallWest" unique_id=596420409]
 shape = SubResource("BoxShape3D_htxhm")
 
-[node name="WallEast" type="StaticBody3D" parent="Room" unique_id=58952536]
+[node name="WallEast" type="StaticBody3D" parent="Room" unique_id=481135595]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 1.4, 0)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/WallEast" unique_id=654250133]
+[node name="Mesh" type="MeshInstance3D" parent="Room/WallEast" unique_id=2105008162]
 mesh = SubResource("BoxMesh_jq2sk")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/WallEast" unique_id=1534495455]
+[node name="Collision" type="CollisionShape3D" parent="Room/WallEast" unique_id=249808601]
 shape = SubResource("BoxShape3D_4k2k6")
 
-[node name="WallSouth" type="StaticBody3D" parent="Room" unique_id=1838162184]
+[node name="WallSouth" type="StaticBody3D" parent="Room" unique_id=1520054624]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 3.1)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/WallSouth" unique_id=1766177604]
+[node name="Mesh" type="MeshInstance3D" parent="Room/WallSouth" unique_id=301887896]
 mesh = SubResource("BoxMesh_0rl1p")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/WallSouth" unique_id=531279222]
+[node name="Collision" type="CollisionShape3D" parent="Room/WallSouth" unique_id=1580776057]
 shape = SubResource("BoxShape3D_ok6jj")
 
-[node name="WallNorthLeft" type="StaticBody3D" parent="Room" unique_id=1451875367]
+[node name="WallNorthLeft" type="StaticBody3D" parent="Room" unique_id=329891647]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.16, 1.4, -3.1)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/WallNorthLeft" unique_id=990426758]
+[node name="Mesh" type="MeshInstance3D" parent="Room/WallNorthLeft" unique_id=537286166]
 mesh = SubResource("BoxMesh_facbu")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/WallNorthLeft" unique_id=1238716978]
+[node name="Collision" type="CollisionShape3D" parent="Room/WallNorthLeft" unique_id=358570502]
 shape = SubResource("BoxShape3D_b1qrp")
 
-[node name="WallNorthRight" type="StaticBody3D" parent="Room" unique_id=2082795256]
+[node name="WallNorthRight" type="StaticBody3D" parent="Room" unique_id=1819278144]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.76, 1.4, -3.1)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/WallNorthRight" unique_id=298025952]
+[node name="Mesh" type="MeshInstance3D" parent="Room/WallNorthRight" unique_id=1145239994]
 mesh = SubResource("BoxMesh_come4")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/WallNorthRight" unique_id=1230443863]
+[node name="Collision" type="CollisionShape3D" parent="Room/WallNorthRight" unique_id=1383916957]
 shape = SubResource("BoxShape3D_h8e4i")
 
-[node name="WallNorthAboveDoor" type="StaticBody3D" parent="Room" unique_id=1646235278]
+[node name="WallNorthAboveDoor" type="StaticBody3D" parent="Room" unique_id=1692683008]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 2.475, -3.1)
 
-[node name="Mesh" type="MeshInstance3D" parent="Room/WallNorthAboveDoor" unique_id=594781492]
+[node name="Mesh" type="MeshInstance3D" parent="Room/WallNorthAboveDoor" unique_id=1374719761]
 mesh = SubResource("BoxMesh_4lmeg")
 
-[node name="Collision" type="CollisionShape3D" parent="Room/WallNorthAboveDoor" unique_id=1893322707]
+[node name="Collision" type="CollisionShape3D" parent="Room/WallNorthAboveDoor" unique_id=953232728]
 shape = SubResource("BoxShape3D_0cp0l")
 
-[node name="DoorFrame" type="Node3D" parent="Room" unique_id=927831534]
+[node name="DoorFrame" type="Node3D" parent="Room" unique_id=1683716946]
 
-[node name="LinerLeft" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=906242611]
+[node name="LinerLeft" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1720592436]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.19, 1.075, -3.1)
 mesh = SubResource("BoxMesh_d2t1y")
 
-[node name="LinerRight" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=475937629]
+[node name="LinerRight" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1227324365]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.01, 1.075, -3.1)
 mesh = SubResource("BoxMesh_gngh3")
 
-[node name="LinerTop" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=2044221093]
+[node name="LinerTop" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1897120741]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 2.14, -3.1)
 mesh = SubResource("BoxMesh_0n3wm")
 
-[node name="CasingLeft" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1131834147]
+[node name="CasingLeft" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1629761705]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 1.1075, -2.991)
 mesh = SubResource("BoxMesh_qnost")
 
-[node name="CasingRight" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1203070106]
+[node name="CasingRight" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=267910389]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 1.1075, -2.991)
 mesh = SubResource("BoxMesh_wnkbs")
 
-[node name="CasingTop" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=365142647]
+[node name="CasingTop" type="MeshInstance3D" parent="Room/DoorFrame" unique_id=1495190095]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 2.18, -2.991)
 mesh = SubResource("BoxMesh_f6a44")
 
-[node name="Skirting" type="Node3D" parent="Room" unique_id=1240944002]
+[node name="Skirting" type="Node3D" parent="Room" unique_id=956145506]
 
-[node name="West" type="MeshInstance3D" parent="Room/Skirting" unique_id=1078205195]
+[node name="West" type="MeshInstance3D" parent="Room/Skirting" unique_id=1051475028]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.493, 0.045, 0)
 mesh = SubResource("BoxMesh_0cbny")
 
-[node name="East" type="MeshInstance3D" parent="Room/Skirting" unique_id=1990468168]
+[node name="East" type="MeshInstance3D" parent="Room/Skirting" unique_id=78131839]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.493, 0.045, 0)
 mesh = SubResource("BoxMesh_hrvbo")
 
-[node name="South" type="MeshInstance3D" parent="Room/Skirting" unique_id=104849137]
+[node name="South" type="MeshInstance3D" parent="Room/Skirting" unique_id=485573943]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, 2.993)
 mesh = SubResource("BoxMesh_uypp3")
 
-[node name="NorthLeft" type="MeshInstance3D" parent="Room/Skirting" unique_id=1756451038]
+[node name="NorthLeft" type="MeshInstance3D" parent="Room/Skirting" unique_id=1460216276]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1925, 0.045, -2.993)
 mesh = SubResource("BoxMesh_blkrb")
 
-[node name="NorthRight" type="MeshInstance3D" parent="Room/Skirting" unique_id=1721160085]
+[node name="NorthRight" type="MeshInstance3D" parent="Room/Skirting" unique_id=166533004]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7925, 0.045, -2.993)
 mesh = SubResource("BoxMesh_abqjc")
 
-[node name="Lamp" type="Node3D" parent="." unique_id=145030460]
+[node name="Lamp" type="Node3D" parent="." unique_id=2093520420]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8, 0)
 
-[node name="CeilingCap" type="MeshInstance3D" parent="Lamp" unique_id=1946983870]
+[node name="CeilingCap" type="MeshInstance3D" parent="Lamp" unique_id=834728747]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0125, 0)
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_6iyjs")
 
-[node name="Cord" type="MeshInstance3D" parent="Lamp" unique_id=520055082]
+[node name="Cord" type="MeshInstance3D" parent="Lamp" unique_id=1431184820]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_4w656")
 
-[node name="Shade" type="MeshInstance3D" parent="Lamp" unique_id=579365402]
+[node name="Shade" type="MeshInstance3D" parent="Lamp" unique_id=1034604230]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.58, 0)
 mesh = SubResource("CylinderMesh_e71vb")
 
-[node name="Bulb" type="MeshInstance3D" parent="Lamp" unique_id=2073576827]
+[node name="Bulb" type="MeshInstance3D" parent="Lamp" unique_id=642761926]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.62, 0)
 cast_shadow = 0
 mesh = SubResource("SphereMesh_rnkwl")
 
-[node name="LampLight" type="SpotLight3D" parent="Lamp" unique_id=1782191429]
+[node name="LampLight" type="SpotLight3D" parent="Lamp" unique_id=443137796]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, -0.63, 0)
 light_color = Color(1, 0.95, 0.88, 1)
 light_energy = 1.4
@@ -322,10 +322,10 @@ spot_attenuation = 1.6
 spot_angle = 80.0
 spot_angle_attenuation = 0.35
 
-[node name="Door" parent="." unique_id=2114576130 instance=ExtResource("10_getpj")]
+[node name="Door" parent="." unique_id=1053808577 instance=ExtResource("10_getpj")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, -3.035)
 
-[node name="Player" parent="." unique_id=694143441 instance=ExtResource("11_ryguw")]
+[node name="Player" parent="." unique_id=867358466 instance=ExtResource("11_ryguw")]
 transform = Transform3D(0.9781476, 0, -0.2079117, 0, 1, 0, 0.2079117, 0, 0.9781476, -0.3, 0, 1.9)
 
-[node name="HUD" parent="." unique_id=1894886199 instance=ExtResource("12_d13ii")]
+[node name="HUD" parent="." unique_id=337627412 instance=ExtResource("12_d13ii")]
