@@ -386,18 +386,18 @@ def wood_material(name, tone=1.0):
     p = vmath(nt, 'ADD', tc.outputs['Object'], centre.outputs['Vector'])
     tilt = N(nt, 'ShaderNodeMapping')          # rings rise and fall along the board -> arches
     put(nt, tilt.inputs['Vector'], p)
-    tilt.inputs['Rotation'].default_value = (0.0, 0.045, 0.0)
+    tilt.inputs['Rotation'].default_value = (0.0, 0.018, 0.0)
     wave = N(nt, 'ShaderNodeTexWave', wave_type='RINGS', rings_direction='X')
     put(nt, wave.inputs['Vector'], mapping(nt, tilt.outputs['Vector'], (0.25, 1.0, 1.0)))
-    wave.inputs['Scale'].default_value = 100.0
-    wave.inputs['Distortion'].default_value = 6.0
+    wave.inputs['Scale'].default_value = 170.0
+    wave.inputs['Distortion'].default_value = 9.0
     wave.inputs['Detail'].default_value = 3.0
-    wave.inputs['Detail Scale'].default_value = 0.04
+    wave.inputs['Detail Scale'].default_value = 0.05
     wave.inputs['Detail Roughness'].default_value = 0.5
     rings = wave.outputs['Fac']
     light = (0.15 * tone, 0.072 * tone, 0.030 * tone)
-    darkc = (0.062 * tone, 0.026 * tone, 0.010 * tone)
-    col = vmix(nt, light, darkc, remap(nt, rings, 0.45, 1.0))
+    darkc = (0.088 * tone, 0.040 * tone, 0.016 * tone)
+    col = vmix(nt, light, darkc, remap(nt, rings, 0.6, 1.0))
     streaks = noise(nt, mapping(nt, p, (1.5, 30.0, 30.0)), 1.0, 3.0, 0.5)
     col = vscale(nt, col, remap(nt, streaks, 0.3, 0.7, 0.84, 1.12))
     pores = remap(nt, noise(nt, mapping(nt, p, (6.0, 280.0, 280.0)), 1.0, 2.0, 0.5), 0.5, 0.75)
