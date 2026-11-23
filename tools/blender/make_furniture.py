@@ -11,7 +11,7 @@ Output:
     sofa/sofa.gltf   (+ .bin and textures/)   one mesh "Sofa", front facing +Z in Godot
     chest/chest.gltf (+ .bin and textures/)   "Frame" + empties "Drawer1".."Drawer5", each with a
                                               "DrawerNBox" (wood) and "DrawerNKnob" (brass) mesh
-    previews/*.png                            Cycles renders to check the look
+    previews/*.jpg                            Cycles renders to check the look
 """
 import bpy
 import bmesh
@@ -609,7 +609,8 @@ def render(cam, path, loc, target, lens=40.0, res=(1000, 750)):
     sc.cycles.use_denoising = True
     sc.render.resolution_x, sc.render.resolution_y = res
     sc.render.resolution_percentage = 100
-    sc.render.image_settings.file_format = 'PNG'
+    sc.render.image_settings.file_format = 'JPEG'
+    sc.render.image_settings.quality = 90
     sc.render.filepath = path
     t = time.time()
     bpy.ops.render.render(write_still=True)
@@ -750,11 +751,11 @@ def make_chest():
     cam = preview_stage(0.30)
     prev = os.path.join(OUT, "previews")
     os.makedirs(prev, exist_ok=True)
-    render(cam, os.path.join(prev, "chest_front.png"), (1.35, -2.3, 1.45), (0.0, 0.0, 0.62))
+    render(cam, os.path.join(prev, "chest_front.jpg"), (1.35, -2.3, 1.45), (0.0, 0.0, 0.62))
     for name, dist in (("Drawer2", 0.28), ("Drawer4", 0.22)):
         bpy.data.objects[name].location.y -= dist
-    render(cam, os.path.join(prev, "chest_open.png"), (1.0, -1.7, 1.75), (0.0, -0.1, 0.75))
-    render(cam, os.path.join(prev, "chest_closeup.png"), (0.35, -0.75, 1.25), (0.05, -0.2, 1.0), lens=45.0)
+    render(cam, os.path.join(prev, "chest_open.jpg"), (1.0, -1.7, 1.75), (0.0, -0.1, 0.75))
+    render(cam, os.path.join(prev, "chest_closeup.jpg"), (0.35, -0.75, 1.25), (0.05, -0.2, 1.0), lens=45.0)
 
 
 # ---------------------------------------------------------------------------------- the sofa
@@ -819,8 +820,8 @@ def make_sofa():
     cam = preview_stage(0.47)
     prev = os.path.join(OUT, "previews")
     os.makedirs(prev, exist_ok=True)
-    render(cam, os.path.join(prev, "sofa_front.png"), (1.9, -3.2, 1.5), (0.0, 0.0, 0.4))
-    render(cam, os.path.join(prev, "sofa_closeup.png"), (0.75, -1.25, 0.95), (0.25, 0.0, 0.45), lens=45.0)
+    render(cam, os.path.join(prev, "sofa_front.jpg"), (1.9, -3.2, 1.5), (0.0, 0.0, 0.4))
+    render(cam, os.path.join(prev, "sofa_closeup.jpg"), (0.75, -1.25, 0.95), (0.25, 0.0, 0.45), lens=45.0)
 
 
 # ---------------------------------------------------------------------------------- main

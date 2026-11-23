@@ -1,7 +1,10 @@
 name: Soul Eater Test - make furniture in Blender
 
-# Runs tools/blender/make_furniture.py in Blender (no window) and uploads the models,
-# textures and preview renders. Only runs when the Blender script changes.
+# Runs tools/blender/make_furniture.py in Blender (no window) and commits the results to this branch:
+#   assets/models/sofa, assets/models/chest  - the glTF models with their baked textures
+#   tools/blender/previews                    - Cycles renders to check the look
+# Only runs when the Blender script changes. (Commits made here don't start the APK build;
+# the next normal push does.)
 on:
   push:
     branches: [locked-room]
@@ -9,6 +12,10 @@ on:
       - 'tools/blender/**'
       - '.github/workflows/locked-room-blender.yml'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
 
 env:
   BLENDER_SERIES: '4.2'
@@ -20,13 +27,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # tools/blender/reuse_run.txt = id of an earlier run: take its results instead of running Blender
+      - name: Reuse an earlier run?
+        id: reuse
+        run: |
+          if [ -f tools/blender/reuse_run.txt ]; then
+            echo "run=$(tr -dc 0-9 < tools/blender/reuse_run.txt)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Results of the earlier run
+        if: steps.reuse.outputs.run != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: furniture
+          run-id: ${{ steps.reuse.outputs.run }}
+          github-token: ${{ github.token }}
+          path: out
+
       - name: Blender cache
+        if: steps.reuse.outputs.run == ''
         uses: actions/cache@v4
         with:
           path: ~/blender
           key: blender-${{ env.BLENDER_SERIES }}-lts-linux-x64
 
       - name: Install Blender ${{ env.BLENDER_SERIES }} LTS
+        if: steps.reuse.outputs.run == ''
         run: |
           S=$BLENDER_SERIES
           mkdir -p ~/blender && cd ~/blender
@@ -42,10 +68,26 @@ jobs:
           ~/blender/app/blender --version
 
       - name: Model, bake and export the furniture
+        if: steps.reuse.outputs.run == ''
         run: ~/blender/app/blender -b --python-exit-code 1 -P tools/blender/make_furniture.py -- out
 
       - uses: actions/upload-artifact@v4
+        if: steps.reuse.outputs.run == ''
         with:
           name: furniture
           path: out
           retention-days: 14
+
+      - name: Save the furniture in the repository
+        run: |
+          rm -rf assets/models/sofa assets/models/chest tools/blender/previews
+          mkdir -p assets/models tools/blender/previews
+          cp -r out/sofa out/chest assets/models/
+          cp out/previews/* out/info.json tools/blender/previews/
+          rm -f tools/blender/reuse_run.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A assets/models/sofa assets/models/chest tools/blender
+          git commit -q -m "Furniture made in Blender (workflow run ${{ github.run_number }}) [skip ci]" || exit 0
+          git pull -q --rebase origin locked-room
+          git push -q origin HEAD:locked-room
