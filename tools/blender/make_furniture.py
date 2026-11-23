@@ -23,13 +23,15 @@ import sys
 import time
 
 import numpy as np
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = os.path.abspath(ARGS[0] if ARGS else "furniture_out")
 T0 = time.time()
 R90 = math.pi / 2.0
 INFO = {}
+AXES = {'X': Vector((1.0, 0.0, 0.0)), 'Y': Vector((0.0, 1.0, 0.0)), 'Z': Vector((0.0, 0.0, 1.0))}
+IDX = {'X': 0, 'Y': 1, 'Z': 2}
 
 
 def log(*parts):
@@ -152,16 +154,21 @@ def soft_shading(ob):
         p.use_smooth = True
 
 
+def turn(ax, ay, az):
+    """Rotation that puts the object's own X, Y, Z axes along the given world directions."""
+    return Matrix((ax, ay, az)).transposed().to_euler()
+
+
 def board(name, mat, center, size, grain='X', bev=0.003, segs=2, hook=None):
     """A wooden board. `size` is its extent along world X, Y, Z; `grain` is the direction the wood
-    grain runs. The board's own X axis follows the grain, so the procedural wood lines up."""
-    sx, sy, sz = size
-    if grain == 'X':
-        local, rot = (sx, sy, sz), (0.0, 0.0, 0.0)
-    elif grain == 'Y':
-        local, rot = (sy, sx, sz), (0.0, 0.0, R90)
-    else:
-        local, rot = (sz, sy, sx), (0.0, -R90, 0.0)
+    grain runs. The board's own X axis follows the grain and its own Z axis its thickness, so the
+    procedural wood (wood_material) cuts the growth rings like a real flat-sawn plank."""
+    others = [a for a in 'XYZ' if a != grain]
+    thick = min(others, key=lambda a: size[IDX[a]])
+    width = [a for a in others if a != thick][0]
+    local = (size[IDX[grain]], size[IDX[width]], size[IDX[thick]])
+    ax, az = AXES[grain], AXES[thick]
+    rot = turn(ax, az.cross(ax), az)
     bm = bm_box(*local)
     if hook:
         hook(bm)
@@ -173,16 +180,18 @@ def board(name, mat, center, size, grain='X', bev=0.003, segs=2, hook=None):
     return ob
 
 
-def profile_board(name, mat, outline, thickness, loc, rot, bev=0.003):
-    """A board cut to a 2D outline (u, z), u along the board's own X; extruded along its own Y."""
+def profile_board(name, mat, outline, thickness, loc, along, bev=0.003):
+    """A board cut to a 2D outline (u along the board, v up), standing upright, running along the
+    world direction `along`. Own X = along (grain), own Y = up, own Z = thickness."""
     bm = bmesh.new()
-    vs = [bm.verts.new((u, -thickness / 2.0, z)) for u, z in outline]
+    vs = [bm.verts.new((u, v, -thickness / 2.0)) for u, v in outline]
     face = bm.faces.new(vs)
     res = bmesh.ops.extrude_face_region(bm, geom=[face])
     new_verts = [g for g in res["geom"] if isinstance(g, bmesh.types.BMVert)]
-    bmesh.ops.translate(bm, vec=(0.0, thickness, 0.0), verts=new_verts)
+    bmesh.ops.translate(bm, vec=(0.0, 0.0, thickness), verts=new_verts)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    ob = link_obj(name, bm, [mat], loc, rot)
+    ax, ay = Vector(along), AXES['Z']
+    ob = link_obj(name, bm, [mat], loc, turn(ax, ay, ax.cross(ay)))
     bevel(ob, bev, 2)
     apply_modifiers(ob)
     hard_shading(ob)
@@ -360,35 +369,50 @@ def fabric_material():
 
 
 def wood_material(name, tone=1.0):
-    """Old varnished hardwood: growth rings, long pore streaks, worn lighter edges.
-    The grain runs along each part's own X axis (see board())."""
+    """Old varnished hardwood. Each board's own X runs along the grain and its own Z is its
+    thickness (see board()); the tree's centre sits a little above the board, so the face shows
+    flat-sawn "cathedral" figure. Plus long pore streaks, colour streaks and worn lighter edges."""
     m, nt, b = new_material(name)
-    p = object_coords(nt, (7.31, 3.17, 5.53))
-    ring_space = mapping(nt, p, (0.12, 1.0, 1.0), (0.0, 0.33, 0.57))
+    tc = N(nt, 'ShaderNodeTexCoord')
+    r = N(nt, 'ShaderNodeObjectInfo').outputs['Random']
+
+    def rand(k):
+        return fmath(nt, 'FRACT', fmath(nt, 'MULTIPLY', r, k))
+
+    centre = N(nt, 'ShaderNodeCombineXYZ')
+    put(nt, centre.inputs['X'], fmath(nt, 'MULTIPLY', r, 9.1))
+    put(nt, centre.inputs['Y'], fmath(nt, 'MULTIPLY', fmath(nt, 'SUBTRACT', rand(7.31), 0.5), 0.16))
+    put(nt, centre.inputs['Z'], fmath(nt, 'ADD', 0.28, fmath(nt, 'MULTIPLY', rand(3.77), 0.25)))
+    p = vmath(nt, 'ADD', tc.outputs['Object'], centre.outputs['Vector'])
+    tilt = N(nt, 'ShaderNodeMapping')          # rings rise and fall along the board -> arches
+    put(nt, tilt.inputs['Vector'], p)
+    tilt.inputs['Rotation'].default_value = (0.0, 0.045, 0.0)
     wave = N(nt, 'ShaderNodeTexWave', wave_type='RINGS', rings_direction='X')
-    put(nt, wave.inputs['Vector'], ring_space)
-    wave.inputs['Scale'].default_value = 70.0
-    wave.inputs['Distortion'].default_value = 12.0
+    put(nt, wave.inputs['Vector'], mapping(nt, tilt.outputs['Vector'], (0.25, 1.0, 1.0)))
+    wave.inputs['Scale'].default_value = 100.0
+    wave.inputs['Distortion'].default_value = 6.0
     wave.inputs['Detail'].default_value = 3.0
-    wave.inputs['Detail Scale'].default_value = 0.08
-    wave.inputs['Detail Roughness'].default_value = 0.55
+    wave.inputs['Detail Scale'].default_value = 0.04
+    wave.inputs['Detail Roughness'].default_value = 0.5
     rings = wave.outputs['Fac']
-    light = (0.16 * tone, 0.075 * tone, 0.030 * tone)
-    darkc = (0.050 * tone, 0.020 * tone, 0.008 * tone)
-    col = vmix(nt, light, darkc, remap(nt, rings, 0.55, 0.95))
-    pores = remap(nt, noise(nt, mapping(nt, p, (6.0, 280.0, 280.0)), 1.0, 2.0, 0.5), 0.45, 0.72)
-    col = vscale(nt, col, remap(nt, pores, 0.0, 1.0, 1.0, 0.75))
+    light = (0.15 * tone, 0.072 * tone, 0.030 * tone)
+    darkc = (0.062 * tone, 0.026 * tone, 0.010 * tone)
+    col = vmix(nt, light, darkc, remap(nt, rings, 0.45, 1.0))
+    streaks = noise(nt, mapping(nt, p, (1.5, 30.0, 30.0)), 1.0, 3.0, 0.5)
+    col = vscale(nt, col, remap(nt, streaks, 0.3, 0.7, 0.84, 1.12))
+    pores = remap(nt, noise(nt, mapping(nt, p, (6.0, 280.0, 280.0)), 1.0, 2.0, 0.5), 0.5, 0.75)
+    col = vscale(nt, col, remap(nt, pores, 0.0, 1.0, 1.0, 0.85))
     big = noise(nt, p, 1.4, 2.0, 0.5)
-    col = vscale(nt, col, remap(nt, big, 0.3, 0.7, 0.85, 1.12))
+    col = vscale(nt, col, remap(nt, big, 0.3, 0.7, 0.88, 1.1))
     wear = edge_wear(nt, 0.004, 0.80, 0.985)
     col = vmix(nt, col, vscale(nt, col, 1.7), fmath(nt, 'MULTIPLY', wear, 0.55))
     put(nt, b.inputs['Base Color'], col)
-    rough = fmath(nt, 'ADD', 0.34, fmath(nt, 'MULTIPLY', pores, 0.14))
+    rough = fmath(nt, 'ADD', 0.34, fmath(nt, 'MULTIPLY', pores, 0.12))
     rough = fmath(nt, 'ADD', rough, fmath(nt, 'MULTIPLY', wear, 0.25))
     rough = fmath(nt, 'ADD', rough, fmath(nt, 'MULTIPLY', fmath(nt, 'SUBTRACT', big, 0.5), 0.1), clamp=True)
     put(nt, b.inputs['Roughness'], rough)
-    height = fmath(nt, 'ADD', fmath(nt, 'MULTIPLY', rings, 0.5), fmath(nt, 'MULTIPLY', pores, 0.5))
-    bump(nt, b, height, 0.15, 0.0008)
+    height = fmath(nt, 'ADD', fmath(nt, 'MULTIPLY', rings, 0.3), fmath(nt, 'MULTIPLY', pores, 0.7))
+    bump(nt, b, height, 0.06, 0.0005)
     return m
 
 
@@ -427,14 +451,13 @@ def baked_material(name, albedo, normal, orm=None, rough=0.8):
 # ---------------------------------------------------------------------------------- UVs and baking
 
 def unwrap(objs, shrink=(), shrink_factor=0.5):
-    """One shared texture atlas for all `objs`. Parts listed in `shrink` (hidden insides) get less room."""
+    """One shared texture atlas for all `objs`, islands 1% of the texture apart.
+    Parts listed in `shrink` (hidden insides) get less room."""
     select(objs)
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.003)
     bpy.ops.object.mode_set(mode='OBJECT')
-    if not shrink:
-        return
     saved = {}
     for ob in shrink:
         data = ob.data.uv_layers.active.data
@@ -448,9 +471,12 @@ def unwrap(objs, shrink=(), shrink_factor=0.5):
             bpy.ops.uv.select_all(action='SELECT')
         except Exception as err:   # not needed on every Blender version
             log("uv.select_all skipped:", err)
-        bpy.ops.uv.pack_islands(rotate=True, margin=0.003)
+        try:
+            bpy.ops.uv.pack_islands(rotate=True, margin_method='FRACTION', margin=0.01)
+        except TypeError:
+            bpy.ops.uv.pack_islands(rotate=True, margin=0.01)
         bpy.ops.object.mode_set(mode='OBJECT')
-        log("packed the atlas with the insides at", shrink_factor)
+        log("packed the atlas", "(insides at %.2f)" % shrink_factor if shrink else "")
     except Exception as err:
         if bpy.context.object and bpy.context.object.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -460,10 +486,11 @@ def unwrap(objs, shrink=(), shrink_factor=0.5):
                 d.uv = uv
 
 
-def new_image(name, size, data):
+def new_image(name, size, data, fill=(0.0, 0.0, 0.0)):
     im = bpy.data.images.new(name, size, size, alpha=False)
     if data:
         im.colorspace_settings.name = 'Non-Color'
+    im.generated_color = (*fill, 1.0)
     return im
 
 
@@ -488,14 +515,14 @@ def blur(a, r=1):
 
 
 def bake_atlas(objs, prefix, albedo_size=2048, normal_size=1024, rough_size=1024, ao_size=1024,
-               bake_rough=True, ao_strength=0.85):
+               bake_rough=True, ao_strength=0.85, fill=(0.2, 0.1, 0.05)):
     """Bakes colour, normal, roughness and ambient occlusion of `objs` into one atlas.
     The occlusion is multiplied into the colour (phones get no real-time AO in this renderer)."""
     sc = bpy.context.scene
-    albedo = new_image(prefix + "_albedo", albedo_size, False)
-    normal = new_image(prefix + "_normal", normal_size, True)
-    ao = new_image(prefix + "_ao", ao_size, True)
-    rough = new_image(prefix + "_rough", rough_size, True) if bake_rough else None
+    albedo = new_image(prefix + "_albedo", albedo_size, False, fill)
+    normal = new_image(prefix + "_normal", normal_size, True, (0.5, 0.5, 1.0))
+    ao = new_image(prefix + "_ao", ao_size, True, (1.0, 1.0, 1.0))
+    rough = new_image(prefix + "_rough", rough_size, True, (0.5, 0.5, 0.5)) if bake_rough else None
     mats = []
     for ob in objs:
         for slot in ob.material_slots:
@@ -513,7 +540,7 @@ def bake_atlas(objs, prefix, albedo_size=2048, normal_size=1024, rough_size=1024
             m.node_tree.nodes.active = tn
         sc.cycles.samples = samples
         t = time.time()
-        bpy.ops.object.bake(type=kind, margin=max(4, image.size[0] // 200), use_clear=True, **kw)
+        bpy.ops.object.bake(type=kind, margin=image.size[0] // 85, use_clear=False, **kw)
         log("baked", kind, image.name, "in %.1fs" % (time.time() - t))
 
     bake(albedo, 'DIFFUSE', 16, pass_filter={'COLOR'})
@@ -661,10 +688,10 @@ def make_chest():
     frame.append(board("Muntin", wood, (0.0, -0.007, 1.095), (0.022, 0.466, 0.2), 'Z'))
     # plinth with little bracket feet
     frame.append(profile_board("PlinthFront", wood, arch_outline(0.47, 0.075, 0.085, 0.035, 0.035), 0.018,
-                               (0.0, -0.241, 0.0), (0.0, 0.0, 0.0)))
+                               (0.0, -0.241, 0.0), (1.0, 0.0, 0.0)))
     for s in (-1, 1):
         frame.append(profile_board("PlinthSide", wood, arch_outline(0.236, 0.075, 0.07, 0.03, 0.03), 0.018,
-                                   (s * 0.461, 0.004, 0.0), (0.0, 0.0, R90)))
+                                   (s * 0.461, 0.004, 0.0), (0.0, 1.0, 0.0)))
     hidden.append(board("PlinthBack", wood, (0.0, 0.231, 0.0375), (0.904, 0.018, 0.075), 'X'))
 
     rows = ((0.995, 1.195, ((-xs, -0.011), (0.011, xs))),   # two small drawers on top
@@ -682,7 +709,7 @@ def make_chest():
             inset = 0.025 if fh < 0.22 else 0.03
 
             def raised_panel(bm, inset=inset):
-                f = min(bm.faces, key=lambda face: face.normal.y)
+                f = min(bm.faces, key=lambda face: face.normal.z)   # own -Z = world front
                 bmesh.ops.inset_individual(bm, faces=[f], thickness=inset, depth=0.005, use_even_offset=True)
 
             parts = [board("D%dFront" % n, wood, (cx, front + 0.01, cz), (fw, 0.02, fh), 'X', hook=raised_panel)]
@@ -697,7 +724,7 @@ def make_chest():
             box.append(board("D%dBottom" % n, wood, (cx, by0 + (bd - 0.012) / 2.0, bz0 + 0.004),
                              (bw - 0.024, bd - 0.012, 0.008), 'X', bev=0.001))
             knob_x = (cx,) if fw < 0.6 else (cx - fw / 4.0, cx + fw / 4.0)
-            knobs = [lathe("D%dKnob" % n, brass, KNOB_PROFILE, 'Y', 20, (kx, front - 0.005, cz)) for kx in knob_x]
+            knobs = [lathe("D%dKnob" % n, brass, KNOB_PROFILE, 'Y', 24, (kx, front - 0.005, cz)) for kx in knob_x]
             for k in knobs:
                 k.rotation_euler = (0.0, random.uniform(0, 2 * math.pi), 0.0)
             drawers.append({"n": n, "front": parts, "box": box, "knobs": knobs, "center": (cx, front, cz)})
@@ -715,7 +742,7 @@ def make_chest():
         for ob in d["front"] + d["box"] + d["knobs"]:
             ob.location += off
     bpy.context.view_layer.update()
-    albedo, normal, orm = bake_atlas(wood_objs, "chest", 2048, 1024, 1024, 1024, True, 0.85)
+    albedo, normal, orm = bake_atlas(wood_objs, "chest", 2048, 1024, 1024, 1024, True, 0.85, (0.12, 0.06, 0.03))
     for i, d in enumerate(drawers):
         off = Vector((1.3 * (i + 1), 0.0, 2.0))
         for ob in d["front"] + d["box"] + d["knobs"]:
@@ -760,13 +787,20 @@ def make_chest():
 
 # ---------------------------------------------------------------------------------- the sofa
 
-def cushion(name, mat, size, loc, rot, puff_axis, puff_amount, bev):
+def cushion(name, mat, size, loc, rot, puff_axis, puff_amount, bev, sag=0.0):
     ob = link_obj(name, bm_box(*size, cuts=3), [mat], loc, rot)
     bevel(ob, bev, 2)
     subsurf(ob, 1)
     apply_modifiers(ob)
     soft_shading(ob)
-    puff(ob, puff_axis, puff_amount, (size[0] / 2.0, size[1] / 2.0, size[2] / 2.0))
+    hx, hy, hz = size[0] / 2.0, size[1] / 2.0, size[2] / 2.0
+    puff(ob, puff_axis, puff_amount, (hx, hy, hz))
+    if sag > 0.0:                      # worn dip in the middle of the top
+        for v in ob.data.vertices:
+            if v.co.z > 0.0:
+                d = (v.co.x / (hx * 0.6)) ** 2 + ((v.co.y + hy * 0.1) / (hy * 0.65)) ** 2
+                v.co.z -= sag * math.exp(-d) * (v.co.z / hz)
+        ob.data.update()
     return ob
 
 
@@ -793,7 +827,8 @@ def make_sofa():
     for i in range(3):
         cx = -0.83 + 0.005 + w / 2.0 + i * (w + 0.005)
         jitter = (random.uniform(-0.01, 0.01), random.uniform(-0.01, 0.01), random.uniform(-0.015, 0.015))
-        parts.append(cushion("Seat", fabric, (w, 0.60, 0.15), (cx, -0.13, 0.395), jitter, 'Z', 0.02, 0.045))
+        parts.append(cushion("Seat", fabric, (w, 0.60, 0.15), (cx, -0.13, 0.395), jitter, 'Z', 0.02, 0.045,
+                             sag=random.uniform(0.012, 0.02)))
         tilt = (-0.17 + random.uniform(-0.03, 0.03), random.uniform(-0.01, 0.01), random.uniform(-0.02, 0.02))
         parts.append(cushion("BackCushion", fabric, (w, 0.17, 0.38), (cx, 0.13, 0.665), tilt, 'Y', 0.025, 0.05))
     for x in (-0.93, 0.93):
@@ -804,7 +839,7 @@ def make_sofa():
     bm = bmesh.new()
     bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=5.0)
     floor = link_obj("BakeFloor", bm, [])
-    albedo, normal, _ = bake_atlas(parts, "sofa", 2048, 1024, 1024, 1024, False, 0.85)
+    albedo, normal, _ = bake_atlas(parts, "sofa", 2048, 1024, 1024, 1024, False, 0.75, (0.12, 0.03, 0.025))
     bpy.data.objects.remove(floor)
 
     final = {fabric: baked_material("SofaFabric", albedo, normal, rough=0.9),
