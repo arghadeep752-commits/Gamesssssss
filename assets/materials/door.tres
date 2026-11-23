@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/door_albedo.png" id="1_ya8ei"]
+[ext_resource type="Texture2D" path="res://assets/textures/door_normal.png" id="2_r047v"]
+[ext_resource type="Texture2D" path="res://assets/textures/door_rough.png" id="3_3u4fd"]
+
+[resource]
+resource_name = "Door"
+albedo_texture = ExtResource("1_ya8ei")
+roughness_texture = ExtResource("3_3u4fd")
+roughness_texture_channel = 4
+normal_enabled = true
+normal_texture = ExtResource("2_r047v")
+texture_filter = 5

@@ -1,0 +1,67 @@
+name: Locked Room - build APK
+
+on:
+  push:
+    branches: [locked-room]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.6.2
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-android
+
+      - name: Install Godot and the Android export templates
+        run: |
+          V=$GODOT_VERSION
+          mkdir -p ~/godot && cd ~/godot
+          if [ ! -x godot ]; then
+            curl -fsSL --retry 3 -o g.zip "https://github.com/godotengine/godot/releases/download/$V-stable/Godot_v$V-stable_linux.x86_64.zip"
+            unzip -q g.zip && mv "Godot_v$V-stable_linux.x86_64" godot && rm g.zip
+          fi
+          if [ ! -f templates/android_release.apk ]; then
+            curl -fsSL --retry 3 -o t.tpz "https://github.com/godotengine/godot/releases/download/$V-stable/Godot_v$V-stable_export_templates.tpz"
+            unzip -q t.tpz 'templates/android_*.apk' 'templates/version.txt' && rm t.tpz
+          fi
+          mkdir -p ~/.local/share/godot/export_templates/$V.stable
+          cp templates/android_*.apk templates/version.txt ~/.local/share/godot/export_templates/$V.stable/
+          mkdir -p ~/.config/godot
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' \
+            "$ANDROID_SDK_ROOT" "$JAVA_HOME_17_X64" > ~/.config/godot/editor_settings-4.6.tres
+          ~/godot/godot --version
+
+      - name: Import and export the APK
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/tools/locked-room-test.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: lockedroom
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: lockedroom
+        run: |
+          mkdir -p build && touch build/.gdignore
+          sed -i "s/^version\/code=.*/version\/code=${{ github.run_number }}/; s/^version\/name=.*/version\/name=\"1.${{ github.run_number }}\"/" export_presets.cfg
+          timeout 900 ~/godot/godot --headless --path . --import 2>&1 | tail -5 || true
+          timeout 900 ~/godot/godot --headless --path . --export-release Android build/LockedRoom.apk 2>&1 | tee build/export_log.txt | tail -30
+          ls -la build/LockedRoom.apk
+
+      - name: Publish the APK on the Releases page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=${{ github.run_number }}
+          cp build/LockedRoom.apk "build/LockedRoom-v$N.apk"
+          gh release create "locked-room-v$N" "build/LockedRoom-v$N.apk" CREDITS.md \
+            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Locked Room (build $N)" \
+            --notes "Download **LockedRoom-v$N.apk** and install it on your Android phone. One room, one locked door. Joystick bottom left, drag to look, figure button to crouch, pause (top left) for look sensitivity, hand + USE to try the door."

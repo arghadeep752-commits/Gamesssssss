@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/wall_albedo.png" id="1_e04ro"]
+[ext_resource type="Texture2D" path="res://assets/textures/wall_normal.png" id="2_hpha3"]
+[ext_resource type="Texture2D" path="res://assets/textures/wall_rough.png" id="3_qfuib"]
+
+[resource]
+resource_name = "Wallpaper"
+albedo_texture = ExtResource("1_e04ro")
+roughness_texture = ExtResource("3_qfuib")
+roughness_texture_channel = 4
+normal_enabled = true
+normal_texture = ExtResource("2_hpha3")
+uv1_scale = Vector3(1.3333334, 1.1848341, 1.3333334)
+uv1_triplanar = true
+uv1_world_triplanar = true
+texture_filter = 5

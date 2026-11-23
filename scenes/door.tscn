@@ -1,0 +1,75 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/door.gd" id="1_ju5n0"]
+[ext_resource type="AudioStream" path="res://assets/sounds/door_rattle_1.wav" id="2_kgbum"]
+[ext_resource type="AudioStream" path="res://assets/sounds/door_rattle_2.wav" id="3_pg2b6"]
+[ext_resource type="AudioStream" path="res://assets/sounds/door_rattle_3.wav" id="4_ey00f"]
+[ext_resource type="AudioStream" path="res://assets/sounds/door_rattle_4.wav" id="5_4ayau"]
+[ext_resource type="Material" path="res://assets/materials/white_paint.tres" id="6_41c0y"]
+[ext_resource type="Material" path="res://assets/materials/door.tres" id="7_j2w5t"]
+[ext_resource type="Material" path="res://assets/materials/brass.tres" id="8_ykb3b"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ali40"]
+size = Vector3(0.79, 2.12, 0.04)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dmmdo"]
+material = ExtResource("6_41c0y")
+size = Vector3(0.79, 2.12, 0.04)
+
+[sub_resource type="QuadMesh" id="QuadMesh_8m42n"]
+material = ExtResource("7_j2w5t")
+size = Vector2(0.79, 2.12)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_8x4x6"]
+material = ExtResource("8_ykb3b")
+top_radius = 0.034
+bottom_radius = 0.034
+height = 0.008
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_v3jke"]
+material = ExtResource("8_ykb3b")
+top_radius = 0.011
+bottom_radius = 0.013
+height = 0.04
+
+[sub_resource type="SphereMesh" id="SphereMesh_bkhgf"]
+material = ExtResource("8_ykb3b")
+radius = 0.03
+height = 0.06
+
+[node name="Door" type="StaticBody3D" unique_id=1874877494]
+script = ExtResource("1_ju5n0")
+rattle_sounds = Array[AudioStream]([ExtResource("2_kgbum"), ExtResource("3_pg2b6"), ExtResource("4_ey00f"), ExtResource("5_4ayau")])
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=685050793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.065, 0)
+shape = SubResource("BoxShape3D_ali40")
+
+[node name="Panel" type="Node3D" parent="." unique_id=1414660575]
+
+[node name="Slab" type="MeshInstance3D" parent="Panel" unique_id=839312852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.065, 0)
+mesh = SubResource("BoxMesh_dmmdo")
+
+[node name="Face" type="MeshInstance3D" parent="Panel" unique_id=1634664267]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.065, 0.0202)
+mesh = SubResource("QuadMesh_8m42n")
+
+[node name="Knob" type="Node3D" parent="Panel" unique_id=942105792]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32864, 0.92508, 0.02)
+
+[node name="Rose" type="MeshInstance3D" parent="Panel/Knob" unique_id=1459642415]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.004)
+mesh = SubResource("CylinderMesh_8x4x6")
+
+[node name="Neck" type="MeshInstance3D" parent="Panel/Knob" unique_id=400524494]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.028)
+mesh = SubResource("CylinderMesh_v3jke")
+
+[node name="Ball" type="MeshInstance3D" parent="Panel/Knob" unique_id=2119283497]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.8, 0, 0, 0.062)
+mesh = SubResource("SphereMesh_bkhgf")
+
+[node name="RattleSound" type="AudioStreamPlayer3D" parent="." unique_id=1752391821]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32864, 0.92508, 0.02)
+unit_size = 4.0
