@@ -3,6 +3,9 @@ name: Soul Eater Test - build APK
 on:
   push:
     branches: [locked-room]
+    paths-ignore:        # the Blender furniture script has its own workflow
+      - 'tools/blender/**'
+      - '.github/workflows/locked-room-blender.yml'
   workflow_dispatch:
 
 permissions:
