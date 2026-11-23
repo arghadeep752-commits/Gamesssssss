@@ -1,0 +1,11 @@
+Model Information:
+* title:	Dresser
+* source:	https://sketchfab.com/3d-models/dresser-1a0cb6ce3e1d4e27b7f684f4d4e946c1
+* author:	Ally Furnish (https://sketchfab.com/furnisha)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Dresser" (https://sketchfab.com/3d-models/dresser-1a0cb6ce3e1d4e27b7f684f4d4e946c1) by Ally Furnish (https://sketchfab.com/furnisha) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
