@@ -147,6 +147,9 @@ function stopBoard(slots: Slot[], pulse: SharedValue<number>, reveal: SharedValu
   for (let i = 0; i < slots.length; i++) {
     const sl = slots[i];
     sl.token.value = sl.token.value + 1;
+    // An idle slot has nothing running. Touching its values would re-run all
+    // 33 of its view styles right before the views are removed.
+    if (sl.active.value === 0) continue;
     cancelAnimation(sl.s);
     cancelAnimation(sl.err);
     sl.active.value = 0;

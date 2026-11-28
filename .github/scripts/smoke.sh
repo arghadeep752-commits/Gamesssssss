@@ -43,6 +43,7 @@ adb wait-for-device
 adb shell wm size ${W}x${H}
 adb shell wm density 280
 adb install -r "$APK" > "$OUT/install.txt" 2>&1 || { log "install failed"; cat "$OUT/install.txt"; exit 1; }
+adb logcat -G 16M >/dev/null 2>&1 || true
 adb logcat -c
 
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
@@ -98,10 +99,12 @@ shot 30-dark-level60
 
 adb logcat -d > "$OUT/logcat.txt" 2>&1
 grep -E "FATAL EXCEPTION|AndroidRuntime: FATAL|ReactNativeJS: .*(Error|Exception)|JavascriptException|SoLoader.*error|ANR in com\.arghadeepdas" "$OUT/logcat.txt" > "$OUT/errors.txt" || true
-# Animations updating views that are already gone: a few at mount are harmless, a flood freezes the app.
+# Animated props sent to views that are already gone. The patched Reanimated skips
+# these (logging "skipping sync updates" once); any that still fail are logged in one line.
 STALE=$(grep -c "synchronouslyUpdateUIProps failed" "$OUT/logcat.txt" || true)
-log "stale view updates: $STALE"
-if [ "${STALE:-0}" -gt 200 ]; then
+SKIPPED=$(grep -c "arrowflow: skipping sync updates" "$OUT/logcat.txt" || true)
+log "stale view updates that failed: $STALE (skip guard active: $SKIPPED)"
+if [ "${STALE:-0}" -gt 20 ]; then
   echo "too many stale view updates: $STALE" >> "$OUT/errors.txt"
 fi
 if ! adb shell pidof "$PKG" >/dev/null 2>&1; then

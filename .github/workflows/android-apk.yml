@@ -40,6 +40,9 @@ jobs:
       - name: Align native module versions with the Expo SDK
         run: npx expo install --fix
 
+      - name: Patch Reanimated (skip updates to removed views, upstream fix)
+        run: node scripts/patch-reanimated.js
+
       - name: Unit tests (rules, generator, 300 packed levels, a year of dailies)
         run: npm test
 
@@ -126,7 +129,7 @@ jobs:
           java-version: 17
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund && npx expo install --fix
+        run: npm install --no-audit --no-fund && npx expo install --fix && node scripts/patch-reanimated.js
 
       - name: Generate the Android project
         run: npx expo prebuild --platform android --no-install

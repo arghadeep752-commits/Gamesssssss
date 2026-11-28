@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated as RNAnimated, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -7,8 +7,6 @@ import Animated, {
   FadeOut,
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
-  withSpring,
   withTiming,
   ZoomIn,
   type SharedValue,
@@ -161,22 +159,28 @@ export const Hearts = memo(function Hearts({ count, max = 3, size = 26 }: { coun
   return <View style={styles.hearts}>{items}</View>;
 });
 
+// The pop runs on React Native's own native-driven Animated, so the hearts add
+// nothing to Reanimated's per-view bookkeeping when the game screen closes.
 const HeartPip = memo(function HeartPip({ full, size }: { full: boolean; size: number }) {
   const t = useTheme();
-  const sc = useSharedValue(1);
+  const sc = useRef(new RNAnimated.Value(1)).current;
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
-    sc.value = withSequence(withTiming(full ? 1.25 : 1.45, { duration: 110 }), withSpring(1, { damping: 9, stiffness: 260 }));
+    const pop = RNAnimated.sequence([
+      RNAnimated.timing(sc, { toValue: full ? 1.25 : 1.45, duration: 110, useNativeDriver: true }),
+      RNAnimated.spring(sc, { toValue: 1, damping: 9, stiffness: 260, useNativeDriver: true }),
+    ]);
+    pop.start();
+    return () => pop.stop();
   }, [full, sc]);
-  const st = useAnimatedStyle(() => ({ transform: [{ scale: sc.value }] }));
   return (
-    <Animated.View collapsable={false} style={st}>
+    <RNAnimated.View style={{ transform: [{ scale: sc }] }}>
       <Icon name="heart" size={size} color={full ? t.heart : t.heartEmpty} filled />
-    </Animated.View>
+    </RNAnimated.View>
   );
 });
 
