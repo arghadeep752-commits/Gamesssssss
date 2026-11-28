@@ -74,6 +74,8 @@ func _ready() -> void:
 
 	_make_music()
 	_intro()
+	print("SCARY_AUNTY_READY doors=%d waypoints=%d sketchfab_models=%d chalk_font=%s" % [
+		house.doors.size(), house.astar.get_point_count(), Assets.models.size(), str(Assets.has_chalk_font)])
 
 
 ## Godot's default sun + sky with filmic tone mapping and a light colour grade.

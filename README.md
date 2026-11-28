@@ -20,7 +20,7 @@ Every push to the `scary-aunty` branch runs `.github/workflows/scary-aunty.yml` 
 1. downloads the real assets (`ci/fetch_assets.py`):
    - chalk font from **dafont** ("Chalkboard" by Florence S, 100% free)
    - real photo-scanned **CC0 PBR textures** (Poly Haven / ambientCG) - or **your own** images from `assets/user_textures/`
-   - real recorded **CC0 sounds** (Kenney audio packs) and music by Kevin MacLeod (CC-BY 4.0)
+   - Unity footstep sounds, real recorded **CC0 sounds** (Kenney audio packs, Freesound) and music by Kevin MacLeod (CC-BY 4.0)
    - **Sketchfab** 3D models (free CC0 / CC-BY only) for all furniture, items, locks and Aunty
 2. imports the project, does a test run to catch script errors,
 3. exports `ScaryAunty.apk` and publishes it on the **Releases** page.
@@ -40,5 +40,5 @@ Put `door.jpg`, `wall.jpg` and `floor.jpg` in `assets/user_textures/` and push. 
 
 ## Notes
 - `ci/debug.keystore` is a test signing key (like Android's normal debug key). Make a private key before uploading to the Play Store.
-- Unity's own footstep sounds come with Unity's companion licence, which is meant for Unity projects only, so this Godot game uses real recorded CC0 wooden-floor footsteps instead.
+- Footsteps are the classic Unity Standard Assets FirstPersonCharacter footsteps (Unity Asset Store EULA), kept in `ci/sounds/`. Locked-door rattles and the drawer sound are CC0 recordings from Freesound.
 - Credits for every downloaded asset are shown in the game (main menu -> Credits) and in each release.

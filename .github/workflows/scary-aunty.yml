@@ -54,7 +54,7 @@ jobs:
           fi
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -111,6 +111,7 @@ jobs:
           echo "---- errors found in test run ----"
           cat build/smoke_errors.txt
           while read -r line; do echo "::warning title=Game script problem::$line"; done < build/smoke_errors.txt
+          if grep -q SCARY_AUNTY_READY build/smoke_game.log; then grep SCARY_AUNTY_READY build/smoke_game.log; echo "GAME STARTED OK" > build/smoke_ok.txt; else echo "::warning title=Game test::The game scene did not report that it started"; fi
           echo "---- end of game log ----"
           tail -n 60 build/smoke_game.log
 
@@ -162,7 +163,8 @@ jobs:
               for n in r["notes"]:
                   L.append("- %s" % n)
           L.append("")
-          L.append("Test run: %s" % ("no script errors found" if not errs else "some script warnings (see the build log)"))
+          started = os.path.exists("build/smoke_ok.txt")
+          L.append("Test run: %s, %s" % ("the game started" if started else "game start not confirmed", "no script errors found" if not errs else "some script warnings (see the build log)"))
           open("build/release_notes.md", "w").write("\n".join(L) + "\n")
           print("\n".join(L))
           EOF

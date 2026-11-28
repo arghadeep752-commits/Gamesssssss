@@ -294,13 +294,27 @@ def fetch_textures():
 
 # ------------------------------------------------------------------ sounds
 
-KENNEY_PACKS = ["impact-sounds", "rpg-audio", "interface-sounds", "music-jingles"]
+KENNEY_PACKS = {
+    # pack: GitHub copies (CC0) used if the kenney.nl download link is not found
+    "impact-sounds": ["https://github.com/Loppansson/kenney-impact-sounds-for-godot/archive/999dd1684873f8b020a3aa5b26e713da21688924.zip",
+                      "https://github.com/Loppansson/kenney-impact-sounds-for-godot/archive/0dd04139bb9e1a3477afd4f26434efdc6d86aac5.zip"],
+    "rpg-audio": ["https://github.com/Loppansson/kenney-rpg-audio-for-godot/archive/214a7dabca3594f933e96133b6cf66dddc5771ef.zip",
+                  "https://github.com/Loppansson/kenney-rpg-audio-for-godot/archive/22eb79bb843bbcadcaa6ed119353a33265ffad11.zip"],
+    "interface-sounds": ["https://github.com/Calinou/kenney-interface-sounds/archive/ad144fc2dd079cdd728bc8c7fcf9c4e64a7a7f83.zip"],
+    "music-jingles": [],
+}
+## Sounds kept in the repo (ci/sounds): Unity Standard Assets footsteps + CC0 Freesound recordings.
+LOCAL_SOUNDS = {
+    "step_wood": ("unity_footstep_*.wav", "Footsteps: Footstep01-04 from Unity Standard Assets (FirstPersonCharacter), Unity Technologies, Unity Asset Store EULA"),
+    "locked": ("freesound_door_rattle_*.wav", "Locked door rattles: EpicWizard, TRP and MarcusGraham325 on freesound.org (CC0)"),
+    "drawer": ("freesound_drawer_slide.ogg", "Drawer: \"Drawer Opening & Closing\" by quantumriver on freesound.org (CC0)"),
+}
 SOUND_MAP = {
     # game name: list of filename patterns (first pattern that matches wins)
     "step_wood": ["footstep_wood_*", "footstep_carpet_*", "footstep0*"],
     "aunty_step": ["footstep0*", "footstep_concrete_*", "footstep_wood_*"],
-    "door_open": ["dooropen_*", "doorOpen*"],
-    "door_close": ["doorclose_*", "doorClose*"],
+    "door_open": ["dooropen_*"],
+    "door_close": ["doorclose_*"],
     "creak": ["creak*"],
     "locked": ["metallatch*", "impactmetal_light_*"],
     "unlock": ["metalclick*", "impactmetal_light_*"],
@@ -309,15 +323,15 @@ SOUND_MAP = {
     "break_metal": ["impactmetal_heavy_*", "impactplate_heavy_*"],
     "break_wood": ["impactwood_heavy_*", "impactplank_medium_*"],
     "cut": ["impactmetal_medium_*", "impacttin_medium_*"],
-    "beep": ["click_00*", "tick_00*"],
-    "click": ["select_00*", "click_00*"],
-    "wrong": ["error_00*"],
-    "right": ["confirmation_00*"],
+    "beep": ["click_00*", "tick_00*", "click*"],
+    "click": ["select_00*", "click_00*", "click*"],
+    "wrong": ["error_00*", "error*"],
+    "right": ["confirmation_00*", "confirmation*"],
     "paper": ["bookflip*", "bookopen*"],
     "caught": ["impactpunch_heavy_*"],
     "sting": ["jingles_hit0*", "impactbell_heavy_*"],
-    "win": ["jingles_pizzi0*", "jingles_sax0*", "confirmation_00*"],
-    "lose": ["jingles_steel0*", "jingles_nes0*", "error_00*"],
+    "win": ["jingles_pizzi0*", "jingles_sax0*", "confirmation_00*", "confirmation*"],
+    "lose": ["jingles_steel0*", "jingles_nes0*", "impactbell_heavy_*"],
 }
 MUSIC = {
     "music_bgm": ["Sneaky Snitch", "Investigations", "Comfortable Mystery 4"],
@@ -326,23 +340,17 @@ MUSIC = {
 
 
 def kenney_pack(slug):
-    page = http_get("https://kenney.nl/assets/" + slug)
+    page = http_get("https://kenney.nl/assets/" + slug, tries=1)
     urls = []
     if page is not None:
         urls = re.findall(r'https://kenney\.nl/media/pages/assets/%s/[^"\'\s]+?\.zip' % re.escape(slug), page.text)
-        if not urls:
-            rel = re.findall(r'(/media/pages/assets/%s/[^"\'\s]+?\.zip)' % re.escape(slug), page.text)
-            urls = ["https://kenney.nl" + u for u in rel]
-    for u in urls[:2]:
-        data = cached_download(u, "kenney_%s.zip" % slug)
+        rel = re.findall(r'(/media/pages/assets/%s/[^"\'\s]+?\.zip)' % re.escape(slug), page.text)
+        urls += ["https://kenney.nl" + u for u in rel]
+    urls += KENNEY_PACKS.get(slug, [])
+    for i, u in enumerate(urls):
+        data = cached_download(u, "kenney_%s_%d.zip" % (slug, i))
         if is_zip(data):
             return data
-    if slug == "impact-sounds":
-        for branch in ("main", "master"):
-            data = cached_download("https://github.com/Loppansson/kenney-impact-sounds-for-godot/archive/refs/heads/%s.zip" % branch,
-                                   "kenney_impact_github_%s.zip" % branch)
-            if is_zip(data):
-                return data
     return None
 
 
@@ -350,7 +358,7 @@ def fetch_sounds():
     log("== Sounds (Kenney, CC0 real recordings)")
     folder = ensure(os.path.join(ASSETS, "sounds"))
     pool = {}  # lower basename -> (zip, member)
-    for slug in KENNEY_PACKS:
+    for slug in KENNEY_PACKS.keys():
         data = kenney_pack(slug)
         if data is None:
             log("   ! pack missing:", slug)
@@ -359,7 +367,7 @@ def fetch_sounds():
         z = zipfile.ZipFile(io.BytesIO(data))
         n = 0
         for m in z.namelist():
-            if m.lower().endswith(".ogg") and "__macosx" not in m.lower():
+            if m.lower().endswith((".ogg", ".wav")) and "__macosx" not in m.lower():
                 pool.setdefault(os.path.basename(m).lower(), (z, m))
                 n += 1
         log("   pack %s: %d sounds" % (slug, n))
@@ -368,17 +376,27 @@ def fetch_sounds():
     for name, patterns in SOUND_MAP.items():
         chosen = []
         for pat in patterns:
-            rx = re.compile("^" + re.escape(pat.lower()).replace("\\*", ".*") + r"\.ogg$")
+            rx = re.compile("^" + re.escape(pat.lower()).replace("\\*", ".*") + r"\.(ogg|wav)$")
             chosen = sorted(k for k in pool if rx.match(k))
             if chosen:
                 break
         paths = []
         for i, k in enumerate(chosen[:8]):
             z, m = pool[k]
-            p = os.path.join(folder, "%s_%d.ogg" % (name, i))
+            p = os.path.join(folder, "%s_%d%s" % (name, i, os.path.splitext(k)[1]))
             with open(p, "wb") as f:
                 f.write(z.read(m))
             paths.append(res_path(p))
+        if name in LOCAL_SOUNDS:
+            pat, credit = LOCAL_SOUNDS[name]
+            local = sorted(glob.glob(os.path.join(ROOT, "ci", "sounds", pat)))
+            if local:
+                paths = []
+                for i, src in enumerate(local):
+                    p = os.path.join(folder, "%s_local_%d%s" % (name, i, os.path.splitext(src)[1]))
+                    shutil.copyfile(src, p)
+                    paths.append(res_path(p))
+                CREDITS.append(credit)
         if paths:
             table[name] = paths
         REPORT["sounds"][name] = len(paths)
