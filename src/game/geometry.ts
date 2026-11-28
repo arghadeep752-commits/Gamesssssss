@@ -11,11 +11,11 @@ import { type Arrow, DX, DY, type Level, headOf } from './engine';
  */
 
 /** Stroke width relative to the cell size. */
-export const STROKE = 0.2;
+export const STROKE = 0.16;
 /** Head triangle, relative to the cell size: tip ahead of the head cell centre, base behind it. */
-export const HEAD_TIP = 0.42;
-export const HEAD_BASE = 0.1;
-export const HEAD_HALF = 0.3;
+export const HEAD_TIP = 0.38;
+export const HEAD_BASE = 0.08;
+export const HEAD_HALF = 0.26;
 /** Size of the square box the head is drawn in (relative to the cell size). */
 export const HEAD_BOX = 0.9;
 /** Most straight runs any trajectory can have (body runs + the exit run). */

@@ -32,7 +32,7 @@ export interface LevelSpec {
   readonly params: GenParams;
 }
 
-export const MAX_LONG = 28;
+export const MAX_LONG = 36;
 
 const TUTORIAL: readonly [number, number][] = [
   [3, 3],
@@ -63,28 +63,27 @@ export function levelSpec(n: number): LevelSpec {
     };
   }
   const shape = shapeForLevel(level);
+  // Pictures need resolution to read clearly, so boards start fairly large and grow.
   const base =
-    level <= 6
-      ? 9
-      : level <= 10
-        ? 11
+    level <= 4
+      ? 16
+      : level <= 9
+        ? 18
         : level <= 20
-          ? 13
-          : level <= 35
-            ? 15
-            : level <= 55
-              ? 17
-              : level <= 80
-                ? 19
-                : level <= 120
-                  ? 21
-                  : level <= 180
-                    ? 23
-                    : 24;
-  const extra = tier === 'super' ? 4 : tier === 'hard' ? 2 : 0;
+          ? 20
+          : level <= 40
+            ? 22
+            : level <= 70
+              ? 24
+              : level <= 110
+                ? 26
+                : level <= 170
+                  ? 28
+                  : 30;
+  const extra = tier === 'super' ? 6 : tier === 'hard' ? 3 : 0;
   const long = Math.min(MAX_LONG, base + extra);
   const { w, h } = shapeSize(shape, long);
-  const lenBoost = tier === 'super' ? 3 : tier === 'hard' ? 2 : 0;
+  const lenBoost = tier === 'super' ? 4 : tier === 'hard' ? 2 : 0;
   const runBoost = tier === 'super' ? 2 : tier === 'hard' ? 1 : 0;
   return {
     tier,
@@ -94,10 +93,10 @@ export function levelSpec(n: number): LevelSpec {
       h,
       shape,
       minLen: 3,
-      maxLen: Math.min(10, 4 + Math.floor(level / 40) + lenBoost),
-      bend: Math.min(0.58, 0.32 + level * 0.003),
-      fill: 0.96,
-      maxRuns: Math.min(10, 3 + Math.floor(level / 15) + runBoost),
+      maxLen: Math.min(16, 6 + Math.floor(level / 30) + lenBoost),
+      bend: Math.min(0.58, 0.34 + level * 0.003),
+      fill: 0.99,
+      maxRuns: Math.min(13, 4 + Math.floor(level / 20) + runBoost),
     },
   };
 }
@@ -215,12 +214,12 @@ export function dailySpec(dateKey: string): LevelSpec {
   const weekday = new Date(y, m - 1, d).getDay(); // 0 = Sunday
   const hard = weekday === 0 ? 4 : weekday === 6 ? 3 : Math.max(0, weekday - 2); // Mon..Fri 0..3
   const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
-  const long = 16 + hard * 2;
+  const long = 22 + hard * 2;
   const { w, h } = shapeSize(shape, long);
   return {
     tier: hard >= 3 ? 'super' : hard >= 1 ? 'hard' : 'normal',
     shape: shape.id,
-    params: { w, h, shape, minLen: 3, maxLen: 6 + hard, bend: 0.45, fill: 0.96, maxRuns: 6 + hard },
+    params: { w, h, shape, minLen: 3, maxLen: 7 + hard, bend: 0.45, fill: 0.99, maxRuns: 6 + hard },
   };
 }
 

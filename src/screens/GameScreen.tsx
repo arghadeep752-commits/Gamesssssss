@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeOut, useSharedValue, withTiming, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bestHint, buildOccupancy, firstBlocker, type Level } from '../game/engine';
 import { getDaily, getLevel, type LevelInfo } from '../game/levels';
@@ -131,6 +131,7 @@ export function GameScreen({
   const [combo, setCombo] = useState<number | null>(null);
   const [maxZoom, setMaxZoom] = useState(1);
   const zoom = useZoom();
+  const reveal = useSharedValue(0);
   const boardRef = useRef<BoardHandle>(null);
   const hintRef = useRef(hint);
   hintRef.current = hint;
@@ -162,13 +163,14 @@ export function GameScreen({
   const resetUi = useCallback((lvl: Level, withTutorialHint: boolean) => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
+    reveal.value = 0;
     setHearts(MAX_HEARTS);
     setLeft(lvl.arrows.length);
     setPhase('play');
     setReward(null);
     setCombo(null);
     setHint(withTutorialHint ? bestHint(lvl, buildOccupancy(lvl), new Uint8Array(lvl.arrows.length)) : -1);
-  }, []);
+  }, [reveal]);
 
   const restart = useCallback(() => {
     setAttempt((a) => a + 1);
@@ -287,6 +289,7 @@ export function GameScreen({
         s.combo++;
         s.bestCombo = Math.max(s.bestCombo, s.combo);
         const ms = board ? board.fly(id, 'exit', 0) : 0;
+        reveal.value = withTiming(1 - s.left / level.arrows.length, { duration: 420 });
         playSfx('move');
         hapticMove();
         setLeft(s.left);
@@ -326,7 +329,7 @@ export function GameScreen({
         }
       }
     },
-    [level, tutorial, finish],
+    [level, tutorial, finish, reveal],
   );
 
   const takeHint = useCallback(() => {
@@ -416,6 +419,8 @@ export function GameScreen({
             errorColor={t.error}
             dotColor={t.dot}
             gridColor={t.gridLine}
+            revealColor={t.accent}
+            reveal={reveal}
             thin={save.settings.thin}
             grid={save.settings.grid}
             hintId={hint}

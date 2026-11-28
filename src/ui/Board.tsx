@@ -142,6 +142,10 @@ interface Props {
   errorColor: string;
   dotColor: string;
   gridColor: string;
+  /** Colour the picture fills with as arrows are cleared. */
+  revealColor: string;
+  /** 0..1 share of arrows cleared (drives the picture reveal, UI thread only). */
+  reveal: SharedValue<number>;
   thin: boolean;
   grid: boolean;
   /** Arrow to highlight as a hint, or -1. */
@@ -156,7 +160,7 @@ interface Props {
 
 export const Board = memo(
   forwardRef<BoardHandle, Props>(function Board(
-    { level, areaW, areaH, ink, hintColor, errorColor, dotColor, gridColor, thin, grid, hintId, zoom, getOcc, onTapArrow, onMaxZoom },
+    { level, areaW, areaH, ink, hintColor, errorColor, dotColor, gridColor, revealColor, reveal, thin, grid, hintId, zoom, getOcc, onTapArrow, onMaxZoom },
     ref,
   ) {
     const pad = 10;
@@ -166,8 +170,8 @@ export const Board = memo(
     const bh = size * level.h;
     const ox = Math.round((areaW - bw) / 2);
     const oy = Math.round((areaH - bh) / 2);
-    const stroke = Math.max(1.5, Math.round(size * (thin ? 0.13 : 0.2) * 2) / 2);
-    const maxZoom = Math.max(1, Math.min(4, 46 / size));
+    const stroke = Math.max(1.4, Math.round(size * (thin ? 0.11 : 0.16) * 4) / 4);
+    const maxZoom = Math.max(1, Math.min(5, 46 / size));
 
     const geoms = useMemo(() => level.arrows.map((a) => arrowGeom(level, a, size)), [level, size]);
     const vis = useMemo(() => level.arrows.map(() => makeMutable(1)), [level]);
@@ -341,6 +345,35 @@ export const Board = memo(
       return out;
     }, [grid, level, size, gridColor]);
 
+    // The picture: one bar per run of board cells in each row (crisp at any zoom).
+    const silhouette = useMemo(() => {
+      const { w, h, mask } = level;
+      const runs: { x: number; y: number; n: number }[] = [];
+      for (let y = 0; y < h; y++) {
+        let x = 0;
+        while (x < w) {
+          if (!mask[y * w + x]) {
+            x++;
+            continue;
+          }
+          const x0 = x;
+          while (x < w && mask[y * w + x]) x++;
+          runs.push({ x: x0, y, n: x - x0 });
+        }
+      }
+      return runs;
+    }, [level]);
+    const picture = (color: string) =>
+      silhouette.map((r) => (
+        <View
+          key={`${r.x}:${r.y}`}
+          style={{ position: 'absolute', left: r.x * size, top: r.y * size, width: r.n * size, height: size + 0.5, backgroundColor: color }}
+        />
+      ));
+    const basePicture = useMemo(() => picture(ink), [silhouette, size, ink]); // eslint-disable-line react-hooks/exhaustive-deps
+    const revealPicture = useMemo(() => picture(revealColor), [silhouette, size, revealColor]); // eslint-disable-line react-hooks/exhaustive-deps
+    const revealStyle = useAnimatedStyle(() => ({ opacity: 0.04 + reveal.value * 0.3 }));
+
     const statics = useMemo(
       () => geoms.map((g, i) => <StaticArrow key={g.id} g={g} dir={level.arrows[i].dir} vis={vis[g.id]} stroke={stroke} size={size} color={ink} />),
       [geoms, level, vis, stroke, size, ink],
@@ -361,6 +394,8 @@ export const Board = memo(
         <View style={styles.area} collapsable={false}>
           <Animated.View style={[StyleSheet.absoluteFill, contentStyle]} pointerEvents="none">
             <Animated.View entering={FadeIn.duration(240)} style={[styles.board, { left: ox, top: oy, width: bw, height: bh }]}>
+              <View style={[StyleSheet.absoluteFill, styles.base]}>{basePicture}</View>
+              <Animated.View style={[StyleSheet.absoluteFill, revealStyle]}>{revealPicture}</Animated.View>
               {gridLines}
               {dots}
               {hint ? <HintGlow key={hint.id} g={hint} stroke={stroke} size={size} color={hintColor} /> : null}
@@ -511,4 +546,5 @@ const FlightHead = memo(function FlightHead({ slot, size, ink, error }: { slot: 
 const styles = StyleSheet.create({
   area: { flex: 1, overflow: 'hidden' },
   board: { position: 'absolute' },
+  base: { opacity: 0.055 },
 });

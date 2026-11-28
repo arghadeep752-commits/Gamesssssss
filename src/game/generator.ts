@@ -57,7 +57,7 @@ export function levelStats(lvl: Level): LevelStats {
   const free = n ? freeArrows(lvl, buildOccupancy(lvl), new Uint8Array(n)).length / n : 1;
   const depth = dependencyDepth(lvl);
   const coverage = covered / Math.max(1, playable);
-  const score = depth * 3 + (1 - free) * 24 + coverage * 12 + Math.min(n, 160) * 0.04;
+  const score = depth * 3 + (1 - free) * 24 + coverage * 30 + Math.min(n, 200) * 0.03;
   return { arrows: n, coverage, freeShare: free, depth, score };
 }
 
@@ -339,7 +339,7 @@ function tighten(rng: Rng, level: Level, p: GenParams): Level {
       }
     }
   };
-  growTails(3);
+  growTails(4);
 
   // 3) Pack new arrows into the remaining gaps. Unlike the first phase their
   //    exit line does not have to be empty: they simply wait for whatever is in
@@ -412,7 +412,30 @@ function tighten(rng: Rng, level: Level, p: GenParams): Level {
       break;
     }
   }
-  growTails(3);
+  growTails(6);
+
+  // 4) Holes straight in front of a head: push the head forward into them.
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    for (let c = 0; c < w * h; c++) {
+      if (!mask[c] || occ[c] >= 0) continue;
+      for (let d = 0 as Dir; d < 4; d = (d + 1) as Dir) {
+        const t = step(w, h, c, opposite(d)); // cell behind c, looking in direction d
+        if (t < 0 || occ[t] < 0) continue;
+        const a = arrows[occ[t]];
+        if (a.cells[a.cells.length - 1] !== t || a.dir !== d || a.cells.length >= lenCap) continue;
+        const watchers = watchersOf(c, []).filter((b) => b !== a.id);
+        if (closesCycle([a.id], watchers)) continue;
+        a.cells.push(c);
+        occ[c] = a.id;
+        for (const b of watchers) if (!waits[b].includes(a.id)) waits[b].push(a.id);
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) break;
+  }
+  growTails(2);
   return lvl;
 }
 
