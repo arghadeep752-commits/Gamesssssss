@@ -2,6 +2,8 @@ import { memo, useMemo } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { SHAPE_BY_ID, shapeMask, shapeSize } from '../game/shapes';
 
+const cache = new Map<string, string>();
+
 /** Pixel-style silhouette of a board outline (collection cards, win screen). */
 export const ShapeThumb = memo(function ShapeThumb({
   shape,
@@ -15,6 +17,9 @@ export const ShapeThumb = memo(function ShapeThumb({
   opacity?: number;
 }) {
   const d = useMemo(() => {
+    const key = `${shape}:${size}`;
+    const hit = cache.get(key);
+    if (hit !== undefined) return hit;
     const def = SHAPE_BY_ID.get(shape);
     if (!def) return '';
     const { w, h } = shapeSize(def, 14);
@@ -33,6 +38,7 @@ export const ShapeThumb = memo(function ShapeThumb({
         out += `M${px} ${py}h${s}v${s}h-${s}z`;
       }
     }
+    cache.set(key, out);
     return out;
   }, [shape, size]);
   if (!d) return null;

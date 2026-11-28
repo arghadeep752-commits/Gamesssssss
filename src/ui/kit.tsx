@@ -335,7 +335,7 @@ export const Confetti = memo(function Confetti({ width, height }: { width: numbe
     return out;
   }, [width, height]);
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.confetti]}>
       {pieces.map((p, i) => (
         <ConfettiPiece key={i} {...p} startY={height * 0.42} fall={height * 0.75} />
       ))}
@@ -400,4 +400,6 @@ export const styles = StyleSheet.create({
   tier: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   tierText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
   stars: { flexDirection: 'row', justifyContent: 'center', gap: 6, alignItems: 'flex-end' },
+  // Above the dialog (which uses elevation 50 on Android).
+  confetti: { zIndex: 60, elevation: 60 },
 });

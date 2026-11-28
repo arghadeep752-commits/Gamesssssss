@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
   btn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   trackHit: { width: 92, height: 36, justifyContent: 'center' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  fill: { ...StyleSheet.absoluteFillObject, transformOrigin: '0% 50%' },
+  fill: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, transformOrigin: '0% 50%' },
   thumb: { position: 'absolute', left: 0, width: THUMB, height: THUMB, borderRadius: THUMB / 2, borderWidth: 3 },
 });

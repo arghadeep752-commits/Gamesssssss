@@ -158,3 +158,19 @@ jobs:
         with:
           name: smoke-${{ github.run_number }}
           path: smoke-out/
+
+      # Draft releases are visible only to the repo owner; used to review the screenshots.
+      - name: Pack QA screenshots
+        if: always()
+        run: cd smoke-out && zip -q -r ../qa-screenshots.zip . || true
+
+      - name: Attach QA screenshots to a private draft release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: arrow-flow-qa-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: QA screenshots ${{ github.run_number }} (private draft)
+          body: Emulator screenshots and logs from the automated smoke test. Safe to delete.
+          draft: true
+          files: qa-screenshots.zip
