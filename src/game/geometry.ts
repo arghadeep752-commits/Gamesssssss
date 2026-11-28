@@ -19,7 +19,7 @@ export const HEAD_HALF = 0.3;
 /** Size of the square box the head is drawn in (relative to the cell size). */
 export const HEAD_BOX = 0.9;
 /** Most straight runs any trajectory can have (body runs + the exit run). */
-export const MAX_RUNS = 12;
+export const MAX_RUNS = 16;
 
 export interface Seg {
   /** Axis-aligned, from vertex (x0, y0) to (x1, y1), in board pixels. */

@@ -1,34 +1,41 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
 /**
- * Sound effects and background music. Every call is fire-and-forget and
- * wrapped so audio problems can never interrupt gameplay. Settings and app
- * focus are pushed in from the store and the lifecycle hook.
+ * Sound effects: real recorded/produced sounds from Kenney's "Interface Sounds"
+ * pack (CC0 public domain, kenney.nl). Every call is fire-and-forget and wrapped
+ * so audio problems can never interrupt gameplay.
  */
-export type Sfx = 'tap' | 'move' | 'blocked' | 'complete' | 'reward' | 'achievement';
+export type Sfx = 'tap' | 'move' | 'blocked' | 'fail' | 'complete' | 'coin' | 'reward' | 'hint' | 'star' | 'toggle' | 'unlock';
 
-const SOURCES: Record<Sfx, number> = {
+type Clip = 'tap' | 'move1' | 'move2' | 'move3' | 'blocked' | 'fail' | 'complete' | 'coin' | 'reward' | 'hint' | 'star' | 'toggle' | 'unlock';
+
+const SOURCES: Record<Clip, number> = {
   tap: require('../../assets/sounds/tap.wav'),
-  move: require('../../assets/sounds/move.wav'),
+  move1: require('../../assets/sounds/move1.wav'),
+  move2: require('../../assets/sounds/move2.wav'),
+  move3: require('../../assets/sounds/move3.wav'),
   blocked: require('../../assets/sounds/blocked.wav'),
+  fail: require('../../assets/sounds/fail.wav'),
   complete: require('../../assets/sounds/complete.wav'),
+  coin: require('../../assets/sounds/coin.wav'),
   reward: require('../../assets/sounds/reward.wav'),
-  achievement: require('../../assets/sounds/achievement.wav'),
+  hint: require('../../assets/sounds/hint.wav'),
+  star: require('../../assets/sounds/star.wav'),
+  toggle: require('../../assets/sounds/toggle.wav'),
+  unlock: require('../../assets/sounds/unlock.wav'),
 };
-const MUSIC_SOURCE: number = require('../../assets/sounds/music.m4a');
 
-/** Players per effect; more than one lets rapid moves overlap cleanly. */
-const POOL_SIZE: Record<Sfx, number> = { tap: 1, move: 2, blocked: 1, complete: 1, reward: 1, achievement: 1 };
-const SFX_VOLUME = 0.7;
-const MUSIC_VOLUME = 0.28;
+/** Players per clip; more than one lets rapid repeats overlap cleanly. */
+const POOL: Partial<Record<Clip, number>> = { move1: 2, move2: 2, move3: 2, star: 2, coin: 2 };
+const VOLUME: Partial<Record<Clip, number>> = { tap: 0.55, toggle: 0.55, move1: 0.8, move2: 0.8, move3: 0.8 };
+const MOVES: Clip[] = ['move1', 'move2', 'move3'];
 
 let sfxOn = true;
-let musicOn = false;
 let appActive = true;
 let modeSet = false;
-const pools: Partial<Record<Sfx, AudioPlayer[]>> = {};
-const cursors: Partial<Record<Sfx, number>> = {};
-let music: AudioPlayer | null = null;
+let moveTurn = 0;
+const pools: Partial<Record<Clip, AudioPlayer[]>> = {};
+const cursors: Partial<Record<Clip, number>> = {};
 
 function ensureMode() {
   if (modeSet) return;
@@ -41,13 +48,13 @@ function ensureMode() {
   }).catch(() => undefined);
 }
 
-function pool(name: Sfx): AudioPlayer[] {
+function pool(name: Clip): AudioPlayer[] {
   let p = pools[name];
   if (!p) {
     p = [];
-    for (let i = 0; i < POOL_SIZE[name]; i++) {
+    for (let i = 0; i < (POOL[name] ?? 1); i++) {
       const player = createAudioPlayer(SOURCES[name]);
-      player.volume = SFX_VOLUME;
+      player.volume = VOLUME[name] ?? 0.75;
       p.push(player);
     }
     pools[name] = p;
@@ -56,16 +63,25 @@ function pool(name: Sfx): AudioPlayer[] {
   return p;
 }
 
+function play(name: Clip) {
+  const p = pool(name);
+  const i = cursors[name] ?? 0;
+  cursors[name] = (i + 1) % p.length;
+  const player = p[i];
+  player.seekTo(0).catch(() => undefined);
+  player.play();
+}
+
 export function playSfx(name: Sfx): void {
   if (!sfxOn || !appActive) return;
   try {
     ensureMode();
-    const p = pool(name);
-    const i = cursors[name] ?? 0;
-    cursors[name] = (i + 1) % p.length;
-    const player = p[i];
-    player.seekTo(0).catch(() => undefined);
-    player.play();
+    if (name === 'move') {
+      moveTurn = (moveTurn + 1) % MOVES.length;
+      play(MOVES[moveTurn]);
+    } else {
+      play(name);
+    }
   } catch {
     // Audio is optional; ignore device or decoder errors.
   }
@@ -76,45 +92,23 @@ export function preloadSfx(): void {
   if (!sfxOn) return;
   try {
     ensureMode();
-    pool('move');
-    pool('blocked');
+    for (const c of ['tap', 'move1', 'move2', 'move3', 'blocked'] as Clip[]) pool(c);
   } catch {
     // ignore
   }
 }
 
-function syncMusic() {
-  try {
-    if (musicOn && appActive) {
-      ensureMode();
-      if (!music) {
-        music = createAudioPlayer(MUSIC_SOURCE);
-        music.loop = true;
-        music.volume = MUSIC_VOLUME;
-      }
-      music.play();
-    } else if (music) {
-      music.pause();
-    }
-  } catch {
-    // ignore
-  }
-}
-
-export function configureAudio(settings: { sfx: boolean; music: boolean }): void {
+export function configureAudio(settings: { sfx: boolean }): void {
   sfxOn = settings.sfx;
-  musicOn = settings.music;
-  if (!sfxOn) releaseSfx();
-  syncMusic();
+  if (!sfxOn) releaseAudio();
 }
 
 export function setAudioAppActive(active: boolean): void {
   appActive = active;
-  syncMusic();
 }
 
-function releaseSfx() {
-  for (const key of Object.keys(pools) as Sfx[]) {
+export function releaseAudio(): void {
+  for (const key of Object.keys(pools) as Clip[]) {
     for (const p of pools[key] ?? []) {
       try {
         p.remove();
@@ -123,17 +117,5 @@ function releaseSfx() {
       }
     }
     delete pools[key];
-  }
-}
-
-export function releaseAudio(): void {
-  releaseSfx();
-  if (music) {
-    try {
-      music.remove();
-    } catch {
-      // ignore
-    }
-    music = null;
   }
 }

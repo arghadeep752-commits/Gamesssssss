@@ -21,8 +21,10 @@ export function TrophiesScreen() {
 
   const stats: { icon: IconName; value: number; label: string }[] = [
     { icon: 'flame', value: save.stats.levels, label: 'Levels' },
-    { icon: 'star', value: save.stats.perfect, label: 'Perfect' },
+    { icon: 'star', value: save.stats.stars, label: 'Stars' },
+    { icon: 'sparkle', value: save.stats.perfect, label: 'Perfect' },
     { icon: 'calendar', value: save.stats.daily, label: 'Dailies' },
+    { icon: 'arrowUR', value: save.stats.bestStreak, label: 'Best streak' },
     { icon: 'trophy', value: earned, label: 'Trophies' },
   ];
 
@@ -32,10 +34,12 @@ export function TrophiesScreen() {
         <Text style={[styles.h1, { color: t.text }]}>Trophies</Text>
         <View style={styles.stats}>
           {stats.map((s) => (
-            <View key={s.label} style={[styles.stat, { backgroundColor: t.surface, borderColor: t.border }]}>
-              <Icon name={s.icon} size={20} color={s.icon === 'trophy' || s.icon === 'star' ? t.gold : t.accent} filled />
+            <View key={s.label} style={styles.statWrap}>
+            <View style={[styles.stat, { width: '100%', backgroundColor: t.surface, borderColor: t.border }]}>
+              <Icon name={s.icon} size={20} color={s.icon === 'trophy' || s.icon === 'star' ? t.gold : t.accent} filled={s.icon !== 'arrowUR' && s.icon !== 'calendar'} />
               <Text style={[styles.statValue, { color: t.text }]}>{s.value}</Text>
               <Text style={[styles.statLabel, { color: t.sub }]}>{s.label}</Text>
+            </View>
             </View>
           ))}
         </View>
@@ -70,8 +74,9 @@ const styles = StyleSheet.create({
   root: { paddingHorizontal: SPACE.xl, gap: SPACE.lg, paddingBottom: SPACE.xl },
   h1: { fontSize: 28, fontWeight: '900', marginTop: 4 },
   h2: { fontSize: 14, fontWeight: '600' },
-  stats: { flexDirection: 'row', gap: SPACE.sm },
-  stat: { flex: 1, alignItems: 'center', borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACE.md, gap: 2 },
+  stats: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
+  stat: { width: '33.333%', alignItems: 'center', borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACE.md, gap: 2, borderColor: 'transparent' },
+  statWrap: { width: '33.333%', padding: 4 },
   statValue: { fontSize: 20, fontWeight: '900' },
   statLabel: { fontSize: 12, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },

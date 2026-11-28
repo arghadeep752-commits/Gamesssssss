@@ -1,104 +1,234 @@
-import type { Level } from './engine';
+import { type Arrow, type Dir, type Level } from './engine';
 import { generateLevel, type GenParams } from './generator';
+import { LEVEL_PACK } from './levelPack';
 import { hashString, mulberry32 } from './rng';
-import { FANCY_SHAPES, type Shape } from './shapes';
+import { SHAPE_BY_ID, SHAPES, shapeSize, type ShapeDef } from './shapes';
 
 /**
- * Endless level curve. Level n always produces the same puzzle on every device,
- * so progress never depends on stored level data.
+ * Level curve. Levels 1..LEVEL_PACK.length ship pre-built (picked as the hardest
+ * of several candidates when the pack was made); later levels are generated on
+ * the device with the same rules. Level n is the same puzzle on every phone.
  */
-const SIZES: readonly (readonly [number, number, number])[] = [
-  // [last level of the band, columns, rows]
-  [1, 3, 3],
-  [2, 3, 4],
-  [3, 4, 4],
-  [5, 4, 5],
-  [7, 5, 5],
-  [10, 5, 6],
-  [14, 6, 6],
-  [19, 6, 7],
-  [25, 7, 8],
-  [33, 8, 9],
-  [45, 8, 10],
-  [60, 9, 11],
-  [80, 10, 12],
-  [120, 10, 13],
-  [Number.POSITIVE_INFINITY, 11, 14],
+export type Tier = 'easy' | 'normal' | 'hard' | 'super';
+
+export const TIER_LABEL: Record<Tier, string> = {
+  easy: 'Easy',
+  normal: 'Normal',
+  hard: 'Hard',
+  super: 'Super Hard',
+};
+
+export interface LevelInfo {
+  readonly level: Level;
+  readonly tier: Tier;
+  /** Outline id ('rect' for the plain tutorial boards). */
+  readonly shape: string;
+  readonly shapeName: string;
+}
+
+export interface LevelSpec {
+  readonly tier: Tier;
+  readonly shape: string;
+  readonly params: GenParams;
+}
+
+export const MAX_LONG = 28;
+
+const TUTORIAL: readonly [number, number][] = [
+  [3, 3],
+  [4, 4],
+  [5, 5],
 ];
 
-export const MAX_COLS = 12;
-export const MAX_ROWS = 15;
+export function levelTier(n: number): Tier {
+  if (n <= TUTORIAL.length) return 'easy';
+  if (n % 10 === 0) return 'super';
+  if (n % 5 === 0) return 'hard';
+  return 'normal';
+}
 
-export function levelParams(n: number): GenParams {
+export function shapeForLevel(n: number): ShapeDef {
+  return SHAPES[(n - TUTORIAL.length - 1) % SHAPES.length];
+}
+
+export function levelSpec(n: number): LevelSpec {
   const level = Math.max(1, Math.floor(n));
-  const band = SIZES.find((s) => level <= s[0]) ?? SIZES[SIZES.length - 1];
-  let w = band[1];
-  let h = band[2];
-  let shape: Shape = 'rect';
-  if (level >= 12 && level % 3 === 0) {
-    shape = FANCY_SHAPES[hashString(`shape:${level}`) % FANCY_SHAPES.length];
-    w = Math.min(MAX_COLS, w + 1);
-    h = Math.min(MAX_ROWS, h + 1);
+  const tier = levelTier(level);
+  if (level <= TUTORIAL.length) {
+    const [w, h] = TUTORIAL[level - 1];
+    return {
+      tier,
+      shape: 'rect',
+      params: { w, h, shape: 'rect', minLen: 2, maxLen: 3, bend: 0.3, fill: level === 1 ? 0.75 : 0.95, maxRuns: 3 },
+    };
   }
-  const boss = level >= 20 && level % 10 === 0;
-  if (boss) {
-    w = Math.min(MAX_COLS, w + 1);
-    h = Math.min(MAX_ROWS, h + 1);
-  }
-  const maxLen = level <= 5 ? 3 : level <= 15 ? 4 : level <= 30 ? 5 : level <= 60 ? 6 : 7;
+  const shape = shapeForLevel(level);
+  const base =
+    level <= 6
+      ? 9
+      : level <= 10
+        ? 11
+        : level <= 20
+          ? 13
+          : level <= 35
+            ? 15
+            : level <= 55
+              ? 17
+              : level <= 80
+                ? 19
+                : level <= 120
+                  ? 21
+                  : level <= 180
+                    ? 23
+                    : 24;
+  const extra = tier === 'super' ? 4 : tier === 'hard' ? 2 : 0;
+  const long = Math.min(MAX_LONG, base + extra);
+  const { w, h } = shapeSize(shape, long);
+  const lenBoost = tier === 'super' ? 3 : tier === 'hard' ? 2 : 0;
+  const runBoost = tier === 'super' ? 2 : tier === 'hard' ? 1 : 0;
   return {
-    w,
-    h,
-    shape,
-    minLen: level <= 3 ? 2 : 3,
-    maxLen: maxLen + (boss ? 2 : 0),
-    bend: Math.min(0.5, 0.22 + level * 0.004),
-    fill: level <= 2 ? 0.7 : 0.96,
-    maxRuns: level < 10 ? 3 : level < 30 ? 5 : 7,
+    tier,
+    shape: shape.id,
+    params: {
+      w,
+      h,
+      shape,
+      minLen: 3,
+      maxLen: Math.min(10, 4 + Math.floor(level / 40) + lenBoost),
+      bend: Math.min(0.58, 0.32 + level * 0.003),
+      fill: 0.96,
+      maxRuns: Math.min(10, 3 + Math.floor(level / 15) + runBoost),
+    },
   };
 }
 
 export function levelSeed(n: number): number {
-  return hashString(`arrowflow:level:${n}`);
+  return hashString(`arrowflow:v3:level:${n}`);
 }
 
-const cache = new Map<string, Level>();
+/* ------------------------------------------------------------------ */
+/* Pack format                                                         */
+/* ------------------------------------------------------------------ */
+// One level per string: "w,h,shapeId,tier,maskHex,arrows"
+// arrows are joined by "."; each is its tail cell (2 base-36 chars) followed by
+// runs of (direction letter u/r/d/l, run length in base 36).
 
-function cached(key: string, make: () => Level): Level {
-  let lvl = cache.get(key);
-  if (!lvl) {
-    lvl = make();
-    if (cache.size > 12) cache.delete(cache.keys().next().value as string);
-    cache.set(key, lvl);
+const DIR_CHARS = 'urdl';
+const TIER_CHARS: Record<Tier, string> = { easy: 'e', normal: 'n', hard: 'h', super: 's' };
+const CHAR_TIER: Record<string, Tier> = { e: 'easy', n: 'normal', h: 'hard', s: 'super' };
+
+export function encodeLevel(info: LevelInfo): string {
+  const { level } = info;
+  let hex = '';
+  for (let i = 0; i < level.mask.length; i += 4) {
+    let v = 0;
+    for (let b = 0; b < 4; b++) if (level.mask[i + b]) v |= 8 >> b;
+    hex += v.toString(16);
   }
-  return lvl;
+  const arrows = level.arrows
+    .map((a) => {
+      let s = a.cells[0].toString(36).padStart(2, '0');
+      let k = 1;
+      while (k < a.cells.length) {
+        const d = stepDir(level.w, a.cells[k - 1], a.cells[k]);
+        let len = 1;
+        while (k + len < a.cells.length && stepDir(level.w, a.cells[k + len - 1], a.cells[k + len]) === d) len++;
+        s += DIR_CHARS[d] + len.toString(36);
+        k += len;
+      }
+      return s;
+    })
+    .join('.');
+  return `${level.w},${level.h},${info.shape},${TIER_CHARS[info.tier]},${hex},${arrows}`;
 }
 
-export function getLevel(n: number): Level {
-  return cached(`L${n}`, () => generateLevel(levelParams(n), levelSeed(n)));
+function stepDir(w: number, a: number, b: number): Dir {
+  const d = b - a;
+  return (d === -w ? 0 : d === 1 ? 1 : d === w ? 2 : 3) as Dir;
 }
 
-/** Daily puzzles: harder toward the weekend, with a random outline. */
-export function dailyParams(dateKey: string): GenParams {
-  const rng = mulberry32(hashString(`arrowflow:dayparams:${dateKey}`));
+export function decodeLevel(text: string): LevelInfo {
+  const [ws, hs, shape, tierC, hex, body] = text.split(',');
+  const w = Number(ws);
+  const h = Number(hs);
+  const mask = new Uint8Array(w * h);
+  for (let i = 0; i < hex.length; i++) {
+    const v = parseInt(hex[i], 16);
+    for (let b = 0; b < 4; b++) {
+      const idx = i * 4 + b;
+      if (idx < mask.length) mask[idx] = v & (8 >> b) ? 1 : 0;
+    }
+  }
+  const dx = [-w, 1, w, -1];
+  const arrows: Arrow[] = body
+    ? body.split('.').map((s, id) => {
+        let c = parseInt(s.slice(0, 2), 36);
+        const cells = [c];
+        let dir: Dir = 0;
+        for (let i = 2; i + 1 < s.length; i += 2) {
+          dir = DIR_CHARS.indexOf(s[i]) as Dir;
+          const len = parseInt(s[i + 1], 36);
+          for (let k = 0; k < len; k++) {
+            c += dx[dir];
+            cells.push(c);
+          }
+        }
+        return { id, cells, dir };
+      })
+    : [];
+  const def = SHAPE_BY_ID.get(shape);
+  return { level: { w, h, mask, arrows }, tier: CHAR_TIER[tierC] ?? 'normal', shape, shapeName: def ? def.name : 'Grid' };
+}
+
+/* ------------------------------------------------------------------ */
+/* Access                                                              */
+/* ------------------------------------------------------------------ */
+
+const cache = new Map<string, LevelInfo>();
+
+function cached(key: string, make: () => LevelInfo): LevelInfo {
+  let v = cache.get(key);
+  if (!v) {
+    v = make();
+    if (cache.size > 10) cache.delete(cache.keys().next().value as string);
+    cache.set(key, v);
+  }
+  return v;
+}
+
+/** Builds level n from its spec (used by the pack builder and after the pack ends). */
+export function buildLevel(n: number, tries = 2): LevelInfo {
+  const spec = levelSpec(n);
+  const level = generateLevel(spec.params, levelSeed(n), tries);
+  const def = SHAPE_BY_ID.get(spec.shape);
+  return { level, tier: spec.tier, shape: spec.shape, shapeName: def ? def.name : 'Grid' };
+}
+
+export function getLevel(n: number): LevelInfo {
+  return cached(`L${n}`, () => (n >= 1 && n <= LEVEL_PACK.length ? decodeLevel(LEVEL_PACK[n - 1]) : buildLevel(n)));
+}
+
+/** Daily puzzles: big shaped boards, harder toward the weekend. */
+export function dailySpec(dateKey: string): LevelSpec {
+  const rng = mulberry32(hashString(`arrowflow:v3:dayparams:${dateKey}`));
   const [y, m, d] = dateKey.split('-').map(Number);
   const weekday = new Date(y, m - 1, d).getDay(); // 0 = Sunday
   const hard = weekday === 0 ? 4 : weekday === 6 ? 3 : Math.max(0, weekday - 2); // Mon..Fri 0..3
-  const shapes: Shape[] = ['rect', 'rect', ...FANCY_SHAPES];
-  const shape = shapes[Math.floor(rng() * shapes.length)];
-  const extra = shape === 'rect' ? 0 : 1;
+  const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
+  const long = 16 + hard * 2;
+  const { w, h } = shapeSize(shape, long);
   return {
-    w: 7 + Math.min(3, hard) + extra,
-    h: 9 + hard + extra,
-    shape,
-    minLen: 3,
-    maxLen: 5 + Math.min(2, hard),
-    bend: 0.38 + hard * 0.03,
-    fill: 0.96,
-    maxRuns: 6,
+    tier: hard >= 3 ? 'super' : hard >= 1 ? 'hard' : 'normal',
+    shape: shape.id,
+    params: { w, h, shape, minLen: 3, maxLen: 6 + hard, bend: 0.45, fill: 0.96, maxRuns: 6 + hard },
   };
 }
 
-export function getDaily(dateKey: string): Level {
-  return cached(`D${dateKey}`, () => generateLevel(dailyParams(dateKey), hashString(`arrowflow:day:${dateKey}`)));
+export function getDaily(dateKey: string): LevelInfo {
+  return cached(`D${dateKey}`, () => {
+    const spec = dailySpec(dateKey);
+    const level = generateLevel(spec.params, hashString(`arrowflow:v3:day:${dateKey}`), 1);
+    const def = SHAPE_BY_ID.get(spec.shape);
+    return { level, tier: spec.tier, shape: spec.shape, shapeName: def ? def.name : 'Grid' };
+  });
 }

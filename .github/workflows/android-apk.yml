@@ -1,6 +1,5 @@
-# Builds an installable Android APK on GitHub's servers, so no computer is needed.
-# Push this project to the `arrow-flow-v2` branch (or press "Run workflow" on the
-# Actions tab) and download the APK from the Releases page when it finishes.
+# Builds an installable Android APK on GitHub's servers, so no computer is needed,
+# and smoke-tests a QA build on an Android emulator (screenshots + crash check).
 name: Build Arrow Flow APK
 
 on:
@@ -22,6 +21,7 @@ jobs:
     env:
       CI: 'true'
       EXPO_NO_TELEMETRY: '1'
+      VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +40,7 @@ jobs:
       - name: Align native module versions with the Expo SDK
         run: npx expo install --fix
 
-      - name: Unit tests (rules, generator, 400 levels, a year of dailies)
+      - name: Unit tests (rules, generator, 300 packed levels, a year of dailies)
         run: npm test
 
       - name: Type-check (report only)
@@ -81,22 +81,80 @@ jobs:
         id: apk
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/ArrowFlow-v2-${{ github.run_number }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/ArrowFlow-v3-${{ github.run_number }}.apk"
           SIZE=$(du -h dist/*.apk | cut -f1)
           echo "size=$SIZE" >> "$GITHUB_OUTPUT"
-          echo "### Arrow Flow APK: $SIZE" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Arrow Flow APK: $SIZE (versionCode ${{ github.run_number }})" >> "$GITHUB_STEP_SUMMARY"
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          "$ANDROID_HOME/build-tools/$BT/aapt" dump badging dist/*.apk | grep -E "^package|sdkVersion|targetSdk" >> "$GITHUB_STEP_SUMMARY" || true
+          "$ANDROID_HOME/build-tools/$BT/aapt" dump permissions dist/*.apk >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArrowFlow-v2-apk-${{ github.run_number }}
+          name: ArrowFlow-v3-apk-${{ github.run_number }}
           path: dist/*.apk
 
       - name: Publish as a downloadable release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: arrow-flow-v2-build-${{ github.run_number }}
+          tag_name: arrow-flow-v3-build-${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          name: Arrow Flow v2 build ${{ github.run_number }} (${{ steps.apk.outputs.size }})
-          body: Installable build of Arrow Flow v2. Open this page on your Android phone, tap the APK below and install it.
+          name: Arrow Flow v3 build ${{ github.run_number }} (${{ steps.apk.outputs.size }})
+          body: Installable build of Arrow Flow v3. Open this page on your Android phone, tap the APK below and install it.
           files: dist/*.apk
           prerelease: true
+
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    env:
+      CI: 'true'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_PUBLIC_QA: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund && npx expo install --fix
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build QA APK for the emulator (x86_64)
+        working-directory: android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=x86_64 --no-daemon
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Play through the app on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          arch: x86_64
+          target: google_apis
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          script: bash .github/scripts/smoke.sh android/app/build/outputs/apk/release/app-release.apk
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-${{ github.run_number }}
+          path: smoke-out/

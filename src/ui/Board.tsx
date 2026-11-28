@@ -1,5 +1,6 @@
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import { StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -14,7 +15,6 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 import type { Level } from '../game/engine';
 import {
   arrowGeom,
@@ -22,37 +22,39 @@ import {
   type ArrowGeom,
   type Flight,
   flightMs,
-  HEAD_BOX,
-  headPath,
+  HEAD_BASE,
+  HEAD_HALF,
+  HEAD_TIP,
   hitTest,
   makeFlight,
   MAX_RUNS,
   type PieceFrame,
   pieceFrame,
-  STROKE,
 } from '../game/geometry';
-import type { Palette } from './theme';
 import { onUI } from './worklets';
+import { clamp, panLimit, resetZoom, type Zoom } from './zoom';
 
 /**
  * The puzzle board.
  *
  * Performance notes (this is what keeps it smooth on low-end phones):
- * - Arrows at rest are plain native Views (rounded capsules + a small head), built
- *   once per level and never re-rendered while playing.
+ * - Arrows at rest are plain native views (rounded bars + a border-drawn head),
+ *   mounted a few dozen per frame so big boards never freeze the screen, and
+ *   never re-rendered while playing. Views stay sharp when zoomed in.
  * - Motion never goes through React. A tap hands a small flat description of
- *   the move to the UI thread; a pre-mounted "flight slot" then draws the moving
+ *   the move to the UI thread; a pre-mounted "flight slot" draws the moving
  *   arrow with transform-only updates while the resting copy is hidden in the
- *   same frame. The slither (body following its own trail) is computed per
- *   frame on the UI thread from one animated number.
- * - Hit testing is a single touch responder plus an array lookup.
+ *   same frame. The slither is computed per frame from one animated number.
+ * - Pinch-zoom and pan run as UI-thread gestures; the board is a single
+ *   transformed layer, so zooming does not touch React either.
  */
 
-const SLOTS = 6;
+const SLOTS = 4;
 const RUNS = Array.from({ length: MAX_RUNS }, (_, i) => i);
 const EMPTY_FLIGHT: Flight = { n: 0, px: [], py: [], cum: [], len: 0, hx: 0, hy: 0, dx: 0, dy: 0, rot: 0, travel: 0 };
-
 const HIDDEN: PieceFrame = { on: false, tx: 0, ty: 0, sx: 1, sy: 1 };
+const FIRST_CHUNK = 36;
+const CHUNK = 28;
 
 const EXIT_EASE = Easing.bezier(0.42, 0.0, 0.86, 0.55);
 const BUMP_OUT = Easing.out(Easing.quad);
@@ -106,6 +108,26 @@ function runFlight(slot: Slot, f: Flight, bump: boolean, ms: number, vis: Shared
   );
 }
 
+/** Border-drawn triangle for a head pointing in direction `dir` (0 up, 1 right, 2 down, 3 left). */
+export function headStyle(dir: number, hx: number, hy: number, size: number, color: string): ViewStyle {
+  const tip = HEAD_TIP * size;
+  const base = HEAD_BASE * size;
+  const half = HEAD_HALF * size;
+  const len = tip + base;
+  const t = 'transparent';
+  const common: ViewStyle = { position: 'absolute', width: 0, height: 0, borderStyle: 'solid' };
+  switch (dir) {
+    case 1:
+      return { ...common, left: hx - base, top: hy - half, borderLeftWidth: len, borderTopWidth: half, borderBottomWidth: half, borderLeftColor: color, borderTopColor: t, borderBottomColor: t };
+    case 3:
+      return { ...common, left: hx - tip, top: hy - half, borderRightWidth: len, borderTopWidth: half, borderBottomWidth: half, borderRightColor: color, borderTopColor: t, borderBottomColor: t };
+    case 2:
+      return { ...common, left: hx - half, top: hy - base, borderTopWidth: len, borderLeftWidth: half, borderRightWidth: half, borderTopColor: color, borderLeftColor: t, borderRightColor: t };
+    default:
+      return { ...common, left: hx - half, top: hy - tip, borderBottomWidth: len, borderLeftWidth: half, borderRightWidth: half, borderBottomColor: color, borderLeftColor: t, borderRightColor: t };
+  }
+}
+
 export interface BoardHandle {
   /** Starts an exit or bump animation and returns its total duration in ms. */
   fly(id: number, kind: 'exit' | 'bump', gap: number): number;
@@ -115,42 +137,63 @@ interface Props {
   level: Level;
   areaW: number;
   areaH: number;
-  palette: Palette;
+  ink: string;
+  hintColor: string;
+  errorColor: string;
+  dotColor: string;
+  gridColor: string;
+  thin: boolean;
+  grid: boolean;
   /** Arrow to highlight as a hint, or -1. */
   hintId: number;
+  zoom: Zoom;
   /** Current occupancy (removed arrows cleared) for hit testing. */
   getOcc: () => Int16Array;
   onTapArrow: (id: number) => void;
+  /** Reports how far this board can be zoomed in (1 = no zoom needed). */
+  onMaxZoom?: (max: number) => void;
 }
 
 export const Board = memo(
-  forwardRef<BoardHandle, Props>(function Board({ level, areaW, areaH, palette, hintId, getOcc, onTapArrow }, ref) {
-    const pad = 14;
-    const size = Math.max(
-      10,
-      Math.floor(Math.min((areaW - pad * 2) / level.w, (areaH - pad * 2) / level.h, level.w <= 4 ? 70 : 60)),
-    );
+  forwardRef<BoardHandle, Props>(function Board(
+    { level, areaW, areaH, ink, hintColor, errorColor, dotColor, gridColor, thin, grid, hintId, zoom, getOcc, onTapArrow, onMaxZoom },
+    ref,
+  ) {
+    const pad = 10;
+    const fit = Math.min((areaW - pad * 2) / level.w, (areaH - pad * 2) / level.h, level.w <= 5 ? 72 : 60);
+    const size = Math.max(6, Math.floor(fit * 2) / 2);
     const bw = size * level.w;
     const bh = size * level.h;
     const ox = Math.round((areaW - bw) / 2);
     const oy = Math.round((areaH - bh) / 2);
-    const stroke = Math.max(3, Math.round(size * STROKE * 2) / 2);
+    const stroke = Math.max(1.5, Math.round(size * (thin ? 0.13 : 0.2) * 2) / 2);
+    const maxZoom = Math.max(1, Math.min(4, 46 / size));
 
     const geoms = useMemo(() => level.arrows.map((a) => arrowGeom(level, a, size)), [level, size]);
     const vis = useMemo(() => level.arrows.map(() => makeMutable(1)), [level]);
-    const headD = useMemo(() => headPath(size), [size]);
+
+    // Keep the zoom state in step with this board.
+    useEffect(() => {
+      zoom.aw.value = areaW;
+      zoom.ah.value = areaH;
+      zoom.bw.value = bw;
+      zoom.bh.value = bh;
+      zoom.max.value = maxZoom;
+      onMaxZoom?.(maxZoom);
+    }, [zoom, areaW, areaH, bw, bh, maxZoom, onMaxZoom]);
+    useEffect(() => {
+      onUI(resetZoom, zoom);
+    }, [level, zoom]);
 
     const s0 = useSlot();
     const s1 = useSlot();
     const s2 = useSlot();
     const s3 = useSlot();
-    const s4 = useSlot();
-    const s5 = useSlot();
-    const slots = useMemo(() => [s0, s1, s2, s3, s4, s5], [s0, s1, s2, s3, s4, s5]);
+    const slots = useMemo(() => [s0, s1, s2, s3], [s0, s1, s2, s3]);
     const busy = useRef<number[]>(new Array(SLOTS).fill(0));
 
-    const layout = useRef({ size, ox, oy, areaW, areaH, geoms, vis });
-    layout.current = { size, ox, oy, areaW, areaH, geoms, vis };
+    const layout = useRef({ size, ox, oy, areaW, areaH, geoms, vis, stroke });
+    layout.current = { size, ox, oy, areaW, areaH, geoms, vis, stroke };
 
     useImperativeHandle(
       ref,
@@ -173,72 +216,164 @@ export const Board = memo(
       [slots],
     );
 
+    // ---- gestures: tap (JS), pinch + pan (UI thread) ----
     const tapRef = useRef(onTapArrow);
     tapRef.current = onTapArrow;
-    const onGrant = useCallback(
-      (e: GestureResponderEvent) => {
+    const occRef = useRef(getOcc);
+    occRef.current = getOcc;
+    const levelRef = useRef(level);
+    levelRef.current = level;
+
+    const tapAt = useCallback(
+      (x: number, y: number) => {
         const L = layout.current;
-        const { locationX, locationY } = e.nativeEvent;
-        const id = hitTest(level, getOcc(), locationX - L.ox, locationY - L.oy, L.size);
+        const s = zoom.s.value || 1;
+        const cx = L.areaW / 2;
+        const cy = L.areaH / 2;
+        const qx = cx + (x - cx - zoom.x.value) / s;
+        const qy = cy + (y - cy - zoom.y.value) / s;
+        const id = hitTest(levelRef.current, occRef.current(), qx - L.ox, qy - L.oy, L.size);
         if (id >= 0) tapRef.current(id);
       },
-      [level, getOcc],
+      [zoom],
     );
 
+    const gs = useSharedValue({ s0: 1, x0: 0, y0: 0, fx: 0, fy: 0 });
+    const gesture = useMemo(() => {
+      const pinch = Gesture.Pinch()
+        .onStart((e: { focalX: number; focalY: number }) => {
+          'worklet';
+          gs.value = { s0: zoom.s.value, x0: zoom.x.value, y0: zoom.y.value, fx: e.focalX, fy: e.focalY };
+        })
+        .onUpdate((e: { focalX: number; focalY: number; scale: number }) => {
+          'worklet';
+          const g0 = gs.value;
+          const s = clamp(g0.s0 * e.scale, 1, Math.max(1, zoom.max.value));
+          const cx = zoom.aw.value / 2;
+          const cy = zoom.ah.value / 2;
+          const k = s / g0.s0;
+          const lx = panLimit(zoom.bw.value, zoom.aw.value, s);
+          const ly = panLimit(zoom.bh.value, zoom.ah.value, s);
+          zoom.s.value = s;
+          zoom.x.value = clamp(e.focalX - cx - (g0.fx - cx - g0.x0) * k, -lx, lx);
+          zoom.y.value = clamp(e.focalY - cy - (g0.fy - cy - g0.y0) * k, -ly, ly);
+        });
+      const pan = Gesture.Pan()
+        .maxPointers(1)
+        .minDistance(10)
+        .onStart(() => {
+          'worklet';
+          gs.value = { s0: zoom.s.value, x0: zoom.x.value, y0: zoom.y.value, fx: 0, fy: 0 };
+        })
+        .onUpdate((e: { translationX: number; translationY: number }) => {
+          'worklet';
+          const s = zoom.s.value;
+          const lx = panLimit(zoom.bw.value, zoom.aw.value, s);
+          const ly = panLimit(zoom.bh.value, zoom.ah.value, s);
+          zoom.x.value = clamp(gs.value.x0 + e.translationX, -lx, lx);
+          zoom.y.value = clamp(gs.value.y0 + e.translationY, -ly, ly);
+        });
+      const tap = Gesture.Tap()
+        .maxDistance(14)
+        .maxDuration(600)
+        .runOnJS(true)
+        .onEnd((e: { x: number; y: number }, success: boolean) => {
+          if (success) tapAt(e.x, e.y);
+        });
+      return Gesture.Race(Gesture.Simultaneous(pinch, pan), tap);
+    }, [zoom, gs, tapAt]);
+
+    const contentStyle = useAnimatedStyle(() => ({
+      transform: [{ translateX: zoom.x.value }, { translateY: zoom.y.value }, { scale: zoom.s.value }],
+    }));
+
+    // ---- static layers ----
     const dots = useMemo(() => {
-      const r = Math.max(1.6, size * 0.075);
-      let d = '';
+      const covered = new Uint8Array(level.w * level.h);
+      for (const a of level.arrows) for (const c of a.cells) covered[c] = 1;
+      const r = Math.max(1.2, size * 0.07);
+      const out = [];
       for (let i = 0; i < level.w * level.h; i++) {
-        if (!level.mask[i]) continue;
+        if (!level.mask[i] || covered[i]) continue;
         const cx = ((i % level.w) + 0.5) * size;
         const cy = (Math.floor(i / level.w) + 0.5) * size;
-        d += `M${(cx - r).toFixed(1)} ${cy.toFixed(1)}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+        out.push(
+          <View
+            key={i}
+            style={{ position: 'absolute', left: cx - r, top: cy - r, width: r * 2, height: r * 2, borderRadius: r, backgroundColor: dotColor }}
+          />,
+        );
       }
-      return d;
-    }, [level, size]);
+      return out;
+    }, [level, size, dotColor]);
 
-    const arrows = useMemo(
-      () =>
-        geoms.map((g) => (
-          <StaticArrow key={g.id} g={g} vis={vis[g.id]} stroke={stroke} size={size} color={palette.ink} headD={headD} />
-        )),
-      [geoms, vis, stroke, size, palette.ink, headD],
+    const gridLines = useMemo(() => {
+      if (!grid) return null;
+      const { w, h, mask } = level;
+      const on = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && mask[y * w + x] === 1;
+      const t = Math.max(0.6, size * 0.03);
+      const out = [];
+      // Horizontal cell borders: run along each border line where either side is on the board.
+      for (let y = 0; y <= h; y++) {
+        let x = 0;
+        while (x < w) {
+          if (!(on(x, y - 1) || on(x, y))) {
+            x++;
+            continue;
+          }
+          const x0 = x;
+          while (x < w && (on(x, y - 1) || on(x, y))) x++;
+          out.push(<View key={`h${y}:${x0}`} style={{ position: 'absolute', left: x0 * size, top: y * size - t / 2, width: (x - x0) * size, height: t, backgroundColor: gridColor }} />);
+        }
+      }
+      for (let x = 0; x <= w; x++) {
+        let y = 0;
+        while (y < h) {
+          if (!(on(x - 1, y) || on(x, y))) {
+            y++;
+            continue;
+          }
+          const y0 = y;
+          while (y < h && (on(x - 1, y) || on(x, y))) y++;
+          out.push(<View key={`v${x}:${y0}`} style={{ position: 'absolute', left: x * size - t / 2, top: y0 * size, width: t, height: (y - y0) * size, backgroundColor: gridColor }} />);
+        }
+      }
+      return out;
+    }, [grid, level, size, gridColor]);
+
+    const statics = useMemo(
+      () => geoms.map((g, i) => <StaticArrow key={g.id} g={g} dir={level.arrows[i].dir} vis={vis[g.id]} stroke={stroke} size={size} color={ink} />),
+      [geoms, level, vis, stroke, size, ink],
     );
+
+    // Mount big boards progressively (a few dozen arrows per frame).
+    const [shown, setShown] = useState(Math.min(statics.length, FIRST_CHUNK));
+    useEffect(() => {
+      if (shown >= statics.length) return;
+      const id = requestAnimationFrame(() => setShown((c) => Math.min(statics.length, c + CHUNK)));
+      return () => cancelAnimationFrame(id);
+    }, [shown, statics.length]);
 
     const hint = hintId >= 0 ? geoms[hintId] : undefined;
 
     return (
-      <View
-        style={styles.area}
-        onStartShouldSetResponder={() => true}
-        onResponderTerminationRequest={() => false}
-        onResponderGrant={onGrant}
-      >
-        <Animated.View
-          entering={FadeIn.duration(260)}
-          pointerEvents="none"
-          style={[styles.board, { left: ox, top: oy, width: bw, height: bh }]}
-        >
-          <Svg width={bw} height={bh} style={StyleSheet.absoluteFill}>
-            <Path d={dots} fill={palette.dot} />
-          </Svg>
-          {hint ? <HintGlow key={hint.id} g={hint} stroke={stroke} color={palette.hint} /> : null}
-          {arrows}
-        </Animated.View>
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          {slots.map((slot, i) => (
-            <FlightSlot
-              key={i}
-              slot={slot}
-              stroke={stroke}
-              size={size}
-              headD={headD}
-              ink={palette.ink}
-              error={palette.error}
-            />
-          ))}
+      <GestureDetector gesture={gesture}>
+        <View style={styles.area} collapsable={false}>
+          <Animated.View style={[StyleSheet.absoluteFill, contentStyle]} pointerEvents="none">
+            <Animated.View entering={FadeIn.duration(240)} style={[styles.board, { left: ox, top: oy, width: bw, height: bh }]}>
+              {gridLines}
+              {dots}
+              {hint ? <HintGlow key={hint.id} g={hint} stroke={stroke} size={size} color={hintColor} /> : null}
+              {shown >= statics.length ? statics : statics.slice(0, shown)}
+            </Animated.View>
+            <View style={StyleSheet.absoluteFill}>
+              {slots.map((slot, i) => (
+                <FlightSlot key={i} slot={slot} stroke={stroke} size={size} ink={ink} error={errorColor} />
+              ))}
+            </View>
+          </Animated.View>
         </View>
-      </View>
+      </GestureDetector>
     );
   }),
 );
@@ -249,77 +384,43 @@ export const Board = memo(
 
 interface StaticProps {
   g: ArrowGeom;
+  dir: number;
   vis: SharedValue<number>;
   stroke: number;
   size: number;
   color: string;
-  headD: string;
 }
 
-const StaticArrow = memo(function StaticArrow({ g, vis, stroke, size, color, headD }: StaticProps) {
+const StaticArrow = memo(function StaticArrow({ g, dir, vis, stroke, size, color }: StaticProps) {
   const style = useAnimatedStyle(() => ({ opacity: vis.value }));
-  const box = HEAD_BOX * size;
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
       {g.segs.map((s, i) => {
         const [left, top, width, height] = capsuleRect(s, stroke);
-        return (
-          <View
-            key={i}
-            style={{ position: 'absolute', left, top, width, height, borderRadius: stroke / 2, backgroundColor: color }}
-          />
-        );
+        return <View key={i} style={{ position: 'absolute', left, top, width, height, borderRadius: stroke / 2, backgroundColor: color }} />;
       })}
-      <View
-        style={{
-          position: 'absolute',
-          left: g.hx - box / 2,
-          top: g.hy - box / 2,
-          width: box,
-          height: box,
-          transform: [{ rotate: `${g.rot}deg` }],
-        }}
-      >
-        <Svg width={box} height={box}>
-          <Path d={headD} fill={color} stroke={color} strokeWidth={size * 0.06} strokeLinejoin="round" />
-        </Svg>
-      </View>
+      <View style={headStyle(dir, g.hx, g.hy, size, color)} />
     </Animated.View>
   );
 });
 
 /** Soft pulsing halo behind the hinted arrow. */
-const HintGlow = memo(function HintGlow({ g, stroke, color }: { g: ArrowGeom; stroke: number; color: string }) {
+const HintGlow = memo(function HintGlow({ g, stroke, size, color }: { g: ArrowGeom; stroke: number; size: number; color: string }) {
   const pulse = useSharedValue(0.25);
   useEffect(() => {
-    pulse.value = withRepeat(withTiming(0.75, { duration: 650, easing: Easing.inOut(Easing.quad) }), -1, true);
+    pulse.value = withRepeat(withTiming(0.8, { duration: 620, easing: Easing.inOut(Easing.quad) }), -1, true);
     return () => cancelAnimation(pulse);
   }, [pulse]);
   const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  const wide = stroke * 2.6;
-  const dot = wide * 1.5;
+  const wide = Math.max(stroke * 2.6, size * 0.5);
+  const dot = size * 0.95;
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
       {g.segs.map((s, i) => {
         const [left, top, width, height] = capsuleRect(s, wide);
-        return (
-          <View
-            key={i}
-            style={{ position: 'absolute', left, top, width, height, borderRadius: wide / 2, backgroundColor: color }}
-          />
-        );
+        return <View key={i} style={{ position: 'absolute', left, top, width, height, borderRadius: wide / 2, backgroundColor: color }} />;
       })}
-      <View
-        style={{
-          position: 'absolute',
-          left: g.hx - dot / 2,
-          top: g.hy - dot / 2,
-          width: dot,
-          height: dot,
-          borderRadius: dot / 2,
-          backgroundColor: color,
-        }}
-      />
+      <View style={{ position: 'absolute', left: g.hx - dot / 2, top: g.hy - dot / 2, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: color }} />
     </Animated.View>
   );
 });
@@ -332,12 +433,11 @@ interface SlotProps {
   slot: Slot;
   stroke: number;
   size: number;
-  headD: string;
   ink: string;
   error: string;
 }
 
-const FlightSlot = memo(function FlightSlot({ slot, stroke, size, headD, ink, error }: SlotProps) {
+const FlightSlot = memo(function FlightSlot({ slot, stroke, size, ink, error }: SlotProps) {
   return (
     <>
       {RUNS.map((j) => (
@@ -346,7 +446,7 @@ const FlightSlot = memo(function FlightSlot({ slot, stroke, size, headD, ink, er
       {RUNS.map((j) => (
         <RunPiece key={`d${j}`} j={j} slot={slot} stroke={stroke} ink={ink} error={error} dot />
       ))}
-      <FlightHead slot={slot} size={size} headD={headD} ink={ink} error={error} />
+      <FlightHead slot={slot} size={size} ink={ink} error={error} />
     </>
   );
 });
@@ -379,51 +479,30 @@ const RunPiece = memo(function RunPiece({ j, slot, stroke, ink, error, dot }: Pi
   return (
     <Animated.View
       pointerEvents="none"
-      style={[
-        { position: 'absolute', left: 0, top: 0, width: stroke, height: stroke, borderRadius: dot ? stroke / 2 : 0 },
-        style,
-      ]}
+      style={[{ position: 'absolute', left: 0, top: 0, width: stroke, height: stroke, borderRadius: dot ? stroke / 2 : 0 }, style]}
     />
   );
 });
 
-const FlightHead = memo(function FlightHead({
-  slot,
-  size,
-  headD,
-  ink,
-  error,
-}: {
-  slot: Slot;
-  size: number;
-  headD: string;
-  ink: string;
-  error: string;
-}) {
-  const box = HEAD_BOX * size;
+const FlightHead = memo(function FlightHead({ slot, size, ink, error }: { slot: Slot; size: number; ink: string; error: string }) {
+  const box = size;
   const style = useAnimatedStyle(() => {
     const f = slot.geo.value;
     const s = slot.s.value;
     const on = slot.active.value === 1 && f.n > 1;
     return {
       opacity: on ? 1 : 0,
-      transform: [
-        { translateX: f.hx + f.dx * s - box / 2 },
-        { translateY: f.hy + f.dy * s - box / 2 },
-        { rotate: `${f.rot}deg` },
-      ],
+      transform: [{ translateX: f.hx + f.dx * s - box / 2 }, { translateY: f.hy + f.dy * s - box / 2 }, { rotate: `${f.rot}deg` }],
     };
   });
   const redStyle = useAnimatedStyle(() => ({ opacity: slot.err.value }));
+  // The head drawn pointing right around the box centre; the box rotates.
+  const c = box / 2;
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: box, height: box }, style]}>
-      <Svg width={box} height={box}>
-        <Path d={headD} fill={ink} stroke={ink} strokeWidth={size * 0.06} strokeLinejoin="round" />
-      </Svg>
+      <View style={headStyle(1, c, c, size, ink)} />
       <Animated.View style={[StyleSheet.absoluteFill, redStyle]}>
-        <Svg width={box} height={box}>
-          <Path d={headD} fill={error} stroke={error} strokeWidth={size * 0.06} strokeLinejoin="round" />
-        </Svg>
+        <View style={headStyle(1, c, c, size, error)} />
       </Animated.View>
     </Animated.View>
   );

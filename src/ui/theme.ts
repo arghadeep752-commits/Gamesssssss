@@ -22,6 +22,8 @@ export interface Palette {
   readonly gold: string;
   readonly goldSoft: string;
   readonly scrim: string;
+  readonly warn: string;
+  readonly gridLine: string;
 }
 
 export const LIGHT: Palette = {
@@ -46,6 +48,8 @@ export const LIGHT: Palette = {
   gold: '#F2B01E',
   goldSoft: '#FCEFC9',
   scrim: 'rgba(15,19,30,0.45)',
+  warn: '#F08A00',
+  gridLine: 'rgba(27,34,51,0.10)',
 };
 
 export const DARK: Palette = {
@@ -70,6 +74,8 @@ export const DARK: Palette = {
   gold: '#F5BD3A',
   goldSoft: '#3D3420',
   scrim: 'rgba(0,0,0,0.6)',
+  warn: '#FF9F1C',
+  gridLine: 'rgba(233,236,243,0.10)',
 };
 
 export const ThemeContext = createContext<Palette>(LIGHT);

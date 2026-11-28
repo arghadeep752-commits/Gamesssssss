@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 /** Original line icons on a 24-unit grid; one Path per icon keeps them light. */
 export const ICON_PATHS = {
@@ -29,11 +29,24 @@ export const ICON_PATHS = {
   flame: 'M12 3c.9 3 4.5 5 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.1-3.6 2.2-4.5.1 2 .9 3 2 3.2-.4-3 .1-5.5.3-8.2z',
   sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
   plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
+  grid: 'M9 4v16M15 4v16M4 9h16M4 15h16',
+  timer: 'M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4.5l3 1.8M9.5 2.5h5',
+  arrowUR: 'M7 17L17 7M9 7h8v8',
+  chest: 'M3 10h18v10H3zM3 10l2.2-5h13.6L21 10M10 13.5h4',
+  palette:
+    'M12 3a9 9 0 0 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8zM7.5 12.2v.1M10.5 8v.1M15 8v.1',
+  shield: 'M12 3l7 3v5.8c0 4.4-3 7.6-7 9.2-4-1.6-7-4.8-7-9.2V6z',
+  doc: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v6M12 7.6v.2',
+  shapes: 'M4 4h7v7H4zM13 13h7v7h-7zM16.5 3.5l4 6.5h-8zM7.5 13a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z',
+  mail: 'M3 6h18v12H3zM3 6.5l9 7 9-7',
+  thin: 'M4 7h16M4 12h16M4 17h16',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;
 
-const FILLABLE: ReadonlySet<IconName> = new Set<IconName>(['heart', 'star', 'play', 'trophy', 'moon', 'sparkle', 'flame']);
+const FILLABLE: ReadonlySet<IconName> = new Set<IconName>(['heart', 'star', 'play', 'trophy', 'moon', 'sparkle', 'flame', 'shield']);
 
 interface Props {
   name: IconName;
@@ -43,6 +56,17 @@ interface Props {
   filled?: boolean;
   strokeWidth?: number;
 }
+
+/** Gold coin (two circles), used wherever coins are shown. */
+export const CoinIcon = memo(function CoinIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" pointerEvents="none">
+      <Circle cx={12} cy={12} r={10} fill="#F2B01E" />
+      <Circle cx={12} cy={12} r={6.4} fill="none" stroke="#C98A06" strokeWidth={2} />
+      <Circle cx={9.2} cy={8.6} r={1.6} fill="#FFE08A" />
+    </Svg>
+  );
+});
 
 export const Icon = memo(function Icon({ name, size = 24, color, filled = false, strokeWidth = 2 }: Props) {
   const solid = filled && FILLABLE.has(name);

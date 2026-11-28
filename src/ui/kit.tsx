@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -8,12 +8,16 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withSequence,
   withSpring,
   withTiming,
+  ZoomIn,
 } from 'react-native-reanimated';
+import type { Tier } from '../game/levels';
+import { TIER_LABEL } from '../game/levels';
 import { playSfx } from '../services/audio';
-import { Icon, type IconName } from './Icon';
+import { CoinIcon, Icon, type IconName } from './Icon';
 import { RADIUS, SPACE, useTheme } from './theme';
 
 /** Pressable with a quick scale-down on touch (runs on the UI thread). */
@@ -147,7 +151,7 @@ export const Toggle = memo(function Toggle({ value, onChange, label, icon }: { v
       accessibilityState={{ checked: value }}
       accessibilityLabel={label}
       onPress={() => {
-        playSfx('tap');
+        playSfx('toggle');
         onChange(!value);
       }}
       style={styles.toggleRow}
@@ -214,6 +218,148 @@ export function Sheet({ children, onBackdrop }: { children: ReactNode; onBackdro
   );
 }
 
+
+/** Small pill with an icon (or coin) and a value. */
+export const Chip = memo(function Chip({
+  icon,
+  coin,
+  text,
+  onPress,
+  tint,
+  label,
+}: {
+  icon?: IconName;
+  coin?: boolean;
+  text: string;
+  onPress?: () => void;
+  tint?: string;
+  label?: string;
+}) {
+  const t = useTheme();
+  const body = (
+    <>
+      {coin ? <CoinIcon size={18} /> : icon ? <Icon name={icon} size={17} color={tint ?? t.accent} filled={icon === 'heart'} /> : null}
+      <Text style={[styles.chipText, { color: t.text }]} numberOfLines={1}>
+        {text}
+      </Text>
+    </>
+  );
+  const style = [styles.chip, { backgroundColor: t.surface, borderColor: t.border }];
+  if (!onPress) return <View style={style}>{body}</View>;
+  return (
+    <Pressy onPress={onPress} style={style} label={label ?? text}>
+      {body}
+    </Pressy>
+  );
+});
+
+/** "Hard" / "Super Hard" tag next to the level title. */
+export const TierBadge = memo(function TierBadge({ tier }: { tier: Tier }) {
+  const t = useTheme();
+  if (tier === 'normal' || tier === 'easy') return null;
+  const color = tier === 'super' ? t.error : t.warn;
+  return (
+    <View style={[styles.tier, { backgroundColor: color }]}>
+      <Text style={styles.tierText}>{TIER_LABEL[tier].toUpperCase()}</Text>
+    </View>
+  );
+});
+
+/** Three stars that pop in one after another. */
+export const StarRow = memo(function StarRow({ count, size = 44, delay = 250 }: { count: number; size?: number; delay?: number }) {
+  const t = useTheme();
+  useEffect(() => {
+    const ids: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 0; i < count; i++) ids.push(setTimeout(() => playSfx('star'), delay + i * 230));
+    return () => ids.forEach(clearTimeout);
+  }, [count, delay]);
+  return (
+    <View style={styles.stars}>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={{ marginTop: i === 1 ? -10 : 0 }}>
+          <Icon name="star" size={size} color={t.heartEmpty} filled />
+          {i < count ? (
+            <Animated.View entering={ZoomIn.delay(delay + i * 230).duration(260)} style={StyleSheet.absoluteFill}>
+              <Icon name="star" size={size} color={t.gold} filled />
+            </Animated.View>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+});
+
+/** Number that counts up from 0 (a handful of renders, then stops). */
+export function CountUp({ value, style, prefix = '' }: { value: number; style?: object; prefix?: string }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (value <= 0) {
+      setShown(value);
+      return;
+    }
+    let i = 0;
+    const steps = 12;
+    const id = setInterval(() => {
+      i++;
+      setShown(Math.round((value * i) / steps));
+      if (i >= steps) clearInterval(id);
+    }, 45);
+    return () => clearInterval(id);
+  }, [value]);
+  return <Text style={style}>{prefix + shown}</Text>;
+}
+
+const CONFETTI_COLORS = ['#F2B01E', '#3B6CF6', '#EE4537', '#1FAF6B', '#A855F7', '#06B6D4', '#F97316'];
+
+/** A short burst of confetti (only shown on the win screen; ~30 transform-only views). */
+export const Confetti = memo(function Confetti({ width, height }: { width: number; height: number }) {
+  const pieces = useMemo(() => {
+    const out = [];
+    let seed = 1234567;
+    const rnd = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    for (let i = 0; i < 30; i++) {
+      out.push({
+        x: width * (0.15 + rnd() * 0.7),
+        dx: (rnd() - 0.5) * width * 0.7,
+        up: height * (0.25 + rnd() * 0.25),
+        delay: rnd() * 220,
+        spin: (rnd() - 0.5) * 900,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        w: 6 + rnd() * 6,
+        h: 8 + rnd() * 8,
+      });
+    }
+    return out;
+  }, [width, height]);
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {pieces.map((p, i) => (
+        <ConfettiPiece key={i} {...p} startY={height * 0.42} fall={height * 0.75} />
+      ))}
+    </View>
+  );
+});
+
+function ConfettiPiece({ x, dx, up, delay, spin, color, w, h, startY, fall }: { x: number; dx: number; up: number; delay: number; spin: number; color: string; w: number; h: number; startY: number; fall: number }) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = withDelay(delay, withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }));
+  }, [p, delay]);
+  const st = useAnimatedStyle(() => {
+    const k = p.value;
+    // Up first, then down: a simple parabola.
+    const y = startY - up * 4 * k * (1 - k) + fall * k * k;
+    return {
+      opacity: k < 0.85 ? 1 : (1 - k) / 0.15,
+      transform: [{ translateX: x + dx * k }, { translateY: y }, { rotate: `${spin * k}deg` }],
+    };
+  });
+  return <Animated.View style={[{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: 2, backgroundColor: color }, st]} />;
+}
+
 export const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   btn: {
@@ -249,4 +395,9 @@ export const styles = StyleSheet.create({
   bar: { width: '100%', overflow: 'hidden' },
   sheetWrap: { alignItems: 'center', justifyContent: 'center', padding: SPACE.xl, zIndex: 50, elevation: 50 },
   sheet: { width: '100%', maxWidth: 400, borderRadius: RADIUS.xl, padding: SPACE.xl, alignItems: 'stretch', gap: SPACE.md },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, height: 34 },
+  chipText: { fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  tier: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  tierText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
+  stars: { flexDirection: 'row', justifyContent: 'center', gap: 6, alignItems: 'flex-end' },
 });
