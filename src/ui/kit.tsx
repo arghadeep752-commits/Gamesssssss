@@ -5,14 +5,13 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withSequence,
   withSpring,
   withTiming,
   ZoomIn,
+  type SharedValue,
 } from 'react-native-reanimated';
 import type { Tier } from '../game/levels';
 import { TIER_LABEL } from '../game/levels';
@@ -20,7 +19,11 @@ import { playSfx } from '../services/audio';
 import { CoinIcon, Icon, type IconName } from './Icon';
 import { RADIUS, SPACE, useTheme } from './theme';
 
-/** Pressable with a quick scale-down on touch (runs on the UI thread). */
+/**
+ * Pressable with a slight press-down. Uses the pressed state rather than a
+ * running animation, so a button that closes its own screen leaves nothing
+ * animating behind.
+ */
 export const Pressy = memo(function Pressy({
   onPress,
   style,
@@ -39,8 +42,6 @@ export const Pressy = memo(function Pressy({
   sound?: boolean;
   label?: string;
 }) {
-  const sc = useSharedValue(1);
-  const st = useAnimatedStyle(() => ({ transform: [{ scale: sc.value }] }));
   return (
     <Pressable
       accessibilityRole="button"
@@ -48,18 +49,12 @@ export const Pressy = memo(function Pressy({
       disabled={disabled}
       hitSlop={6}
       style={containerStyle}
-      onPressIn={() => {
-        sc.value = withTiming(0.94, { duration: 80 });
-      }}
-      onPressOut={() => {
-        sc.value = withSpring(1, { damping: 14, stiffness: 320 });
-      }}
       onPress={() => {
         if (sound) playSfx('tap');
         onPress();
       }}
     >
-      <Animated.View style={[style, st, disabled && styles.disabled]}>{children}</Animated.View>
+      {({ pressed }: { pressed: boolean }) => <View style={[style, pressed && styles.pressed, disabled && styles.disabled]}>{children}</View>}
     </Pressable>
   );
 });
@@ -136,15 +131,9 @@ export const RoundBtn = memo(function RoundBtn({
   );
 });
 
-/** On/off switch with an animated knob. */
+/** On/off switch. */
 export const Toggle = memo(function Toggle({ value, onChange, label, icon }: { value: boolean; onChange: (v: boolean) => void; label: string; icon: IconName }) {
   const t = useTheme();
-  const p = useSharedValue(value ? 1 : 0);
-  useEffect(() => {
-    p.value = withTiming(value ? 1 : 0, { duration: 170, easing: Easing.out(Easing.quad) });
-  }, [value, p]);
-  const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(p.value, [0, 1], [t.surfaceAlt, t.accent]) }));
-  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: p.value * 20 }] }));
   return (
     <Pressable
       accessibilityRole="switch"
@@ -158,9 +147,9 @@ export const Toggle = memo(function Toggle({ value, onChange, label, icon }: { v
     >
       <Icon name={icon} size={22} color={t.sub} />
       <Text style={[styles.toggleLabel, { color: t.text }]}>{label}</Text>
-      <Animated.View style={[styles.track, track]}>
-        <Animated.View style={[styles.knob, knob]} />
-      </Animated.View>
+      <View style={[styles.track, { backgroundColor: value ? t.accent : t.surfaceAlt }]}>
+        <View style={[styles.knob, value && styles.knobOn]} />
+      </View>
     </Pressable>
   );
 });
@@ -193,11 +182,15 @@ const HeartPip = memo(function HeartPip({ full, size }: { full: boolean; size: n
 
 /** Thin progress bar; the fill grows with a transform (no layout per frame). */
 export const ProgressBar = memo(function ProgressBar({ value, color, track, height = 6 }: { value: number; color: string; track: string; height?: number }) {
-  const p = useSharedValue(value);
+  const v = Math.max(0, Math.min(1, value));
+  const p = useSharedValue(v);
+  const last = useRef(v);
   useEffect(() => {
-    p.value = withTiming(Math.max(0, Math.min(1, value)), { duration: 260, easing: Easing.out(Easing.quad) });
-  }, [value, p]);
-  const st = useAnimatedStyle(() => ({ transform: [{ scaleX: p.value }] }));
+    if (Math.abs(last.current - v) < 0.001) return;
+    last.current = v;
+    p.value = withTiming(v, { duration: 260, easing: Easing.out(Easing.quad) });
+  }, [v, p]);
+  const st = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0.0001, p.value) }] }));
   return (
     <View style={[styles.bar, { height, borderRadius: height / 2, backgroundColor: track }]}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: color, borderRadius: height / 2, transformOrigin: '0% 50%' }, st]} />
@@ -311,8 +304,11 @@ export function CountUp({ value, style, prefix = '' }: { value: number; style?: 
 
 const CONFETTI_COLORS = ['#F2B01E', '#3B6CF6', '#EE4537', '#1FAF6B', '#A855F7', '#06B6D4', '#F97316'];
 
-/** A short burst of confetti (only shown on the win screen; ~30 transform-only views). */
-export const Confetti = memo(function Confetti({ width, height }: { width: number; height: number }) {
+/**
+ * A short burst of confetti (win screen). All pieces follow one progress value
+ * owned by the screen, so the screen can stop it instantly before navigating.
+ */
+export const Confetti = memo(function Confetti({ width, height, progress }: { width: number; height: number; progress: SharedValue<number> }) {
   const pieces = useMemo(() => {
     const out = [];
     let seed = 1234567;
@@ -325,7 +321,7 @@ export const Confetti = memo(function Confetti({ width, height }: { width: numbe
         x: width * (0.15 + rnd() * 0.7),
         dx: (rnd() - 0.5) * width * 0.7,
         up: height * (0.25 + rnd() * 0.25),
-        delay: rnd() * 220,
+        delay: rnd() * 0.15,
         spin: (rnd() - 0.5) * 900,
         color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
         w: 6 + rnd() * 6,
@@ -337,23 +333,43 @@ export const Confetti = memo(function Confetti({ width, height }: { width: numbe
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.confetti]}>
       {pieces.map((p, i) => (
-        <ConfettiPiece key={i} {...p} startY={height * 0.42} fall={height * 0.75} />
+        <ConfettiPiece key={i} {...p} progress={progress} startY={height * 0.42} fall={height * 0.75} />
       ))}
     </View>
   );
 });
 
-function ConfettiPiece({ x, dx, up, delay, spin, color, w, h, startY, fall }: { x: number; dx: number; up: number; delay: number; spin: number; color: string; w: number; h: number; startY: number; fall: number }) {
-  const p = useSharedValue(0);
-  useEffect(() => {
-    p.value = withDelay(delay, withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }));
-  }, [p, delay]);
+function ConfettiPiece({
+  x,
+  dx,
+  up,
+  delay,
+  spin,
+  color,
+  w,
+  h,
+  startY,
+  fall,
+  progress,
+}: {
+  x: number;
+  dx: number;
+  up: number;
+  delay: number;
+  spin: number;
+  color: string;
+  w: number;
+  h: number;
+  startY: number;
+  fall: number;
+  progress: SharedValue<number>;
+}) {
   const st = useAnimatedStyle(() => {
-    const k = p.value;
-    // Up first, then down: a simple parabola.
+    const raw = (progress.value - delay) / (1 - delay);
+    const k = raw < 0 ? 0 : raw > 1 ? 1 : 1 - (1 - raw) * (1 - raw);
     const y = startY - up * 4 * k * (1 - k) + fall * k * k;
     return {
-      opacity: k < 0.85 ? 1 : (1 - k) / 0.15,
+      opacity: raw <= 0 ? 0 : k < 0.85 ? 1 : (1 - k) / 0.15,
       transform: [{ translateX: x + dx * k }, { translateY: y }, { rotate: `${spin * k}deg` }],
     };
   });
@@ -362,6 +378,8 @@ function ConfettiPiece({ x, dx, up, delay, spin, color, w, h, startY, fall }: { 
 
 export const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
+  knobOn: { transform: [{ translateX: 20 }] },
   btn: {
     height: 56,
     borderRadius: RADIUS.pill,

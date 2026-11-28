@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut, useSharedValue, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { cancelAnimation, FadeIn, FadeInDown, FadeOut, useSharedValue, withTiming, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bestHint, buildOccupancy, firstBlocker, type Level } from '../game/engine';
 import { getDaily, getLevel, type LevelInfo } from '../game/levels';
@@ -32,6 +32,12 @@ import { ZoomBar } from '../ui/ZoomBar';
 export type GameRoute = { mode: 'level'; start?: number } | { mode: 'daily'; dateKey: string };
 
 const MAX_HEARTS = 3;
+
+/** Set while a game is on screen; stops its animations before the app navigates away. */
+let stopActiveGame: (() => void) | null = null;
+export function stopGameAnimations(): void {
+  stopActiveGame?.();
+}
 
 interface GameState {
   occ: Int16Array;
@@ -131,7 +137,8 @@ export function GameScreen({
   const [combo, setCombo] = useState<number | null>(null);
   const [maxZoom, setMaxZoom] = useState(1);
   const zoom = useZoom();
-  const reveal = useSharedValue(0);
+  const confettiP = useSharedValue(0);
+  const [confetti, setConfetti] = useState(0);
   const boardRef = useRef<BoardHandle>(null);
   const hintRef = useRef(hint);
   hintRef.current = hint;
@@ -160,17 +167,35 @@ export function GameScreen({
   const skin = skinById(save.skin);
   const ink = t.dark ? skin.dark : skin.light;
 
+  /** Stops everything animating on this screen; call before the board or screen goes away. */
+  const quiesce = useCallback(() => {
+    boardRef.current?.stopAll();
+    cancelAnimation(confettiP);
+  }, [confettiP]);
+  useEffect(() => {
+    stopActiveGame = quiesce;
+    return () => {
+      if (stopActiveGame === quiesce) stopActiveGame = null;
+    };
+  }, [quiesce]);
+  const exit = useCallback(() => {
+    quiesce();
+    setConfetti(0);
+    onExit();
+  }, [quiesce, onExit]);
+
   const resetUi = useCallback((lvl: Level, withTutorialHint: boolean) => {
+    quiesce();
     timers.current.forEach(clearTimeout);
     timers.current = [];
-    reveal.value = 0;
+    setConfetti(0);
     setHearts(MAX_HEARTS);
     setLeft(lvl.arrows.length);
     setPhase('play');
     setReward(null);
     setCombo(null);
     setHint(withTutorialHint ? bestHint(lvl, buildOccupancy(lvl), new Uint8Array(lvl.arrows.length)) : -1);
-  }, [reveal]);
+  }, [quiesce]);
 
   const restart = useCallback(() => {
     setAttempt((a) => a + 1);
@@ -267,11 +292,18 @@ export function GameScreen({
     }
     setReward(r);
     setPhase('won');
+    confettiP.value = 0;
+    setConfetti((c) => c + 1);
+    // Start once the pieces are on screen; remove them after they have fallen.
+    later(() => {
+      confettiP.value = withTiming(1, { duration: 1700 });
+    }, 90);
+    later(() => setConfetti(0), 1950);
     if (r.coins > 0) later(() => playSfx('coin'), 1100);
     if (r.chestOpened) later(() => playSfx('reward'), 1500);
     // Build the next puzzle while the player looks at the result.
     if (route.mode === 'level') later(() => getLevel(levelNum + 1), 400);
-  }, [route, levelNum, update, info, level]);
+  }, [route, levelNum, update, info, level, confettiP]);
 
   const onTapArrow = useCallback(
     (id: number) => {
@@ -289,7 +321,7 @@ export function GameScreen({
         s.combo++;
         s.bestCombo = Math.max(s.bestCombo, s.combo);
         const ms = board ? board.fly(id, 'exit', 0) : 0;
-        reveal.value = withTiming(1 - s.left / level.arrows.length, { duration: 420 });
+        board?.progress(1 - s.left / level.arrows.length);
         playSfx('move');
         hapticMove();
         setLeft(s.left);
@@ -329,7 +361,7 @@ export function GameScreen({
         }
       }
     },
-    [level, tutorial, finish, reveal],
+    [level, tutorial, finish],
   );
 
   const takeHint = useCallback(() => {
@@ -384,7 +416,7 @@ export function GameScreen({
   return (
     <View style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 8 }]}>
       <View style={styles.header}>
-        <RoundBtn icon="home" label="Home" onPress={onExit} size={42} />
+        <RoundBtn icon="home" label="Home" onPress={exit} size={42} />
         <RoundBtn icon="restart" label="Restart level" onPress={restart} size={42} />
         <View style={styles.titleBox}>
           <Text style={[styles.title, { color: t.text }]} numberOfLines={1}>
@@ -420,7 +452,6 @@ export function GameScreen({
             dotColor={t.dot}
             gridColor={t.gridLine}
             revealColor={t.accent}
-            reveal={reveal}
             thin={save.settings.thin}
             grid={save.settings.grid}
             hintId={hint}
@@ -475,12 +506,11 @@ export function GameScreen({
           title={route.mode === 'level' ? `Level ${levelNum} complete!` : 'Daily challenge done!'}
           daily={route.mode === 'daily'}
           ink={ink}
-          width={win.width}
-          height={win.height}
           onNext={nextLevel}
-          onHome={onExit}
+          onHome={exit}
         />
       ) : null}
+      {confetti ? <Confetti key={confetti} progress={confettiP} width={win.width} height={win.height} /> : null}
 
       {phase === 'lost' ? (
         <Sheet>
@@ -501,7 +531,7 @@ export function GameScreen({
             />
           ) : null}
           <Btn label="Try again" icon="restart" kind={s.revived || save.coins < REVIVE_COST ? 'primary' : 'secondary'} onPress={restart} />
-          <Btn label="Home" kind="secondary" onPress={onExit} />
+          <Btn label="Home" kind="secondary" onPress={exit} />
         </Sheet>
       ) : null}
     </View>
@@ -514,8 +544,6 @@ function WinSheet({
   title,
   daily,
   ink,
-  width,
-  height,
   onNext,
   onHome,
 }: {
@@ -524,8 +552,6 @@ function WinSheet({
   title: string;
   daily: boolean;
   ink: string;
-  width: number;
-  height: number;
   onNext: () => void;
   onHome: () => void;
 }) {
@@ -592,7 +618,6 @@ function WinSheet({
           </>
         )}
       </Sheet>
-      <Confetti width={width} height={height} />
     </>
   );
 }

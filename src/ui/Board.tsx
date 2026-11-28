@@ -31,6 +31,7 @@ import {
   type PieceFrame,
   pieceFrame,
 } from '../game/geometry';
+import { scheduleOnRN } from 'react-native-worklets';
 import { onUI } from './worklets';
 import { clamp, panLimit, resetZoom, type Zoom } from './zoom';
 
@@ -131,6 +132,36 @@ export function headStyle(dir: number, hx: number, hy: number, size: number, col
 export interface BoardHandle {
   /** Starts an exit or bump animation and returns its total duration in ms. */
   fly(id: number, kind: 'exit' | 'bump', gap: number): number;
+  /** Fills the background picture to `fraction` (0..1) of its final colour. */
+  progress(fraction: number): void;
+  /**
+   * Stops every running board animation. Call this BEFORE the board is removed
+   * (next level, restart, leaving the game): an animation that outlives its
+   * views makes Reanimated log an error on every frame.
+   */
+  stopAll(): void;
+}
+
+function stopBoard(slots: Slot[], pulse: SharedValue<number>, reveal: SharedValue<number>, zoom: Zoom) {
+  'worklet';
+  for (let i = 0; i < slots.length; i++) {
+    const sl = slots[i];
+    sl.token.value = sl.token.value + 1;
+    cancelAnimation(sl.s);
+    cancelAnimation(sl.err);
+    sl.active.value = 0;
+  }
+  cancelAnimation(pulse);
+  cancelAnimation(reveal);
+  cancelAnimation(zoom.s);
+  cancelAnimation(zoom.x);
+  cancelAnimation(zoom.y);
+  resetZoom(zoom);
+}
+
+function setReveal(reveal: SharedValue<number>, fraction: number) {
+  'worklet';
+  reveal.value = withTiming(fraction, { duration: 420 });
 }
 
 interface Props {
@@ -144,8 +175,6 @@ interface Props {
   gridColor: string;
   /** Colour the picture fills with as arrows are cleared. */
   revealColor: string;
-  /** 0..1 share of arrows cleared (drives the picture reveal, UI thread only). */
-  reveal: SharedValue<number>;
   thin: boolean;
   grid: boolean;
   /** Arrow to highlight as a hint, or -1. */
@@ -160,7 +189,7 @@ interface Props {
 
 export const Board = memo(
   forwardRef<BoardHandle, Props>(function Board(
-    { level, areaW, areaH, ink, hintColor, errorColor, dotColor, gridColor, revealColor, reveal, thin, grid, hintId, zoom, getOcc, onTapArrow, onMaxZoom },
+    { level, areaW, areaH, ink, hintColor, errorColor, dotColor, gridColor, revealColor, thin, grid, hintId, zoom, getOcc, onTapArrow, onMaxZoom },
     ref,
   ) {
     const pad = 10;
@@ -185,16 +214,14 @@ export const Board = memo(
       zoom.max.value = maxZoom;
       onMaxZoom?.(maxZoom);
     }, [zoom, areaW, areaH, bw, bh, maxZoom, onMaxZoom]);
-    useEffect(() => {
-      onUI(resetZoom, zoom);
-    }, [level, zoom]);
-
     const s0 = useSlot();
     const s1 = useSlot();
     const s2 = useSlot();
     const s3 = useSlot();
     const slots = useMemo(() => [s0, s1, s2, s3], [s0, s1, s2, s3]);
     const busy = useRef<number[]>(new Array(SLOTS).fill(0));
+    const reveal = useSharedValue(0);
+    const pulse = useSharedValue(0.3);
 
     const layout = useRef({ size, ox, oy, areaW, areaH, geoms, vis, stroke });
     layout.current = { size, ox, oy, areaW, areaH, geoms, vis, stroke };
@@ -216,8 +243,14 @@ export const Board = memo(
           onUI(runFlight, slots[k], f, kind === 'bump', ms, L.vis[id]);
           return total;
         },
+        progress(fraction: number) {
+          onUI(setReveal, reveal, fraction);
+        },
+        stopAll() {
+          onUI(stopBoard, slots, pulse, reveal, zoom);
+        },
       }),
-      [slots],
+      [slots, reveal, pulse, zoom],
     );
 
     // ---- gestures: tap (JS), pinch + pan (UI thread) ----
@@ -228,19 +261,13 @@ export const Board = memo(
     const levelRef = useRef(level);
     levelRef.current = level;
 
-    const tapAt = useCallback(
-      (x: number, y: number) => {
-        const L = layout.current;
-        const s = zoom.s.value || 1;
-        const cx = L.areaW / 2;
-        const cy = L.areaH / 2;
-        const qx = cx + (x - cx - zoom.x.value) / s;
-        const qy = cy + (y - cy - zoom.y.value) / s;
-        const id = hitTest(levelRef.current, occRef.current(), qx - L.ox, qy - L.oy, L.size);
-        if (id >= 0) tapRef.current(id);
-      },
-      [zoom],
-    );
+    // Called on the JS thread with board-content coordinates (converted on the UI thread,
+    // so JS never has to read animated values).
+    const tapContent = useCallback((qx: number, qy: number) => {
+      const L = layout.current;
+      const id = hitTest(levelRef.current, occRef.current(), qx - L.ox, qy - L.oy, L.size);
+      if (id >= 0) tapRef.current(id);
+    }, []);
 
     const gs = useSharedValue({ s0: 1, x0: 0, y0: 0, fx: 0, fy: 0 });
     const gesture = useMemo(() => {
@@ -264,7 +291,7 @@ export const Board = memo(
         });
       const pan = Gesture.Pan()
         .maxPointers(1)
-        .minDistance(10)
+        .minDistance(16)
         .onStart(() => {
           'worklet';
           gs.value = { s0: zoom.s.value, x0: zoom.x.value, y0: zoom.y.value, fx: 0, fy: 0 };
@@ -280,12 +307,16 @@ export const Board = memo(
       const tap = Gesture.Tap()
         .maxDistance(14)
         .maxDuration(600)
-        .runOnJS(true)
         .onEnd((e: { x: number; y: number }, success: boolean) => {
-          if (success) tapAt(e.x, e.y);
+          'worklet';
+          if (!success) return;
+          const s = zoom.s.value || 1;
+          const cx = zoom.aw.value / 2;
+          const cy = zoom.ah.value / 2;
+          scheduleOnRN(tapContent, cx + (e.x - cx - zoom.x.value) / s, cy + (e.y - cy - zoom.y.value) / s);
         });
       return Gesture.Race(Gesture.Simultaneous(pinch, pan), tap);
-    }, [zoom, gs, tapAt]);
+    }, [zoom, gs, tapContent]);
 
     const contentStyle = useAnimatedStyle(() => ({
       transform: [{ translateX: zoom.x.value }, { translateY: zoom.y.value }, { scale: zoom.s.value }],
@@ -398,7 +429,7 @@ export const Board = memo(
               <Animated.View style={[StyleSheet.absoluteFill, revealStyle]}>{revealPicture}</Animated.View>
               {gridLines}
               {dots}
-              {hint ? <HintGlow key={hint.id} g={hint} stroke={stroke} size={size} color={hintColor} /> : null}
+              {hint ? <HintGlow key={hint.id} g={hint} stroke={stroke} size={size} color={hintColor} pulse={pulse} /> : null}
               {shown >= statics.length ? statics : statics.slice(0, shown)}
             </Animated.View>
             <View style={StyleSheet.absoluteFill}>
@@ -440,11 +471,29 @@ const StaticArrow = memo(function StaticArrow({ g, dir, vis, stroke, size, color
 });
 
 /** Soft pulsing halo behind the hinted arrow. */
-const HintGlow = memo(function HintGlow({ g, stroke, size, color }: { g: ArrowGeom; stroke: number; size: number; color: string }) {
-  const pulse = useSharedValue(0.25);
+const HintGlow = memo(function HintGlow({
+  g,
+  stroke,
+  size,
+  color,
+  pulse,
+}: {
+  g: ArrowGeom;
+  stroke: number;
+  size: number;
+  color: string;
+  pulse: SharedValue<number>;
+}) {
   useEffect(() => {
-    pulse.value = withRepeat(withTiming(0.8, { duration: 620, easing: Easing.inOut(Easing.quad) }), -1, true);
-    return () => cancelAnimation(pulse);
+    // Start a moment after mounting, once the views exist natively.
+    const id = setTimeout(() => {
+      pulse.value = 0.3;
+      pulse.value = withRepeat(withTiming(0.8, { duration: 620, easing: Easing.inOut(Easing.quad) }), -1, true);
+    }, 120);
+    return () => {
+      clearTimeout(id);
+      cancelAnimation(pulse);
+    };
   }, [pulse]);
   const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
   const wide = Math.max(stroke * 2.6, size * 0.5);

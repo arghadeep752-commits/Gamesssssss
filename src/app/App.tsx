@@ -8,7 +8,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import type { LegalId } from '../legal/docs';
 import { CollectionScreen } from '../screens/CollectionScreen';
 import { DailyScreen } from '../screens/DailyScreen';
-import { GameScreen, type GameRoute } from '../screens/GameScreen';
+import { GameScreen, stopGameAnimations, type GameRoute } from '../screens/GameScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LegalScreen } from '../screens/LegalScreen';
 import { RewardSheet } from '../screens/RewardSheet';
@@ -83,6 +83,7 @@ function Root() {
       const m = url ? /level=(\d+)/.exec(url) : null;
       if (m) {
         setSheet(null);
+        stopGameAnimations();
         setRoute({ name: 'game', game: { mode: 'level', start: Math.max(1, Number(m[1])) } });
       }
     };
@@ -110,6 +111,7 @@ function Root() {
         return true;
       }
       if (route.name === 'game') {
+        stopGameAnimations();
         setRoute({ name: 'tabs' });
         return true;
       }
@@ -139,6 +141,7 @@ function Root() {
   const openLegal = useCallback(
     (doc: LegalId) => {
       setSheet(null);
+      if (route.name === 'game') stopGameAnimations();
       setRoute({ name: 'legal', doc, back: route.name === 'game' ? 'game' : 'tabs' });
     },
     [route.name],
