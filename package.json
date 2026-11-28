@@ -38,5 +38,10 @@
   },
   "overrides": {
     "expo-asset": "~57.0.21"
+  },
+  "reanimated": {
+    "staticFeatureFlags": {
+      "ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS": false
+    }
   }
 }

@@ -14,9 +14,13 @@ shot() { adb exec-out screencap -p > "$OUT/$1.png" 2>/dev/null; log "shot $1"; }
 dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null 2>&1; }
 tap() { adb shell input tap "$1" "$2"; }
 tapq() {
-  dump
-  local xy
-  xy=$(python3 .github/scripts/find.py "$OUT/ui.xml" "$1")
+  local xy=""
+  for attempt in 1 2 3; do
+    dump
+    xy=$(python3 .github/scripts/find.py "$OUT/ui.xml" "$1")
+    [ -n "$xy" ] && break
+    sleep 1
+  done
   if [ -n "$xy" ]; then
     # shellcheck disable=SC2086
     tap $xy
