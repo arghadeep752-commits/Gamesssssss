@@ -1,0 +1,102 @@
+# Builds an installable Android APK on GitHub's servers, so no computer is needed.
+# Push this project to the `arrow-flow-v2` branch (or press "Run workflow" on the
+# Actions tab) and download the APK from the Releases page when it finishes.
+name: Build Arrow Flow APK
+
+on:
+  push:
+    branches: [arrow-flow-v2, main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: 'true'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Align native module versions with the Expo SDK
+        run: npx expo install --fix
+
+      - name: Unit tests (rules, generator, 400 levels, a year of dailies)
+        run: npm test
+
+      - name: Type-check (report only)
+        continue-on-error: true
+        run: npm run typecheck
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../gradle.log
+
+      # Surfaces the key Gradle errors as run annotations, readable without the full log.
+      - name: Report build errors
+        if: failure()
+        run: |
+          [ -f gradle.log ] || exit 0
+          python3 - <<'PY'
+          import re
+          log = open('gradle.log', errors='replace').read().splitlines()
+          keep = []
+          for i, line in enumerate(log):
+              if 'What went wrong' in line:
+                  keep += log[i:i + 30]
+          keep += [l for l in log if re.search(r'(^e: |error:|ERROR|FAILED|Could not|Unresolved|not found)', l)][:80]
+          text = '\n'.join(dict.fromkeys(keep))[-14000:]
+          for i in range(0, len(text), 3500):
+              chunk = text[i:i + 3500].replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+              print(f'::error title=Gradle {i // 3500 + 1}::{chunk}')
+          PY
+
+      - name: Collect APK
+        id: apk
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/ArrowFlow-v2-${{ github.run_number }}.apk"
+          SIZE=$(du -h dist/*.apk | cut -f1)
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "### Arrow Flow APK: $SIZE" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArrowFlow-v2-apk-${{ github.run_number }}
+          path: dist/*.apk
+
+      - name: Publish as a downloadable release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: arrow-flow-v2-build-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Arrow Flow v2 build ${{ github.run_number }} (${{ steps.apk.outputs.size }})
+          body: Installable build of Arrow Flow v2. Open this page on your Android phone, tap the APK below and install it.
+          files: dist/*.apk
+          prerelease: true
