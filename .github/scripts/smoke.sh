@@ -64,7 +64,6 @@ adb shell input keyevent 4
 sleep 2
 shot 08-home
 tapq "Daily" && sleep 2 && shot 09-daily
-tapq "Collection" && sleep 2 && shot 10-collection
 tapq "Trophies" && sleep 2 && shot 11-trophies
 tapq "Home" && sleep 2
 tapq "Settings" && sleep 2 && shot 12-settings

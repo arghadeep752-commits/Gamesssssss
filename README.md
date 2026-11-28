@@ -1,7 +1,8 @@
 # Arrow Flow v3
 
 A tap-away arrow puzzle for Android, built with React Native (Expo SDK 57) and TypeScript.
-Every board is a picture (mushroom, rocket, cat, anchor, butterfly and 60 more) packed with
+Every board is a picture (mushroom, rocket, cat, anchor, butterfly and 60 more, all drawn in
+code from simple geometry; no outside images) packed with
 snake-shaped arrows. Tap one and it slithers out the way its head points, but only if nothing
 sits in front of it. Clear the board.
 
@@ -9,7 +10,7 @@ sits in front of it. Clear the board.
   Normal, Hard (every 5th) and Super Hard (every 10th) levels; boards up to 28 cells across
 - 3 hearts, play clock, arrows-left counter, hints, grid lines, pinch / slider zoom
 - Stars, coins, reward chest every 5 levels, daily login rewards (7-day streak), revive
-- Daily challenges with monthly trophies, a collection of every shape, arrow colour themes
+- Daily challenges with monthly trophies, arrow colour themes
 - Real CC0 sound effects (Kenney "Interface Sounds"), light and dark mode, thin-line option
 - In-app Privacy Policy, Terms of Use, Licenses & Credits and About pages
 - Fully offline: no internet permission, no ads, no accounts, no analytics
@@ -46,7 +47,7 @@ npm run build:apk        # needs JDK 17 and the Android SDK
 | --- | --- |
 | `src/game` | Rules, solver, hints, seeded generator, board shapes, level pack, pixel geometry |
 | `src/ui` | Board renderer (zoom, flights), zoom bar, UI kit, theme, icons |
-| `src/screens` | Home, Game, Daily, Collection, Trophies, Shop, Settings, legal pages |
+| `src/screens` | Home, Game, Daily, Trophies, Shop, Settings, legal pages |
 | `src/state` | Saved progress (AsyncStorage), economy, dates |
 | `src/legal` | Privacy Policy, Terms, Licenses, About text |
 

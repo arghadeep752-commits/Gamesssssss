@@ -25,8 +25,6 @@ export interface Save {
   /** Completed daily challenges, by date key. */
   daily: Record<string, number>;
   stats: { levels: number; perfect: number; daily: number; stars: number; arrows: number; bestStreak: number };
-  /** Collection: how many times each outline has been cleared. */
-  shapes: Record<string, number>;
   skin: string;
   skins: string[];
   settings: Settings;
@@ -50,7 +48,6 @@ export function defaultSave(): Save {
     coins: START_COINS,
     daily: {},
     stats: { levels: 0, perfect: 0, daily: 0, stars: 0, arrows: 0, bestStreak: 0 },
-    shapes: {},
     skin: 'classic',
     skins: ['classic'],
     settings: { sound: true, haptics: true, dark: false, thin: false, grid: false },
@@ -79,13 +76,6 @@ export function parseSave(text: string | null): Save {
     if (raw.daily && typeof raw.daily === 'object') {
       for (const [k, v] of Object.entries(raw.daily as Record<string, unknown>)) if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v) daily[k] = 1;
     }
-    const shapes: Record<string, number> = {};
-    if (raw.shapes && typeof raw.shapes === 'object') {
-      for (const [k, v] of Object.entries(raw.shapes as Record<string, unknown>)) {
-        const n = num(v, 0);
-        if (n > 0 && k.length < 40) shapes[k] = n;
-      }
-    }
     const skins = Array.isArray(raw.skins) ? (raw.skins as unknown[]).filter((s): s is string => typeof s === 'string') : [];
     if (!skins.includes('classic')) skins.unshift('classic');
     const skin = str(raw.skin, 'classic');
@@ -103,7 +93,6 @@ export function parseSave(text: string | null): Save {
         arrows: num(st.arrows, 0),
         bestStreak: num(st.bestStreak, 0),
       },
-      shapes,
       skin: skins.includes(skin) ? skin : 'classic',
       skins,
       settings: {

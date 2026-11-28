@@ -48,7 +48,7 @@ const PRIVACY: LegalDoc = {
     {
       h: 'Information stored on your device',
       p: [
-        'To let you continue where you left off, the app saves your game progress (levels cleared, coins, hints, collected shapes, daily challenge results, statistics) and your settings in the app\'s private storage on your device.',
+        'To let you continue where you left off, the app saves your game progress (levels cleared, coins, hints, daily challenge results, statistics) and your settings in the app\'s private storage on your device.',
         'This information never leaves your device and we cannot access it. The app opts out of Android cloud backup, so it is not copied to any server. You can delete it at any time with Settings > Reset progress, or by uninstalling the app.',
       ],
     },

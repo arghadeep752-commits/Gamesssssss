@@ -6,7 +6,6 @@ import { AppState, BackHandler, Linking, StyleSheet, Text, View } from 'react-na
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LegalId } from '../legal/docs';
-import { CollectionScreen } from '../screens/CollectionScreen';
 import { DailyScreen } from '../screens/DailyScreen';
 import { GameScreen, stopGameAnimations, type GameRoute } from '../screens/GameScreen';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -25,14 +24,13 @@ import { DARK, LIGHT, ThemeContext, useTheme } from '../ui/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-type Tab = 'home' | 'daily' | 'collection' | 'trophies';
+type Tab = 'home' | 'daily' | 'trophies';
 type Route = { name: 'tabs' } | { name: 'game'; game: GameRoute } | { name: 'legal'; doc: LegalId; back: 'tabs' | 'game' };
 type SheetName = 'settings' | 'shop' | 'reward' | null;
 
 const TABS: { key: Tab; icon: IconName; label: string }[] = [
   { key: 'home', icon: 'home', label: 'Home' },
   { key: 'daily', icon: 'calendar', label: 'Daily' },
-  { key: 'collection', icon: 'shapes', label: 'Collection' },
   { key: 'trophies', icon: 'trophy', label: 'Trophies' },
 ];
 
@@ -166,8 +164,6 @@ function Root() {
                 <HomeScreen onPlay={playLevel} onDaily={() => setTab('daily')} onSettings={openSettings} onShop={openShop} />
               ) : tab === 'daily' ? (
                 <DailyScreen onPlay={playDaily} />
-              ) : tab === 'collection' ? (
-                <CollectionScreen />
               ) : (
                 <TrophiesScreen />
               )}

@@ -23,7 +23,6 @@ import { useStore } from '../state/store';
 import { Board, type BoardHandle } from '../ui/Board';
 import { CoinIcon, Icon } from '../ui/Icon';
 import { Btn, Chip, Confetti, CountUp, Hearts, ProgressBar, RoundBtn, Sheet, StarRow, TierBadge } from '../ui/kit';
-import { ShapeThumb } from '../ui/ShapeThumb';
 import { SPACE, useTheme } from '../ui/theme';
 import { useZoom } from '../ui/zoom';
 import { ZoomBar } from '../ui/ZoomBar';
@@ -83,7 +82,6 @@ interface Reward {
   coins: number;
   hints: number;
   time: string;
-  newShape: boolean;
   chest: number;
   chestOpened: boolean;
   month?: { done: number; total: number };
@@ -224,8 +222,7 @@ export function GameScreen({
     const time = fmt(s.acc);
     playSfx('complete');
     hapticSuccess();
-    const shape = info.shape;
-    let r: Reward = { stars, coins: 0, hints: 0, time, newShape: false, chest: 0, chestOpened: false };
+    let r: Reward = { stars, coins: 0, hints: 0, time, chest: 0, chestOpened: false };
     if (route.mode === 'level') {
       update((sv) => {
         const firstClear = levelNum >= sv.level;
@@ -239,15 +236,13 @@ export function GameScreen({
           coins += CHEST_COINS;
           hints += CHEST_HINTS;
         }
-        const newShape = shape !== 'rect' && !sv.shapes[shape];
-        r = { stars, coins, hints, time, newShape, chest, chestOpened };
+        r = { stars, coins, hints, time, chest, chestOpened };
         return {
           ...sv,
           level: Math.max(sv.level, levelNum + 1),
           coins: sv.coins + coins,
           hints: sv.hints + hints,
           chest,
-          shapes: shape === 'rect' ? sv.shapes : { ...sv.shapes, [shape]: (sv.shapes[shape] ?? 0) + 1 },
           stats: {
             ...sv.stats,
             levels: sv.stats.levels + (firstClear ? 1 : 0),
@@ -264,13 +259,11 @@ export function GameScreen({
       update((sv) => {
         const first = !sv.daily[key];
         const daily = { ...sv.daily, [key]: 1 };
-        const newShape = shape !== 'rect' && !sv.shapes[shape];
         r = {
           stars,
           coins: first ? DAILY_COINS : 0,
           hints: first ? DAILY_HINTS : 0,
           time,
-          newShape,
           chest: sv.chest,
           chestOpened: false,
           month: monthProgress(monthKeyOf(key), daily),
@@ -280,7 +273,6 @@ export function GameScreen({
           daily,
           coins: sv.coins + r.coins,
           hints: sv.hints + r.hints,
-          shapes: shape === 'rect' ? sv.shapes : { ...sv.shapes, [shape]: (sv.shapes[shape] ?? 0) + 1 },
           stats: {
             ...sv.stats,
             daily: sv.stats.daily + (first ? 1 : 0),
@@ -502,10 +494,8 @@ export function GameScreen({
       {phase === 'won' && reward ? (
         <WinSheet
           reward={reward}
-          info={info}
           title={route.mode === 'level' ? `Level ${levelNum} complete!` : 'Daily challenge done!'}
           daily={route.mode === 'daily'}
-          ink={ink}
           onNext={nextLevel}
           onHome={exit}
         />
@@ -540,18 +530,14 @@ export function GameScreen({
 
 function WinSheet({
   reward,
-  info,
   title,
   daily,
-  ink,
   onNext,
   onHome,
 }: {
   reward: Reward;
-  info: LevelInfo;
   title: string;
   daily: boolean;
-  ink: string;
   onNext: () => void;
   onHome: () => void;
 }) {
@@ -561,17 +547,6 @@ function WinSheet({
       <Sheet>
         <Text style={[styles.sheetTitle, { color: t.text }]}>{title}</Text>
         <StarRow count={reward.stars} />
-        {info.shape !== 'rect' ? (
-          <View style={styles.shapeRow}>
-            <ShapeThumb shape={info.shape} size={52} color={ink} />
-            <View style={styles.shapeText}>
-              <Text style={[styles.shapeName, { color: t.text }]}>{info.shapeName}</Text>
-              <Text style={[styles.shapeSub, { color: reward.newShape ? t.success : t.sub }]}>
-                {reward.newShape ? 'New! Added to your collection' : 'Already in your collection'}
-              </Text>
-            </View>
-          </View>
-        ) : null}
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: t.surfaceAlt }]}>
             <Icon name="timer" size={18} color={t.sub} />
@@ -642,10 +617,6 @@ const styles = StyleSheet.create({
   badgeCircle: { width: 84, height: 84, borderRadius: 42, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   sheetTitle: { fontSize: 24, fontWeight: '900', textAlign: 'center' },
   sheetText: { fontSize: 16, textAlign: 'center', lineHeight: 22, marginBottom: 4 },
-  shapeRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, alignSelf: 'center' },
-  shapeText: { gap: 2 },
-  shapeName: { fontSize: 17, fontWeight: '800' },
-  shapeSub: { fontSize: 13, fontWeight: '700' },
   statsRow: { flexDirection: 'row', justifyContent: 'center', gap: SPACE.sm },
   statBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   statValue: { fontSize: 17, fontWeight: '900', fontVariant: ['tabular-nums'] },
