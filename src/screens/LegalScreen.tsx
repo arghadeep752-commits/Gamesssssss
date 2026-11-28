@@ -11,7 +11,7 @@ export function LegalScreen({ doc, onBack }: { doc: LegalId; onBack: () => void 
   const insets = useSafeAreaInsets();
   const d = LEGAL_DOCS[doc];
   return (
-    <Animated.View entering={FadeIn.duration(180)} style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top + 6 }]}>
+    <Animated.View collapsable={false} entering={FadeIn.duration(180)} style={[styles.root, { backgroundColor: t.bg, paddingTop: insets.top + 6 }]}>
       <View style={styles.header}>
         <RoundBtn icon="back" label="Back" onPress={onBack} size={42} />
         <Text style={[styles.title, { color: t.text }]} numberOfLines={1}>

@@ -45,7 +45,7 @@ export function DailyScreen({ onPlay }: { onPlay: (dateKey: string) => void }) {
   }, [selected]);
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} style={styles.fill}>
+    <Animated.View collapsable={false} entering={FadeIn.duration(200)} style={styles.fill}>
       <ScrollView contentContainerStyle={[styles.root, { paddingTop: insets.top + 8 }]} showsVerticalScrollIndicator={false}>
       <Text style={[styles.h1, { color: t.text }]}>Daily Challenges</Text>
 

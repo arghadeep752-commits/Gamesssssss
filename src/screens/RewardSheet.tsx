@@ -26,7 +26,7 @@ export function RewardSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet onBackdrop={onClose}>
-      <Animated.View entering={ZoomIn.duration(300)} style={[styles.badge, { backgroundColor: t.goldSoft }]}>
+      <Animated.View collapsable={false} entering={ZoomIn.duration(300)} style={[styles.badge, { backgroundColor: t.goldSoft }]}>
         <Icon name="chest" size={40} color={t.gold} />
       </Animated.View>
       <Text style={[styles.title, { color: t.text }]}>Daily reward</Text>

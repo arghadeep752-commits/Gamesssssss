@@ -174,7 +174,7 @@ const HeartPip = memo(function HeartPip({ full, size }: { full: boolean; size: n
   }, [full, sc]);
   const st = useAnimatedStyle(() => ({ transform: [{ scale: sc.value }] }));
   return (
-    <Animated.View style={st}>
+    <Animated.View collapsable={false} style={st}>
       <Icon name="heart" size={size} color={full ? t.heart : t.heartEmpty} filled />
     </Animated.View>
   );
@@ -193,7 +193,7 @@ export const ProgressBar = memo(function ProgressBar({ value, color, track, heig
   const st = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0.0001, p.value) }] }));
   return (
     <View style={[styles.bar, { height, borderRadius: height / 2, backgroundColor: track }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: color, borderRadius: height / 2, transformOrigin: '0% 50%' }, st]} />
+      <Animated.View collapsable={false} style={[StyleSheet.absoluteFill, { backgroundColor: color, borderRadius: height / 2, transformOrigin: '0% 50%' }, st]} />
     </View>
   );
 });
@@ -202,9 +202,9 @@ export const ProgressBar = memo(function ProgressBar({ value, color, track, heig
 export function Sheet({ children, onBackdrop }: { children: ReactNode; onBackdrop?: () => void }) {
   const t = useTheme();
   return (
-    <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(140)} style={[StyleSheet.absoluteFill, styles.sheetWrap]}>
+    <Animated.View collapsable={false} entering={FadeIn.duration(160)} exiting={FadeOut.duration(140)} style={[StyleSheet.absoluteFill, styles.sheetWrap]}>
       <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim }]} onPress={onBackdrop} accessibilityLabel="Close" />
-      <Animated.View entering={FadeInDown.duration(260).easing(Easing.out(Easing.cubic))} style={[styles.sheet, { backgroundColor: t.surface }]}>
+      <Animated.View collapsable={false} entering={FadeInDown.duration(260).easing(Easing.out(Easing.cubic))} style={[styles.sheet, { backgroundColor: t.surface }]}>
         {children}
       </Animated.View>
     </Animated.View>
@@ -272,7 +272,7 @@ export const StarRow = memo(function StarRow({ count, size = 44, delay = 250 }: 
         <View key={i} style={{ marginTop: i === 1 ? -10 : 0 }}>
           <Icon name="star" size={size} color={t.heartEmpty} filled />
           {i < count ? (
-            <Animated.View entering={ZoomIn.delay(delay + i * 230).duration(260)} style={StyleSheet.absoluteFill}>
+            <Animated.View collapsable={false} entering={ZoomIn.delay(delay + i * 230).duration(260)} style={StyleSheet.absoluteFill}>
               <Icon name="star" size={size} color={t.gold} filled />
             </Animated.View>
           ) : null}
@@ -373,7 +373,7 @@ function ConfettiPiece({
       transform: [{ translateX: x + dx * k }, { translateY: y }, { rotate: `${spin * k}deg` }],
     };
   });
-  return <Animated.View style={[{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: 2, backgroundColor: color }, st]} />;
+  return <Animated.View collapsable={false} style={[{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: 2, backgroundColor: color }, st]} />;
 }
 
 export const styles = StyleSheet.create({

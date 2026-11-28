@@ -75,13 +75,14 @@ for L in 25 90 300; do
   adb shell am start -W -a android.intent.action.VIEW -d "arrowflow://qa?level=$L" "$PKG" >/dev/null 2>&1
   sleep 7
   shot "20-level$L"
+  tapq "Zoom in" && sleep 1 && tapq "Zoom in" && sleep 1 && shot "22-level$L-zoomed"
+  tapq "Grid lines" && sleep 1 && shot "23-level$L-grid" && tapq "Grid lines"
+  tapq "Zoom out" && sleep 1 && tapq "Zoom out" && sleep 1
   adb shell dumpsys gfxinfo "$PKG" reset >/dev/null 2>&1
   grid_taps 0.25
   sleep 1
   shot "21-level$L-tapped"
   adb shell dumpsys gfxinfo "$PKG" > "$OUT/gfx-level$L.txt" 2>&1
-  tapq "Zoom in" && sleep 1 && tapq "Zoom in" && sleep 1 && shot "22-level$L-zoomed"
-  tapq "Grid lines" && sleep 1 && shot "23-level$L-grid" && tapq "Grid lines"
   adb shell input keyevent 4
   sleep 2
 done

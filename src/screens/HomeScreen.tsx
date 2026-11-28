@@ -45,7 +45,7 @@ export function HomeScreen({
   const toChest = CHEST_EVERY - save.chest;
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} style={styles.fill}>
+    <Animated.View collapsable={false} entering={FadeIn.duration(200)} style={styles.fill}>
       <ScrollView contentContainerStyle={[styles.root, { paddingTop: insets.top + 8 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
           <View style={styles.chips}>

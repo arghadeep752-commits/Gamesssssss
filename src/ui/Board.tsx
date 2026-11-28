@@ -423,10 +423,10 @@ export const Board = memo(
     return (
       <GestureDetector gesture={gesture}>
         <View style={styles.area} collapsable={false}>
-          <Animated.View style={[StyleSheet.absoluteFill, contentStyle]} pointerEvents="none">
-            <Animated.View entering={FadeIn.duration(240)} style={[styles.board, { left: ox, top: oy, width: bw, height: bh }]}>
+          <Animated.View collapsable={false} style={[StyleSheet.absoluteFill, contentStyle]} pointerEvents="none">
+            <Animated.View collapsable={false} entering={FadeIn.duration(240)} style={[styles.board, { left: ox, top: oy, width: bw, height: bh }]}>
               <View style={[StyleSheet.absoluteFill, styles.base]}>{basePicture}</View>
-              <Animated.View style={[StyleSheet.absoluteFill, revealStyle]}>{revealPicture}</Animated.View>
+              <Animated.View collapsable={false} style={[StyleSheet.absoluteFill, revealStyle]}>{revealPicture}</Animated.View>
               {gridLines}
               {dots}
               {hint ? <HintGlow key={hint.id} g={hint} stroke={stroke} size={size} color={hintColor} pulse={pulse} /> : null}
@@ -460,7 +460,7 @@ interface StaticProps {
 const StaticArrow = memo(function StaticArrow({ g, dir, vis, stroke, size, color }: StaticProps) {
   const style = useAnimatedStyle(() => ({ opacity: vis.value }));
   return (
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
+    <Animated.View collapsable={false} pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
       {g.segs.map((s, i) => {
         const [left, top, width, height] = capsuleRect(s, stroke);
         return <View key={i} style={{ position: 'absolute', left, top, width, height, borderRadius: stroke / 2, backgroundColor: color }} />;
@@ -499,7 +499,7 @@ const HintGlow = memo(function HintGlow({
   const wide = Math.max(stroke * 2.6, size * 0.5);
   const dot = size * 0.95;
   return (
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
+    <Animated.View collapsable={false} pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
       {g.segs.map((s, i) => {
         const [left, top, width, height] = capsuleRect(s, wide);
         return <View key={i} style={{ position: 'absolute', left, top, width, height, borderRadius: wide / 2, backgroundColor: color }} />;
@@ -561,7 +561,7 @@ const RunPiece = memo(function RunPiece({ j, slot, stroke, ink, error, dot }: Pi
     };
   });
   return (
-    <Animated.View
+    <Animated.View collapsable={false}
       pointerEvents="none"
       style={[{ position: 'absolute', left: 0, top: 0, width: stroke, height: stroke, borderRadius: dot ? stroke / 2 : 0 }, style]}
     />
@@ -583,9 +583,9 @@ const FlightHead = memo(function FlightHead({ slot, size, ink, error }: { slot: 
   // The head drawn pointing right around the box centre; the box rotates.
   const c = box / 2;
   return (
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: box, height: box }, style]}>
+    <Animated.View collapsable={false} pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: box, height: box }, style]}>
       <View style={headStyle(1, c, c, size, ink)} />
-      <Animated.View style={[StyleSheet.absoluteFill, redStyle]}>
+      <Animated.View collapsable={false} style={[StyleSheet.absoluteFill, redStyle]}>
         <View style={headStyle(1, c, c, size, error)} />
       </Animated.View>
     </Animated.View>

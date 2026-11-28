@@ -164,6 +164,15 @@ jobs:
         if: always()
         run: cd smoke-out && zip -q -r ../qa-screenshots.zip . || true
 
+      - name: Remove older QA screenshot drafts
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/releases?per_page=100" \
+            -q '.[] | select(.draft and (.name | startswith("QA screenshots"))) | .id' |
+            while read -r id; do gh api -X DELETE "repos/${{ github.repository }}/releases/$id" || true; done
+
       - name: Attach QA screenshots to a private draft release
         if: always()
         uses: softprops/action-gh-release@v2

@@ -462,7 +462,7 @@ export function GameScreen({
           />
         ) : null}
         {tutorial && phase === 'play' ? (
-          <Animated.View entering={FadeInDown.duration(300)} pointerEvents="none" style={[styles.tip, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Animated.View collapsable={false} entering={FadeInDown.duration(300)} pointerEvents="none" style={[styles.tip, { backgroundColor: t.surface, borderColor: t.border }]}>
             <Text style={[styles.tipText, { color: t.text }]}>
               {levelNum === 1
                 ? 'Tap the glowing arrow. It slides out the way it points.'
@@ -473,12 +473,12 @@ export function GameScreen({
           </Animated.View>
         ) : null}
         {combo ? (
-          <Animated.View key={combo} entering={ZoomIn.duration(220)} exiting={FadeOut.duration(200)} pointerEvents="none" style={[styles.combo, { backgroundColor: t.accent }]}>
+          <Animated.View collapsable={false} key={combo} entering={ZoomIn.duration(220)} exiting={FadeOut.duration(200)} pointerEvents="none" style={[styles.combo, { backgroundColor: t.accent }]}>
             <Text style={styles.comboText}>{combo} in a row!</Text>
           </Animated.View>
         ) : null}
         {toast ? (
-          <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(150)} pointerEvents="none" style={[styles.toast, { backgroundColor: t.ink }]}>
+          <Animated.View collapsable={false} entering={FadeIn.duration(150)} exiting={FadeOut.duration(150)} pointerEvents="none" style={[styles.toast, { backgroundColor: t.ink }]}>
             <Text style={[styles.toastText, { color: t.bg }]}>{toast}</Text>
           </Animated.View>
         ) : null}
@@ -514,7 +514,7 @@ export function GameScreen({
 
       {phase === 'lost' ? (
         <Sheet>
-          <Animated.View entering={ZoomIn.delay(60).duration(300)} style={[styles.badgeCircle, { backgroundColor: t.surfaceAlt }]}>
+          <Animated.View collapsable={false} entering={ZoomIn.delay(60).duration(300)} style={[styles.badgeCircle, { backgroundColor: t.surfaceAlt }]}>
             <Icon name="heart" size={44} color={t.heartEmpty} filled />
           </Animated.View>
           <Text style={[styles.sheetTitle, { color: t.text }]}>Out of hearts</Text>

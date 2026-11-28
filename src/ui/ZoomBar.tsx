@@ -53,9 +53,9 @@ export const ZoomBar = memo(function ZoomBar({ zoom }: { zoom: Zoom }) {
           accessibilityLabel="Zoom"
         >
           <View style={[styles.track, { backgroundColor: t.surfaceAlt }]}>
-            <Animated.View style={[styles.fill, { backgroundColor: t.accent }, fillStyle]} />
+            <Animated.View collapsable={false} style={[styles.fill, { backgroundColor: t.accent }, fillStyle]} />
           </View>
-          <Animated.View style={[styles.thumb, { backgroundColor: t.surface, borderColor: t.accent }, thumbStyle]} />
+          <Animated.View collapsable={false} style={[styles.thumb, { backgroundColor: t.surface, borderColor: t.accent }, thumbStyle]} />
         </View>
       </GestureDetector>
       <Pressy onPress={() => onUI(zoomStep, zoom, 1.5)} label="Zoom in" style={[styles.btn, { backgroundColor: t.surface, borderColor: t.border }]}>
